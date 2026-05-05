@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { BeachCondition } from '@/lib/surfData'
 import { getRatingInfo } from '@/lib/rating'
-import { Waves, Wind, Clock, Users, Thermometer, ThumbsUp } from 'lucide-react'
+import { Waves, Wind, Clock, Thermometer, ThumbsUp } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 interface SpotCardProps {
@@ -32,15 +32,6 @@ export function SpotCard({ spot }: SpotCardProps) {
       case 'Iniciante': return 'bg-chart-2/20 text-chart-2 border-chart-2/30'
       case 'Intermediário': return 'bg-accent/20 text-accent border-accent/30'
       case 'Avançado': return 'bg-primary/20 text-primary border-primary/30'
-      default: return 'bg-muted'
-    }
-  }
-
-  const getCrowdColor = (crowd: string) => {
-    switch (crowd) {
-      case 'Vazio': return 'bg-chart-2/20 text-chart-2'
-      case 'Pouca gente': return 'bg-accent/20 text-accent'
-      case 'Cheio': return 'bg-destructive/20 text-destructive'
       default: return 'bg-muted'
     }
   }
@@ -110,10 +101,6 @@ export function SpotCard({ spot }: SpotCardProps) {
         <div className="flex items-center gap-2 flex-wrap">
           <Badge className={getLevelColor(spot.level)} variant="outline">
             {spot.level}
-          </Badge>
-          <Badge className={getCrowdColor(spot.crowdLevel)} variant="secondary">
-            <Users className="h-3 w-3 mr-1" />
-            {spot.crowdLevel}
           </Badge>
           {personalBadge && (
             <Badge className="bg-green-500/15 text-green-500 border-green-500/30" variant="outline">
