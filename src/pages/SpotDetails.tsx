@@ -307,64 +307,6 @@ const ShareButton = ({ spot }: { spot: BeachCondition }) => {
   )
 }
 
-// ── Beach Selector (horizontal scroll) ─────────────────────────────────────
-const BeachSelector = ({ currentId, spots }: { currentId: string, spots: BeachCondition[] }) => {
-  const navigate = useNavigate()
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const activeRef = useRef<HTMLButtonElement>(null)
-
-  useEffect(() => {
-    if (activeRef.current && scrollRef.current) {
-      const el = activeRef.current
-      const container = scrollRef.current
-      const elLeft = el.offsetLeft
-      const elWidth = el.offsetWidth
-      const containerWidth = container.offsetWidth
-      container.scrollTo({ left: elLeft - containerWidth / 2 + elWidth / 2, behavior: 'smooth' })
-    }
-  }, [currentId])
-
-  const scoreColor = (score: number) => {
-    if (score >= 7.5) return '#22c55e'
-    if (score >= 6) return '#f59e0b'
-    if (score >= 4) return '#f97316'
-    return '#ef4444'
-  }
-
-  return (
-    <div
-      ref={scrollRef}
-      className="flex gap-2 overflow-x-auto py-1"
-      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-    >
-      {spots.map(s => {
-        const isActive = s.id === currentId
-        const color = scoreColor(s.score)
-        return (
-          <button
-            key={s.id}
-            ref={isActive ? activeRef : undefined}
-            onClick={() => navigate(`/spot/${s.id}`)}
-            className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-              isActive
-                ? 'bg-primary text-primary-foreground shadow-md scale-105'
-                : 'bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground border border-border/40'
-            }`}
-          >
-            <span
-              className="w-2 h-2 rounded-full flex-shrink-0"
-              style={{ backgroundColor: isActive ? 'white' : color }}
-            />
-            <span className="whitespace-nowrap">{s.name}</span>
-            {!isActive && (
-              <span className="text-xs font-bold ml-0.5" style={{ color }}>{s.score.toFixed(1)}</span>
-            )}
-          </button>
-        )
-      })}
-    </div>
-  )
-}
 
 // ── Score Explainer Modal ───────────────────────────────────────────────────
 const ScoreExplainer = ({ spot, onClose }: { spot: BeachCondition, onClose: () => void }) => {
@@ -600,7 +542,6 @@ export default function SpotDetails() {
   const navigate = useNavigate()
 
   const [spot, setSpot] = useState<BeachCondition|null>(null)
-  const [allSpots, setAllSpots] = useState<BeachCondition[]>([])
   const [loadingSpot, setLoadingSpot] = useState(true)
   const [favorite, setFavorite] = useState(false)
   const [loadingFav, setLoadingFav] = useState(true)
@@ -608,6 +549,7 @@ export default function SpotDetails() {
   const [visible, setVisible] = useState(false)
   const [showScoreExplainer, setShowScoreExplainer] = useState(false)
   const [activeTab, setActiveTab] = useState<'agora'|'previsao'>('agora')
+  const [commentsOpen, setCommentsOpen] = useState(false)
   const [usesFeet, setUsesFeet] = useState(() => {
     try { return JSON.parse(localStorage.getItem('pref_units') ?? '"metric"') === 'imperial' } catch { return false }
   })
@@ -621,7 +563,6 @@ export default function SpotDetails() {
     setForecast([])
     setVisible(false)
     fetchCurrentConditions().then(async spots => {
-      setAllSpots(spots)
       const found = spots.find(s => s.id === id) ?? null
       setSpot(found)
       setLoadingSpot(false)
@@ -675,9 +616,9 @@ export default function SpotDetails() {
             <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="flex-shrink-0 h-8 px-2">
               <ArrowLeft className="h-4 w-4 mr-1"/>Voltar
             </Button>
-            <div className="flex-1 min-w-0">
-              {/* Beach selector scroll */}
-              {allSpots.length > 0 && <BeachSelector currentId={spot.id} spots={allSpots}/>}
+            <div className="flex-1 min-w-0 px-1">
+              <p className="text-sm font-semibold truncate">{spot.name}</p>
+              <p className="text-xs text-muted-foreground">{spot.region} da Ilha · {spot.level}</p>
             </div>
             <div className="flex items-center gap-1.5 flex-shrink-0">
               <ShareButton spot={spot}/>
@@ -766,6 +707,29 @@ export default function SpotDetails() {
             </div>
           </div>
         </div>
+
+        {/* Botão de relatos — com gatilho mental */}
+        <button
+          onClick={() => setCommentsOpen(o => !o)}
+          className="w-full flex items-center justify-between px-4 py-3 rounded-2xl border border-border/50 bg-card hover:border-primary/30 hover:bg-primary/5 transition-all"
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
+              <MessageCircle className="h-4 w-4 text-primary"/>
+            </div>
+            <div className="text-left">
+              <div className="text-sm font-semibold">O que dizem quem foi hoje?</div>
+              <div className="text-xs text-muted-foreground">Relatos ao vivo de quem está na praia</div>
+            </div>
+          </div>
+          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${commentsOpen ? 'rotate-180' : ''}`}/>
+        </button>
+
+        {commentsOpen && (
+          <div className="rounded-2xl border border-border/50 bg-card p-4" style={{animation:'slideUp 0.2s ease-out'}}>
+            <CommentsSection spot={spot}/>
+          </div>
+        )}
 
         {/* Tab selector */}
         <div className="flex rounded-xl bg-muted/30 p-1 border border-border/30">
@@ -918,10 +882,6 @@ export default function SpotDetails() {
               </Alert>
             )}
 
-            {/* Comments */}
-            <Card>
-              <CardContent className="p-4"><CommentsSection spot={spot}/></CardContent>
-            </Card>
           </div>
         )}
 

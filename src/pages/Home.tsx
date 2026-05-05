@@ -232,9 +232,7 @@ const NotificationPanel = ({ spots, favorites }: { spots: BeachCondition[], favo
 }
 
 export default function Home() {
-  const [activeRegion, setActiveRegion] = useState<string>(() => {
-    try { return localStorage.getItem('pref_region') ?? 'all' } catch { return 'all' }
-  })
+  const [activeRegion, setActiveRegion] = useState<string>('all')
   const [spots, setSpots] = useState<BeachCondition[]>([])
   const [allSpots, setAllSpots] = useState<BeachCondition[]>([])
   const [topSpot, setTopSpot] = useState<BeachCondition | null>(null)
