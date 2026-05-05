@@ -1,96 +1,84 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { createClient } from '@supabase/supabase-js'
+export const config = { runtime: 'edge' }
 
-const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY
+function ok() {
+  return new Response(JSON.stringify({ ok: true }), {
+    headers: { 'Content-Type': 'application/json' },
+  })
+}
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // O MP envia GET para validar o endpoint — responde 200
-  if (req.method === 'GET') {
-    return res.status(200).json({ ok: true })
-  }
+export default async function handler(req: Request) {
+  // MP envia GET para validar o endpoint
+  if (req.method === 'GET') return ok()
+  if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 })
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
-  }
+  const accessToken = process.env.MP_ACCESS_TOKEN
+  const supabaseUrl = process.env.VITE_SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_KEY
 
-  // Valida variáveis de ambiente
-  if (!MP_ACCESS_TOKEN || !SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+  if (!accessToken || !supabaseUrl || !serviceKey) {
     console.error('[mp-webhook] Variáveis de ambiente faltando')
-    return res.status(500).json({ error: 'Configuração incompleta' })
+    return new Response('Config error', { status: 500 })
   }
 
+  let body: { type: string; data?: { id: string } }
   try {
-    const { type, data } = req.body
+    body = await req.json()
+  } catch {
+    return new Response('Invalid body', { status: 400 })
+  }
 
-    console.log('[mp-webhook] Notificação recebida:', { type, data })
+  console.log('[mp-webhook] Notificação:', body.type, body.data?.id)
 
-    // Só processa notificações de pagamento
-    if (type !== 'payment') {
-      return res.status(200).json({ ok: true, message: 'Evento ignorado' })
-    }
+  if (body.type !== 'payment' || !body.data?.id) return ok()
 
-    const paymentId = data?.id
-    if (!paymentId) {
-      return res.status(400).json({ error: 'payment id não encontrado' })
-    }
+  // Busca detalhes do pagamento no MP
+  const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${body.data.id}`, {
+    headers: { 'Authorization': `Bearer ${accessToken}` },
+  })
 
-    // Busca detalhes do pagamento no MP
-    const mpResponse = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-      headers: {
-        'Authorization': `Bearer ${MP_ACCESS_TOKEN}`,
-      },
-    })
+  if (!mpRes.ok) {
+    console.error('[mp-webhook] Erro ao buscar pagamento:', body.data.id)
+    return new Response('MP fetch error', { status: 500 })
+  }
 
-    if (!mpResponse.ok) {
-      console.error('[mp-webhook] Erro ao buscar pagamento no MP:', paymentId)
-      return res.status(500).json({ error: 'Erro ao buscar pagamento' })
-    }
+  const payment = await mpRes.json() as {
+    id: number; status: string; external_reference: string;
+    preference_id: string; transaction_amount: number; payment_type_id: string
+  }
 
-    const payment = await mpResponse.json()
+  console.log('[mp-webhook] Payment status:', payment.status, 'userId:', payment.external_reference)
 
-    console.log('[mp-webhook] Pagamento:', {
-      id: payment.id,
-      status: payment.status,
-      external_reference: payment.external_reference,
-      amount: payment.transaction_amount,
-      method: payment.payment_type_id,
-    })
+  if (payment.status !== 'approved') return ok()
 
-    // Só ativa premium para pagamentos aprovados
-    if (payment.status !== 'approved') {
-      return res.status(200).json({ ok: true, message: `Status ${payment.status} ignorado` })
-    }
+  const userId = payment.external_reference
+  if (!userId) {
+    console.error('[mp-webhook] userId não encontrado no pagamento')
+    return new Response('Missing userId', { status: 400 })
+  }
 
-    const userId = payment.external_reference
-    if (!userId) {
-      console.error('[mp-webhook] external_reference (userId) não encontrado')
-      return res.status(400).json({ error: 'userId não encontrado no pagamento' })
-    }
-
-    // Conecta ao Supabase com service key (bypassa RLS)
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-
-    // Chama a função SQL que ativa o premium
-    const { error } = await supabase.rpc('activate_premium', {
+  // Chama a função activate_premium via Supabase REST
+  const rpcRes = await fetch(`${supabaseUrl}/rest/v1/rpc/activate_premium`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': serviceKey,
+      'Authorization': `Bearer ${serviceKey}`,
+    },
+    body: JSON.stringify({
       p_user_id: userId,
       p_mp_payment_id: String(payment.id),
       p_mp_preference_id: payment.preference_id ?? '',
       p_amount: payment.transaction_amount,
       p_payment_method: payment.payment_type_id ?? 'unknown',
-    })
+    }),
+  })
 
-    if (error) {
-      console.error('[mp-webhook] Erro ao ativar premium no Supabase:', error)
-      return res.status(500).json({ error: 'Erro ao ativar premium' })
-    }
-
-    console.log('[mp-webhook] ✅ Premium ativado para userId:', userId)
-    return res.status(200).json({ ok: true, message: 'Premium ativado com sucesso' })
-
-  } catch (error) {
-    console.error('[mp-webhook] Erro interno:', error)
-    return res.status(500).json({ error: 'Erro interno do servidor' })
+  if (!rpcRes.ok) {
+    const err = await rpcRes.text()
+    console.error('[mp-webhook] Erro activate_premium:', err)
+    return new Response('DB error', { status: 500 })
   }
+
+  console.log('[mp-webhook] ✅ Premium ativado para userId:', userId)
+  return ok()
 }

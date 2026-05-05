@@ -1,73 +1,75 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node'
+export const config = { runtime: 'edge' }
 
-const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+}
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
-  }
+function json(data: unknown, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...CORS },
+  })
+}
 
-  const { userId, userEmail } = req.body
+export default async function handler(req: Request) {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: CORS })
+  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
-  if (!userId || !userEmail) {
-    return res.status(400).json({ error: 'userId e userEmail são obrigatórios' })
-  }
+  const accessToken = process.env.MP_ACCESS_TOKEN
+  if (!accessToken) return json({ error: 'MP_ACCESS_TOKEN não configurado no Vercel' }, 500)
 
-  if (!MP_ACCESS_TOKEN) {
-    return res.status(500).json({ error: 'MP_ACCESS_TOKEN não configurado' })
-  }
-
+  let userId: string, userEmail: string
   try {
-    const preference = {
-      items: [
-        {
-          id: 'surf-ai-premium-mensal',
-          title: 'Surf AI Premium — Mensal',
-          description: 'Acesso completo ao Surf AI Floripa por 30 dias',
-          quantity: 1,
-          currency_id: 'BRL',
-          unit_price: 29.90,
-        },
-      ],
-      payer: {
-        email: userEmail,
-      },
-      back_urls: {
-        success: `${process.env.VITE_APP_URL ?? 'https://surfaifloripa.com.br'}/premium?status=success`,
-        failure: `${process.env.VITE_APP_URL ?? 'https://surfaifloripa.com.br'}/premium?status=failure`,
-        pending: `${process.env.VITE_APP_URL ?? 'https://surfaifloripa.com.br'}/premium?status=pending`,
-      },
-      auto_return: 'approved',
-      external_reference: userId,
-      notification_url: `${process.env.VITE_APP_URL ?? 'https://surfaifloripa.com.br'}/api/mp-webhook`,
-      statement_descriptor: 'SURF AI FLORIPA',
-      expires: false,
-    }
-
-    const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${MP_ACCESS_TOKEN}`,
-      },
-      body: JSON.stringify(preference),
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json()
-      console.error('[create-payment] Erro do MP:', errorData)
-      return res.status(500).json({ error: 'Erro ao criar preferência no Mercado Pago' })
-    }
-
-    const data = await response.json()
-
-    return res.status(200).json({
-      id: data.id,
-      init_point: data.init_point,         // URL de pagamento (produção)
-      sandbox_init_point: data.sandbox_init_point, // URL de pagamento (teste)
-    })
-  } catch (error) {
-    console.error('[create-payment] Erro interno:', error)
-    return res.status(500).json({ error: 'Erro interno do servidor' })
+    const body = await req.json() as { userId: string; userEmail: string }
+    userId = body.userId
+    userEmail = body.userEmail
+  } catch {
+    return json({ error: 'Body inválido' }, 400)
   }
+
+  if (!userId || !userEmail) return json({ error: 'userId e userEmail são obrigatórios' }, 400)
+
+  const baseUrl = process.env.VITE_APP_URL ?? 'https://surf-ai-floripa.vercel.app'
+
+  const preference = {
+    items: [{
+      id: 'surf-ai-premium-mensal',
+      title: 'Surf AI Premium — Mensal',
+      description: 'Acesso completo ao Surf AI Floripa por 30 dias',
+      quantity: 1,
+      currency_id: 'BRL',
+      unit_price: 29.90,
+    }],
+    payer: { email: userEmail },
+    external_reference: userId,
+    back_urls: {
+      success: `${baseUrl}/premium?status=success`,
+      failure: `${baseUrl}/premium?status=failure`,
+      pending: `${baseUrl}/premium?status=pending`,
+    },
+    auto_return: 'approved',
+    notification_url: `${baseUrl}/api/mp-webhook`,
+    statement_descriptor: 'SURF AI FLORIPA',
+    expires: false,
+  }
+
+  const mpRes = await fetch('https://api.mercadopago.com/checkout/preferences', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(preference),
+  })
+
+  if (!mpRes.ok) {
+    const err = await mpRes.text()
+    console.error('[create-payment] MP error:', err)
+    return json({ error: 'Erro ao criar preferência no Mercado Pago' }, 500)
+  }
+
+  const data = await mpRes.json() as { id: string; init_point: string; sandbox_init_point: string }
+  return json({ id: data.id, init_point: data.init_point, sandbox_init_point: data.sandbox_init_point })
 }

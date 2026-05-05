@@ -1,8 +1,8 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Check, Crown, Loader2 } from 'lucide-react'
+import { ArrowLeft, Check, Crown, Loader2, CheckCircle2, XCircle, Clock } from 'lucide-react'
 import { createMercadoPagoCheckout, usePremium } from '@/lib/premium'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -19,10 +19,20 @@ const PREMIUM_BENEFITS = [
 
 export default function PremiumPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { user } = useAuth()
   const { isPremium, loading: loadingStatus } = usePremium()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const paymentStatus = searchParams.get('status') as 'success' | 'failure' | 'pending' | null
+
+  useEffect(() => {
+    if (paymentStatus === 'success') {
+      // Limpa os params da URL sem recarregar
+      window.history.replaceState({}, '', '/premium')
+    }
+  }, [paymentStatus])
 
   const handleSubscribe = async () => {
     if (!user) { navigate('/login'); return }
@@ -70,6 +80,35 @@ export default function PremiumPage() {
             Tudo que um surfista de Floripa precisa para não perder nenhuma boa sessão.
           </p>
         </div>
+
+        {/* Retorno do pagamento */}
+        {paymentStatus === 'success' && !isPremium && (
+          <div className="flex items-start gap-3 p-4 rounded-2xl border border-green-500/30 bg-green-500/5">
+            <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-sm text-green-500">Pagamento confirmado!</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Seu acesso Premium está sendo ativado. Pode levar alguns segundos.</p>
+            </div>
+          </div>
+        )}
+        {paymentStatus === 'pending' && (
+          <div className="flex items-start gap-3 p-4 rounded-2xl border border-yellow-500/30 bg-yellow-500/5">
+            <Clock className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-sm text-yellow-500">Pagamento em análise</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Boleto ou PIX pode levar até 1 dia útil para confirmar.</p>
+            </div>
+          </div>
+        )}
+        {paymentStatus === 'failure' && (
+          <div className="flex items-start gap-3 p-4 rounded-2xl border border-destructive/30 bg-destructive/5">
+            <XCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-sm text-destructive">Pagamento não concluído</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Tente novamente ou use outro método de pagamento.</p>
+            </div>
+          </div>
+        )}
 
         {/* Já é premium */}
         {!loadingStatus && isPremium && (

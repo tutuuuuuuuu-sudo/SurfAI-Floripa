@@ -30,10 +30,8 @@ export default function ProfilePage() {
   const [bioInput, setBioInput] = useState('')
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-  const [showPhotoOptions, setShowPhotoOptions] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const cameraInputRef = useRef<HTMLInputElement>(null)
 
   const userName = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? user?.email?.split('@')[0] ?? 'Surfista'
   const userInitial = userName.charAt(0).toUpperCase()
@@ -126,9 +124,8 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
-        onChange={e => e.target.files?.[0] && handlePhotoUpload(e.target.files[0])} />
-      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden"
+      <input ref={fileInputRef} id="photo-file-input" type="file"
+        accept="image/*,image/heic,image/heif" className="hidden"
         onChange={e => e.target.files?.[0] && handlePhotoUpload(e.target.files[0])} />
 
       {/* ✅ Header sem ThemeToggle */}
@@ -151,45 +148,29 @@ export default function ProfilePage() {
           <CardContent className="pb-5 -mt-8">
             <div className="flex items-end justify-between">
               <div className="relative">
-                <div
-                  className="w-20 h-20 rounded-full bg-primary/20 border-4 border-background flex items-center justify-center overflow-hidden shadow-lg cursor-pointer"
-                  onClick={() => setShowPhotoOptions(!showPhotoOptions)}
-                >
-                  {uploadingPhoto ? (
-                    <div className="w-full h-full flex items-center justify-center bg-muted/50">
-                      <Waves className="h-6 w-6 text-primary animate-bounce" />
+                <label htmlFor="photo-file-input" className="cursor-pointer block">
+                  <div className="w-20 h-20 rounded-full bg-primary/20 border-4 border-background flex items-center justify-center overflow-hidden shadow-lg">
+                    {uploadingPhoto ? (
+                      <div className="w-full h-full flex items-center justify-center bg-muted/50">
+                        <Waves className="h-6 w-6 text-primary animate-bounce" />
+                      </div>
+                    ) : avatarUrl ? (
+                      <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-3xl font-bold text-primary">{userInitial}</span>
+                    )}
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity rounded-full">
+                      <Camera className="h-5 w-5 text-white" />
                     </div>
-                  ) : avatarUrl ? (
-                    <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-3xl font-bold text-primary">{userInitial}</span>
-                  )}
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity rounded-full">
-                    <Camera className="h-5 w-5 text-white" />
                   </div>
-                </div>
+                </label>
+                <label htmlFor="photo-file-input"
+                  className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background cursor-pointer">
+                  <Camera className="h-3 w-3 text-white" />
+                </label>
                 {isPremium && (
                   <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-yellow-500 flex items-center justify-center border-2 border-background">
                     <Crown className="h-3 w-3 text-white" />
-                  </div>
-                )}
-                {showPhotoOptions && (
-                  <div className="absolute top-full left-0 mt-2 z-50 bg-card border border-border rounded-xl shadow-xl overflow-hidden min-w-[180px]"
-                    style={{ animation: 'fadeIn 0.15s ease-out' }}>
-                    <button onClick={() => { setShowPhotoOptions(false); fileInputRef.current?.click() }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted/50 transition-colors text-left">
-                      <Image className="h-4 w-4 text-primary" />Escolher da galeria
-                    </button>
-                    <Separator />
-                    <button onClick={() => { setShowPhotoOptions(false); cameraInputRef.current?.click() }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted/50 transition-colors text-left">
-                      <Camera className="h-4 w-4 text-primary" />Tirar foto
-                    </button>
-                    <Separator />
-                    <button onClick={() => setShowPhotoOptions(false)}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-muted-foreground hover:bg-muted/50 transition-colors text-left">
-                      <X className="h-4 w-4" />Cancelar
-                    </button>
                   </div>
                 )}
               </div>
