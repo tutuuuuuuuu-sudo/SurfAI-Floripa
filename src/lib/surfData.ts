@@ -34,16 +34,11 @@ export interface BeachCondition {
   level: 'Iniciante' | 'Intermediário' | 'Avançado'
   boardSuggestion: string
   waterConditions: WaterConditions
-  crowdLevel: 'Vazio' | 'Pouca gente' | 'Cheio'
-  crowdMessage: string
   bestTimeWindow: string
   sunrise?: string
   sunset?: string
   lat: number
   lng: number
-  cameraUrl?: string
-  cameraEmbed?: string
-  cameraSource?: string
 }
 
 // Cache de maré real para Floripa (lat -27.62, lng -48.48)
@@ -187,24 +182,6 @@ const getTide = (): 'Enchendo' | 'Secando' | 'Cheia' | 'Vazia' => {
   return 'Vazia'
 }
 
-const getCrowdLevel = (score: number): 'Vazio' | 'Pouca gente' | 'Cheio' => {
-  const hour = new Date().getHours()
-  const isWeekend = [0, 6].includes(new Date().getDay())
-  const isPeakHour = hour >= 7 && hour <= 11
-  // Estimativa baseada em score, hora e dia da semana
-  if (score >= 7.5 && isPeakHour && isWeekend) return 'Cheio'
-  if (score >= 7 && isPeakHour) return 'Pouca gente'
-  if (score >= 6.5 && isWeekend) return 'Pouca gente'
-  return 'Vazio'
-}
-
-const getCrowdMessage = (crowdLevel: string): string => {
-  const base = '⚠️ Estimativa baseada em score, hora e dia'
-  if (crowdLevel === 'Cheio') return `Tendência de crowd alto · ${base}`
-  if (crowdLevel === 'Pouca gente') return `Tendência de crowd moderado · ${base}`
-  return `Tendência de crowd baixo · ${base}`
-}
-
 const getLevel = (waveHeight: number): 'Iniciante' | 'Intermediário' | 'Avançado' => {
   if (waveHeight > 1.0) return 'Avançado'
   if (waveHeight >= 0.5) return 'Intermediário'
@@ -238,24 +215,6 @@ function getWindAnalysis(windDir: string, windSpeed: number, beachOrientation: n
   if (diff <= 45) return `Vento ${windDir} ${windSpeed}km/h deixando o mar limpo e organizado. `
   if (diff <= 90) return `Vento ${windDir} ${windSpeed}km/h lateral, pode atrapalhar um pouco. `
   return `Vento ${windDir} ${windSpeed}km/h frontal bagunçando as ondas. `
-}
-
-const CAMERAS: Record<string, { cameraUrl: string, cameraEmbed: string, cameraSource: string }> = {
-  'barra-lagoa': {
-    cameraUrl: 'https://www.skylinewebcams.com/webcam/brasil/santa-catarina/florianopolis/barra-da-lagoa.html',
-    cameraEmbed: 'https://www.skylinewebcams.com/embed/barra-da-lagoa.html',
-    cameraSource: 'SkylineWebcams',
-  },
-  'joaquina': {
-    cameraUrl: 'https://www.windy.com/webcams/1385233278',
-    cameraEmbed: 'https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=mm&metricTemp=°C&metricWind=km/h&zoom=13&overlay=wind&product=ecmwf&level=surface&lat=-27.6294&lon=-48.449&detail=true&webcam=1385233278',
-    cameraSource: 'Windy Webcams',
-  },
-  'mole': {
-    cameraUrl: 'https://www.skylinewebcams.com/webcam/brasil/santa-catarina/florianopolis/florianopolis.html',
-    cameraEmbed: 'https://www.skylinewebcams.com/embed/florianopolis.html',
-    cameraSource: 'SkylineWebcams',
-  },
 }
 
 // ✅ Canajurê REMOVIDO
@@ -415,7 +374,6 @@ export async function fetchCurrentConditions(): Promise<BeachCondition[]> {
       const windDirection = (windyData?.windDirection ?? 'N').split(' ')[0].split('(')[0].trim()
 
       const score = calculateScore(waveHeight, windSpeed, swellPeriod, windDirection, beach.orientation)
-      const crowdLevel = getCrowdLevel(score)
 
       let subRegions = undefined
       if ((beach as any).subRegions?.length > 0) {
@@ -431,19 +389,15 @@ export async function fetchCurrentConditions(): Promise<BeachCondition[]> {
         }))
       }
 
-      const camera = CAMERAS[beach.id]
-
       return {
         id: beach.id, name: beach.name, region: beach.region, subRegions,
         score, waveHeight, windSpeed, windDirection, swellDirection, swellPeriod, tide,
         tideHeight: tideInfo.height, level: getLevel(waveHeight),
         boardSuggestion: getBoardSuggestion(waveHeight),
         waterConditions: { temperature: waterTemp, wetsuit: getWetsuitInfo(waterTemp) },
-        crowdLevel, crowdMessage: getCrowdMessage(crowdLevel),
         bestTimeWindow: calculateBestWindow(windyData, beach.orientation),
         sunrise: windyData?.sunrise, sunset: windyData?.sunset,
         lat: beach.lat, lng: beach.lng,
-        cameraUrl: camera?.cameraUrl, cameraEmbed: camera?.cameraEmbed, cameraSource: camera?.cameraSource,
         _beachOrientation: beach.orientation,
       } as BeachCondition & { _beachOrientation: number }
     })

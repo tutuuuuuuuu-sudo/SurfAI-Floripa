@@ -138,11 +138,6 @@ export const PREMIUM_BENEFITS = [
     desc: 'Receba notificações push quando as condições estiverem perfeitas',
   },
   {
-    icon: '📷',
-    title: 'Câmeras ao vivo',
-    desc: 'Acesse as câmeras ao vivo de todas as praias disponíveis',
-  },
-  {
     icon: '📊',
     title: 'Histórico de condições',
     desc: 'Consulte como estava o mar nos últimos 7 dias',
