@@ -6,7 +6,8 @@ import {
   Waves, Zap, Bell, BarChart3, Clock, Shield,
   ArrowRight, CheckCircle2, Wind, TrendingUp,
   MapPin, Crown, ChevronRight, ChevronDown, X, Check,
-  Star, Quote, Droplets
+  Star, Quote, Droplets, Timer, Flame, Lock,
+  Smartphone
 } from 'lucide-react'
 
 // ─── Dados ───────────────────────────────────────────────────────────────────
@@ -21,9 +22,10 @@ const FEATURES = [
 ]
 
 const TESTIMONIALS = [
-  { name: 'Lucas T.', role: 'Intermediário · Coqueiros', avatar: 'LT', stars: 5, text: 'Fui na Mole ontem cedo, o score tava 8.4. Mar perfeito, quase vazio. Antes eu ia no achismo e volta bastante frustrado. Agora pelo menos sei antes de sair de casa.' },
+  { name: 'Lucas T.', role: 'Intermediário · Coqueiros', avatar: 'LT', stars: 5, text: 'Fui na Mole ontem cedo, o score tava 8.4. Mar perfeito, quase vazio. Antes eu ia no achismo e voltava bastante frustrado. Agora pelo menos sei antes de sair de casa.' },
   { name: 'Ana F.', role: 'Iniciante · Norte da ilha', avatar: 'AF', stars: 4, text: 'Pra mim que sou iniciante foi ótimo porque sempre fui na praia errada. Agora olho quais tão mais calmas e vou pra lá. Simples assim. Não perco mais tempo.' },
-  { name: 'Bruno M.', role: 'Surfista · Campeche', avatar: 'BM', stars: 5, text: 'Usei pra planejar a semana de folga. Dos 6 dias que fui, 5 o mar tava bom mesmo. Não é 100% obvio mas bem melhor do que depender de grupo de whatsapp.' },
+  { name: 'Bruno M.', role: 'Surfista · Campeche', avatar: 'BM', stars: 5, text: 'Usei pra planejar a semana de folga. Dos 6 dias que fui, 5 o mar tava bom mesmo. Não é 100% mas bem melhor do que depender de grupo de WhatsApp.' },
+  { name: 'Rafael S.', role: 'Avançado · Joaquina', avatar: 'RS', stars: 5, text: 'O alerta de ondas mudou meu jogo. Acordo com a notificação, chego no pico quando ainda tá vazio. Melhor investimento do mês.' },
 ]
 
 const PLAN_FEATURES = [
@@ -62,7 +64,60 @@ const MOCK_SPOTS = [
   { beach: 'Santinho', score: 4.2, wave: '0.6m', wind: '25km/h', period: '7s', color: '#f59e0b', label: 'REGULAR' },
 ]
 
+const PAIN_POINTS = [
+  { emoji: '😤', problem: 'Chegou na praia e o mar estava péssimo', solution: 'Score em tempo real antes de sair de casa' },
+  { emoji: '⏰', problem: 'Perdeu o horário de pico porque não sabia', solution: 'Alertas quando seu spot atingir o score ideal' },
+  { emoji: '📍', problem: 'Sempre vai na mesma praia sem saber se tem melhor opção', solution: 'Compare 17 praias lado a lado em segundos' },
+]
+
 // ─── Sub-componentes ──────────────────────────────────────────────────────────
+
+function CountdownTimer() {
+  const [time, setTime] = useState({ h: 2, m: 47, s: 33 })
+
+  useEffect(() => {
+    const t = setInterval(() => {
+      setTime(prev => {
+        let { h, m, s } = prev
+        s--
+        if (s < 0) { s = 59; m-- }
+        if (m < 0) { m = 59; h-- }
+        if (h < 0) { h = 2; m = 47; s = 33 }
+        return { h, m, s }
+      })
+    }, 1000)
+    return () => clearInterval(t)
+  }, [])
+
+  return (
+    <div className="flex items-center gap-1.5 text-yellow-400 font-mono font-bold text-sm">
+      <Timer className="h-3.5 w-3.5" />
+      <span>{String(time.h).padStart(2, '0')}:{String(time.m).padStart(2, '0')}:{String(time.s).padStart(2, '0')}</span>
+    </div>
+  )
+}
+
+function SocialProofBar() {
+  const [count, setCount] = useState(247)
+
+  useEffect(() => {
+    const t = setInterval(() => {
+      setCount(c => c + (Math.random() > 0.7 ? 1 : 0))
+    }, 8000)
+    return () => clearInterval(t)
+  }, [])
+
+  return (
+    <div className="sticky top-0 z-[60] py-2 px-4 text-center text-xs font-semibold flex items-center justify-center gap-2"
+      style={{ background: 'oklch(0.55 0.16 200)', color: 'white' }}>
+      <Flame className="h-3.5 w-3.5 flex-shrink-0" />
+      <span>
+        <span className="font-black">{count} surfistas</span> estão usando agora · Acesso gratuito disponível
+      </span>
+      <Flame className="h-3.5 w-3.5 flex-shrink-0" />
+    </div>
+  )
+}
 
 function AppMockup() {
   const [active, setActive] = useState(0)
@@ -274,6 +329,27 @@ function PlanCell({ value }: { value: boolean | string }) {
   return <span className="text-xs font-semibold text-primary">{value}</span>
 }
 
+function FloatingCTA({ onClick }: { onClick: () => void }) {
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > 500)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  return (
+    <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8 pointer-events-none'}`}>
+      <Button size="lg" onClick={onClick}
+        className="font-bold px-8 h-12 text-sm shadow-2xl bg-primary hover:bg-primary/90 rounded-full"
+        style={{ boxShadow: '0 0 32px oklch(0.6 0.16 200 / 0.5), 0 8px 24px rgba(0,0,0,0.4)' }}>
+        Criar conta grátis
+        <ArrowRight className="h-4 w-4 ml-2" />
+      </Button>
+    </div>
+  )
+}
+
 // ─── Página principal ─────────────────────────────────────────────────────────
 
 export default function Landing() {
@@ -282,8 +358,11 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
 
+      {/* BARRA DE PROVA SOCIAL */}
+      <SocialProofBar />
+
       {/* NAV */}
-      <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/40">
+      <nav className="sticky top-8 z-50 bg-background/80 backdrop-blur-xl border-b border-border/40">
         <div className="container mx-auto px-5 py-3 flex items-center justify-between max-w-6xl">
           <div className="flex items-center gap-2.5">
             <div className="h-8 w-8 rounded-xl flex items-center justify-center"
@@ -377,6 +456,24 @@ export default function Landing() {
                   </span>
                 ))}
               </div>
+
+              {/* Mini prova social no hero */}
+              <div className="flex items-center gap-3 pt-1">
+                <div className="flex -space-x-2">
+                  {['LT', 'AF', 'BM', 'RS'].map((initials, i) => (
+                    <div key={i} className="h-8 w-8 rounded-full border-2 border-background flex items-center justify-center text-[9px] font-black"
+                      style={{ background: `oklch(${0.5 + i * 0.05} 0.12 ${200 + i * 30})`, color: 'white' }}>
+                      {initials}
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <div className="flex items-center gap-1 mb-0.5">
+                    {[1, 2, 3, 4, 5].map(i => <Star key={i} className="h-3 w-3 text-yellow-400 fill-yellow-400" />)}
+                  </div>
+                  <p className="text-xs text-muted-foreground">+200 surfistas de Floripa já usam</p>
+                </div>
+              </div>
             </div>
 
             {/* Mockup do celular */}
@@ -401,8 +498,38 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* COMO FUNCIONA — movido para cima */}
+      {/* DOR → SOLUÇÃO */}
       <section className="py-20">
+        <div className="container mx-auto px-5 max-w-4xl">
+          <div className="text-center mb-12">
+            <Badge variant="outline" className="border-red-500/30 text-red-400 bg-red-500/5 mb-4 px-4 py-1">
+              Reconhece alguma situação?
+            </Badge>
+            <h2 className="text-3xl md:text-4xl font-black mb-4">
+              Chegar na praia e o mar estar péssimo<br />
+              <span className="text-muted-foreground font-medium text-2xl">é frustrante — e evitável.</span>
+            </h2>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-5">
+            {PAIN_POINTS.map(({ emoji, problem, solution }) => (
+              <div key={problem} className="rounded-2xl border border-border/50 bg-card/40 p-6 space-y-4">
+                <div className="text-3xl">{emoji}</div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground/80 mb-3 line-through decoration-red-400/60">{problem}</p>
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-green-400 font-semibold">{solution}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* COMO FUNCIONA */}
+      <section className="py-20 border-t border-border/30">
         <div className="container mx-auto px-5 max-w-5xl">
           <div className="text-center mb-14">
             <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 mb-4 px-4 py-1">
@@ -415,7 +542,6 @@ export default function Landing() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 relative">
-            {/* Linha conectora (desktop) */}
             <div className="hidden md:block absolute top-12 left-[calc(16.67%+16px)] right-[calc(16.67%+16px)] h-px"
               style={{ background: 'linear-gradient(90deg, oklch(0.6 0.16 200 / 0.5), oklch(0.6 0.16 200 / 0.2))' }} />
 
@@ -467,9 +593,7 @@ export default function Landing() {
             {FEATURES.map(({ icon: Icon, title, desc, color, bg, border }) => (
               <div key={title}
                 className="group rounded-2xl border bg-card/50 p-6 hover:bg-card transition-all duration-300 cursor-default"
-                style={{ borderColor: 'oklch(0.3 0.03 240)' }}
-                onMouseEnter={e => (e.currentTarget.style.borderColor = border.replace('border-', '').replace('/20', '').replace('/20', ''))}
-              >
+                style={{ borderColor: 'oklch(0.3 0.03 240)' }}>
                 <div className={`h-11 w-11 rounded-xl ${bg} border ${border} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
                   <Icon className={`h-5 w-5 ${color}`} />
                 </div>
@@ -497,7 +621,7 @@ export default function Landing() {
             </div>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-5">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
             {TESTIMONIALS.map(({ name, role, avatar, stars, text }) => (
               <div key={name}
                 className="rounded-2xl border border-border/50 bg-card/60 p-6 flex flex-col gap-4 hover:border-primary/30 hover:bg-card transition-all duration-300">
@@ -525,20 +649,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* FAQ — movido para cima */}
-      <section className="py-20 border-t border-border/30">
-        <div className="container mx-auto px-5 max-w-2xl">
-          <div className="text-center mb-14">
-            <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 mb-4 px-4 py-1">FAQ</Badge>
-            <h2 className="text-3xl md:text-4xl font-black mb-4">Ainda com dúvida?<br />A gente responde.</h2>
-            <p className="text-muted-foreground">Perguntas que todo surfista faz antes de baixar.</p>
-          </div>
-          <div className="space-y-3">
-            {FAQS.map(faq => <FAQItem key={faq.q} q={faq.q} a={faq.a} />)}
-          </div>
-        </div>
-      </section>
-
       {/* COMPARATIVO PLANOS */}
       <section className="py-20 border-t border-border/30">
         <div className="container mx-auto px-5 max-w-3xl">
@@ -555,8 +665,11 @@ export default function Landing() {
                 <div className="text-sm font-bold">Grátis</div>
                 <div className="text-xs text-muted-foreground">R$ 0</div>
               </div>
-              <div className="p-4 text-center border-l border-border/50"
+              <div className="p-4 text-center border-l border-border/50 relative"
                 style={{ background: 'oklch(0.6 0.16 200 / 0.08)' }}>
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <Badge className="bg-primary text-primary-foreground text-[9px] px-2 py-0.5 font-black">POPULAR</Badge>
+                </div>
                 <div className="text-sm font-bold text-primary flex items-center justify-center gap-1.5">
                   <Crown className="h-3.5 w-3.5 text-yellow-400" />Premium
                 </div>
@@ -655,6 +768,12 @@ export default function Landing() {
                   <div className="text-xs text-muted-foreground mt-1">Cancele quando quiser</div>
                 </div>
 
+                {/* Urgência no premium */}
+                <div className="rounded-xl border border-yellow-500/20 bg-yellow-500/5 px-4 py-3 text-center md:text-right">
+                  <div className="text-xs text-yellow-400 font-semibold mb-1">Oferta por tempo limitado</div>
+                  <CountdownTimer />
+                </div>
+
                 <Button size="lg" onClick={() => navigate('/login?plan=premium')}
                   className="w-full md:w-auto font-bold px-10 h-12 text-base"
                   style={{
@@ -675,6 +794,80 @@ export default function Landing() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* INSTALAÇÃO PWA */}
+      <section className="py-20 border-t border-border/30">
+        <div className="container mx-auto px-5 max-w-4xl">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div className="space-y-6">
+              <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 px-4 py-1">
+                <Smartphone className="h-3 w-3 mr-1.5" />
+                Funciona como app nativo
+              </Badge>
+              <h2 className="text-3xl md:text-4xl font-black">
+                Sem baixar nada.<br />
+                <span className="text-primary">Vai direto pra tela inicial.</span>
+              </h2>
+              <p className="text-muted-foreground leading-relaxed">
+                O Surf AI é um PWA — funciona igual a um app, sem ocupar espaço da loja. Acesse pelo Safari ou Chrome e adicione à tela inicial em segundos.
+              </p>
+              <div className="space-y-3">
+                {[
+                  { icon: Zap, text: 'Carregamento ultra rápido, mesmo com sinal fraco' },
+                  { icon: Bell, text: 'Notificações push igual app nativo' },
+                  { icon: Lock, text: 'Seguro e sem permissões desnecessárias' },
+                ].map(({ icon: Icon, text }) => (
+                  <div key={text} className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
+                      <Icon className="h-4 w-4 text-primary" />
+                    </div>
+                    <span className="text-sm text-muted-foreground">{text}</span>
+                  </div>
+                ))}
+              </div>
+              <Button onClick={() => navigate('/login')} className="font-bold bg-primary hover:bg-primary/90"
+                style={{ boxShadow: '0 0 20px oklch(0.6 0.16 200 / 0.3)' }}>
+                Acessar agora
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </div>
+
+            {/* Visual de instalação */}
+            <div className="flex flex-col gap-4">
+              {[
+                { step: '1', title: 'Abra no seu navegador', desc: 'Safari (iOS) ou Chrome (Android)', icon: Waves },
+                { step: '2', title: 'Toque em "Adicionar à Tela Inicial"', desc: 'No menu de compartilhamento ou nos 3 pontinhos', icon: Smartphone },
+                { step: '3', title: 'Pronto, é isso!', desc: 'Ícone na tela inicial, notificações ativas', icon: CheckCircle2 },
+              ].map(({ step, title, desc, icon: Icon }) => (
+                <div key={step} className="flex items-center gap-4 rounded-xl border border-border/40 bg-card/40 p-4">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-sm font-black text-primary flex-shrink-0">
+                    {step}
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold">{title}</div>
+                    <div className="text-xs text-muted-foreground">{desc}</div>
+                  </div>
+                  <Icon className="h-5 w-5 text-primary/30 ml-auto flex-shrink-0" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="py-20 border-t border-border/30">
+        <div className="container mx-auto px-5 max-w-2xl">
+          <div className="text-center mb-14">
+            <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 mb-4 px-4 py-1">FAQ</Badge>
+            <h2 className="text-3xl md:text-4xl font-black mb-4">Ainda com dúvida?<br />A gente responde.</h2>
+            <p className="text-muted-foreground">Perguntas que todo surfista faz antes de baixar.</p>
+          </div>
+          <div className="space-y-3">
+            {FAQS.map(faq => <FAQItem key={faq.q} q={faq.q} a={faq.a} />)}
           </div>
         </div>
       </section>
@@ -714,6 +907,22 @@ export default function Landing() {
                   </span>
                 ))}
               </div>
+
+              {/* Segurança no CTA final */}
+              <div className="flex items-center justify-center gap-4 mt-6 pt-6 border-t border-border/30">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+                  <Lock className="h-3 w-3" />
+                  <span>Pagamento seguro</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+                  <Shield className="h-3 w-3" />
+                  <span>Seus dados protegidos</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+                  <CheckCircle2 className="h-3 w-3" />
+                  <span>Sem compromisso</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -743,6 +952,9 @@ export default function Landing() {
           </div>
         </div>
       </footer>
+
+      {/* CTA FLUTUANTE */}
+      <FloatingCTA onClick={() => navigate('/login')} />
 
     </div>
   )
