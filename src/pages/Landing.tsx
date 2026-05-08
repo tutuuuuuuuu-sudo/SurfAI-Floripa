@@ -297,7 +297,13 @@ function AnimatedNumber({ value, suffix }: { value: number; suffix: string }) {
 function FAQItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false)
   return (
-    <div className="border border-border/50 rounded-2xl overflow-hidden transition-all duration-200 hover:border-primary/30">
+    <div className="rounded-2xl overflow-hidden transition-all duration-200"
+      style={{
+        background: 'oklch(1 0 0 / 0.02)',
+        border: '1px solid oklch(1 0 0 / 0.07)',
+        backdropFilter: 'blur(12px)',
+        boxShadow: '0 2px 16px oklch(0 0 0 / 0.1), inset 0 1px 0 oklch(1 0 0 / 0.05)',
+      }}>
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between p-5 text-left hover:bg-card/60 transition-colors"
@@ -348,13 +354,24 @@ export default function Landing() {
   const navigate = useNavigate()
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
+    <div className="min-h-screen bg-background text-foreground overflow-x-hidden relative">
+
+      {/* CAMADAS DE FUNDO GLOBAIS */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] rounded-full blur-[120px] opacity-[0.07]"
+          style={{ background: 'oklch(0.6 0.22 220)' }} />
+        <div className="absolute top-1/3 right-0 w-[500px] h-[500px] rounded-full blur-[120px] opacity-[0.05]"
+          style={{ background: 'oklch(0.65 0.2 290)' }} />
+        <div className="absolute bottom-1/4 left-0 w-[400px] h-[400px] rounded-full blur-[100px] opacity-[0.04]"
+          style={{ background: 'oklch(0.6 0.18 160)' }} />
+      </div>
 
       {/* BARRA DE PROVA SOCIAL */}
       <SocialProofBar />
 
       {/* NAV */}
-      <nav className="sticky top-8 z-50 bg-background/80 backdrop-blur-xl border-b border-border/40">
+      <nav className="sticky top-8 z-50 backdrop-blur-xl border-b"
+        style={{ background: 'oklch(var(--background) / 0.6)', borderColor: 'oklch(1 0 0 / 0.06)' }}>
         <div className="container mx-auto px-5 py-3 flex items-center justify-between max-w-6xl">
           <div className="flex items-center gap-2.5">
             <div className="h-8 w-8 rounded-xl flex items-center justify-center"
@@ -383,12 +400,14 @@ export default function Landing() {
 
       {/* HERO */}
       <section className="relative pt-16 pb-20 overflow-hidden">
-        {/* Background glow */}
+        {/* Background glow hero */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full blur-3xl opacity-20"
-            style={{ background: 'radial-gradient(ellipse, oklch(0.6 0.16 200), transparent 70%)' }} />
-          <div className="absolute bottom-0 right-0 w-[400px] h-[300px] rounded-full blur-3xl opacity-10"
-            style={{ background: 'radial-gradient(ellipse, oklch(0.7 0.18 280), transparent 70%)' }} />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full blur-[100px] opacity-25"
+            style={{ background: 'radial-gradient(ellipse, oklch(0.6 0.2 210), transparent 70%)' }} />
+          <div className="absolute bottom-0 right-0 w-[500px] h-[400px] rounded-full blur-[80px] opacity-10"
+            style={{ background: 'radial-gradient(ellipse, oklch(0.65 0.2 280), transparent 70%)' }} />
+          <div className="absolute top-1/2 left-0 w-[300px] h-[300px] rounded-full blur-[80px] opacity-08"
+            style={{ background: 'radial-gradient(ellipse, oklch(0.6 0.18 160), transparent 70%)' }} />
         </div>
 
         <div className="container mx-auto px-5 max-w-6xl relative">
@@ -429,13 +448,22 @@ export default function Landing() {
 
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button size="lg" onClick={() => navigate('/login')}
-                  className="text-base font-bold px-8 h-12 bg-primary hover:bg-primary/90 flex-1 sm:flex-none"
-                  style={{ boxShadow: '0 0 32px oklch(0.6 0.16 200 / 0.4)' }}>
+                  className="text-base font-bold px-8 h-12 flex-1 sm:flex-none relative overflow-hidden"
+                  style={{
+                    background: 'oklch(0.6 0.2 210)',
+                    boxShadow: '0 0 40px oklch(0.6 0.2 210 / 0.5), 0 0 80px oklch(0.6 0.2 210 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.15)',
+                  }}>
                   Criar conta grátis
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
                 <Button size="lg" variant="outline" onClick={() => navigate('/login?plan=premium')}
-                  className="text-base font-bold px-8 h-12 border-yellow-500/40 hover:border-yellow-500/60 hover:bg-yellow-500/5 flex-1 sm:flex-none">
+                  className="text-base font-bold px-8 h-12 flex-1 sm:flex-none"
+                  style={{
+                    background: 'oklch(0.65 0.18 50 / 0.06)',
+                    borderColor: 'oklch(0.65 0.18 50 / 0.35)',
+                    backdropFilter: 'blur(12px)',
+                    boxShadow: '0 0 20px oklch(0.65 0.18 50 / 0.1), inset 0 1px 0 oklch(1 0 0 / 0.08)',
+                  }}>
                   <Crown className="h-4 w-4 mr-2 text-yellow-400" />
                   Ver Premium
                 </Button>
@@ -477,7 +505,8 @@ export default function Landing() {
       </section>
 
       {/* STATS */}
-      <section className="py-10 border-y border-border/40">
+      <section className="py-10 relative z-10"
+        style={{ borderTop: '1px solid oklch(1 0 0 / 0.06)', borderBottom: '1px solid oklch(1 0 0 / 0.06)', background: 'oklch(1 0 0 / 0.015)', backdropFilter: 'blur(20px)' }}>
         <div className="container mx-auto px-5 max-w-5xl">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {STATS.map(({ value, suffix, label }) => (
@@ -505,7 +534,13 @@ export default function Landing() {
 
           <div className="grid md:grid-cols-3 gap-5">
             {PAIN_POINTS.map(({ emoji, problem, solution }) => (
-              <div key={problem} className="rounded-2xl border border-border/50 bg-card/40 p-6 space-y-4">
+              <div key={problem} className="rounded-2xl p-6 space-y-4 transition-all duration-300 hover:scale-[1.02]"
+                style={{
+                  background: 'oklch(1 0 0 / 0.025)',
+                  border: '1px solid oklch(1 0 0 / 0.08)',
+                  backdropFilter: 'blur(16px)',
+                  boxShadow: '0 4px 24px oklch(0 0 0 / 0.15), inset 0 1px 0 oklch(1 0 0 / 0.06)',
+                }}>
                 <div className="text-3xl">{emoji}</div>
                 <div>
                   <p className="text-sm font-semibold text-foreground/80 mb-3 line-through decoration-red-400/60">{problem}</p>
@@ -546,14 +581,15 @@ export default function Landing() {
                 <div className="relative mb-5">
                   <div className="h-16 w-16 rounded-2xl flex items-center justify-center relative z-10"
                     style={{
-                      background: 'oklch(0.6 0.16 200 / 0.1)',
-                      border: '2px solid oklch(0.6 0.16 200 / 0.4)',
-                      boxShadow: '0 0 24px oklch(0.6 0.16 200 / 0.15)'
+                      background: 'oklch(0.6 0.2 210 / 0.08)',
+                      border: '1px solid oklch(0.6 0.2 210 / 0.3)',
+                      backdropFilter: 'blur(12px)',
+                      boxShadow: '0 0 32px oklch(0.6 0.2 210 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.1)',
                     }}>
                     <Icon className="h-7 w-7 text-primary" />
                   </div>
                   <div className="absolute -top-2 -right-2 h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-black"
-                    style={{ background: 'oklch(0.6 0.16 200)', color: 'white' }}>
+                    style={{ background: 'oklch(0.6 0.2 210)', color: 'white', boxShadow: '0 0 12px oklch(0.6 0.2 210 / 0.5)' }}>
                     {i + 1}
                   </div>
                 </div>
@@ -585,7 +621,15 @@ export default function Landing() {
           <div className="grid grid-cols-1 md:grid-cols-6 gap-4 auto-rows-auto">
 
             {/* Card 1 — Score IA (grande, 4 colunas) */}
-            <div className="md:col-span-4 group rounded-2xl border border-border/50 bg-card/50 p-7 hover:border-primary/40 hover:bg-card transition-all duration-300 cursor-default relative overflow-hidden">
+            <div className="md:col-span-4 group rounded-2xl p-7 transition-all duration-300 cursor-default relative overflow-hidden"
+              style={{
+                background: 'oklch(1 0 0 / 0.025)',
+                border: '1px solid oklch(1 0 0 / 0.08)',
+                backdropFilter: 'blur(20px)',
+                boxShadow: '0 4px 32px oklch(0 0 0 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.06)',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 32px oklch(0 0 0 / 0.2), 0 0 40px oklch(0.6 0.2 210 / 0.1), inset 0 1px 0 oklch(1 0 0 / 0.08)')}
+              onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 4px 32px oklch(0 0 0 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.06)')}>
               <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                 style={{ background: 'radial-gradient(circle, oklch(0.6 0.16 200 / 0.08), transparent)' }} />
               <div className="flex items-start justify-between mb-5">
@@ -618,7 +662,15 @@ export default function Landing() {
             </div>
 
             {/* Card 2 — 17 praias (2 colunas) */}
-            <div className="md:col-span-2 group rounded-2xl border border-border/50 bg-card/50 p-7 hover:border-primary/40 hover:bg-card transition-all duration-300 cursor-default relative overflow-hidden">
+            <div className="md:col-span-2 group rounded-2xl p-7 transition-all duration-300 cursor-default relative overflow-hidden"
+              style={{
+                background: 'oklch(1 0 0 / 0.025)',
+                border: '1px solid oklch(1 0 0 / 0.08)',
+                backdropFilter: 'blur(20px)',
+                boxShadow: '0 4px 32px oklch(0 0 0 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.06)',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 32px oklch(0 0 0 / 0.2), 0 0 40px oklch(0.6 0.2 210 / 0.1), inset 0 1px 0 oklch(1 0 0 / 0.08)')}
+              onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 4px 32px oklch(0 0 0 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.06)')}>
               <div className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                 style={{ background: 'radial-gradient(circle, oklch(0.6 0.16 200 / 0.1), transparent)' }} />
               <div className="h-11 w-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
@@ -640,7 +692,15 @@ export default function Landing() {
             </div>
 
             {/* Card 3 — Previsão 14 dias (2 colunas) */}
-            <div className="md:col-span-2 group rounded-2xl border border-border/50 bg-card/50 p-7 hover:border-violet-400/40 hover:bg-card transition-all duration-300 cursor-default relative overflow-hidden">
+            <div className="md:col-span-2 group rounded-2xl p-7 transition-all duration-300 cursor-default relative overflow-hidden"
+              style={{
+                background: 'oklch(1 0 0 / 0.025)',
+                border: '1px solid oklch(1 0 0 / 0.08)',
+                backdropFilter: 'blur(20px)',
+                boxShadow: '0 4px 32px oklch(0 0 0 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.06)',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 32px oklch(0 0 0 / 0.2), 0 0 40px oklch(0.65 0.2 290 / 0.12), inset 0 1px 0 oklch(1 0 0 / 0.08)')}
+              onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 4px 32px oklch(0 0 0 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.06)')}>
               <div className="absolute -top-8 -left-8 w-32 h-32 rounded-full pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                 style={{ background: 'radial-gradient(circle, oklch(0.65 0.18 290 / 0.1), transparent)' }} />
               <div className="h-11 w-11 rounded-xl bg-violet-400/10 border border-violet-400/20 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
@@ -664,7 +724,15 @@ export default function Landing() {
             </div>
 
             {/* Card 4 — Alertas (2 colunas) */}
-            <div className="md:col-span-2 group rounded-2xl border border-border/50 bg-card/50 p-7 hover:border-green-400/40 hover:bg-card transition-all duration-300 cursor-default relative overflow-hidden">
+            <div className="md:col-span-2 group rounded-2xl p-7 transition-all duration-300 cursor-default relative overflow-hidden"
+              style={{
+                background: 'oklch(1 0 0 / 0.025)',
+                border: '1px solid oklch(1 0 0 / 0.08)',
+                backdropFilter: 'blur(20px)',
+                boxShadow: '0 4px 32px oklch(0 0 0 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.06)',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 32px oklch(0 0 0 / 0.2), 0 0 40px oklch(0.55 0.18 160 / 0.12), inset 0 1px 0 oklch(1 0 0 / 0.08)')}
+              onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 4px 32px oklch(0 0 0 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.06)')}>
               <div className="h-11 w-11 rounded-xl bg-green-400/10 border border-green-400/20 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
                 <Bell className="h-5 w-5 text-green-400" />
               </div>
@@ -685,7 +753,15 @@ export default function Landing() {
             </div>
 
             {/* Card 5 — Histórico (2 colunas) */}
-            <div className="md:col-span-2 group rounded-2xl border border-border/50 bg-card/50 p-7 hover:border-orange-400/40 hover:bg-card transition-all duration-300 cursor-default relative overflow-hidden">
+            <div className="md:col-span-2 group rounded-2xl p-7 transition-all duration-300 cursor-default relative overflow-hidden"
+              style={{
+                background: 'oklch(1 0 0 / 0.025)',
+                border: '1px solid oklch(1 0 0 / 0.08)',
+                backdropFilter: 'blur(20px)',
+                boxShadow: '0 4px 32px oklch(0 0 0 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.06)',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 32px oklch(0 0 0 / 0.2), 0 0 40px oklch(0.65 0.18 50 / 0.12), inset 0 1px 0 oklch(1 0 0 / 0.08)')}
+              onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 4px 32px oklch(0 0 0 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.06)')}>
               <div className="h-11 w-11 rounded-xl bg-orange-400/10 border border-orange-400/20 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
                 <Clock className="h-5 w-5 text-orange-400" />
               </div>
@@ -714,7 +790,15 @@ export default function Landing() {
             </div>
 
             {/* Card 6 — Log de sessões (2 colunas) */}
-            <div className="md:col-span-2 group rounded-2xl border border-border/50 bg-card/50 p-7 hover:border-cyan-400/40 hover:bg-card transition-all duration-300 cursor-default relative overflow-hidden">
+            <div className="md:col-span-2 group rounded-2xl p-7 transition-all duration-300 cursor-default relative overflow-hidden"
+              style={{
+                background: 'oklch(1 0 0 / 0.025)',
+                border: '1px solid oklch(1 0 0 / 0.08)',
+                backdropFilter: 'blur(20px)',
+                boxShadow: '0 4px 32px oklch(0 0 0 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.06)',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 32px oklch(0 0 0 / 0.2), 0 0 40px oklch(0.6 0.2 200 / 0.12), inset 0 1px 0 oklch(1 0 0 / 0.08)')}
+              onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 4px 32px oklch(0 0 0 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.06)')}>
               <div className="h-11 w-11 rounded-xl bg-cyan-400/10 border border-cyan-400/20 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
                 <Waves className="h-5 w-5 text-cyan-400" />
               </div>
@@ -762,7 +846,13 @@ export default function Landing() {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
             {TESTIMONIALS.map(({ name, role, avatar, stars, text }) => (
               <div key={name}
-                className="rounded-2xl border border-border/50 bg-card/60 p-6 flex flex-col gap-4 hover:border-primary/30 hover:bg-card transition-all duration-300">
+                className="rounded-2xl p-6 flex flex-col gap-4 transition-all duration-300 hover:scale-[1.02]"
+                style={{
+                  background: 'oklch(1 0 0 / 0.025)',
+                  border: '1px solid oklch(1 0 0 / 0.08)',
+                  backdropFilter: 'blur(16px)',
+                  boxShadow: '0 4px 24px oklch(0 0 0 / 0.15), inset 0 1px 0 oklch(1 0 0 / 0.06)',
+                }}>
                 <Quote className="h-6 w-6 text-primary/25" />
                 <p className="text-sm text-muted-foreground leading-relaxed flex-1">"{text}"</p>
                 <div>
@@ -796,15 +886,21 @@ export default function Landing() {
             <p className="text-muted-foreground">Comece grátis. Upgrade quando quiser — sem complicação.</p>
           </div>
 
-          <div className="rounded-2xl border border-border/50 overflow-hidden">
-            <div className="grid grid-cols-3 bg-card/80 border-b border-border/50">
+          <div className="rounded-2xl overflow-hidden"
+            style={{
+              border: '1px solid oklch(1 0 0 / 0.08)',
+              backdropFilter: 'blur(20px)',
+              boxShadow: '0 8px 40px oklch(0 0 0 / 0.25), inset 0 1px 0 oklch(1 0 0 / 0.06)',
+            }}>
+            <div className="grid grid-cols-3 border-b"
+              style={{ background: 'oklch(1 0 0 / 0.04)', borderColor: 'oklch(1 0 0 / 0.06)' }}>
               <div className="p-4 text-sm font-semibold text-muted-foreground">Recurso</div>
-              <div className="p-4 text-center border-l border-border/50">
+              <div className="p-4 text-center border-l" style={{ borderColor: 'oklch(1 0 0 / 0.06)' }}>
                 <div className="text-sm font-bold">Grátis</div>
                 <div className="text-xs text-muted-foreground">R$ 0</div>
               </div>
-              <div className="p-4 text-center border-l border-border/50 relative"
-                style={{ background: 'oklch(0.6 0.16 200 / 0.08)' }}>
+              <div className="p-4 text-center border-l relative"
+                style={{ borderColor: 'oklch(1 0 0 / 0.06)', background: 'oklch(0.6 0.2 210 / 0.06)' }}>
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <Badge className="bg-primary text-primary-foreground text-[9px] px-2 py-0.5 font-black">POPULAR</Badge>
                 </div>
@@ -817,29 +913,33 @@ export default function Landing() {
 
             {PLAN_FEATURES.map(({ label, free, premium }, i) => (
               <div key={label}
-                className={`grid grid-cols-3 border-b border-border/30 last:border-0 ${i % 2 === 0 ? '' : 'bg-card/30'}`}>
+                className="grid grid-cols-3 border-b last:border-0"
+                style={{ borderColor: 'oklch(1 0 0 / 0.05)', background: i % 2 === 0 ? 'transparent' : 'oklch(1 0 0 / 0.015)' }}>
                 <div className="p-4 text-sm text-muted-foreground">{label}</div>
-                <div className="p-4 text-center border-l border-border/30 flex items-center justify-center">
+                <div className="p-4 text-center border-l flex items-center justify-center" style={{ borderColor: 'oklch(1 0 0 / 0.05)' }}>
                   <PlanCell value={free} />
                 </div>
-                <div className="p-4 text-center border-l border-border/30 flex items-center justify-center"
-                  style={{ background: 'oklch(0.6 0.16 200 / 0.04)' }}>
+                <div className="p-4 text-center border-l flex items-center justify-center"
+                  style={{ borderColor: 'oklch(1 0 0 / 0.05)', background: 'oklch(0.6 0.2 210 / 0.03)' }}>
                   <PlanCell value={premium} />
                 </div>
               </div>
             ))}
 
-            <div className="grid grid-cols-3 bg-card/60 border-t border-border/50">
+            <div className="grid grid-cols-3 border-t" style={{ background: 'oklch(1 0 0 / 0.02)', borderColor: 'oklch(1 0 0 / 0.06)' }}>
               <div className="p-4" />
-              <div className="p-4 text-center border-l border-border/50">
+              <div className="p-4 text-center border-l" style={{ borderColor: 'oklch(1 0 0 / 0.06)' }}>
                 <Button size="sm" variant="outline" className="w-full text-xs" onClick={() => navigate('/login')}>
                   Criar conta grátis
                 </Button>
               </div>
-              <div className="p-4 text-center border-l border-border/50">
-                <Button size="sm" className="w-full text-xs bg-primary hover:bg-primary/90"
+              <div className="p-4 text-center border-l" style={{ borderColor: 'oklch(1 0 0 / 0.06)' }}>
+                <Button size="sm" className="w-full text-xs"
                   onClick={() => navigate('/login?plan=premium')}
-                  style={{ boxShadow: '0 0 16px oklch(0.6 0.16 200 / 0.3)' }}>
+                  style={{
+                    background: 'oklch(0.6 0.2 210)',
+                    boxShadow: '0 0 20px oklch(0.6 0.2 210 / 0.4)',
+                  }}>
                   <Crown className="h-3 w-3 mr-1" />Assinar
                 </Button>
               </div>
@@ -853,8 +953,13 @@ export default function Landing() {
         <div className="absolute inset-0 pointer-events-none"
           style={{ background: 'radial-gradient(ellipse 50% 40% at 50% 50%, oklch(0.55 0.18 60 / 0.04), transparent)' }} />
         <div className="container mx-auto px-5 max-w-4xl relative">
-          <div className="rounded-3xl border border-yellow-500/20 p-8 md:p-10 relative overflow-hidden"
-            style={{ background: 'linear-gradient(135deg, oklch(0.18 0.02 240), oklch(0.2 0.04 230))' }}>
+          <div className="rounded-3xl p-8 md:p-10 relative overflow-hidden"
+            style={{
+              background: 'oklch(1 0 0 / 0.03)',
+              border: '1px solid oklch(0.65 0.18 50 / 0.2)',
+              backdropFilter: 'blur(24px)',
+              boxShadow: '0 8px 48px oklch(0 0 0 / 0.3), 0 0 80px oklch(0.65 0.18 50 / 0.06), inset 0 1px 0 oklch(1 0 0 / 0.08)',
+            }}>
             <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full pointer-events-none"
               style={{ background: 'radial-gradient(circle, oklch(0.6 0.16 60 / 0.1), transparent)' }} />
             <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full pointer-events-none"
@@ -980,7 +1085,13 @@ export default function Landing() {
                 { step: '2', title: 'Toque em "Adicionar à Tela Inicial"', desc: 'No menu de compartilhamento ou nos 3 pontinhos', icon: Smartphone },
                 { step: '3', title: 'Pronto, é isso!', desc: 'Ícone na tela inicial, notificações ativas', icon: CheckCircle2 },
               ].map(({ step, title, desc, icon: Icon }) => (
-                <div key={step} className="flex items-center gap-4 rounded-xl border border-border/40 bg-card/40 p-4">
+                <div key={step} className="flex items-center gap-4 rounded-xl p-4 transition-all duration-200 hover:scale-[1.01]"
+                  style={{
+                    background: 'oklch(1 0 0 / 0.025)',
+                    border: '1px solid oklch(1 0 0 / 0.08)',
+                    backdropFilter: 'blur(12px)',
+                    boxShadow: '0 2px 16px oklch(0 0 0 / 0.12), inset 0 1px 0 oklch(1 0 0 / 0.05)',
+                  }}>
                   <div className="h-10 w-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-sm font-black text-primary flex-shrink-0">
                     {step}
                   </div>
@@ -1013,10 +1124,12 @@ export default function Landing() {
       {/* FINAL CTA */}
       <section className="py-20 border-t border-border/30">
         <div className="container mx-auto px-5 max-w-2xl text-center">
-          <div className="rounded-3xl p-10 md:p-14 border border-primary/20 relative overflow-hidden"
+          <div className="rounded-3xl p-10 md:p-14 relative overflow-hidden"
             style={{
-              background: 'linear-gradient(135deg, oklch(0.18 0.04 220 / 0.9), oklch(0.16 0.06 210 / 0.9))',
-              boxShadow: '0 0 80px oklch(0.6 0.16 200 / 0.08)',
+              background: 'oklch(1 0 0 / 0.03)',
+              border: '1px solid oklch(0.6 0.2 210 / 0.2)',
+              backdropFilter: 'blur(24px)',
+              boxShadow: '0 8px 48px oklch(0 0 0 / 0.3), 0 0 80px oklch(0.6 0.2 210 / 0.08), inset 0 1px 0 oklch(1 0 0 / 0.08)',
             }}>
             <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full pointer-events-none"
               style={{ background: 'radial-gradient(circle, oklch(0.6 0.16 200 / 0.1), transparent)' }} />
@@ -1033,8 +1146,11 @@ export default function Landing() {
                 com o mar ruim. Upgrade para Premium quando quiser.
               </p>
               <Button size="lg" onClick={() => navigate('/login')}
-                className="font-bold px-10 h-12 text-base bg-primary hover:bg-primary/90"
-                style={{ boxShadow: '0 0 32px oklch(0.6 0.16 200 / 0.4)' }}>
+                className="font-bold px-10 h-12 text-base"
+                style={{
+                  background: 'oklch(0.6 0.2 210)',
+                  boxShadow: '0 0 40px oklch(0.6 0.2 210 / 0.5), 0 0 80px oklch(0.6 0.2 210 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.15)',
+                }}>
                 Criar conta gratuita
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
@@ -1067,7 +1183,8 @@ export default function Landing() {
       </section>
 
       {/* FOOTER */}
-      <footer className="border-t border-border/30 py-8">
+      <footer className="py-8"
+        style={{ borderTop: '1px solid oklch(1 0 0 / 0.06)', background: 'oklch(1 0 0 / 0.015)', backdropFilter: 'blur(20px)' }}>
         <div className="container mx-auto px-5 max-w-5xl flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <div className="h-7 w-7 rounded-lg flex items-center justify-center"
