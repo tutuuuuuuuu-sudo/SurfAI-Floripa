@@ -8,6 +8,7 @@ import { OnboardingModal } from '@/components/OnboardingModal'
 import { fetchCurrentConditions, analyzeConditions, BeachCondition } from '@/lib/surfData'
 import { getFavorites } from '@/lib/favorites'
 import { useAuth } from '@/contexts/AuthContext'
+import { getUserDisplayName } from '@/lib/supabase'
 import { usePremium } from '@/lib/premium'
 import { fetchAIReport } from '@/lib/aiReport'
 import { getScoreColor, getThemeGradient } from '@/lib/rating'
@@ -286,7 +287,7 @@ export default function Home() {
     return () => clearInterval(interval)
   }, [activeRegion])
 
-  const userName = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? user?.email?.split('@')[0] ?? 'Surfista'
+  const userName = user ? getUserDisplayName(user) : 'Surfista'
   const userInitial = userName.charAt(0).toUpperCase()
 
   if (loading) return (
@@ -348,7 +349,7 @@ export default function Home() {
 
               <button onClick={() => navigate('/profile')} className="relative w-8 h-8 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center hover:bg-primary/30 transition-colors">
                 {user?.user_metadata?.avatar_url
-                  ? <img src={user.user_metadata.avatar_url} alt={userName} className="w-full h-full rounded-full object-cover" />
+                  ? <img src={user.user_metadata.avatar_url as string} alt={userName} className="w-full h-full rounded-full object-cover" />
                   : <span className="text-xs font-bold text-primary">{userInitial}</span>
                 }
                 {isPremium && (

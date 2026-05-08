@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { supabase, getUserDisplayName } from './supabase'
 
 export interface Comment {
   id: string
@@ -21,7 +21,7 @@ export async function getComments(beachId: string): Promise<Comment[]> {
     .limit(20)
 
   if (error) {
-    console.error('Erro ao buscar comentários:', error)
+    console.error('[comments] Erro ao buscar comentários:', error.message)
     return []
   }
   return data ?? []
@@ -37,10 +37,7 @@ export async function addComment(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return false
 
-  const userName = user.user_metadata?.full_name
-    ?? user.user_metadata?.name
-    ?? user.email?.split('@')[0]
-    ?? 'Surfista'
+  const userName = getUserDisplayName(user)
 
   const { error } = await supabase.from('comments').insert({
     beach_id: beachId,
@@ -53,7 +50,7 @@ export async function addComment(
   })
 
   if (error) {
-    console.error('Erro ao adicionar comentário:', error)
+    console.error('[comments] Erro ao adicionar comentário:', error.message)
     return false
   }
   return true
@@ -66,7 +63,7 @@ export async function deleteComment(commentId: string): Promise<boolean> {
     .eq('id', commentId)
 
   if (error) {
-    console.error('Erro ao deletar comentário:', error)
+    console.error('[comments] Erro ao deletar comentário:', error.message)
     return false
   }
   return true

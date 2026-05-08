@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { usePremium } from '@/lib/premium'
 import { getFavorites } from '@/lib/favorites'
 import { getCurrentConditions, fetchCurrentConditions } from '@/lib/surfData'
-import { supabase } from '@/lib/supabase'
+import { supabase, getUserDisplayName } from '@/lib/supabase'
 import {
   ArrowLeft, Crown, Heart, MessageCircle, Waves, Settings,
   LogOut, User, TrendingUp, MapPin, Star, Calendar, Award,
@@ -33,7 +33,7 @@ export default function ProfilePage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const userName = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? user?.email?.split('@')[0] ?? 'Surfista'
+  const userName = user ? getUserDisplayName(user) : 'Surfista'
   const userInitial = userName.charAt(0).toUpperCase()
   const memberSince = user?.created_at ? new Date(user.created_at).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) : '—'
 
@@ -57,9 +57,9 @@ export default function ProfilePage() {
         if (profile) {
           setBio(profile.bio ?? '')
           setBioInput(profile.bio ?? '')
-          setAvatarUrl(profile.avatar_url ?? user.user_metadata?.avatar_url ?? null)
+          setAvatarUrl(profile.avatar_url ?? (user.user_metadata?.avatar_url as string | undefined) ?? null)
         } else {
-          setAvatarUrl(user.user_metadata?.avatar_url ?? null)
+          setAvatarUrl((user.user_metadata?.avatar_url as string | undefined) ?? null)
         }
       }
       setLoading(false)
