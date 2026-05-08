@@ -34,12 +34,26 @@ const formatTimeBrasilia = (isoString: string): string => {
   return timePart.substring(0, 5)
 }
 
+function isValidCoord(lat: string | null, lng: string | null): boolean {
+  if (!lat || !lng) return false
+  const latN = parseFloat(lat)
+  const lngN = parseFloat(lng)
+  return !isNaN(latN) && !isNaN(lngN) && latN >= -90 && latN <= 90 && lngN >= -180 && lngN <= 180
+}
+
 export default async function handler(req: Request) {
   const url = new URL(req.url)
   const lat = url.searchParams.get('lat')
   const lng = url.searchParams.get('lng')
   const orientation = parseInt(url.searchParams.get('orientation') ?? '90')
   const fetchTide = url.searchParams.get('tide') === 'true'
+
+  if (!isValidCoord(lat, lng)) {
+    return new Response(JSON.stringify({ error: 'lat/lng inválidos' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
 
   try {
     const [marineRes, weatherRes] = await Promise.all([

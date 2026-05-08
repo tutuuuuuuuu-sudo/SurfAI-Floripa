@@ -1,7 +1,9 @@
 export const config = { runtime: 'edge' }
 
+const ALLOWED_ORIGIN = process.env.VITE_APP_URL ?? 'https://surf-ai-floripa.vercel.app'
+
 const CORS = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 }

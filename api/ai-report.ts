@@ -1,14 +1,16 @@
 export const config = { runtime: 'edge' }
 
+const ALLOWED_ORIGIN = process.env.VITE_APP_URL ?? 'https://surf-ai-floripa.vercel.app'
+
+const CORS = {
+  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+}
+
 export default async function handler(req: Request) {
   if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-    })
+    return new Response(null, { headers: CORS })
   }
 
   if (req.method !== 'POST') {
@@ -19,7 +21,7 @@ export default async function handler(req: Request) {
   if (!apiKey) {
     return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY não configurada' }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
     })
   }
 
@@ -75,7 +77,7 @@ Não inclua emojis. Responda APENAS o texto do relatório, sem títulos ou forma
       console.error('[ai-report] Anthropic error:', err)
       return new Response(JSON.stringify({ error: 'Falha ao gerar relatório' }), {
         status: 500,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
       })
     }
 
@@ -83,13 +85,13 @@ Não inclua emojis. Responda APENAS o texto do relatório, sem títulos ou forma
     const report = data.content?.[0]?.text ?? ''
 
     return new Response(JSON.stringify({ report }), {
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
     })
   } catch (error) {
     console.error('[ai-report] erro:', error)
     return new Response(JSON.stringify({ error: 'Erro interno' }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
     })
   }
 }
