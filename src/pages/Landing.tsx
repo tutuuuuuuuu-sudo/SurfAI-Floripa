@@ -12,14 +12,6 @@ import {
 
 // ─── Dados ───────────────────────────────────────────────────────────────────
 
-const FEATURES = [
-  { icon: Zap, title: 'Score de IA em tempo real', desc: 'IA analisa altura, período, vento e maré para gerar uma nota de 0 a 10 para cada praia.', color: 'text-yellow-400', bg: 'bg-yellow-400/10', border: 'border-yellow-400/20' },
-  { icon: MapPin, title: '17 praias monitoradas', desc: 'Cobertura completa de Florianópolis — Santinho ao Naufragados, todas as 4 regiões.', color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20' },
-  { icon: BarChart3, title: 'Previsão de 14 dias', desc: 'Planeje com antecedência. Dados de ondas, vento e maré para as próximas 2 semanas.', color: 'text-violet-400', bg: 'bg-violet-400/10', border: 'border-violet-400/20' },
-  { icon: Bell, title: 'Alertas personalizados', desc: 'Seja notificado quando seu spot favorito atingir o score que você definiu.', color: 'text-green-400', bg: 'bg-green-400/10', border: 'border-green-400/20' },
-  { icon: Clock, title: 'Histórico e tendências', desc: 'Veja as condições dos últimos dias e identifique os melhores padrões de swell.', color: 'text-orange-400', bg: 'bg-orange-400/10', border: 'border-orange-400/20' },
-  { icon: Waves, title: 'Log de sessões', desc: 'Registre suas sessões, dê notas, anote memórias. Seu diário de surf digital.', color: 'text-cyan-400', bg: 'bg-cyan-400/10', border: 'border-cyan-400/20' },
-]
 
 const TESTIMONIALS = [
   { name: 'Lucas T.', role: 'Intermediário · Coqueiros', avatar: 'LT', stars: 5, text: 'Fui na Mole ontem cedo, o score tava 8.4. Mar perfeito, quase vazio. Antes eu ia no achismo e voltava bastante frustrado. Agora pelo menos sei antes de sair de casa.' },
@@ -576,7 +568,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* FEATURES */}
+      {/* FEATURES — BENTO GRID */}
       <section className="py-20 border-t border-border/30">
         <div className="container mx-auto px-5 max-w-5xl">
           <div className="text-center mb-14">
@@ -589,18 +581,164 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {FEATURES.map(({ icon: Icon, title, desc, color, bg, border }) => (
-              <div key={title}
-                className="group rounded-2xl border bg-card/50 p-6 hover:bg-card transition-all duration-300 cursor-default"
-                style={{ borderColor: 'oklch(0.3 0.03 240)' }}>
-                <div className={`h-11 w-11 rounded-xl ${bg} border ${border} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                  <Icon className={`h-5 w-5 ${color}`} />
+          {/* Bento Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 auto-rows-auto">
+
+            {/* Card 1 — Score IA (grande, 4 colunas) */}
+            <div className="md:col-span-4 group rounded-2xl border border-border/50 bg-card/50 p-7 hover:border-primary/40 hover:bg-card transition-all duration-300 cursor-default relative overflow-hidden">
+              <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                style={{ background: 'radial-gradient(circle, oklch(0.6 0.16 200 / 0.08), transparent)' }} />
+              <div className="flex items-start justify-between mb-5">
+                <div className="h-11 w-11 rounded-xl bg-yellow-400/10 border border-yellow-400/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <Zap className="h-5 w-5 text-yellow-400" />
                 </div>
-                <h3 className="font-bold text-base mb-2">{title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+                {/* Mini score display */}
+                <div className="flex items-end gap-3">
+                  {[
+                    { score: 9.1, color: '#8b5cf6', label: 'Mole' },
+                    { score: 7.8, color: '#06b6d4', label: 'Joa.' },
+                    { score: 6.5, color: '#22c55e', label: 'Cam.' },
+                  ].map(({ score, color, label }) => (
+                    <div key={label} className="flex flex-col items-center gap-1">
+                      <span className="text-[10px] font-black leading-none" style={{ color }}>{score}</span>
+                      <div className="w-6 rounded-t-sm" style={{ height: `${score * 3}px`, background: `${color}40`, border: `1px solid ${color}60` }} />
+                      <span className="text-[8px] text-muted-foreground">{label}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+              <h3 className="font-bold text-lg mb-2">Score de IA em tempo real</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">
+                IA analisa altura, período, vento e maré para gerar uma nota de 0 a 10 para cada praia — atualizada a cada hora.
+              </p>
+              <div className="mt-5 flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full animate-pulse bg-green-400" />
+                <span className="text-xs text-muted-foreground">Atualizado agora</span>
+              </div>
+            </div>
+
+            {/* Card 2 — 17 praias (2 colunas) */}
+            <div className="md:col-span-2 group rounded-2xl border border-border/50 bg-card/50 p-7 hover:border-primary/40 hover:bg-card transition-all duration-300 cursor-default relative overflow-hidden">
+              <div className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                style={{ background: 'radial-gradient(circle, oklch(0.6 0.16 200 / 0.1), transparent)' }} />
+              <div className="h-11 w-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
+                <MapPin className="h-5 w-5 text-primary" />
+              </div>
+              {/* Mini mapa pontilhado */}
+              <div className="mb-4 rounded-xl border border-border/40 bg-background/40 p-3 flex flex-wrap gap-1.5">
+                {Array.from({ length: 17 }).map((_, i) => (
+                  <div key={i} className="h-2 w-2 rounded-full transition-all duration-300"
+                    style={{
+                      background: i < 5 ? 'oklch(0.6 0.16 200)' : i < 10 ? 'oklch(0.6 0.16 200 / 0.5)' : 'oklch(0.6 0.16 200 / 0.25)',
+                    }} />
+                ))}
+              </div>
+              <h3 className="font-bold text-base mb-2">17 praias monitoradas</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Cobertura completa de Florianópolis — Norte ao Sul da ilha.
+              </p>
+            </div>
+
+            {/* Card 3 — Previsão 14 dias (2 colunas) */}
+            <div className="md:col-span-2 group rounded-2xl border border-border/50 bg-card/50 p-7 hover:border-violet-400/40 hover:bg-card transition-all duration-300 cursor-default relative overflow-hidden">
+              <div className="absolute -top-8 -left-8 w-32 h-32 rounded-full pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                style={{ background: 'radial-gradient(circle, oklch(0.65 0.18 290 / 0.1), transparent)' }} />
+              <div className="h-11 w-11 rounded-xl bg-violet-400/10 border border-violet-400/20 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
+                <BarChart3 className="h-5 w-5 text-violet-400" />
+              </div>
+              {/* Mini gráfico de previsão */}
+              <div className="mb-4 flex items-end gap-1 h-10">
+                {[4, 6, 5, 8, 9, 7, 6, 8, 9, 7, 5, 6, 8, 7].map((h, i) => (
+                  <div key={i} className="flex-1 rounded-t-sm transition-all duration-300"
+                    style={{
+                      height: `${h * 4}px`,
+                      background: i < 3 ? 'oklch(0.65 0.18 290)' : 'oklch(0.65 0.18 290 / 0.3)',
+                      border: '1px solid oklch(0.65 0.18 290 / 0.4)',
+                    }} />
+                ))}
+              </div>
+              <h3 className="font-bold text-base mb-2">Previsão de 14 dias</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Planeje com antecedência. Ondas, vento e maré para 2 semanas.
+              </p>
+            </div>
+
+            {/* Card 4 — Alertas (2 colunas) */}
+            <div className="md:col-span-2 group rounded-2xl border border-border/50 bg-card/50 p-7 hover:border-green-400/40 hover:bg-card transition-all duration-300 cursor-default relative overflow-hidden">
+              <div className="h-11 w-11 rounded-xl bg-green-400/10 border border-green-400/20 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
+                <Bell className="h-5 w-5 text-green-400" />
+              </div>
+              {/* Notificação mockup */}
+              <div className="mb-4 rounded-xl border border-green-400/20 bg-green-400/5 p-3 flex items-start gap-2.5">
+                <div className="h-7 w-7 rounded-lg bg-green-400/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Waves className="h-3.5 w-3.5 text-green-400" />
+                </div>
+                <div>
+                  <div className="text-[11px] font-bold text-green-400 leading-tight">Praia Mole — Score 9.1</div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">Seu alerta foi ativado · agora</div>
+                </div>
+              </div>
+              <h3 className="font-bold text-base mb-2">Alertas personalizados</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Notificação quando seu spot atingir o score que você definiu.
+              </p>
+            </div>
+
+            {/* Card 5 — Histórico (2 colunas) */}
+            <div className="md:col-span-2 group rounded-2xl border border-border/50 bg-card/50 p-7 hover:border-orange-400/40 hover:bg-card transition-all duration-300 cursor-default relative overflow-hidden">
+              <div className="h-11 w-11 rounded-xl bg-orange-400/10 border border-orange-400/20 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
+                <Clock className="h-5 w-5 text-orange-400" />
+              </div>
+              {/* Mini spark line */}
+              <div className="mb-4">
+                <svg viewBox="0 0 80 28" className="w-full h-7" preserveAspectRatio="none">
+                  <polyline
+                    points="0,20 10,15 20,18 30,8 40,12 50,6 60,10 70,4 80,8"
+                    fill="none"
+                    stroke="oklch(0.65 0.18 50)"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <polyline
+                    points="0,20 10,15 20,18 30,8 40,12 50,6 60,10 70,4 80,8"
+                    fill="oklch(0.65 0.18 50 / 0.08)"
+                    stroke="none"
+                  />
+                </svg>
+              </div>
+              <h3 className="font-bold text-base mb-2">Histórico e tendências</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Condições dos últimos dias e os melhores padrões de swell.
+              </p>
+            </div>
+
+            {/* Card 6 — Log de sessões (2 colunas) */}
+            <div className="md:col-span-2 group rounded-2xl border border-border/50 bg-card/50 p-7 hover:border-cyan-400/40 hover:bg-card transition-all duration-300 cursor-default relative overflow-hidden">
+              <div className="h-11 w-11 rounded-xl bg-cyan-400/10 border border-cyan-400/20 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
+                <Waves className="h-5 w-5 text-cyan-400" />
+              </div>
+              {/* Sessões mockup */}
+              <div className="mb-4 space-y-1.5">
+                {[
+                  { date: 'Hoje', beach: 'Praia Mole', score: '9.1', color: '#8b5cf6' },
+                  { date: 'Ontem', beach: 'Joaquina', score: '7.8', color: '#06b6d4' },
+                ].map(({ date, beach, score, color }) => (
+                  <div key={date} className="flex items-center justify-between rounded-lg px-2.5 py-1.5 bg-background/40 border border-border/40">
+                    <div>
+                      <span className="text-[10px] text-muted-foreground">{date} · </span>
+                      <span className="text-[10px] font-semibold">{beach}</span>
+                    </div>
+                    <span className="text-[11px] font-black" style={{ color }}>{score}</span>
+                  </div>
+                ))}
+              </div>
+              <h3 className="font-bold text-base mb-2">Log de sessões</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Registre suas sessões, notas e memórias. Seu diário de surf.
+              </p>
+            </div>
+
           </div>
         </div>
       </section>
