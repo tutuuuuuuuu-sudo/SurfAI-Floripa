@@ -584,40 +584,39 @@ export default function Landing() {
             {/* Card 1 — Score IA (grande, 4 colunas) */}
             <div className="md:col-span-4 group rounded-2xl p-7 transition-all duration-300 cursor-default relative overflow-hidden"
               style={{
-                background: 'oklch(1 0 0 / 0.025)',
-                border: '1px solid oklch(1 0 0 / 0.08)',
+                background: 'oklch(0.6 0.2 210 / 0.07)',
+                border: '1px solid oklch(0.6 0.2 210 / 0.25)',
                 backdropFilter: 'blur(20px)',
-                boxShadow: '0 4px 32px oklch(0 0 0 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.06)',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 32px oklch(0 0 0 / 0.2), 0 0 40px oklch(0.6 0.2 210 / 0.1), inset 0 1px 0 oklch(1 0 0 / 0.08)')}
-              onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 4px 32px oklch(0 0 0 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.06)')}>
-              <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                style={{ background: 'radial-gradient(circle, oklch(0.6 0.16 200 / 0.08), transparent)' }} />
+                boxShadow: '0 4px 32px oklch(0 0 0 / 0.2), 0 0 60px oklch(0.6 0.2 210 / 0.08), inset 0 1px 0 oklch(1 0 0 / 0.08)',
+              }}>
+              <div className="absolute -top-20 -right-20 w-56 h-56 rounded-full pointer-events-none"
+                style={{ background: 'radial-gradient(circle, oklch(0.6 0.2 210 / 0.12), transparent 70%)' }} />
               <div className="flex items-start justify-between mb-5">
-                <div className="h-11 w-11 rounded-xl bg-yellow-400/10 border border-yellow-400/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <div className="h-11 w-11 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300"
+                  style={{ background: 'oklch(0.75 0.18 55 / 0.15)', border: '1px solid oklch(0.75 0.18 55 / 0.35)' }}>
                   <Zap className="h-5 w-5 text-yellow-400" />
                 </div>
-                {/* Mini score display */}
-                <div className="flex items-end gap-3">
+                {/* Score cards */}
+                <div className="flex items-stretch gap-2">
                   {[
-                    { score: 9.1, color: '#8b5cf6', label: 'Mole' },
-                    { score: 7.8, color: '#06b6d4', label: 'Joa.' },
-                    { score: 6.5, color: '#22c55e', label: 'Cam.' },
-                  ].map(({ score, color, label }) => (
-                    <div key={label} className="flex flex-col items-center gap-1">
-                      <span className="text-[10px] font-black leading-none" style={{ color }}>{score}</span>
-                      <div className="w-6 rounded-t-sm" style={{ height: `${score * 3}px`, background: `${color}40`, border: `1px solid ${color}60` }} />
-                      <span className="text-[8px] text-muted-foreground">{label}</span>
+                    { score: 9.1, color: '#8b5cf6', label: 'Mole', bg: 'oklch(0.55 0.18 290 / 0.15)', border: 'oklch(0.55 0.18 290 / 0.3)' },
+                    { score: 7.8, color: '#06b6d4', label: 'Joa.', bg: 'oklch(0.6 0.18 200 / 0.15)', border: 'oklch(0.6 0.18 200 / 0.3)' },
+                    { score: 6.5, color: '#22c55e', label: 'Cam.', bg: 'oklch(0.55 0.18 145 / 0.15)', border: 'oklch(0.55 0.18 145 / 0.3)' },
+                  ].map(({ score, color, label, bg, border }) => (
+                    <div key={label} className="flex flex-col items-center justify-between rounded-xl px-3 py-2.5 min-w-[52px]"
+                      style={{ background: bg, border: `1px solid ${border}` }}>
+                      <span className="text-[18px] font-black leading-none" style={{ color }}>{score}</span>
+                      <div className="h-px w-full my-1.5" style={{ background: color + '40' }} />
+                      <span className="text-[9px] font-semibold text-muted-foreground">{label}</span>
                     </div>
                   ))}
                 </div>
               </div>
-              <h3 className="font-bold text-lg mb-2">Score de IA em tempo real</h3>
+              <h3 className="font-bold text-xl mb-2 text-foreground">Score de IA em tempo real</h3>
               <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">
                 IA analisa altura, período, vento e maré para gerar uma nota de 0 a 10 para cada praia — atualizada a cada hora.
               </p>
-
-              <div className="mt-4 flex items-center gap-2">
+              <div className="mt-5 flex items-center gap-2">
                 <div className="h-1.5 w-1.5 rounded-full animate-pulse bg-green-400" />
                 <span className="text-xs text-muted-foreground">Atualizado agora</span>
               </div>
@@ -626,28 +625,28 @@ export default function Landing() {
             {/* Card 2 — 17 praias (2 colunas) */}
             <div className="md:col-span-2 group rounded-2xl p-7 transition-all duration-300 cursor-default relative overflow-hidden"
               style={{
-                background: 'oklch(1 0 0 / 0.025)',
-                border: '1px solid oklch(1 0 0 / 0.08)',
+                background: 'oklch(0.6 0.16 200 / 0.06)',
+                border: '1px solid oklch(0.6 0.16 200 / 0.22)',
                 backdropFilter: 'blur(20px)',
-                boxShadow: '0 4px 32px oklch(0 0 0 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.06)',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 32px oklch(0 0 0 / 0.2), 0 0 40px oklch(0.6 0.2 210 / 0.1), inset 0 1px 0 oklch(1 0 0 / 0.08)')}
-              onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 4px 32px oklch(0 0 0 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.06)')}>
-              <div className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                style={{ background: 'radial-gradient(circle, oklch(0.6 0.16 200 / 0.1), transparent)' }} />
-              <div className="h-11 w-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
+                boxShadow: '0 4px 32px oklch(0 0 0 / 0.2), 0 0 40px oklch(0.6 0.16 200 / 0.06), inset 0 1px 0 oklch(1 0 0 / 0.06)',
+              }}>
+              <div className="absolute -bottom-12 -right-12 w-40 h-40 rounded-full pointer-events-none"
+                style={{ background: 'radial-gradient(circle, oklch(0.6 0.16 200 / 0.1), transparent 70%)' }} />
+              <div className="h-11 w-11 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300"
+                style={{ background: 'oklch(0.6 0.16 200 / 0.15)', border: '1px solid oklch(0.6 0.16 200 / 0.35)' }}>
                 <MapPin className="h-5 w-5 text-primary" />
               </div>
-              {/* Mini mapa pontilhado */}
-              <div className="mb-4 rounded-xl border border-border/40 bg-background/40 p-3 flex flex-wrap gap-1.5">
+              {/* Grid de pontos representando as 17 praias */}
+              <div className="mb-5 grid grid-cols-6 gap-1.5">
                 {Array.from({ length: 17 }).map((_, i) => (
-                  <div key={i} className="h-2 w-2 rounded-full transition-all duration-300"
+                  <div key={i} className="h-2.5 w-2.5 rounded-full"
                     style={{
-                      background: i < 5 ? 'oklch(0.6 0.16 200)' : i < 10 ? 'oklch(0.6 0.16 200 / 0.5)' : 'oklch(0.6 0.16 200 / 0.25)',
+                      background: i < 6 ? 'oklch(0.6 0.16 200)' : i < 12 ? 'oklch(0.6 0.16 200 / 0.45)' : 'oklch(0.6 0.16 200 / 0.2)',
+                      boxShadow: i < 6 ? '0 0 6px oklch(0.6 0.16 200 / 0.6)' : 'none',
                     }} />
                 ))}
               </div>
-              <h3 className="font-bold text-base mb-2">17 praias monitoradas</h3>
+              <h3 className="font-bold text-base mb-1.5 text-foreground">17 praias monitoradas</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Cobertura completa de Florianópolis — Norte ao Sul da ilha.
               </p>
@@ -656,30 +655,29 @@ export default function Landing() {
             {/* Card 3 — Previsão 14 dias (2 colunas) */}
             <div className="md:col-span-2 group rounded-2xl p-7 transition-all duration-300 cursor-default relative overflow-hidden"
               style={{
-                background: 'oklch(1 0 0 / 0.025)',
-                border: '1px solid oklch(1 0 0 / 0.08)',
+                background: 'oklch(0.55 0.18 290 / 0.07)',
+                border: '1px solid oklch(0.55 0.18 290 / 0.25)',
                 backdropFilter: 'blur(20px)',
-                boxShadow: '0 4px 32px oklch(0 0 0 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.06)',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 32px oklch(0 0 0 / 0.2), 0 0 40px oklch(0.65 0.2 290 / 0.12), inset 0 1px 0 oklch(1 0 0 / 0.08)')}
-              onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 4px 32px oklch(0 0 0 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.06)')}>
-              <div className="absolute -top-8 -left-8 w-32 h-32 rounded-full pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                style={{ background: 'radial-gradient(circle, oklch(0.65 0.18 290 / 0.1), transparent)' }} />
-              <div className="h-11 w-11 rounded-xl bg-violet-400/10 border border-violet-400/20 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
+                boxShadow: '0 4px 32px oklch(0 0 0 / 0.2), 0 0 40px oklch(0.55 0.18 290 / 0.07), inset 0 1px 0 oklch(1 0 0 / 0.06)',
+              }}>
+              <div className="absolute -top-12 -left-12 w-40 h-40 rounded-full pointer-events-none"
+                style={{ background: 'radial-gradient(circle, oklch(0.55 0.18 290 / 0.1), transparent 70%)' }} />
+              <div className="h-11 w-11 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300"
+                style={{ background: 'oklch(0.55 0.18 290 / 0.15)', border: '1px solid oklch(0.55 0.18 290 / 0.35)' }}>
                 <BarChart3 className="h-5 w-5 text-violet-400" />
               </div>
-              {/* Mini gráfico de previsão */}
-              <div className="mb-4 flex items-end gap-1 h-10">
-                {[4, 6, 5, 8, 9, 7, 6, 8, 9, 7, 5, 6, 8, 7].map((h, i) => (
-                  <div key={i} className="flex-1 rounded-t-sm transition-all duration-300"
+              {/* Gráfico de previsão animado */}
+              <div className="mb-5 flex items-end gap-1 h-12 rounded-xl p-2"
+                style={{ background: 'oklch(0.55 0.18 290 / 0.06)', border: '1px solid oklch(0.55 0.18 290 / 0.12)' }}>
+                {[3, 5, 4, 7, 9, 6, 5, 8, 9, 6, 4, 5, 7, 6].map((h, i) => (
+                  <div key={i} className="flex-1 rounded-t transition-all duration-300"
                     style={{
                       height: `${h * 4}px`,
-                      background: i < 3 ? 'oklch(0.65 0.18 290)' : 'oklch(0.65 0.18 290 / 0.3)',
-                      border: '1px solid oklch(0.65 0.18 290 / 0.4)',
+                      background: h >= 8 ? 'oklch(0.55 0.18 290)' : h >= 6 ? 'oklch(0.55 0.18 290 / 0.6)' : 'oklch(0.55 0.18 290 / 0.25)',
                     }} />
                 ))}
               </div>
-              <h3 className="font-bold text-base mb-2">Previsão de 14 dias</h3>
+              <h3 className="font-bold text-base mb-1.5 text-foreground">Previsão de 14 dias</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Planeje com antecedência. Ondas, vento e maré para 2 semanas.
               </p>
@@ -688,27 +686,29 @@ export default function Landing() {
             {/* Card 4 — Alertas (2 colunas) */}
             <div className="md:col-span-2 group rounded-2xl p-7 transition-all duration-300 cursor-default relative overflow-hidden"
               style={{
-                background: 'oklch(1 0 0 / 0.025)',
-                border: '1px solid oklch(1 0 0 / 0.08)',
+                background: 'oklch(0.55 0.18 145 / 0.07)',
+                border: '1px solid oklch(0.55 0.18 145 / 0.25)',
                 backdropFilter: 'blur(20px)',
-                boxShadow: '0 4px 32px oklch(0 0 0 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.06)',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 32px oklch(0 0 0 / 0.2), 0 0 40px oklch(0.55 0.18 160 / 0.12), inset 0 1px 0 oklch(1 0 0 / 0.08)')}
-              onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 4px 32px oklch(0 0 0 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.06)')}>
-              <div className="h-11 w-11 rounded-xl bg-green-400/10 border border-green-400/20 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
+                boxShadow: '0 4px 32px oklch(0 0 0 / 0.2), 0 0 40px oklch(0.55 0.18 145 / 0.07), inset 0 1px 0 oklch(1 0 0 / 0.06)',
+              }}>
+              <div className="h-11 w-11 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300"
+                style={{ background: 'oklch(0.55 0.18 145 / 0.15)', border: '1px solid oklch(0.55 0.18 145 / 0.35)' }}>
                 <Bell className="h-5 w-5 text-green-400" />
               </div>
               {/* Notificação mockup */}
-              <div className="mb-4 rounded-xl border border-green-400/20 bg-green-400/5 p-3 flex items-start gap-2.5">
-                <div className="h-7 w-7 rounded-lg bg-green-400/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Waves className="h-3.5 w-3.5 text-green-400" />
+              <div className="mb-5 rounded-xl p-3 flex items-start gap-2.5"
+                style={{ background: 'oklch(0.55 0.18 145 / 0.08)', border: '1px solid oklch(0.55 0.18 145 / 0.2)' }}>
+                <div className="h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{ background: 'oklch(0.55 0.18 145 / 0.2)' }}>
+                  <Waves className="h-4 w-4 text-green-400" />
                 </div>
                 <div>
                   <div className="text-[11px] font-bold text-green-400 leading-tight">Praia Mole — Score 9.1</div>
-                  <div className="text-[10px] text-muted-foreground mt-0.5">Seu alerta foi ativado · agora</div>
+                  <div className="text-[10px] text-muted-foreground mt-1">Seu alerta foi ativado · agora</div>
                 </div>
+                <div className="ml-auto h-2 w-2 rounded-full bg-green-400 animate-pulse flex-shrink-0 mt-1" />
               </div>
-              <h3 className="font-bold text-base mb-2">Alertas personalizados</h3>
+              <h3 className="font-bold text-base mb-1.5 text-foreground">Alertas personalizados</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Notificação quando seu spot atingir o score que você definiu.
               </p>
@@ -717,35 +717,30 @@ export default function Landing() {
             {/* Card 5 — Histórico (2 colunas) */}
             <div className="md:col-span-2 group rounded-2xl p-7 transition-all duration-300 cursor-default relative overflow-hidden"
               style={{
-                background: 'oklch(1 0 0 / 0.025)',
-                border: '1px solid oklch(1 0 0 / 0.08)',
+                background: 'oklch(0.65 0.18 50 / 0.06)',
+                border: '1px solid oklch(0.65 0.18 50 / 0.22)',
                 backdropFilter: 'blur(20px)',
-                boxShadow: '0 4px 32px oklch(0 0 0 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.06)',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 32px oklch(0 0 0 / 0.2), 0 0 40px oklch(0.65 0.18 50 / 0.12), inset 0 1px 0 oklch(1 0 0 / 0.08)')}
-              onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 4px 32px oklch(0 0 0 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.06)')}>
-              <div className="h-11 w-11 rounded-xl bg-orange-400/10 border border-orange-400/20 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
+                boxShadow: '0 4px 32px oklch(0 0 0 / 0.2), 0 0 40px oklch(0.65 0.18 50 / 0.06), inset 0 1px 0 oklch(1 0 0 / 0.06)',
+              }}>
+              <div className="h-11 w-11 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300"
+                style={{ background: 'oklch(0.65 0.18 50 / 0.15)', border: '1px solid oklch(0.65 0.18 50 / 0.35)' }}>
                 <Clock className="h-5 w-5 text-orange-400" />
               </div>
-              {/* Mini spark line */}
-              <div className="mb-4">
-                <svg viewBox="0 0 80 28" className="w-full h-7" preserveAspectRatio="none">
-                  <polyline
-                    points="0,20 10,15 20,18 30,8 40,12 50,6 60,10 70,4 80,8"
-                    fill="none"
-                    stroke="oklch(0.65 0.18 50)"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <polyline
-                    points="0,20 10,15 20,18 30,8 40,12 50,6 60,10 70,4 80,8"
-                    fill="oklch(0.65 0.18 50 / 0.08)"
-                    stroke="none"
-                  />
+              {/* Spark line */}
+              <div className="mb-5 rounded-xl overflow-hidden p-3"
+                style={{ background: 'oklch(0.65 0.18 50 / 0.06)', border: '1px solid oklch(0.65 0.18 50 / 0.15)' }}>
+                <svg viewBox="0 0 120 36" className="w-full h-8" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="oklch(0.65 0.18 50)" stopOpacity="0.3" />
+                      <stop offset="100%" stopColor="oklch(0.65 0.18 50)" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M0,28 L15,22 L30,26 L45,12 L60,18 L75,8 L90,14 L105,6 L120,10" fill="none" stroke="oklch(0.65 0.18 50)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M0,28 L15,22 L30,26 L45,12 L60,18 L75,8 L90,14 L105,6 L120,10 L120,36 L0,36 Z" fill="url(#sparkGrad)" />
                 </svg>
               </div>
-              <h3 className="font-bold text-base mb-2">Histórico e tendências</h3>
+              <h3 className="font-bold text-base mb-1.5 text-foreground">Histórico e tendências</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Condições dos últimos dias e os melhores padrões de swell.
               </p>
@@ -754,32 +749,32 @@ export default function Landing() {
             {/* Card 6 — Log de sessões (2 colunas) */}
             <div className="md:col-span-2 group rounded-2xl p-7 transition-all duration-300 cursor-default relative overflow-hidden"
               style={{
-                background: 'oklch(1 0 0 / 0.025)',
-                border: '1px solid oklch(1 0 0 / 0.08)',
+                background: 'oklch(0.6 0.18 195 / 0.06)',
+                border: '1px solid oklch(0.6 0.18 195 / 0.22)',
                 backdropFilter: 'blur(20px)',
-                boxShadow: '0 4px 32px oklch(0 0 0 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.06)',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 32px oklch(0 0 0 / 0.2), 0 0 40px oklch(0.6 0.2 200 / 0.12), inset 0 1px 0 oklch(1 0 0 / 0.08)')}
-              onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 4px 32px oklch(0 0 0 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.06)')}>
-              <div className="h-11 w-11 rounded-xl bg-cyan-400/10 border border-cyan-400/20 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
+                boxShadow: '0 4px 32px oklch(0 0 0 / 0.2), 0 0 40px oklch(0.6 0.18 195 / 0.06), inset 0 1px 0 oklch(1 0 0 / 0.06)',
+              }}>
+              <div className="h-11 w-11 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300"
+                style={{ background: 'oklch(0.6 0.18 195 / 0.15)', border: '1px solid oklch(0.6 0.18 195 / 0.35)' }}>
                 <Waves className="h-5 w-5 text-cyan-400" />
               </div>
               {/* Sessões mockup */}
-              <div className="mb-4 space-y-1.5">
+              <div className="mb-5 space-y-2">
                 {[
-                  { date: 'Hoje', beach: 'Praia Mole', score: '9.1', color: '#8b5cf6' },
-                  { date: 'Ontem', beach: 'Joaquina', score: '7.8', color: '#06b6d4' },
-                ].map(({ date, beach, score, color }) => (
-                  <div key={date} className="flex items-center justify-between rounded-lg px-2.5 py-1.5 bg-background/40 border border-border/40">
+                  { date: 'Hoje', beach: 'Praia Mole', score: '9.1', color: '#8b5cf6', bg: 'oklch(0.55 0.18 290 / 0.1)', border: 'oklch(0.55 0.18 290 / 0.2)' },
+                  { date: 'Ontem', beach: 'Joaquina', score: '7.8', color: '#06b6d4', bg: 'oklch(0.6 0.18 200 / 0.08)', border: 'oklch(0.6 0.18 200 / 0.18)' },
+                ].map(({ date, beach, score, color, bg, border }) => (
+                  <div key={date} className="flex items-center justify-between rounded-lg px-3 py-2"
+                    style={{ background: bg, border: `1px solid ${border}` }}>
                     <div>
-                      <span className="text-[10px] text-muted-foreground">{date} · </span>
-                      <span className="text-[10px] font-semibold">{beach}</span>
+                      <span className="text-[9px] text-muted-foreground uppercase tracking-wide">{date} · </span>
+                      <span className="text-[11px] font-semibold">{beach}</span>
                     </div>
-                    <span className="text-[11px] font-black" style={{ color }}>{score}</span>
+                    <span className="text-[14px] font-black" style={{ color }}>{score}</span>
                   </div>
                 ))}
               </div>
-              <h3 className="font-bold text-base mb-2">Log de sessões</h3>
+              <h3 className="font-bold text-base mb-1.5 text-foreground">Log de sessões</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Registre suas sessões, notas e memórias. Seu diário de surf.
               </p>
