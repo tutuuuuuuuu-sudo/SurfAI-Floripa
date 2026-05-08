@@ -6,7 +6,7 @@ import {
   Waves, Zap, Bell, BarChart3, Clock, Shield,
   ArrowRight, CheckCircle2, Wind, TrendingUp,
   MapPin, Crown, ChevronRight, ChevronDown, X, Check,
-  Star, Quote, Droplets, Timer, Flame, Lock,
+  Star, Quote, Droplets, Lock,
   Smartphone
 } from 'lucide-react'
 
@@ -64,52 +64,7 @@ const PAIN_POINTS = [
 
 // ─── Sub-componentes ──────────────────────────────────────────────────────────
 
-function CountdownTimer() {
-  const [time, setTime] = useState({ h: 2, m: 47, s: 33 })
 
-  useEffect(() => {
-    const t = setInterval(() => {
-      setTime(prev => {
-        let { h, m, s } = prev
-        s--
-        if (s < 0) { s = 59; m-- }
-        if (m < 0) { m = 59; h-- }
-        if (h < 0) { h = 2; m = 47; s = 33 }
-        return { h, m, s }
-      })
-    }, 1000)
-    return () => clearInterval(t)
-  }, [])
-
-  return (
-    <div className="flex items-center gap-1.5 text-yellow-400 font-mono font-bold text-sm">
-      <Timer className="h-3.5 w-3.5" />
-      <span>{String(time.h).padStart(2, '0')}:{String(time.m).padStart(2, '0')}:{String(time.s).padStart(2, '0')}</span>
-    </div>
-  )
-}
-
-function SocialProofBar() {
-  const [count, setCount] = useState(247)
-
-  useEffect(() => {
-    const t = setInterval(() => {
-      setCount(c => c + (Math.random() > 0.7 ? 1 : 0))
-    }, 8000)
-    return () => clearInterval(t)
-  }, [])
-
-  return (
-    <div className="sticky top-0 z-[60] py-2 px-4 text-center text-xs font-semibold flex items-center justify-center gap-2"
-      style={{ background: 'oklch(0.55 0.16 200)', color: 'white' }}>
-      <Flame className="h-3.5 w-3.5 flex-shrink-0" />
-      <span>
-        <span className="font-black">{count} surfistas</span> estão usando agora · Acesso gratuito disponível
-      </span>
-      <Flame className="h-3.5 w-3.5 flex-shrink-0" />
-    </div>
-  )
-}
 
 function AppMockup() {
   const [active, setActive] = useState(0)
@@ -366,9 +321,6 @@ export default function Landing() {
           style={{ background: 'oklch(0.6 0.18 160)' }} />
       </div>
 
-      {/* BARRA DE PROVA SOCIAL */}
-      <SocialProofBar />
-
       {/* NAV */}
       <nav className="sticky top-8 z-50 backdrop-blur-xl border-b"
         style={{ background: 'oklch(var(--background) / 0.6)', borderColor: 'oklch(1 0 0 / 0.06)' }}>
@@ -408,31 +360,6 @@ export default function Landing() {
             style={{ background: 'radial-gradient(ellipse, oklch(0.65 0.2 280), transparent 70%)' }} />
           <div className="absolute top-1/2 left-0 w-[300px] h-[300px] rounded-full blur-[80px] opacity-08"
             style={{ background: 'radial-gradient(ellipse, oklch(0.6 0.18 160), transparent 70%)' }} />
-        </div>
-
-        {/* Coordenadas geográficas — canto superior direito */}
-        <div className="absolute top-4 right-6 hidden lg:flex flex-col items-end gap-1 pointer-events-none select-none">
-          <span className="font-mono text-[10px] tracking-widest" style={{ color: 'oklch(0.6 0.2 210 / 0.4)' }}>
-            -27.5969° S  48.5495° W
-          </span>
-          <span className="font-mono text-[9px]" style={{ color: 'oklch(0.6 0.2 210 / 0.25)' }}>
-            FLORIANÓPOLIS · SC · BR
-          </span>
-        </div>
-
-        {/* Ping de API — canto inferior esquerdo */}
-        <div className="absolute bottom-6 left-6 hidden lg:flex items-center gap-2 pointer-events-none select-none">
-          <div className="flex items-center gap-1.5 font-mono text-[9px] px-2.5 py-1.5 rounded-lg"
-            style={{
-              background: 'oklch(1 0 0 / 0.03)',
-              border: '1px solid oklch(0.55 0.18 160 / 0.2)',
-              color: 'oklch(0.55 0.18 160 / 0.6)',
-            }}>
-            <div className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
-            <span>GET /api/v1/spots/score</span>
-            <span className="ml-1" style={{ color: 'oklch(0.55 0.18 160 / 0.9)' }}>200</span>
-            <span style={{ color: 'oklch(0.55 0.18 160 / 0.4)' }}>· 48ms</span>
-          </div>
         </div>
 
         <div className="container mx-auto px-5 max-w-6xl relative">
@@ -600,22 +527,6 @@ export default function Landing() {
             </h2>
             <p className="text-muted-foreground max-w-md mx-auto">Em menos de 1 minuto você sabe se vale sair de casa — sem chute, sem grupo de WhatsApp, sem frustração.</p>
 
-            {/* Pipeline de dados decorativo */}
-            <div className="mt-6 flex items-center justify-center gap-2 flex-wrap select-none">
-              {[
-                { label: 'NOAA', ping: '12ms', bg: 'oklch(0.6 0.2 210 / 0.06)', border: 'oklch(0.6 0.2 210 / 0.2)', color: 'oklch(0.6 0.2 210 / 0.7)', dot: 'oklch(0.6 0.2 210)' },
-                { label: 'ECMWF', ping: '18ms', bg: 'oklch(0.65 0.18 290 / 0.06)', border: 'oklch(0.65 0.18 290 / 0.2)', color: 'oklch(0.65 0.18 290 / 0.7)', dot: 'oklch(0.65 0.18 290)' },
-                { label: 'INMET', ping: '9ms', bg: 'oklch(0.55 0.18 160 / 0.06)', border: 'oklch(0.55 0.18 160 / 0.2)', color: 'oklch(0.55 0.18 160 / 0.7)', dot: 'oklch(0.55 0.18 160)' },
-              ].map(({ label, ping, bg, border, color, dot }) => (
-                <div key={label} className="flex items-center gap-1.5 font-mono text-[9px] px-2 py-1 rounded-md"
-                  style={{ background: bg, border: `1px solid ${border}` }}>
-                  <div className="h-1 w-1 rounded-full animate-pulse" style={{ background: dot }} />
-                  <span style={{ color }}>{label}</span>
-                  <span style={{ color: 'oklch(0.5 0.02 220 / 0.4)' }}>{ping}</span>
-                </div>
-              ))}
-              <span className="font-mono text-[9px]" style={{ color: 'oklch(0.5 0.02 220 / 0.3)' }}>→ surf-ai/model · v2.4</span>
-            </div>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 relative">
@@ -706,24 +617,7 @@ export default function Landing() {
                 IA analisa altura, período, vento e maré para gerar uma nota de 0 a 10 para cada praia — atualizada a cada hora.
               </p>
 
-              {/* JSON decorativo da resposta da IA */}
-              <div className="mt-4 rounded-xl p-3 font-mono text-[10px] leading-relaxed select-none"
-                style={{
-                  background: 'oklch(0 0 0 / 0.2)',
-                  border: '1px solid oklch(1 0 0 / 0.06)',
-                  color: 'oklch(0.55 0.02 220)',
-                }}>
-                <span style={{ color: 'oklch(0.5 0.02 220 / 0.5)' }}>{'// surf-ai · score response'}</span>{'\n'}
-                <span style={{ color: 'oklch(0.65 0.18 290 / 0.8)' }}>{'{'}</span>{'\n'}
-                {'  '}<span style={{ color: 'oklch(0.6 0.2 210 / 0.7)' }}>"spot"</span>{': '}<span style={{ color: 'oklch(0.65 0.14 160 / 0.8)' }}>"praia_mole"</span>{',\n'}
-                {'  '}<span style={{ color: 'oklch(0.6 0.2 210 / 0.7)' }}>"score"</span>{': '}<span style={{ color: 'oklch(0.75 0.18 50 / 0.9)' }}>9.1</span>{',\n'}
-                {'  '}<span style={{ color: 'oklch(0.6 0.2 210 / 0.7)' }}>"wave_height"</span>{': '}<span style={{ color: 'oklch(0.75 0.18 50 / 0.9)' }}>1.2</span>{',\n'}
-                {'  '}<span style={{ color: 'oklch(0.6 0.2 210 / 0.7)' }}>"period"</span>{': '}<span style={{ color: 'oklch(0.75 0.18 50 / 0.9)' }}>13</span>{',\n'}
-                {'  '}<span style={{ color: 'oklch(0.6 0.2 210 / 0.7)' }}>"label"</span>{': '}<span style={{ color: 'oklch(0.65 0.14 160 / 0.8)' }}>"ÉPICO"</span>{'\n'}
-                <span style={{ color: 'oklch(0.65 0.18 290 / 0.8)' }}>{'}'}</span>
-              </div>
-
-              <div className="mt-3 flex items-center gap-2">
+              <div className="mt-4 flex items-center gap-2">
                 <div className="h-1.5 w-1.5 rounded-full animate-pulse bg-green-400" />
                 <span className="text-xs text-muted-foreground">Atualizado agora</span>
               </div>
@@ -909,17 +803,6 @@ export default function Landing() {
               ))}
               <span className="text-sm text-muted-foreground ml-2">5.0 · Avaliado pelos surfistas de Floripa</span>
             </div>
-            {/* Contador decorativo de sessões */}
-            <div className="inline-flex items-center gap-2 font-mono text-[9px] px-3 py-1.5 rounded-full select-none"
-              style={{
-                background: 'oklch(0.6 0.2 210 / 0.05)',
-                border: '1px solid oklch(0.6 0.2 210 / 0.15)',
-                color: 'oklch(0.6 0.2 210 / 0.5)',
-              }}>
-              <div className="h-1 w-1 rounded-full animate-pulse" style={{ background: 'oklch(0.6 0.2 210)' }} />
-              <span>12.847 sessões analisadas este mês</span>
-              <span style={{ color: 'oklch(0.6 0.2 210 / 0.3)' }}>· accuracy 94.2%</span>
-            </div>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -980,9 +863,6 @@ export default function Landing() {
               </div>
               <div className="p-4 text-center border-l relative"
                 style={{ borderColor: 'oklch(1 0 0 / 0.06)', background: 'oklch(0.6 0.2 210 / 0.06)' }}>
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <Badge className="bg-primary text-primary-foreground text-[9px] px-2 py-0.5 font-black">POPULAR</Badge>
-                </div>
                 <div className="text-sm font-bold text-primary flex items-center justify-center gap-1.5">
                   <Crown className="h-3.5 w-3.5 text-yellow-400" />Premium
                 </div>
@@ -1044,12 +924,6 @@ export default function Landing() {
             <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full pointer-events-none"
               style={{ background: 'radial-gradient(circle, oklch(0.6 0.16 200 / 0.08), transparent)' }} />
 
-            {/* Dados técnicos decorativos — canto superior direito */}
-            <div className="absolute top-4 right-5 hidden md:flex flex-col items-end gap-1 pointer-events-none select-none">
-              <span className="font-mono text-[8px]" style={{ color: 'oklch(0.65 0.18 50 / 0.35)' }}>surf-ai/premium · v1.0</span>
-              <span className="font-mono text-[8px]" style={{ color: 'oklch(0.65 0.18 50 / 0.2)' }}>model: wave-score-gpt · active</span>
-            </div>
-
             <div className="relative grid md:grid-cols-2 gap-10 items-center">
               <div className="space-y-6">
                 <div>
@@ -1094,12 +968,6 @@ export default function Landing() {
                     </div>
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">Cancele quando quiser</div>
-                </div>
-
-                {/* Urgência no premium */}
-                <div className="rounded-xl border border-yellow-500/20 bg-yellow-500/5 px-4 py-3 text-center md:text-right">
-                  <div className="text-xs text-yellow-400 font-semibold mb-1">Oferta por tempo limitado</div>
-                  <CountdownTimer />
                 </div>
 
                 <Button size="lg" onClick={() => navigate('/login?plan=premium')}
