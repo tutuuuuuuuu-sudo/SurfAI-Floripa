@@ -410,6 +410,31 @@ export default function Landing() {
             style={{ background: 'radial-gradient(ellipse, oklch(0.6 0.18 160), transparent 70%)' }} />
         </div>
 
+        {/* Coordenadas geográficas — canto superior direito */}
+        <div className="absolute top-4 right-6 hidden lg:flex flex-col items-end gap-1 pointer-events-none select-none">
+          <span className="font-mono text-[10px] tracking-widest" style={{ color: 'oklch(0.6 0.2 210 / 0.4)' }}>
+            -27.5969° S  48.5495° W
+          </span>
+          <span className="font-mono text-[9px]" style={{ color: 'oklch(0.6 0.2 210 / 0.25)' }}>
+            FLORIANÓPOLIS · SC · BR
+          </span>
+        </div>
+
+        {/* Ping de API — canto inferior esquerdo */}
+        <div className="absolute bottom-6 left-6 hidden lg:flex items-center gap-2 pointer-events-none select-none">
+          <div className="flex items-center gap-1.5 font-mono text-[9px] px-2.5 py-1.5 rounded-lg"
+            style={{
+              background: 'oklch(1 0 0 / 0.03)',
+              border: '1px solid oklch(0.55 0.18 160 / 0.2)',
+              color: 'oklch(0.55 0.18 160 / 0.6)',
+            }}>
+            <div className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
+            <span>GET /api/v1/spots/score</span>
+            <span className="ml-1" style={{ color: 'oklch(0.55 0.18 160 / 0.9)' }}>200</span>
+            <span style={{ color: 'oklch(0.55 0.18 160 / 0.4)' }}>· 48ms</span>
+          </div>
+        </div>
+
         <div className="container mx-auto px-5 max-w-6xl relative">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
 
@@ -556,8 +581,16 @@ export default function Landing() {
       </section>
 
       {/* COMO FUNCIONA */}
-      <section className="py-20 border-t border-border/30">
-        <div className="container mx-auto px-5 max-w-5xl">
+      <section className="py-20 border-t border-border/30 relative overflow-hidden">
+
+        {/* Grade decorativa de fundo */}
+        <div className="absolute inset-0 pointer-events-none select-none opacity-[0.025]"
+          style={{
+            backgroundImage: 'linear-gradient(oklch(0.6 0.2 210) 1px, transparent 1px), linear-gradient(90deg, oklch(0.6 0.2 210) 1px, transparent 1px)',
+            backgroundSize: '40px 40px',
+          }} />
+
+        <div className="container mx-auto px-5 max-w-5xl relative">
           <div className="text-center mb-14">
             <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 mb-4 px-4 py-1">
               Como funciona
@@ -566,6 +599,23 @@ export default function Landing() {
               Enquanto você lê isso, tem gente<br />surfando na praia certa.
             </h2>
             <p className="text-muted-foreground max-w-md mx-auto">Em menos de 1 minuto você sabe se vale sair de casa — sem chute, sem grupo de WhatsApp, sem frustração.</p>
+
+            {/* Pipeline de dados decorativo */}
+            <div className="mt-6 flex items-center justify-center gap-2 flex-wrap select-none">
+              {[
+                { label: 'NOAA', ping: '12ms', bg: 'oklch(0.6 0.2 210 / 0.06)', border: 'oklch(0.6 0.2 210 / 0.2)', color: 'oklch(0.6 0.2 210 / 0.7)', dot: 'oklch(0.6 0.2 210)' },
+                { label: 'ECMWF', ping: '18ms', bg: 'oklch(0.65 0.18 290 / 0.06)', border: 'oklch(0.65 0.18 290 / 0.2)', color: 'oklch(0.65 0.18 290 / 0.7)', dot: 'oklch(0.65 0.18 290)' },
+                { label: 'INMET', ping: '9ms', bg: 'oklch(0.55 0.18 160 / 0.06)', border: 'oklch(0.55 0.18 160 / 0.2)', color: 'oklch(0.55 0.18 160 / 0.7)', dot: 'oklch(0.55 0.18 160)' },
+              ].map(({ label, ping, bg, border, color, dot }) => (
+                <div key={label} className="flex items-center gap-1.5 font-mono text-[9px] px-2 py-1 rounded-md"
+                  style={{ background: bg, border: `1px solid ${border}` }}>
+                  <div className="h-1 w-1 rounded-full animate-pulse" style={{ background: dot }} />
+                  <span style={{ color }}>{label}</span>
+                  <span style={{ color: 'oklch(0.5 0.02 220 / 0.4)' }}>{ping}</span>
+                </div>
+              ))}
+              <span className="font-mono text-[9px]" style={{ color: 'oklch(0.5 0.02 220 / 0.3)' }}>→ surf-ai/model · v2.4</span>
+            </div>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 relative">
@@ -655,7 +705,25 @@ export default function Landing() {
               <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">
                 IA analisa altura, período, vento e maré para gerar uma nota de 0 a 10 para cada praia — atualizada a cada hora.
               </p>
-              <div className="mt-5 flex items-center gap-2">
+
+              {/* JSON decorativo da resposta da IA */}
+              <div className="mt-4 rounded-xl p-3 font-mono text-[10px] leading-relaxed select-none"
+                style={{
+                  background: 'oklch(0 0 0 / 0.2)',
+                  border: '1px solid oklch(1 0 0 / 0.06)',
+                  color: 'oklch(0.55 0.02 220)',
+                }}>
+                <span style={{ color: 'oklch(0.5 0.02 220 / 0.5)' }}>{'// surf-ai · score response'}</span>{'\n'}
+                <span style={{ color: 'oklch(0.65 0.18 290 / 0.8)' }}>{'{'}</span>{'\n'}
+                {'  '}<span style={{ color: 'oklch(0.6 0.2 210 / 0.7)' }}>"spot"</span>{': '}<span style={{ color: 'oklch(0.65 0.14 160 / 0.8)' }}>"praia_mole"</span>{',\n'}
+                {'  '}<span style={{ color: 'oklch(0.6 0.2 210 / 0.7)' }}>"score"</span>{': '}<span style={{ color: 'oklch(0.75 0.18 50 / 0.9)' }}>9.1</span>{',\n'}
+                {'  '}<span style={{ color: 'oklch(0.6 0.2 210 / 0.7)' }}>"wave_height"</span>{': '}<span style={{ color: 'oklch(0.75 0.18 50 / 0.9)' }}>1.2</span>{',\n'}
+                {'  '}<span style={{ color: 'oklch(0.6 0.2 210 / 0.7)' }}>"period"</span>{': '}<span style={{ color: 'oklch(0.75 0.18 50 / 0.9)' }}>13</span>{',\n'}
+                {'  '}<span style={{ color: 'oklch(0.6 0.2 210 / 0.7)' }}>"label"</span>{': '}<span style={{ color: 'oklch(0.65 0.14 160 / 0.8)' }}>"ÉPICO"</span>{'\n'}
+                <span style={{ color: 'oklch(0.65 0.18 290 / 0.8)' }}>{'}'}</span>
+              </div>
+
+              <div className="mt-3 flex items-center gap-2">
                 <div className="h-1.5 w-1.5 rounded-full animate-pulse bg-green-400" />
                 <span className="text-xs text-muted-foreground">Atualizado agora</span>
               </div>
@@ -835,11 +903,22 @@ export default function Landing() {
             <h2 className="text-3xl md:text-4xl font-black mb-4">
               Todo dia alguém chega na praia<br />na hora certa por causa disso.
             </h2>
-            <div className="flex items-center justify-center gap-1 mb-2">
+            <div className="flex items-center justify-center gap-1 mb-3">
               {Array.from({ length: 5 }).map((_, i) => (
                 <Star key={i} className="h-4 w-4 text-yellow-400 fill-yellow-400" />
               ))}
               <span className="text-sm text-muted-foreground ml-2">5.0 · Avaliado pelos surfistas de Floripa</span>
+            </div>
+            {/* Contador decorativo de sessões */}
+            <div className="inline-flex items-center gap-2 font-mono text-[9px] px-3 py-1.5 rounded-full select-none"
+              style={{
+                background: 'oklch(0.6 0.2 210 / 0.05)',
+                border: '1px solid oklch(0.6 0.2 210 / 0.15)',
+                color: 'oklch(0.6 0.2 210 / 0.5)',
+              }}>
+              <div className="h-1 w-1 rounded-full animate-pulse" style={{ background: 'oklch(0.6 0.2 210)' }} />
+              <span>12.847 sessões analisadas este mês</span>
+              <span style={{ color: 'oklch(0.6 0.2 210 / 0.3)' }}>· accuracy 94.2%</span>
             </div>
           </div>
 
@@ -964,6 +1043,12 @@ export default function Landing() {
               style={{ background: 'radial-gradient(circle, oklch(0.6 0.16 60 / 0.1), transparent)' }} />
             <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full pointer-events-none"
               style={{ background: 'radial-gradient(circle, oklch(0.6 0.16 200 / 0.08), transparent)' }} />
+
+            {/* Dados técnicos decorativos — canto superior direito */}
+            <div className="absolute top-4 right-5 hidden md:flex flex-col items-end gap-1 pointer-events-none select-none">
+              <span className="font-mono text-[8px]" style={{ color: 'oklch(0.65 0.18 50 / 0.35)' }}>surf-ai/premium · v1.0</span>
+              <span className="font-mono text-[8px]" style={{ color: 'oklch(0.65 0.18 50 / 0.2)' }}>model: wave-score-gpt · active</span>
+            </div>
 
             <div className="relative grid md:grid-cols-2 gap-10 items-center">
               <div className="space-y-6">
