@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { AppLogo } from '@/components/AppLogo'
 
 export default function LoginPage() {
   const [tab, setTab] = useState<'login' | 'signup'>('login')
@@ -43,18 +44,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex bg-[#0a1628]">
       <div className="hidden md:flex flex-col justify-between flex-1 p-12 relative overflow-hidden"
         style={{ background: 'linear-gradient(160deg, #0d2137 0%, #0a3d2e 60%, #083d2a 100%)' }}>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#1d9e75] flex items-center justify-center">
-            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-              <path d="M2 15 Q6 9 11 12 Q16 15 20 8" stroke="white" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-              <path d="M2 18 Q6 12 11 15 Q16 18 20 11" stroke="#5dcaa5" strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.7"/>
-            </svg>
-          </div>
-          <div>
-            <p className="text-white font-semibold text-xl leading-tight">Surf AI</p>
-            <p className="text-[#5dcaa5] text-xs">Florianópolis, SC</p>
-          </div>
-        </div>
+        <AppLogo size={44} variant="full" />
         <div>
           <h2 className="text-white text-3xl font-bold leading-snug mb-3">
             Onde está melhor<br />para surfar agora?

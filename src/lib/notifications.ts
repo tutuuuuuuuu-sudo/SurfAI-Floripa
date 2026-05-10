@@ -37,8 +37,8 @@ export async function sendLocalNotification(title: string, body: string, url?: s
     const registration = await navigator.serviceWorker.ready
     await registration.showNotification(title, {
       body,
-      icon: '/waves-icon.png',
-      badge: '/waves-icon.png',
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
       data: { url: url ?? '/' },
       tag: 'surf-alert',
     })

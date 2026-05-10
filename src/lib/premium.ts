@@ -128,27 +128,27 @@ export async function createMercadoPagoCheckout(
 
 export const PREMIUM_BENEFITS = [
   {
-    icon: '📅',
+    icon: 'Calendar',
     title: 'Previsão 14 dias',
     desc: 'Veja as condições dos próximos 14 dias em todas as praias',
   },
   {
-    icon: '🔔',
+    icon: 'Bell',
     title: 'Alertas de ondas',
     desc: 'Receba notificações push quando as condições estiverem perfeitas',
   },
   {
-    icon: '📊',
+    icon: 'BarChart3',
     title: 'Histórico de condições',
     desc: 'Consulte como estava o mar nos últimos 7 dias',
   },
   {
-    icon: '🚫',
+    icon: 'ShieldOff',
     title: 'Sem anúncios',
     desc: 'Navegue pelo app sem nenhum anúncio',
   },
   {
-    icon: '🏄',
+    icon: 'Crown',
     title: 'Badge Premium',
     desc: 'Destaque no seu perfil com o selo de surfista premium',
   },

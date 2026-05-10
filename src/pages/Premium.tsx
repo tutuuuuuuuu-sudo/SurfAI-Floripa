@@ -2,19 +2,22 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Check, Crown, Loader2, CheckCircle2, XCircle, Clock } from 'lucide-react'
+import {
+  ArrowLeft, Check, Crown, Loader2, CheckCircle2, XCircle, Clock,
+  Sparkles, Calendar, Bell, BookOpen, BarChart3, Zap, ShieldOff
+} from 'lucide-react'
 import { createMercadoPagoCheckout, usePremium } from '@/lib/premium'
 import { useAuth } from '@/contexts/AuthContext'
 
 const PREMIUM_BENEFITS = [
-  { icon: '🤖', title: 'Relatório de IA personalizado', desc: 'Claude AI analisa as condições e escreve um relatório diário pro seu nível de surf.' },
-  { icon: '📅', title: 'Previsão 14 dias', desc: 'Planeje suas sessões com antecedência. Free tem apenas 3 dias.' },
-  { icon: '🔔', title: 'Alertas de swell', desc: 'Receba notificação quando suas praias favoritas estiverem boas.' },
-  { icon: '📓', title: 'Log de sessões', desc: 'Registre cada sessão com nota, duração e anotações. Veja seu histórico.' },
-  { icon: '📊', title: 'Histórico 30 dias', desc: 'Veja como as condições evoluíram nas últimas semanas.' },
-  { icon: '⚡', title: 'Melhor janela do dia', desc: 'Horário exato com melhores condições calculado hora a hora.' },
-  { icon: '🚫', title: 'Sem anúncios', desc: 'Experiência limpa e sem interrupções.' },
-  { icon: '👑', title: 'Badge Premium', desc: 'Destaque no perfil e nos relatos da comunidade.' },
+  { icon: Sparkles, title: 'Relatório de IA personalizado', desc: 'IA analisa as condições e escreve um relatório diário pro seu nível de surf.' },
+  { icon: Calendar, title: 'Previsão 14 dias', desc: 'Planeje suas sessões com antecedência. Free tem apenas 3 dias.' },
+  { icon: Bell, title: 'Alertas de swell', desc: 'Receba notificação quando suas praias favoritas estiverem boas.' },
+  { icon: BookOpen, title: 'Log de sessões', desc: 'Registre cada sessão com nota, duração e anotações. Veja seu histórico.' },
+  { icon: BarChart3, title: 'Histórico 30 dias', desc: 'Veja como as condições evoluíram nas últimas semanas.' },
+  { icon: Zap, title: 'Melhor janela do dia', desc: 'Horário exato com melhores condições calculado hora a hora.' },
+  { icon: ShieldOff, title: 'Sem anúncios', desc: 'Experiência limpa e sem interrupções.' },
+  { icon: Crown, title: 'Badge Premium', desc: 'Destaque no perfil e nos relatos da comunidade.' },
 ]
 
 export default function PremiumPage() {
@@ -151,8 +154,8 @@ export default function PremiumPage() {
                 {PREMIUM_BENEFITS.map((benefit, idx) => (
                   <div key={idx} className="flex items-start gap-3"
                     style={{ animation: `slideUp 0.3s ${0.15 + idx * 0.05}s ease-out both` }}>
-                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center text-base">
-                      {benefit.icon}
+                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center">
+                      <benefit.icon className="h-4 w-4 text-yellow-500" />
                     </div>
                     <div className="flex-1">
                       <div className="text-sm font-semibold">{benefit.title}</div>

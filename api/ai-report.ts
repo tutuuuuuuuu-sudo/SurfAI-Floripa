@@ -5,7 +5,22 @@ const ALLOWED_ORIGIN = process.env.VITE_APP_URL ?? 'https://surf-ai-floripa.verc
 const CORS = {
   'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
+// Verifica se o token JWT do Supabase é válido consultando o endpoint /auth/v1/user
+async function verifySupabaseToken(token: string): Promise<boolean> {
+  const supabaseUrl = process.env.VITE_SUPABASE_URL
+  const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY
+  if (!supabaseUrl || !supabaseAnonKey) return false
+  try {
+    const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: { 'Authorization': `Bearer ${token}`, 'apikey': supabaseAnonKey },
+    })
+    return res.ok
+  } catch {
+    return false
+  }
 }
 
 export default async function handler(req: Request) {
@@ -15,6 +30,23 @@ export default async function handler(req: Request) {
 
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 })
+  }
+
+  // Requer autenticação — só usuários logados podem gerar relatórios
+  const authHeader = req.headers.get('Authorization')
+  const token = authHeader?.replace('Bearer ', '').trim()
+  if (!token) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
+    })
+  }
+  const isValid = await verifySupabaseToken(token)
+  if (!isValid) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
+    })
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY

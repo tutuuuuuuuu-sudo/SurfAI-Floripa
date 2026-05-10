@@ -9,6 +9,7 @@ import {
   Star, Quote, Droplets, Lock,
   Smartphone
 } from 'lucide-react'
+import { AppLogo } from '@/components/AppLogo'
 
 // ─── Dados ───────────────────────────────────────────────────────────────────
 
@@ -107,10 +108,7 @@ function AppMockup() {
         {/* App header */}
         <div className="px-4 py-2.5 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-xl flex items-center justify-center"
-              style={{ background: 'oklch(0.6 0.16 200 / 0.2)' }}>
-              <Waves className="h-4 w-4" style={{ color: 'oklch(0.6 0.16 200)' }} />
-            </div>
+            <AppLogo size={22} variant="icon" />
             <div>
               <div className="text-[12px] font-black text-white leading-none">Surf AI</div>
               <div className="text-[8px] font-medium" style={{ color: 'oklch(0.5 0.02 220)' }}>Florianópolis, SC</div>
@@ -326,11 +324,7 @@ export default function Landing() {
         style={{ background: 'oklch(var(--background) / 0.6)', borderColor: 'oklch(1 0 0 / 0.06)' }}>
         <div className="container mx-auto px-5 py-3 flex items-center justify-between max-w-6xl">
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-xl flex items-center justify-center"
-              style={{ background: 'oklch(0.6 0.16 200 / 0.15)', border: '1px solid oklch(0.6 0.16 200 / 0.3)' }}>
-              <Waves className="h-4.5 w-4.5 text-primary" />
-            </div>
-            <span className="font-black text-lg tracking-tight">Surf AI</span>
+            <AppLogo size={34} variant="full" />
             <Badge variant="outline" className="hidden sm:flex border-primary/30 text-primary bg-primary/5 text-[10px] px-2 py-0.5">
               Florianópolis
             </Badge>
@@ -1134,13 +1128,7 @@ export default function Landing() {
       <footer className="py-8"
         style={{ borderTop: '1px solid oklch(1 0 0 / 0.06)', background: 'oklch(1 0 0 / 0.015)', backdropFilter: 'blur(20px)' }}>
         <div className="container mx-auto px-5 max-w-5xl flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-lg flex items-center justify-center"
-              style={{ background: 'oklch(0.6 0.16 200 / 0.15)', border: '1px solid oklch(0.6 0.16 200 / 0.25)' }}>
-              <Waves className="h-4 w-4 text-primary" />
-            </div>
-            <span className="font-black text-sm">Surf AI</span>
-          </div>
+          <AppLogo size={30} variant="full" />
           <div className="text-xs text-muted-foreground text-center">
             Florianópolis, SC · Dados atualizados a cada hora · Feito com 🤙 para surfistas
           </div>

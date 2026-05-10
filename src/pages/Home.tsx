@@ -19,6 +19,7 @@ import {
   saveNotificationSettings,
   checkAndNotifyGoodConditions
 } from '@/lib/notifications'
+import { AppLogo } from '@/components/AppLogo'
 import {
   Waves, TrendingUp, TrendingDown, Minus, MapPin, Info, Heart, Settings,
   Bell, BellOff, X, ChevronDown, ChevronUp, Navigation, Crown, Sparkles,
@@ -295,8 +296,7 @@ export default function Home() {
       <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border/40">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center"><Waves className="h-6 w-6 text-primary animate-bounce" /></div>
-            <div><h1 className="text-2xl font-bold">Surf AI</h1><p className="text-xs text-muted-foreground">Florianópolis, SC</p></div>
+            <AppLogo size={40} variant="full" />
           </div>
         </div>
       </header>
@@ -325,8 +325,7 @@ export default function Home() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3" style={{ animation: 'slideInLeft 0.4s ease-out' }}>
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center"><Waves className="h-6 w-6 text-primary" /></div>
-              <div><h1 className="text-2xl font-bold">Surf AI</h1><p className="text-xs text-muted-foreground">Florianópolis, SC</p></div>
+              <AppLogo size={40} variant="full" />
             </div>
             <div className="flex items-center gap-2" style={{ animation: 'slideInRight 0.4s ease-out' }}>
               <Button variant="outline" size="sm" onClick={() => navigate('/navigation')} className="hidden sm:flex">

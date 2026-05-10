@@ -110,11 +110,12 @@ export default async function handler(req: Request) {
       }
     }
 
+    const allowedOrigin = process.env.VITE_APP_URL ?? 'https://surf-ai-floripa.vercel.app'
     return new Response(JSON.stringify({
       waveHeight, windSpeed, windDirection, swellPeriod,
       swellDirection, waterTemperature, sunrise, sunset, tideData
     }), {
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': allowedOrigin }
     })
   } catch (error) {
     return new Response(JSON.stringify({ error: 'Failed to fetch' }), {

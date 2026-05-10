@@ -33,6 +33,10 @@ export default async function handler(req: Request) {
 
   if (!userId || !userEmail) return json({ error: 'userId e userEmail são obrigatórios' }, 400)
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(userEmail)) return json({ error: 'Email inválido' }, 400)
+  if (userId.length > 128) return json({ error: 'userId inválido' }, 400)
+
   const baseUrl = process.env.VITE_APP_URL ?? 'https://surf-ai-floripa.vercel.app'
 
   const preference = {
