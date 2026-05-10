@@ -5,94 +5,109 @@ interface AppLogoProps {
 }
 
 export function AppLogo({ size = 40, className = '', variant = 'icon' }: AppLogoProps) {
-  if (variant === 'icon') {
-    return (
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 40 40"
+  const id = `logo-${size}`
+
+  const icon = (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 64 64"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={variant === 'icon' ? className : ''}
+    >
+      <defs>
+        <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#08111f" />
+          <stop offset="100%" stopColor="#040c17" />
+        </linearGradient>
+        <linearGradient id={`${id}-wave`} x1="8" y1="32" x2="56" y2="32" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#06b6d4" />
+          <stop offset="100%" stopColor="#818cf8" />
+        </linearGradient>
+        <linearGradient id={`${id}-bar`} x1="0" y1="0" x2="0" y2="64" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#06b6d4" />
+          <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.08" />
+        </linearGradient>
+        <linearGradient id={`${id}-arc`} x1="4" y1="4" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.9" />
+          <stop offset="55%" stopColor="#818cf8" stopOpacity="0.5" />
+          <stop offset="100%" stopColor="#818cf8" stopOpacity="0" />
+        </linearGradient>
+        <radialGradient id={`${id}-dot`} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="white" />
+          <stop offset="40%" stopColor="#7dd3fc" />
+          <stop offset="100%" stopColor="#818cf8" stopOpacity="0" />
+        </radialGradient>
+        <filter id={`${id}-glow`} x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="1.8" result="b" />
+          <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+        <filter id={`${id}-glow-sm`} x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="0.9" result="b" />
+          <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+        <clipPath id={`${id}-clip`}>
+          <rect width="64" height="64" rx="16" />
+        </clipPath>
+      </defs>
+
+      {/* Fundo */}
+      <rect width="64" height="64" rx="16" fill={`url(#${id}-bg)`} />
+
+      {/* Arco de radar — trecho iluminado no canto superior esquerdo */}
+      <circle
+        cx="32" cy="32" r="26"
+        stroke={`url(#${id}-arc)`}
+        strokeWidth="1"
+        strokeDasharray="42 122"
+        strokeDashoffset="8"
         fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        className={className}
-      >
-        <defs>
-          <linearGradient id="logo-bg" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="#0d1f35" />
-            <stop offset="100%" stopColor="#071828" />
-          </linearGradient>
-          <linearGradient id="logo-wave1" x1="0" y1="0" x2="40" y2="0" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="#06b6d4" />
-            <stop offset="100%" stopColor="#3b82f6" />
-          </linearGradient>
-          <linearGradient id="logo-wave2" x1="0" y1="0" x2="40" y2="0" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.5" />
-            <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.3" />
-          </linearGradient>
-          <linearGradient id="logo-dot" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox">
-            <stop offset="0%" stopColor="#38bdf8" />
-            <stop offset="100%" stopColor="#6366f1" />
-          </linearGradient>
-          <filter id="logo-glow">
-            <feGaussianBlur stdDeviation="1.2" result="blur" />
-            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-          </filter>
-        </defs>
+        strokeLinecap="round"
+        filter={`url(#${id}-glow-sm)`}
+      />
 
-        {/* Fundo com bordas arredondadas */}
-        <rect width="40" height="40" rx="10" fill="url(#logo-bg)" />
+      {/* Anel interno sutil */}
+      <circle cx="32" cy="32" r="20" stroke="#06b6d4" strokeWidth="0.5" strokeOpacity="0.1" fill="none" />
 
-        {/* Borda sutil */}
-        <rect width="40" height="40" rx="10" fill="none" stroke="#06b6d4" strokeWidth="0.5" strokeOpacity="0.3" />
+      {/* Barras de frequência — simétricas, 3 de cada lado */}
+      {/* Esquerda: baixa, média, alta */}
+      <rect x="10" y="38" width="4" height="10" rx="2" fill={`url(#${id}-bar)`} opacity="0.5" />
+      <rect x="17" y="32" width="4" height="16" rx="2" fill={`url(#${id}-bar)`} opacity="0.75" />
+      <rect x="24" y="25" width="4" height="23" rx="2" fill={`url(#${id}-bar)`} opacity="0.95" />
+      {/* Direita: alta, média, baixa */}
+      <rect x="36" y="25" width="4" height="23" rx="2" fill={`url(#${id}-bar)`} opacity="0.95" />
+      <rect x="43" y="32" width="4" height="16" rx="2" fill={`url(#${id}-bar)`} opacity="0.75" />
+      <rect x="50" y="38" width="4" height="10" rx="2" fill={`url(#${id}-bar)`} opacity="0.5" />
 
-        {/* Grade de pontos decorativa */}
-        {[14, 19, 24].map(cx =>
-          [13, 18, 23].map(cy => (
-            <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="0.6" fill="#06b6d4" fillOpacity="0.12" />
-          ))
-        )}
+      {/* Onda cortando as barras */}
+      <path
+        d="M8 32 C16 22, 24 42, 32 32 C40 22, 48 42, 56 32"
+        stroke={`url(#${id}-wave)`}
+        strokeWidth="3"
+        strokeLinecap="round"
+        fill="none"
+        filter={`url(#${id}-glow)`}
+      />
 
-        {/* Onda principal — curva suave e precisa */}
-        <path
-          d="M6 22 C10 16, 15 26, 20 20 C25 14, 30 24, 34 18"
-          stroke="url(#logo-wave1)"
-          strokeWidth="2.4"
-          strokeLinecap="round"
-          fill="none"
-          filter="url(#logo-glow)"
-        />
+      {/* Ponto central — pico da onda */}
+      <circle cx="32" cy="32" r="5" fill={`url(#${id}-dot)`} filter={`url(#${id}-glow)`} />
+      <circle cx="32" cy="32" r="2" fill="white" fillOpacity="0.98" />
+    </svg>
+  )
 
-        {/* Onda secundária — mais suave e transparente */}
-        <path
-          d="M6 26 C10 22, 15 30, 20 25 C25 20, 30 28, 34 23"
-          stroke="url(#logo-wave2)"
-          strokeWidth="1.4"
-          strokeLinecap="round"
-          fill="none"
-        />
+  if (variant === 'icon') return icon
 
-        {/* Ponto de destaque — "AI dot" no pico da onda */}
-        <circle cx="20" cy="20" r="2.5" fill="url(#logo-dot)" filter="url(#logo-glow)" />
-        <circle cx="20" cy="20" r="1.2" fill="white" fillOpacity="0.9" />
-
-        {/* Linha vertical sutil ligando ao ponto */}
-        <line x1="20" y1="10" x2="20" y2="17.5" stroke="#06b6d4" strokeWidth="0.8" strokeOpacity="0.4" strokeDasharray="1.5 2" />
-
-        {/* "AI" label minúsculo no topo */}
-        <text x="20" y="9.5" textAnchor="middle" fontSize="4.5" fontWeight="700" fill="#06b6d4" fillOpacity="0.8" fontFamily="system-ui, sans-serif" letterSpacing="0.5">AI</text>
-      </svg>
-    )
-  }
-
-  // Variant "full" — ícone + texto
   return (
-    <div className={`flex items-center gap-2.5 ${className}`}>
-      <AppLogo size={size} variant="icon" />
-      <div className="flex flex-col leading-none">
+    <div className={`flex items-center gap-2 ${className}`}>
+      {icon}
+      <div className="flex flex-col leading-none gap-0.5">
         <span
-          className="font-black tracking-tight"
           style={{
-            fontSize: size * 0.45,
-            background: 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)',
+            fontSize: size * 0.38,
+            fontWeight: 900,
+            letterSpacing: '-0.02em',
+            background: 'linear-gradient(120deg, #06b6d4 0%, #818cf8 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
@@ -101,8 +116,13 @@ export function AppLogo({ size = 40, className = '', variant = 'icon' }: AppLogo
           Surf AI
         </span>
         <span
-          className="text-muted-foreground font-medium tracking-wider uppercase"
-          style={{ fontSize: size * 0.2 }}
+          style={{
+            fontSize: size * 0.175,
+            fontWeight: 500,
+            letterSpacing: '0.12em',
+            color: 'oklch(0.55 0.02 230)',
+            textTransform: 'uppercase',
+          }}
         >
           Florianópolis
         </span>

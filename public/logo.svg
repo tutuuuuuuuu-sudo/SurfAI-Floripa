@@ -1,62 +1,66 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#0d1f35"/>
-      <stop offset="100%" stop-color="#071828"/>
+      <stop offset="0%" stop-color="#08111f"/>
+      <stop offset="100%" stop-color="#040c17"/>
     </linearGradient>
-    <linearGradient id="wave1" x1="60" y1="256" x2="452" y2="256" gradientUnits="userSpaceOnUse">
+    <linearGradient id="wave" x1="64" y1="256" x2="448" y2="256" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#06b6d4"/>
-      <stop offset="100%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#818cf8"/>
     </linearGradient>
-    <linearGradient id="wave2" x1="60" y1="310" x2="452" y2="310" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.5"/>
-      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.3"/>
+    <linearGradient id="bar" x1="0" y1="0" x2="0" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#06b6d4" stop-opacity="0.06"/>
     </linearGradient>
-    <linearGradient id="dot" x1="206" y1="206" x2="306" y2="306" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#38bdf8"/>
-      <stop offset="100%" stop-color="#6366f1"/>
+    <linearGradient id="arc" x1="30" y1="30" x2="480" y2="480" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.9"/>
+      <stop offset="55%" stop-color="#818cf8" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#818cf8" stop-opacity="0"/>
     </linearGradient>
-    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="10" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    <radialGradient id="dot" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="white"/>
+      <stop offset="40%" stop-color="#7dd3fc"/>
+      <stop offset="100%" stop-color="#818cf8" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="12" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
-    <filter id="glow-strong" x="-40%" y="-40%" width="180%" height="180%">
-      <feGaussianBlur stdDeviation="18" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    <filter id="glow-sm" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
 
   <!-- Fundo -->
   <rect width="512" height="512" rx="120" fill="url(#bg)"/>
 
-  <!-- Borda sutil -->
-  <rect width="512" height="512" rx="120" fill="none" stroke="#06b6d4" stroke-width="4" stroke-opacity="0.2"/>
+  <!-- Arco de radar iluminado -->
+  <circle cx="256" cy="256" r="208"
+    stroke="url(#arc)" stroke-width="7"
+    stroke-dasharray="336 972" stroke-dashoffset="64"
+    fill="none" stroke-linecap="round"
+    filter="url(#glow-sm)"/>
 
-  <!-- Grade de pontos decorativa -->
-  <g fill="#06b6d4" fill-opacity="0.08">
-    <circle cx="110" cy="150" r="5"/><circle cx="160" cy="150" r="5"/><circle cx="210" cy="150" r="5"/>
-    <circle cx="302" cy="150" r="5"/><circle cx="352" cy="150" r="5"/><circle cx="402" cy="150" r="5"/>
-    <circle cx="110" cy="200" r="5"/><circle cx="160" cy="200" r="5"/><circle cx="210" cy="200" r="5"/>
-    <circle cx="302" cy="200" r="5"/><circle cx="352" cy="200" r="5"/><circle cx="402" cy="200" r="5"/>
-    <circle cx="110" cy="360" r="5"/><circle cx="160" cy="360" r="5"/><circle cx="210" cy="360" r="5"/>
-    <circle cx="302" cy="360" r="5"/><circle cx="352" cy="360" r="5"/><circle cx="402" cy="360" r="5"/>
-  </g>
+  <!-- Anel interno sutil -->
+  <circle cx="256" cy="256" r="160" stroke="#06b6d4" stroke-width="3" stroke-opacity="0.1" fill="none"/>
 
-  <!-- Linha vertical tracejada conectando ao pico -->
-  <line x1="256" y1="130" x2="256" y2="230" stroke="#06b6d4" stroke-width="3" stroke-opacity="0.35" stroke-dasharray="12 16"/>
+  <!-- Barras de frequência simétricas -->
+  <!-- Esquerda -->
+  <rect x="80"  y="302" width="32" height="80"  rx="16" fill="url(#bar)" opacity="0.5"/>
+  <rect x="136" y="256" width="32" height="126" rx="16" fill="url(#bar)" opacity="0.75"/>
+  <rect x="192" y="200" width="32" height="182" rx="16" fill="url(#bar)" opacity="0.95"/>
+  <!-- Direita -->
+  <rect x="288" y="200" width="32" height="182" rx="16" fill="url(#bar)" opacity="0.95"/>
+  <rect x="344" y="256" width="32" height="126" rx="16" fill="url(#bar)" opacity="0.75"/>
+  <rect x="400" y="302" width="32" height="80"  rx="16" fill="url(#bar)" opacity="0.5"/>
 
-  <!-- Label "AI" no topo -->
-  <text x="256" y="125" text-anchor="middle" font-size="52" font-weight="800" fill="#06b6d4" fill-opacity="0.75" font-family="system-ui, -apple-system, sans-serif" letter-spacing="4">AI</text>
+  <!-- Onda cortando as barras -->
+  <path d="M64 256 C128 176, 192 336, 256 256 C320 176, 384 336, 448 256"
+    stroke="url(#wave)" stroke-width="26" stroke-linecap="round" fill="none"
+    filter="url(#glow)"/>
 
-  <!-- Onda principal -->
-  <path d="M72 265 C130 185, 192 320, 256 248 C320 176, 382 300, 440 220"
-    stroke="url(#wave1)" stroke-width="26" stroke-linecap="round" fill="none" filter="url(#glow)"/>
-
-  <!-- Onda secundária -->
-  <path d="M72 310 C130 255, 192 370, 256 305 C320 240, 382 355, 440 285"
-    stroke="url(#wave2)" stroke-width="16" stroke-linecap="round" fill="none"/>
-
-  <!-- Ponto de pico — "AI dot" -->
-  <circle cx="256" cy="248" r="32" fill="url(#dot)" filter="url(#glow-strong)"/>
-  <circle cx="256" cy="248" r="15" fill="white" fill-opacity="0.95"/>
+  <!-- Ponto central -->
+  <circle cx="256" cy="256" r="42" fill="url(#dot)" filter="url(#glow)"/>
+  <circle cx="256" cy="256" r="18" fill="white" fill-opacity="0.97"/>
 </svg>
