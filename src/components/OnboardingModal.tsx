@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Waves, Anchor, Zap, TrendingUp } from 'lucide-react'
+import { AppLogo } from '@/components/AppLogo'
+import { Anchor, Zap, TrendingUp } from 'lucide-react'
 
 type SkillLevel = 'Iniciante' | 'Intermediário' | 'Avançado'
 
@@ -30,8 +31,8 @@ export function OnboardingModal({ onDone }: Props) {
       <div className="w-full max-w-sm space-y-6 anim-slide pb-4">
 
         <div className="text-center space-y-3">
-          <div className="h-16 w-16 rounded-2xl bg-primary/15 flex items-center justify-center mx-auto">
-            <Waves className="h-8 w-8 text-primary" />
+          <div className="flex justify-center">
+            <AppLogo size={64} variant="icon" />
           </div>
           <div>
             <h2 className="text-2xl font-black">Bem-vindo ao Surf AI!</h2>

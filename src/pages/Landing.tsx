@@ -1064,48 +1064,97 @@ export default function Landing() {
       </section>
 
       {/* FINAL CTA */}
-      <section className="py-20 border-t border-border/30">
-        <div className="container mx-auto px-5 max-w-2xl text-center">
-          <div className="rounded-3xl p-10 md:p-14 relative overflow-hidden"
+      <section className="py-24 border-t border-border/30 relative overflow-hidden">
+        {/* Glow de fundo intenso */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full blur-[120px] opacity-20"
+            style={{ background: 'radial-gradient(ellipse, oklch(0.6 0.2 210), transparent 70%)' }} />
+        </div>
+        <div className="container mx-auto px-5 max-w-2xl text-center relative">
+          <div className="rounded-3xl p-10 md:p-16 relative overflow-hidden"
             style={{
-              background: 'oklch(1 0 0 / 0.03)',
-              border: '1px solid oklch(0.6 0.2 210 / 0.2)',
+              background: 'oklch(1 0 0 / 0.025)',
+              border: '1px solid oklch(0.6 0.2 210 / 0.25)',
               backdropFilter: 'blur(24px)',
-              boxShadow: '0 8px 48px oklch(0 0 0 / 0.3), 0 0 80px oklch(0.6 0.2 210 / 0.08), inset 0 1px 0 oklch(1 0 0 / 0.08)',
+              boxShadow: '0 8px 64px oklch(0 0 0 / 0.4), 0 0 120px oklch(0.6 0.2 210 / 0.12), inset 0 1px 0 oklch(1 0 0 / 0.1)',
             }}>
-            <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full pointer-events-none"
-              style={{ background: 'radial-gradient(circle, oklch(0.6 0.16 200 / 0.1), transparent)' }} />
+            <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full pointer-events-none"
+              style={{ background: 'radial-gradient(circle, oklch(0.6 0.16 200 / 0.12), transparent)' }} />
+            <div className="absolute -bottom-12 -left-12 w-48 h-48 rounded-full pointer-events-none"
+              style={{ background: 'radial-gradient(circle, oklch(0.55 0.18 280 / 0.08), transparent)' }} />
             <div className="relative">
-              <div className="h-16 w-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
-                style={{ background: 'oklch(0.6 0.16 200 / 0.15)', border: '2px solid oklch(0.6 0.16 200 / 0.3)' }}>
-                <Waves className="h-8 w-8 text-primary" />
+              {/* Logo centralizada */}
+              <div className="flex justify-center mb-6">
+                <AppLogo size={64} variant="icon" />
               </div>
-              <h2 className="text-3xl md:text-4xl font-black mb-4">
-                Pronto para surfar<br />com inteligência?
+
+              <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-6 text-xs font-semibold"
+                style={{ background: 'oklch(0.6 0.2 210 / 0.12)', border: '1px solid oklch(0.6 0.2 210 / 0.3)', color: 'oklch(0.75 0.15 200)' }}>
+                <div className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
+                17 praias monitoradas agora
+              </div>
+
+              <h2 className="text-3xl md:text-5xl font-black mb-4 leading-tight">
+                Sua próxima sessão épica<br />
+                <span className="text-transparent bg-clip-text"
+                  style={{ backgroundImage: 'linear-gradient(135deg, oklch(0.75 0.16 200), oklch(0.5 0.2 220))' }}>
+                  começa aqui.
+                </span>
               </h2>
-              <p className="text-muted-foreground mb-8 leading-relaxed">
-                Crie sua conta grátis agora e nunca mais chegue na praia
-                com o mar ruim. Upgrade para Premium quando quiser.
+              <p className="text-muted-foreground mb-10 leading-relaxed text-base max-w-md mx-auto">
+                Mais de 200 surfistas de Floripa já usam o Surf AI para nunca mais chegar na praia com o mar ruim.
+                Crie sua conta grátis em menos de 1 minuto.
               </p>
-              <Button size="lg" onClick={() => navigate('/login')}
-                className="font-bold px-10 h-12 text-base"
-                style={{
-                  background: 'oklch(0.6 0.2 210)',
-                  boxShadow: '0 0 40px oklch(0.6 0.2 210 / 0.5), 0 0 80px oklch(0.6 0.2 210 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.15)',
-                }}>
-                Criar conta gratuita
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-              <div className="flex items-center justify-center gap-6 mt-6">
-                {['Grátis para sempre', 'Sem cartão', 'Setup em 1 min'].map(t => (
+
+              <div className="flex flex-col sm:flex-row gap-3 justify-center mb-8">
+                <Button size="lg" onClick={() => navigate('/login')}
+                  className="font-bold px-10 h-13 text-base relative overflow-hidden group"
+                  style={{
+                    background: 'oklch(0.6 0.2 210)',
+                    boxShadow: '0 0 40px oklch(0.6 0.2 210 / 0.6), 0 0 80px oklch(0.6 0.2 210 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.15)',
+                  }}>
+                  Criar conta gratuita
+                  <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                </Button>
+                <Button size="lg" variant="outline" onClick={() => navigate('/login?plan=premium')}
+                  className="font-bold px-8 h-13"
+                  style={{
+                    borderColor: 'oklch(0.65 0.18 50 / 0.4)',
+                    color: 'oklch(0.7 0.15 50)',
+                  }}>
+                  <Crown className="h-4 w-4 mr-2" />
+                  Ver plano Premium
+                </Button>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-center gap-6 mb-8">
+                {['Grátis para começar', 'Sem cartão de crédito', 'Funciona no iPhone e Android'].map(t => (
                   <span key={t} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <CheckCircle2 className="h-3.5 w-3.5 text-green-400 flex-shrink-0" />{t}
                   </span>
                 ))}
               </div>
 
+              {/* Mini social proof */}
+              <div className="flex items-center justify-center gap-3 mb-8">
+                <div className="flex -space-x-2">
+                  {['LT', 'AF', 'BM', 'RS', '+'].map((initials, i) => (
+                    <div key={i} className="h-7 w-7 rounded-full border-2 border-background flex items-center justify-center text-[8px] font-black"
+                      style={{ background: i < 4 ? `oklch(${0.5 + i * 0.04} 0.12 ${200 + i * 30})` : 'oklch(0.3 0.04 240)', color: 'white' }}>
+                      {initials}
+                    </div>
+                  ))}
+                </div>
+                <div className="text-left">
+                  <div className="flex gap-0.5 mb-0.5">
+                    {[1,2,3,4,5].map(i => <Star key={i} className="h-3 w-3 text-yellow-400 fill-yellow-400" />)}
+                  </div>
+                  <p className="text-xs text-muted-foreground">+200 surfistas já confiam no Surf AI</p>
+                </div>
+              </div>
+
               {/* Segurança no CTA final */}
-              <div className="flex items-center justify-center gap-4 mt-6 pt-6 border-t border-border/30">
+              <div className="flex flex-wrap items-center justify-center gap-4 pt-6 border-t border-border/30">
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
                   <Lock className="h-3 w-3" />
                   <span>Pagamento seguro</span>
@@ -1116,7 +1165,7 @@ export default function Landing() {
                 </div>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
                   <CheckCircle2 className="h-3 w-3" />
-                  <span>Sem compromisso</span>
+                  <span>Cancele quando quiser</span>
                 </div>
               </div>
             </div>
@@ -1133,6 +1182,9 @@ export default function Landing() {
             Florianópolis, SC · Dados atualizados a cada hora · Feito com 🤙 para surfistas
           </div>
           <div className="flex items-center gap-3">
+            <button onClick={() => navigate('/privacy')} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+              Privacidade
+            </button>
             <button onClick={() => navigate('/login')} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
               Entrar
             </button>

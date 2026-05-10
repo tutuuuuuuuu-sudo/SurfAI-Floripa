@@ -15,6 +15,8 @@ import ComparePage from './pages/Compare'
 import HistoryPage from './pages/History'
 import SurfLog from './pages/SurfLog'
 import Landing from './pages/Landing'
+import NotFound from './pages/NotFound'
+import Privacy from './pages/Privacy'
 import { BottomNav } from './components/BottomNav'
 
 function registerServiceWorker() {
@@ -79,7 +81,8 @@ function AppRoutes() {
         <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
         <Route path="/history/:id" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
         <Route path="/surf-log" element={<ProtectedRoute><SurfLog /></ProtectedRoute>} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
       <Toaster position="top-center" />
       <PWAInstallBanner />

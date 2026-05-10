@@ -5,21 +5,9 @@ import { Button } from '@/components/ui/button'
 import { fetchCurrentConditions, BeachCondition } from '@/lib/surfData'
 import { ArrowLeft, Navigation, Waves, MapPin, ExternalLink } from 'lucide-react'
 
-const getScoreColor = (score: number): string => {
-  if (score >= 8.5) return '#8b5cf6'
-  if (score >= 7) return '#06b6d4'
-  if (score >= 5.5) return '#22c55e'
-  if (score >= 4) return '#f59e0b'
-  return '#ef4444'
-}
+import { getScoreColor, getRatingInfo } from '@/lib/rating'
 
-const getScoreLabel = (score: number): string => {
-  if (score >= 8.5) return 'Épico'
-  if (score >= 7) return 'Excelente'
-  if (score >= 5.5) return 'Bom'
-  if (score >= 4) return 'Regular'
-  return 'Ruim'
-}
+const getScoreLabel = (score: number): string => getRatingInfo(score).label.charAt(0) + getRatingInfo(score).label.slice(1).toLowerCase()
 
 const getLocationDesc = (id: string): string => {
   const map: Record<string, string> = {

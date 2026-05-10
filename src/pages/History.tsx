@@ -8,22 +8,9 @@ import { usePremium } from '@/lib/premium'
 import { fetchCurrentConditions } from '@/lib/surfData'
 import { getWeatherForecast } from '@/lib/weatherData'
 import { ArrowLeft, Waves, Wind, Calendar, Crown, Lock, TrendingUp, Thermometer } from 'lucide-react'
+import { getScoreColor, getRatingInfo } from '@/lib/rating'
 
-const getScoreColor = (score: number) => {
-  if (score >= 8.5) return '#8b5cf6'
-  if (score >= 7) return '#06b6d4'
-  if (score >= 5.5) return '#22c55e'
-  if (score >= 4) return '#f59e0b'
-  return '#ef4444'
-}
-
-const getScoreLabel = (score: number) => {
-  if (score >= 8.5) return 'Épico'
-  if (score >= 7) return 'Excelente'
-  if (score >= 5.5) return 'Bom'
-  if (score >= 4) return 'Regular'
-  return 'Ruim'
-}
+const getScoreLabel = (score: number) => getRatingInfo(score).label.charAt(0) + getRatingInfo(score).label.slice(1).toLowerCase()
 
 export default function HistoryPage() {
   const navigate = useNavigate()

@@ -6,13 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import {
-  Waves, ArrowLeft, LogOut, User, Bell, MapPin, Crown,
-  Sliders, ChevronRight, Shield, Info
+  ArrowLeft, LogOut, User, Bell, MapPin, Crown,
+  Sliders, ChevronRight, Shield
 } from 'lucide-react'
+import { AppLogo } from '@/components/AppLogo'
 import { toast } from 'sonner'
 
 type SkillLevel = 'Iniciante' | 'Intermediário' | 'Avançado' | ''
 type Region = 'all' | 'Sul' | 'Centro' | 'Leste' | 'Norte'
+
 
 const SKILL_LEVELS: { value: SkillLevel; label: string; desc: string }[] = [
   { value: 'Iniciante', label: 'Iniciante', desc: 'Prefiro ondas pequenas e tranquilas' },
@@ -45,7 +47,6 @@ export default function Settings() {
   const [defaultRegion, setDefaultRegion] = useState<Region>(loadPref('pref_region', 'all'))
   const [notifMinScore, setNotifMinScore] = useState<number>(loadPref('notif_minScore', 7))
   const [notifFavOnly, setNotifFavOnly] = useState<boolean>(loadPref('notif_favOnly', false))
-  const [units, setUnits] = useState<'metric' | 'imperial'>(loadPref('pref_units', 'metric'))
 
   const handleSignOut = async () => {
     await signOut()
@@ -66,9 +67,7 @@ export default function Settings() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <Waves className="h-6 w-6 text-primary" />
-              </div>
+              <AppLogo size={40} variant="icon" />
               <div>
                 <h1 className="text-2xl font-bold">Configurações</h1>
                 <p className="text-xs text-muted-foreground">Surf AI</p>
@@ -175,35 +174,6 @@ export default function Settings() {
                   }`}
                 >
                   {label}
-                </button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Unidades */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Info className="h-4 w-4 text-primary" />
-              Unidades de medida
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-2">
-              {[
-                { value: 'metric' as const, label: 'Metros (m)', sub: 'Padrão brasileiro' },
-                { value: 'imperial' as const, label: 'Pés (ft)', sub: 'Padrão gringo' },
-              ].map(({ value, label, sub }) => (
-                <button
-                  key={value}
-                  onClick={() => { setUnits(value); save('pref_units', value, 'Unidade') }}
-                  className={`flex-1 p-3 rounded-xl border text-left transition-all ${
-                    units === value ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/40'
-                  }`}
-                >
-                  <div className="text-sm font-semibold">{label}</div>
-                  <div className="text-xs text-muted-foreground">{sub}</div>
                 </button>
               ))}
             </div>
