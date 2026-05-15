@@ -46,20 +46,15 @@ export default async function handler(req: Request) {
   const serviceKey = process.env.SUPABASE_SERVICE_KEY
   const webhookSecret = process.env.MP_WEBHOOK_SECRET
 
-  if (!accessToken || !supabaseUrl || !serviceKey) {
+  if (!accessToken || !supabaseUrl || !serviceKey || !webhookSecret) {
     console.error('[mp-webhook] Variáveis de ambiente faltando')
     return new Response('Config error', { status: 500 })
   }
 
-  // Valida assinatura se o secret estiver configurado
-  if (webhookSecret) {
-    const valid = await verifyMpSignature(req, webhookSecret)
-    if (!valid) {
-      console.error('[mp-webhook] Assinatura inválida — request rejeitado')
-      return new Response('Unauthorized', { status: 401 })
-    }
-  } else {
-    console.warn('[mp-webhook] MP_WEBHOOK_SECRET não configurado — validação de assinatura desabilitada')
+  const valid = await verifyMpSignature(req, webhookSecret)
+  if (!valid) {
+    console.error('[mp-webhook] Assinatura inválida — request rejeitado')
+    return new Response('Unauthorized', { status: 401 })
   }
 
   let body: { type: string; data?: { id: string } }

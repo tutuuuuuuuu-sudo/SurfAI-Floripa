@@ -106,6 +106,11 @@ export function degreesToWindDir(deg: number): string {
   return dirs[Math.round(deg / 22.5) % 16]
 }
 
+const WIND_DEG: Record<string, number> = {
+  'N': 0, 'NNE': 22.5, 'NE': 45, 'ENE': 67.5, 'E': 90, 'ESE': 112.5, 'SE': 135, 'SSE': 157.5,
+  'S': 180, 'SSW': 202.5, 'SW': 225, 'WSW': 247.5, 'W': 270, 'WNW': 292.5, 'NW': 315, 'NNW': 337.5,
+}
+
 
 const calculateScore = (waveHeight: number, windSpeed: number, swellPeriod: number, windDir: string, beachOrientation: number): number => {
   // Escala baseada na realidade de Florianópolis:
@@ -127,11 +132,7 @@ const calculateScore = (waveHeight: number, windSpeed: number, swellPeriod: numb
   // VENTO: penalização sobre o waveBase
   // Offshore (<= 45° da direção offshore) = bônus
   // Onshore (> 90°) = penaliza muito
-  const windDegMap: Record<string, number> = {
-    'N': 0, 'NNE': 22.5, 'NE': 45, 'ENE': 67.5, 'E': 90, 'ESE': 112.5, 'SE': 135, 'SSE': 157.5,
-    'S': 180, 'SSW': 202.5, 'SW': 225, 'WSW': 247.5, 'W': 270, 'WNW': 292.5, 'NW': 315, 'NNW': 337.5,
-  }
-  const wDir = windDegMap[windDir] ?? 0
+  const wDir = WIND_DEG[windDir] ?? 0
   const offshoreDir = (beachOrientation + 180) % 360
   let angleDiff = Math.abs(wDir - offshoreDir)
   if (angleDiff > 180) angleDiff = 360 - angleDiff
@@ -204,11 +205,7 @@ const getBestSubRegion = (subRegions: { id: string, swellDirections?: string[] }
 }
 
 function getWindAnalysis(windDir: string, windSpeed: number, beachOrientation: number): string {
-  const windDegMap: Record<string, number> = {
-    'N': 0, 'NNE': 22.5, 'NE': 45, 'ENE': 67.5, 'E': 90, 'ESE': 112.5, 'SE': 135, 'SSE': 157.5,
-    'S': 180, 'SSW': 202.5, 'SW': 225, 'WSW': 247.5, 'W': 270, 'WNW': 292.5, 'NW': 315, 'NNW': 337.5,
-  }
-  const windDeg = windDegMap[windDir] ?? 0
+  const windDeg = WIND_DEG[windDir] ?? 0
   const offshoreDir = (beachOrientation + 180) % 360
   let diff = Math.abs(windDeg - offshoreDir)
   if (diff > 180) diff = 360 - diff
@@ -316,11 +313,7 @@ function calculateBestWindow(windyData: any, beachOrientation: number): string {
   // Por enquanto usa lógica baseada no vento atual e hora do nascer/pôr do sol
   if (!windyData) return 'Verificar condições'
 
-  const windDegMap: Record<string, number> = {
-    'N': 0, 'NNE': 22.5, 'NE': 45, 'ENE': 67.5, 'E': 90, 'ESE': 112.5, 'SE': 135, 'SSE': 157.5,
-    'S': 180, 'SSW': 202.5, 'SW': 225, 'WSW': 247.5, 'W': 270, 'WNW': 292.5, 'NW': 315, 'NNW': 337.5,
-  }
-  const windDeg = windDegMap[windyData.windDirection] ?? 0
+  const windDeg = WIND_DEG[windyData.windDirection] ?? 0
   const offshoreDir = (beachOrientation + 180) % 360
   let angleDiff = Math.abs(windDeg - offshoreDir)
   if (angleDiff > 180) angleDiff = 360 - angleDiff
