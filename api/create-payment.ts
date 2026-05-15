@@ -1,6 +1,6 @@
 export const config = { runtime: 'edge' }
 
-const ALLOWED_ORIGIN = process.env.VITE_APP_URL ?? 'https://surf-ai-floripa.vercel.app'
+const ALLOWED_ORIGIN = process.env.APP_URL ?? 'https://surf-ai-floripa.vercel.app'
 
 const CORS = {
   'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
@@ -37,7 +37,7 @@ export default async function handler(req: Request) {
   if (!emailRegex.test(userEmail)) return json({ error: 'Email inválido' }, 400)
   if (userId.length > 128) return json({ error: 'userId inválido' }, 400)
 
-  const baseUrl = process.env.VITE_APP_URL ?? 'https://surf-ai-floripa.vercel.app'
+  const baseUrl = process.env.APP_URL ?? 'https://surf-ai-floripa.vercel.app'
 
   const preference = {
     items: [{

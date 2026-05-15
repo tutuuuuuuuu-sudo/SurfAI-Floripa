@@ -210,7 +210,7 @@ export default async function handler(req: Request) {
     })
   }
 
-  const allowedOrigin = process.env.VITE_APP_URL ?? 'https://surf-ai-floripa.vercel.app'
+  const allowedOrigin = process.env.APP_URL ?? 'https://surf-ai-floripa.vercel.app'
   const corsHeaders = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': allowedOrigin }
 
   try {

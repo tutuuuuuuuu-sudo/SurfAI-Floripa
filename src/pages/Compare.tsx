@@ -43,17 +43,15 @@ export default function ComparePage() {
   )
 
   const metrics = [
-    { key: 'score', label: 'Score IA', icon: TrendingUp, format: (v: number) => v.toFixed(1), higher: true },
-    { key: 'waveHeight', label: 'Altura das Ondas', icon: Waves, format: (v: number) => `${v.toFixed(1)}m`, higher: true },
-    { key: 'swellPeriod', label: 'Período', icon: Waves, format: (v: number) => `${Math.round(v)}s`, higher: true },
-    { key: 'windSpeed', label: 'Vento', icon: Wind, format: (v: number) => `${Math.round(v)}km/h`, higher: false },
-    { key: 'waterTemp', label: 'Água', icon: Thermometer, format: (v: number) => `${v}°C`, higher: true },
+    { key: 'score',      label: 'Score IA',          icon: TrendingUp, format: (v: number) => v.toFixed(1),        higher: true,  get: (s: BeachCondition) => s.score },
+    { key: 'waveHeight', label: 'Altura das Ondas',   icon: Waves,      format: (v: number) => `${v.toFixed(1)}m`,  higher: true,  get: (s: BeachCondition) => s.waveHeight },
+    { key: 'swellPeriod',label: 'Período',            icon: Waves,      format: (v: number) => `${Math.round(v)}s`, higher: true,  get: (s: BeachCondition) => s.swellPeriod },
+    { key: 'windSpeed',  label: 'Vento',              icon: Wind,       format: (v: number) => `${Math.round(v)}km/h`, higher: false, get: (s: BeachCondition) => s.windSpeed },
+    { key: 'waterTemp',  label: 'Água',               icon: Thermometer,format: (v: number) => `${v}°C`,            higher: true,  get: (s: BeachCondition) => s.waterConditions.temperature },
   ]
 
-  const getValue = (spot: BeachCondition, key: string): number => {
-    if (key === 'waterTemp') return spot.waterConditions.temperature
-    return (spot as any)[key] ?? 0
-  }
+  const getValue = (spot: BeachCondition, key: string): number =>
+    metrics.find(m => m.key === key)?.get(spot) ?? 0
 
   const getBest = (key: string, higher: boolean): string => {
     if (selected.length < 2) return ''
