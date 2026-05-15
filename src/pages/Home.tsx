@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -233,12 +233,13 @@ const NotificationPanel = ({ spots, favorites }: { spots: BeachCondition[], favo
   )
 }
 
+const CENTRO_IDS = ['novo-campeche', 'joaquina', 'mole', 'barra-lagoa']
+
 export default function Home() {
   const [activeRegion, setActiveRegion] = useState<string>('all')
-  const [spots, setSpots] = useState<BeachCondition[]>([])
   const [allSpots, setAllSpots] = useState<BeachCondition[]>([])
   const [topSpot, setTopSpot] = useState<BeachCondition | null>(null)
-  const [currentTime, setCurrentTime] = useState(new Date())
+  const lastUpdated = useRef<Date>(new Date())
   const [loading, setLoading] = useState(true)
   const [favorites, setFavorites] = useState<string[]>([])
   const [visible, setVisible] = useState(false)
@@ -251,28 +252,29 @@ export default function Home() {
   const { user } = useAuth()
   const { isPremium } = usePremium()
 
+  // Filtragem por região é derivada — não precisa de estado separado
+  const spots = useMemo(() => {
+    let filtered = [...allSpots]
+    if (activeRegion === 'Centro') filtered = filtered.filter(s => CENTRO_IDS.includes(s.id))
+    else if (activeRegion !== 'all') filtered = filtered.filter(s => s.region === activeRegion)
+    return filtered.sort((a, b) => b.score - a.score)
+  }, [allSpots, activeRegion])
+
   useEffect(() => {
     setLoading(true)
     const updateData = async () => {
-      setCurrentTime(new Date())
+      lastUpdated.current = new Date()
       const allConditions = await fetchCurrentConditions()
       const favs = await getFavorites()
       setFavorites(favs)
-      setAllSpots(allConditions)
-      let filtered = [...allConditions]
-      const CENTRO_IDS = ['novo-campeche', 'joaquina', 'mole', 'barra-lagoa']
-      if (activeRegion === 'Centro') filtered = filtered.filter(s => CENTRO_IDS.includes(s.id))
-      else if (activeRegion !== 'all') filtered = filtered.filter(s => s.region === activeRegion)
-      filtered.sort((a, b) => b.score - a.score)
       const sortedAll = [...allConditions].sort((a, b) => b.score - a.score)
       const top = sortedAll[0] ?? null
-      setSpots(filtered)
+      setAllSpots(allConditions)
       setTopSpot(top)
       setLoading(false)
       setTimeout(() => setVisible(true), 100)
       const notifSettings = getSavedNotificationSettings()
       if (notifSettings.enabled) await checkAndNotifyGoodConditions(allConditions, favs, notifSettings.minScore, notifSettings.favoriteOnly)
-      // Busca relatório de IA em background
       if (top) {
         setAiLoading(true)
         try {
@@ -286,7 +288,7 @@ export default function Home() {
     updateData()
     const interval = setInterval(updateData, 15 * 60 * 1000)
     return () => clearInterval(interval)
-  }, [activeRegion])
+  }, [])
 
   const userName = user ? getUserDisplayName(user) : 'Surfista'
   const userInitial = userName.charAt(0).toUpperCase()
@@ -368,7 +370,7 @@ export default function Home() {
         <div className="flex items-center justify-between" style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s ease' }}>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-            <span>Atualizado às {currentTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+            <span>Atualizado às {lastUpdated.current.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
           </div>
           <NotificationPanel spots={allSpots} favorites={favorites} />
         </div>

@@ -24,7 +24,7 @@ export default function ProfilePage() {
   const [favorites, setFavorites] = useState<string[]>([])
   const [commentCount, setCommentCount] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [favoriteSpots, setFavoriteSpots] = useState<any[]>([])
+  const [favoriteSpots, setFavoriteSpots] = useState<import('@/lib/surfData').BeachCondition[]>([])
   const [editingBio, setEditingBio] = useState(false)
   const [bio, setBio] = useState('')
   const [bioInput, setBioInput] = useState('')

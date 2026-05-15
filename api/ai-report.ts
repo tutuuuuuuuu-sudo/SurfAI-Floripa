@@ -57,20 +57,23 @@ export default async function handler(req: Request) {
     })
   }
 
-  let body: any
+  interface SpotSummary { name: string; score: number; waveHeight: number; windSpeed: number; windDirection: string; swellPeriod: number }
+  interface ReportBody { spots?: SpotSummary[]; topSpot?: SpotSummary; userLevel?: string }
+
+  let body: ReportBody
   try {
-    body = await req.json()
+    body = await req.json() as ReportBody
   } catch {
     return new Response(JSON.stringify({ error: 'Body inválido' }), { status: 400 })
   }
 
   const { spots, topSpot, userLevel } = body
 
-  if (!topSpot) {
+  if (!topSpot?.name) {
     return new Response(JSON.stringify({ error: 'Dados insuficientes' }), { status: 400 })
   }
 
-  const spotsContext = (spots ?? []).slice(0, 5).map((s: any) =>
+  const spotsContext = (spots ?? []).slice(0, 5).map(s =>
     `${s.name}: score ${s.score}, ondas ${s.waveHeight}m, vento ${s.windSpeed}km/h ${s.windDirection}, período ${s.swellPeriod}s`
   ).join('\n')
 
