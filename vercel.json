@@ -26,13 +26,9 @@
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
   "crons": [
-    {
-      "path": "/api/health",
-      "schedule": "0 9 * * *"
-    },
-    {
-      "path": "/api/health",
-      "schedule": "0 21 * * *"
-    }
+    { "path": "/api/health", "schedule": "0 9 * * *" },
+    { "path": "/api/health", "schedule": "0 21 * * *" },
+    { "path": "/api/email-alert", "schedule": "0 9 * * *" },
+    { "path": "/api/email-alert", "schedule": "0 21 * * *" }
   ]
 }
