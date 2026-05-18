@@ -24,5 +24,11 @@
   ],
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "crons": [
+    {
+      "path": "/api/agent-health",
+      "schedule": "0 9 * * *"
+    }
   ]
 }
