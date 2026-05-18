@@ -27,7 +27,7 @@
   ],
   "crons": [
     {
-      "path": "/api/agent-health",
+      "path": "/api/health",
       "schedule": "0 9 * * *"
     }
   ]
