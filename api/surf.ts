@@ -56,6 +56,8 @@ interface ForecastResult {
   windSpeed: number
   windDir: string
   waterTemperature: number | null
+  sunrise?: string
+  sunset?: string
 }
 
 async function fetchWindy(lat: string, lng: string): Promise<ForecastResult | null> {
@@ -80,7 +82,7 @@ async function fetchWindy(lat: string, lng: string): Promise<ForecastResult | nu
 
     const waveData = await waveRes.json() as Record<string, unknown>
     const windData = await windRes.json() as Record<string, unknown>
-    if ((waveData as any).error || (windData as any).error) return null
+    if ('error' in waveData || 'error' in windData) return null
 
     const ts = (waveData.ts ?? windData.ts) as number[] | undefined
     if (!ts?.length) return null
@@ -133,7 +135,7 @@ async function fetchOpenMeteo(lat: string, lng: string): Promise<ForecastResult 
     if (marine.error || weather.error) return null
 
     const waveHeight = Number((marine.current?.swell_wave_height ?? marine.current?.wave_height ?? 0).toFixed(1))
-    if (waveHeight < 0.1) return null
+    if (waveHeight < 0.1 || Number.isNaN(waveHeight)) return null
 
     return {
       waveHeight,
@@ -144,6 +146,8 @@ async function fetchOpenMeteo(lat: string, lng: string): Promise<ForecastResult 
       waterTemperature: marine.current?.sea_surface_temperature != null
         ? Math.round(marine.current.sea_surface_temperature)
         : null,
+      sunrise: formatTimeBrasilia(weather.daily?.sunrise?.[0] ?? ''),
+      sunset: formatTimeBrasilia(weather.daily?.sunset?.[0] ?? ''),
     }
   } catch {
     return null
@@ -178,7 +182,7 @@ async function fetchStormglass(lat: string, lng: string): Promise<ForecastResult
     }
 
     const wH = pick('swellHeight') ?? pick('waveHeight')
-    if (!wH) return null
+    if (!wH || Number.isNaN(wH)) return null
 
     const windSpd = pick('windSpeed') // m/s
     return {
@@ -223,14 +227,16 @@ export default async function handler(req: Request) {
       return new Response(JSON.stringify({ error: 'Nenhuma fonte disponível' }), { status: 503, headers: corsHeaders })
     }
 
-    // Sunrise/sunset via Open-Meteo (sempre gratuito, não precisa chave)
-    let sunrise = '', sunset = ''
-    try {
-      const sunRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=sunrise,sunset&wind_speed_unit=kmh&timezone=America%2FSao_Paulo`)
-      const sunData = await sunRes.json() as any
-      sunrise = formatTimeBrasilia(sunData.daily?.sunrise?.[0] ?? '')
-      sunset = formatTimeBrasilia(sunData.daily?.sunset?.[0] ?? '')
-    } catch { /* sunrise/sunset não crítico */ }
+    // Sunrise/sunset vem junto com fetchOpenMeteo quando ela é a fonte escolhida
+    let sunrise = result.sunrise ?? '', sunset = result.sunset ?? ''
+    if (!sunrise || !sunset) {
+      try {
+        const sunRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=sunrise,sunset&wind_speed_unit=kmh&timezone=America%2FSao_Paulo`)
+        const sunData = await sunRes.json() as any
+        sunrise = formatTimeBrasilia(sunData.daily?.sunrise?.[0] ?? '')
+        sunset = formatTimeBrasilia(sunData.daily?.sunset?.[0] ?? '')
+      } catch { /* sunrise/sunset não crítico */ }
+    }
 
     // Maré via Stormglass (apenas se solicitado e chave disponível)
     let tideData: { time: string; height: number; type?: string }[] = []

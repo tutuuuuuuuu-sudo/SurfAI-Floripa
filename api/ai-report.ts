@@ -1,5 +1,8 @@
 export const config = { runtime: 'edge' }
 
+interface SpotSummary { name: string; score: number; waveHeight: number; windSpeed: number; windDirection: string; swellPeriod: number }
+interface ReportBody { spots?: SpotSummary[]; topSpot?: SpotSummary; userLevel?: string }
+
 const ALLOWED_ORIGIN = process.env.APP_URL ?? 'https://surf-ai-floripa.vercel.app'
 
 const CORS = {
@@ -56,9 +59,6 @@ export default async function handler(req: Request) {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
     })
   }
-
-  interface SpotSummary { name: string; score: number; waveHeight: number; windSpeed: number; windDirection: string; swellPeriod: number }
-  interface ReportBody { spots?: SpotSummary[]; topSpot?: SpotSummary; userLevel?: string }
 
   let body: ReportBody
   try {

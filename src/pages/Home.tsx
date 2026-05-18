@@ -288,7 +288,7 @@ export default function Home() {
     updateData()
     const interval = setInterval(updateData, 15 * 60 * 1000)
     return () => clearInterval(interval)
-  }, [])
+  }, []) // activeRegion não é dependência: troca de região só re-filtra via useMemo, sem novo fetch
 
   const userName = user ? getUserDisplayName(user) : 'Surfista'
   const userInitial = userName.charAt(0).toUpperCase()
