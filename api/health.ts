@@ -171,7 +171,7 @@ async function sendReport(results: TestResult[]) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${resendKey}` },
     body: JSON.stringify({
-      from: 'Surf AI Monitor <monitor@surfaifloripa.com.br>',
+      from: 'Surf AI Monitor <onboarding@resend.dev>',
       to: [reportEmail],
       subject: `${allOk ? '✅' : '❌'} Surf AI — Relatório diário ${date}`,
       html,
