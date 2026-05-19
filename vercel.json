@@ -25,6 +25,10 @@
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
+  "functions": {
+    "api/email-welcome.ts": { "runtime": "nodejs22.x" },
+    "api/email-alert.ts": { "runtime": "nodejs22.x" }
+  },
   "crons": [
     { "path": "/api/health", "schedule": "0 9 * * *" },
     { "path": "/api/health", "schedule": "0 21 * * *" },
