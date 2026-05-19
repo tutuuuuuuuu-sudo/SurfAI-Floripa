@@ -1,0 +1,24 @@
+name: Content Agent — Gerar Conteúdo Viral
+
+on:
+  schedule:
+    # 10h e 19h horário de Brasília (BRT = UTC-3)
+    - cron: '0 13 * * *'
+    - cron: '0 22 * * *'
+  workflow_dispatch:
+
+jobs:
+  generate-content:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chamar agente de conteúdo
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST \
+            -H "x-agent-secret: ${{ secrets.AGENT_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/content-agent")
+          echo "Status HTTP: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "Agente retornou status $STATUS"
+            exit 1
+          fi

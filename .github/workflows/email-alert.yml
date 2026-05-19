@@ -1,0 +1,24 @@
+name: Email Alert — Condições de Surf
+
+on:
+  schedule:
+    # 6h e 18h horário de Brasília (BRT = UTC-3)
+    - cron: '0 9 * * *'
+    - cron: '0 21 * * *'
+  workflow_dispatch: # permite rodar manualmente pelo GitHub
+
+jobs:
+  send-alert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chamar agente de alerta
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST \
+            -H "x-agent-secret: ${{ secrets.AGENT_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/email-alert")
+          echo "Status HTTP: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "Agente retornou status $STATUS"
+            exit 1
+          fi

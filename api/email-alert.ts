@@ -1,14 +1,14 @@
-export const config = { runtime: 'edge' }
+// Funções Node.js (sem edge runtime) para suportar nodemailer via SMTP do Gmail
 
-// Roda 2x por dia (6h e 18h) via cron
-// Busca as condições do mar e envia alerta para todos os usuários
-// quando alguma praia tiver score alto
+import nodemailer from 'nodemailer'
 
-const RESEND_KEY = process.env.RESEND_API_KEY
+const GMAIL_USER = process.env.GMAIL_USER        // surfaifloripa@gmail.com
+const GMAIL_APP_PASS = process.env.GMAIL_APP_PASS // senha de app do Google (16 chars)
 const APP_URL = process.env.APP_URL ?? 'https://surf-ai-floripa.vercel.app'
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY
-const SCORE_THRESHOLD = 7.5 // só envia se alguma praia tiver score >= 7.5
+const AGENT_SECRET = process.env.AGENT_SECRET
+const SCORE_THRESHOLD = 7.5
 
 interface SpotResult {
   name: string
@@ -19,7 +19,6 @@ interface SpotResult {
   swellPeriod: number
 }
 
-// Praias principais para checar (id, nome, lat, lng, orientação)
 const SPOTS = [
   { id: 'campeche', name: 'Campeche', lat: -27.68, lng: -48.49, orientation: 90 },
   { id: 'joaquina', name: 'Joaquina', lat: -27.63, lng: -48.44, orientation: 90 },
@@ -37,9 +36,8 @@ async function fetchSpotScore(spot: typeof SPOTS[0]): Promise<SpotResult | null>
     if (!res.ok) return null
     const data = await res.json() as any
 
-    // Score simples: baseado em altura de onda e período
-    const waveScore = Math.min(data.waveHeight / 2, 1) * 40       // até 40 pts
-    const periodScore = Math.min(data.swellPeriod / 14, 1) * 30   // até 30 pts
+    const waveScore = Math.min(data.waveHeight / 2, 1) * 40
+    const periodScore = Math.min(data.swellPeriod / 14, 1) * 30
     const windPenalty = data.windSpeed > 20 ? -15 : data.windSpeed > 15 ? -8 : 0
     const isTermal = (data.windDirection ?? '').includes('Terral') ? 10 : 0
     const score = Math.max(0, Math.min(10, (waveScore + periodScore + windPenalty + isTermal) / 8))
@@ -77,12 +75,20 @@ async function getUserEmails(): Promise<{ email: string; name: string }[]> {
   }
 }
 
+function createTransporter() {
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: GMAIL_USER,
+      pass: GMAIL_APP_PASS,
+    },
+  })
+}
+
 async function sendAlertEmail(to: string, name: string, bestSpot: SpotResult, allSpots: SpotResult[]) {
-  if (!RESEND_KEY) return false
   const firstName = name.split(' ')[0]
   const hour = new Date().getUTCHours()
-  const isMorning = hour < 14
-  const greeting = isMorning ? 'Bom dia' : 'Boa tarde'
+  const greeting = hour < 14 ? 'Bom dia' : 'Boa tarde'
 
   const spotsRows = allSpots
     .filter(s => s.score >= 6)
@@ -98,12 +104,10 @@ async function sendAlertEmail(to: string, name: string, bestSpot: SpotResult, al
 
   const html = `
     <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0a0a0a;color:#fff;border-radius:16px;overflow:hidden">
-
       <div style="padding:32px;background:linear-gradient(135deg,#0ea5e920,#6366f120);border-bottom:1px solid #222">
         <p style="margin:0 0 4px;font-size:13px;color:#0ea5e9;font-weight:600;letter-spacing:1px">ALERTA DE SURF</p>
         <h1 style="margin:0;font-size:24px;font-weight:800">${greeting}, ${firstName}! O mar está bom 🌊</h1>
       </div>
-
       <div style="padding:32px">
         <div style="background:linear-gradient(135deg,#0ea5e915,#6366f115);border:1px solid #0ea5e940;border-radius:12px;padding:24px;margin-bottom:24px">
           <p style="margin:0 0 4px;font-size:12px;color:#0ea5e9;font-weight:600;letter-spacing:1px">MELHOR AGORA</p>
@@ -114,7 +118,6 @@ async function sendAlertEmail(to: string, name: string, bestSpot: SpotResult, al
             <span style="color:#ccc;font-size:14px">💨 ${bestSpot.windSpeed}km/h ${bestSpot.windDirection}</span>
           </div>
         </div>
-
         ${spotsRows ? `
         <table style="width:100%;border-collapse:collapse;background:#111;border-radius:12px;overflow:hidden;margin-bottom:24px">
           <thead>
@@ -126,42 +129,43 @@ async function sendAlertEmail(to: string, name: string, bestSpot: SpotResult, al
           </thead>
           <tbody>${spotsRows}</tbody>
         </table>` : ''}
-
-        <a href="${APP_URL}"
-           style="display:block;text-align:center;background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff;text-decoration:none;padding:16px 32px;border-radius:12px;font-weight:700;font-size:16px">
+        <a href="${APP_URL}" style="display:block;text-align:center;background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff;text-decoration:none;padding:16px 32px;border-radius:12px;font-weight:700;font-size:16px">
           Ver todas as praias
         </a>
       </div>
-
       <div style="padding:20px 32px;background:#111;text-align:center">
-        <p style="margin:0;font-size:12px;color:#555">
-          Surf AI Floripa · Você recebe esse alerta quando o mar está bom
-        </p>
+        <p style="margin:0;font-size:12px;color:#555">Surf AI Floripa · Você recebe esse alerta quando o mar está bom</p>
       </div>
     </div>
   `
 
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${RESEND_KEY}` },
-    body: JSON.stringify({
-      from: 'Surf AI Floripa <oi@surfaifloripa.com.br>',
-      to: [to],
+  const transporter = createTransporter()
+  try {
+    await transporter.sendMail({
+      from: `Surf AI Floripa <${GMAIL_USER}>`,
+      to,
       subject: `🌊 ${bestSpot.name} está com score ${bestSpot.score} — vai lá!`,
       html,
-    }),
-  })
-  return res.ok
+    })
+    return true
+  } catch {
+    return false
+  }
 }
 
 export default async function handler(req: Request) {
-  if (!RESEND_KEY) return new Response('RESEND_API_KEY não configurada', { status: 500 })
+  const secret = req.headers.get('x-agent-secret')
+  if (AGENT_SECRET && secret !== AGENT_SECRET) {
+    return new Response('Unauthorized', { status: 401 })
+  }
 
-  // Busca condições de todas as praias em paralelo
+  if (!GMAIL_USER || !GMAIL_APP_PASS) {
+    return new Response('GMAIL_USER ou GMAIL_APP_PASS não configurados', { status: 500 })
+  }
+
   const results = (await Promise.all(SPOTS.map(fetchSpotScore))).filter(Boolean) as SpotResult[]
   const goodSpots = results.filter(s => s.score >= SCORE_THRESHOLD)
 
-  // Só envia email se tiver alguma praia boa
   if (goodSpots.length === 0) {
     return new Response(JSON.stringify({ sent: false, reason: 'Nenhuma praia com score suficiente', scores: results }), {
       headers: { 'Content-Type': 'application/json' },
@@ -177,7 +181,6 @@ export default async function handler(req: Request) {
     })
   }
 
-  // Envia para todos os usuários (em paralelo, máximo 10 por vez)
   let sent = 0
   for (let i = 0; i < users.length; i += 10) {
     const batch = users.slice(i, i + 10)
