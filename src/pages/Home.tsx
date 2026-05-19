@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { getUserDisplayName } from '@/lib/supabase'
 import { usePremium } from '@/lib/premium'
 import { fetchAIReport } from '@/lib/aiReport'
+import { track } from '@/lib/monitoring'
 import { getScoreColor, getThemeGradient } from '@/lib/rating'
 import {
   subscribeToNotifications,
@@ -281,6 +282,7 @@ export default function Home() {
           const userLevel = localStorage.getItem('pref_skill') ?? undefined
           const report = await fetchAIReport(sortedAll.slice(0, 6), top, userLevel ?? undefined)
           setAiReport(report)
+          if (report) track('ai_report_loaded', { top_spot: top.name, score: top.score })
         } catch { /* silently fail */ }
         setAiLoading(false)
       }
@@ -402,7 +404,7 @@ export default function Home() {
         )}
 
         {topSpot && (
-          <Card className="border-primary/20 card-hover cursor-pointer overflow-hidden" onClick={() => navigate(`/spot/${topSpot.id}`)}
+          <Card className="border-primary/20 card-hover cursor-pointer overflow-hidden" onClick={() => { track('spot_opened', { spot: topSpot.name, score: topSpot.score, source: 'top_spot' }); navigate(`/spot/${topSpot.id}`) }}
             style={{ animation: visible ? 'slideUp 0.5s 0.1s ease-out both' : 'none', background: `linear-gradient(135deg, hsl(var(--card)) 0%, ${getScoreColor(topSpot.score)}15 100%)`, borderColor: `${getScoreColor(topSpot.score)}40` }}>
             <CardHeader>
               <div className="flex items-center justify-between">

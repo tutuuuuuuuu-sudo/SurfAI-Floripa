@@ -14,6 +14,7 @@ import PremiumPage from './pages/Premium'
 import ComparePage from './pages/Compare'
 import HistoryPage from './pages/History'
 import SurfLog from './pages/SurfLog'
+import ContentStudio from './pages/ContentStudio'
 import Landing from './pages/Landing'
 import NotFound from './pages/NotFound'
 import Privacy from './pages/Privacy'
@@ -81,6 +82,7 @@ function AppRoutes() {
         <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
         <Route path="/history/:id" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
         <Route path="/surf-log" element={<ProtectedRoute><SurfLog /></ProtectedRoute>} />
+        <Route path="/content-studio" element={<ProtectedRoute><ContentStudio /></ProtectedRoute>} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
