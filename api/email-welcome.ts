@@ -1,15 +1,17 @@
-export const config = { runtime: 'edge' }
+export const config = { runtime: 'nodejs' }
 
 // Chamado pelo webhook do Supabase quando um novo usuário se cadastra
 // Configurar em: Supabase → Database → Webhooks → auth.users → INSERT
 
-const RESEND_KEY = process.env.RESEND_API_KEY
+import nodemailer from 'nodemailer'
+
+const GMAIL_USER = process.env.GMAIL_USER
+const GMAIL_APP_PASS = process.env.GMAIL_APP_PASS
 const WEBHOOK_SECRET = process.env.SUPABASE_WEBHOOK_SECRET
-const GMAIL_REPLY_TO = 'surfaifloripa@gmail.com'
 const APP_URL = process.env.APP_URL ?? 'https://surf-ai-floripa.vercel.app'
 
 async function sendWelcomeEmail(name: string, email: string) {
-  const firstName = name?.split(' ')[0] ?? 'Surfista'
+  const firstName = name?.split(' ')[0] || 'Surfista'
 
   const html = `
     <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0a0a0a;color:#fff;border-radius:16px;overflow:hidden">
@@ -47,19 +49,17 @@ async function sendWelcomeEmail(name: string, email: string) {
     </div>
   `
 
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${RESEND_KEY}` },
-    body: JSON.stringify({
-      from: 'Surf AI Floripa <onboarding@resend.dev>',
-      reply_to: GMAIL_REPLY_TO,
-      to: [email],
-      subject: `Fala, ${firstName}! Bem-vindo ao Surf AI Floripa 🤙`,
-      html,
-    }),
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user: GMAIL_USER, pass: GMAIL_APP_PASS },
   })
 
-  return res.ok
+  await transporter.sendMail({
+    from: `Surf AI Floripa <${GMAIL_USER}>`,
+    to: email,
+    subject: `Fala, ${firstName}! Bem-vindo ao Surf AI Floripa 🤙`,
+    html,
+  })
 }
 
 export default async function handler(req: Request) {
@@ -70,8 +70,8 @@ export default async function handler(req: Request) {
     return new Response('Unauthorized', { status: 401 })
   }
 
-  if (!RESEND_KEY) {
-    return new Response('RESEND_API_KEY não configurada', { status: 500 })
+  if (!GMAIL_USER || !GMAIL_APP_PASS) {
+    return new Response('Credenciais Gmail não configuradas', { status: 500 })
   }
 
   let body: { record?: { email?: string; raw_user_meta_data?: { full_name?: string } } }
@@ -86,9 +86,17 @@ export default async function handler(req: Request) {
 
   if (!email) return new Response('Email ausente', { status: 400 })
 
-  const sent = await sendWelcomeEmail(name, email)
-  return new Response(JSON.stringify({ sent }), {
-    status: sent ? 200 : 500,
-    headers: { 'Content-Type': 'application/json' },
-  })
+  try {
+    await sendWelcomeEmail(name, email)
+    return new Response(JSON.stringify({ sent: true }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  } catch (err) {
+    console.error('[email-welcome] erro:', err)
+    return new Response(JSON.stringify({ sent: false, error: String(err), detail: (err as any)?.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
 }
