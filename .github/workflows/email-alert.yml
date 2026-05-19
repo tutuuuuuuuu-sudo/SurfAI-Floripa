@@ -2,9 +2,9 @@ name: Email Alert — Condições de Surf
 
 on:
   schedule:
-    # 6h e 18h horário de Brasília (BRT = UTC-3)
+    # 6h e 15h horário de Brasília (BRT = UTC-3)
     - cron: '0 9 * * *'
-    - cron: '0 21 * * *'
+    - cron: '0 18 * * *'
   workflow_dispatch:
 
 jobs:
@@ -73,8 +73,8 @@ jobs:
 
           async function sendAlertEmail(to, name, bestSpot, allSpots) {
             const firstName = name.split(' ')[0]
-            const hour = new Date().getUTCHours()
-            const greeting = hour < 14 ? 'Bom dia' : 'Boa tarde'
+            const hourBRT = (new Date().getUTCHours() - 3 + 24) % 24
+            const greeting = hourBRT < 12 ? 'Bom dia' : 'Boa tarde'
 
             const spotsRows = allSpots
               .filter(s => s.score >= 6)
