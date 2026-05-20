@@ -1,0 +1,164 @@
+name: Daily Report — Resumo Diário do App
+
+on:
+  schedule:
+    # 9h BRT (12h UTC) e 20h BRT (23h UTC)
+    - cron: '0 12 * * *'
+    - cron: '0 23 * * *'
+  workflow_dispatch:
+
+jobs:
+  send-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar nodemailer
+        run: npm install nodemailer
+
+      - name: Buscar dados e enviar relatório
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}
+          APP_URL: ${{ secrets.APP_URL }}
+          AGENT_SECRET: ${{ secrets.AGENT_SECRET }}
+          REPORT_EMAIL: ${{ secrets.REPORT_EMAIL }}
+        run: |
+          node << 'EOF'
+          const nodemailer = require('nodemailer')
+
+          const GMAIL_USER = process.env.GMAIL_USER
+          const GMAIL_APP_PASS = process.env.GMAIL_APP_PASS
+          const APP_URL = process.env.APP_URL ?? 'https://surf-ai-floripa.vercel.app'
+          const AGENT_SECRET = process.env.AGENT_SECRET
+          const REPORT_EMAIL = process.env.REPORT_EMAIL ?? GMAIL_USER
+
+          async function main() {
+            if (!GMAIL_USER || !GMAIL_APP_PASS) {
+              console.log('Credenciais Gmail não configuradas')
+              process.exit(1)
+            }
+
+            console.log('Buscando dados do relatório...')
+            const res = await fetch(`${APP_URL}/api/daily-report`, {
+              headers: { 'x-agent-secret': AGENT_SECRET ?? '' }
+            })
+
+            if (!res.ok) {
+              console.error(`Erro ao buscar relatório: HTTP ${res.status}`)
+              process.exit(1)
+            }
+
+            const data = await res.json()
+            const { period, date, users, surf, errors, topErrors, aiSummary } = data
+
+            const hourBRT = (new Date().getUTCHours() - 3 + 24) % 24
+            const greeting = hourBRT < 14 ? 'Bom dia' : 'Boa noite'
+
+            const scoreColor = surf.bestScore >= 8 ? '#22c55e' : surf.bestScore >= 6 ? '#0ea5e9' : '#f59e0b'
+            const errorColor = errors === 0 ? '#22c55e' : errors <= 3 ? '#f59e0b' : '#ef4444'
+            const errorLabel = errors === 0 ? 'Nenhum erro crítico' : `${errors} erro(s) detectado(s)`
+
+            const errorsDetail = topErrors && topErrors.length > 0
+              ? `<div style="margin-top:12px;background:#1a0a0a;border:1px solid #3f1a1a;border-radius:8px;padding:12px">
+                  <p style="margin:0 0 8px;font-size:11px;color:#ef4444;font-weight:600;letter-spacing:1px">DETALHES DOS ERROS</p>
+                  ${topErrors.map(e => `<p style="margin:0 0 4px;font-size:11px;color:#999;font-family:monospace">${e}</p>`).join('')}
+                </div>`
+              : ''
+
+            const html = `
+            <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0a0a0a;color:#fff;border-radius:16px;overflow:hidden">
+              <div style="padding:28px 32px;background:linear-gradient(135deg,#6366f120,#0ea5e920);border-bottom:1px solid #222">
+                <p style="margin:0 0 4px;font-size:12px;color:#6366f1;font-weight:600;letter-spacing:1px">RELATÓRIO ${period.toUpperCase()} · ${date}</p>
+                <h1 style="margin:0;font-size:22px;font-weight:800">${greeting}! Aqui está o resumo do app</h1>
+              </div>
+
+              <div style="padding:28px 32px">
+
+                ${aiSummary ? `
+                <div style="background:#111;border:1px solid #333;border-left:3px solid #6366f1;border-radius:8px;padding:16px;margin-bottom:24px">
+                  <p style="margin:0 0 6px;font-size:11px;color:#6366f1;font-weight:600;letter-spacing:1px">ANÁLISE DE IA</p>
+                  <p style="margin:0;color:#ccc;font-size:14px;line-height:1.6">${aiSummary}</p>
+                </div>` : ''}
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
+                  <div style="background:#111;border:1px solid #222;border-radius:10px;padding:16px">
+                    <p style="margin:0 0 4px;font-size:11px;color:#666;font-weight:600;letter-spacing:1px">USUÁRIOS TOTAIS</p>
+                    <p style="margin:0;font-size:28px;font-weight:800">${users.total}</p>
+                    ${users.newToday > 0 ? `<p style="margin:4px 0 0;font-size:12px;color:#22c55e">+${users.newToday} hoje</p>` : `<p style="margin:4px 0 0;font-size:12px;color:#666">0 novos hoje</p>`}
+                  </div>
+
+                  <div style="background:#111;border:1px solid #222;border-radius:10px;padding:16px">
+                    <p style="margin:0 0 4px;font-size:11px;color:#666;font-weight:600;letter-spacing:1px">PREMIUM ATIVO</p>
+                    <p style="margin:0;font-size:28px;font-weight:800">${users.premiumActive}</p>
+                    ${users.newPremiumToday > 0 ? `<p style="margin:4px 0 0;font-size:12px;color:#22c55e">+${users.newPremiumToday} hoje</p>` : `<p style="margin:4px 0 0;font-size:12px;color:#666">0 novos hoje</p>`}
+                  </div>
+
+                  <div style="background:#111;border:1px solid #222;border-radius:10px;padding:16px">
+                    <p style="margin:0 0 4px;font-size:11px;color:#666;font-weight:600;letter-spacing:1px">RECEITA HOJE</p>
+                    <p style="margin:0;font-size:28px;font-weight:800">R$ ${users.revenueToday.toFixed(2)}</p>
+                    ${users.cancelledToday > 0 ? `<p style="margin:4px 0 0;font-size:12px;color:#ef4444">${users.cancelledToday} cancelamento(s)</p>` : `<p style="margin:4px 0 0;font-size:12px;color:#666">0 cancelamentos</p>`}
+                  </div>
+
+                  <div style="background:#111;border:1px solid #222;border-radius:10px;padding:16px">
+                    <p style="margin:0 0 4px;font-size:11px;color:#666;font-weight:600;letter-spacing:1px">SAÚDE TÉCNICA</p>
+                    <p style="margin:0;font-size:16px;font-weight:800;color:${errorColor}">${errorLabel}</p>
+                  </div>
+                </div>
+
+                ${errorsDetail}
+
+                <div style="background:linear-gradient(135deg,#0ea5e910,#22c55e10);border:1px solid #0ea5e930;border-radius:10px;padding:16px;margin-bottom:24px">
+                  <p style="margin:0 0 10px;font-size:11px;color:#0ea5e9;font-weight:600;letter-spacing:1px">CONDIÇÕES DO MAR AGORA</p>
+                  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+                    <div>
+                      <p style="margin:0;font-size:16px;font-weight:700">${surf.bestSpot}</p>
+                      <p style="margin:2px 0 0;font-size:12px;color:#999">Melhor praia agora · score médio geral: ${surf.avgScore}/10</p>
+                    </div>
+                    <div style="text-align:right">
+                      <p style="margin:0;font-size:28px;font-weight:800;color:${scoreColor}">${surf.bestScore}</p>
+                      <p style="margin:0;font-size:11px;color:#666">/10</p>
+                    </div>
+                  </div>
+                  <div style="margin-top:10px;display:flex;gap:16px;flex-wrap:wrap">
+                    <span style="font-size:12px;color:#999">🌊 ${surf.bestWave}m</span>
+                    <span style="font-size:12px;color:#999">⏱ ${surf.bestPeriod}s</span>
+                    <span style="font-size:12px;color:#999">💨 ${surf.bestWind}km/h ${surf.bestWindDir}</span>
+                  </div>
+                </div>
+
+                <a href="${APP_URL}" style="display:block;text-align:center;background:linear-gradient(135deg,#6366f1,#0ea5e9);color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:700;font-size:14px">
+                  Abrir painel do app
+                </a>
+              </div>
+
+              <div style="padding:16px 32px;background:#111;text-align:center">
+                <p style="margin:0;font-size:11px;color:#444">Surf AI Floripa · Relatório automático ${period.toLowerCase()} · ${date}</p>
+              </div>
+            </div>`
+
+            const transporter = nodemailer.createTransport({
+              service: 'gmail',
+              auth: { user: GMAIL_USER, pass: GMAIL_APP_PASS }
+            })
+
+            await transporter.sendMail({
+              from: `Surf AI Floripa <${GMAIL_USER}>`,
+              to: REPORT_EMAIL,
+              subject: `📊 Relatório ${period} ${date} — +${users.newToday} usuários · R$ ${users.revenueToday.toFixed(2)} hoje`,
+              html,
+            })
+
+            console.log(`Relatório ${period} enviado para ${REPORT_EMAIL}`)
+            console.log(`Usuários: ${users.total} total, +${users.newToday} hoje`)
+            console.log(`Premium: ${users.premiumActive} ativos, +${users.newPremiumToday} hoje`)
+            console.log(`Receita: R$ ${users.revenueToday.toFixed(2)}`)
+            console.log(`Mar: ${surf.bestSpot} score ${surf.bestScore} (média ${surf.avgScore})`)
+            console.log(`Erros: ${errors}`)
+          }
+
+          main().catch(e => { console.error(e); process.exit(1) })
+          EOF

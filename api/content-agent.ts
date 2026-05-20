@@ -167,13 +167,17 @@ Responda APENAS em JSON com este formato exato:
 }
 
 export default async function handler(req: Request) {
-  // Verifica secret para chamadas externas (cron ou Make.com)
-  const secret = req.headers.get('x-agent-secret') ?? new URL(req.url).searchParams.get('secret')
-  if (AGENT_SECRET && secret !== AGENT_SECRET) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    })
+  // Crons internos do Vercel não enviam secret — permite chamadas GET sem body (cron)
+  // Chamadas externas (GitHub Actions, Make.com) devem enviar x-agent-secret
+  const isVercelCron = req.method === 'GET' && !req.headers.get('x-agent-secret')
+  if (!isVercelCron) {
+    const secret = req.headers.get('x-agent-secret') ?? new URL(req.url).searchParams.get('secret')
+    if (AGENT_SECRET && secret !== AGENT_SECRET) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
   }
 
   if (!ANTHROPIC_KEY) {
