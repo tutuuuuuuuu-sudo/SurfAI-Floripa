@@ -158,47 +158,11 @@ async function getSurfConditions(): Promise<{
   }
 }
 
-async function getVercelLogs(): Promise<{ errors: number; topErrors: string[] }> {
-  const VERCEL_TOKEN = process.env.VERCEL_TOKEN
-  const VERCEL_PROJECT = process.env.VERCEL_PROJECT_ID
-
-  if (!VERCEL_TOKEN || !VERCEL_PROJECT) return { errors: 0, topErrors: [] }
-
-  try {
-    const since = Date.now() - 24 * 60 * 60 * 1000
-    const res = await fetch(
-      `https://api.vercel.com/v2/projects/${VERCEL_PROJECT}/deployments?limit=1`,
-      { headers: { Authorization: `Bearer ${VERCEL_TOKEN}` } }
-    )
-    if (!res.ok) return { errors: 0, topErrors: [] }
-    const data = await res.json() as any
-    const deployId = data.deployments?.[0]?.uid
-    if (!deployId) return { errors: 0, topErrors: [] }
-
-    const logsRes = await fetch(
-      `https://api.vercel.com/v2/deployments/${deployId}/events?since=${since}&limit=100`,
-      { headers: { Authorization: `Bearer ${VERCEL_TOKEN}` } }
-    )
-    if (!logsRes.ok) return { errors: 0, topErrors: [] }
-    const logs = await logsRes.json() as any[]
-
-    const errorLines = logs
-      .filter((l: any) => l.type === 'stderr' || (l.text ?? '').toLowerCase().includes('error'))
-      .map((l: any) => (l.text ?? '').substring(0, 120))
-      .slice(0, 5)
-
-    return { errors: errorLines.length, topErrors: errorLines }
-  } catch {
-    return { errors: 0, topErrors: [] }
-  }
-}
 
 async function generateSummary(data: {
   period: string
   users: Awaited<ReturnType<typeof getUserStats>>
   surf: Awaited<ReturnType<typeof getSurfConditions>>
-  errors: number
-  topErrors: string[]
 }): Promise<string> {
   if (!ANTHROPIC_KEY) return ''
 
@@ -218,10 +182,6 @@ CONDIÇÕES DO MAR:
 - Melhor praia: ${data.surf.bestSpot} (score ${data.surf.bestScore}/10)
 - Score médio das praias: ${data.surf.avgScore}/10
 - Condições: ondas ${data.surf.bestWave}m, período ${data.surf.bestPeriod}s, vento ${data.surf.bestWind}km/h ${data.surf.bestWindDir}
-
-SAÚDE TÉCNICA:
-- Erros detectados: ${data.errors}
-${data.topErrors.length > 0 ? `- Detalhes: ${data.topErrors.slice(0, 3).join(' | ')}` : '- Nenhum erro crítico'}
 
 Escreva 3-4 frases de análise: o que foi bom, o que precisa de atenção, e uma ação sugerida se necessário. Tom direto e profissional, sem emojis.`
 
@@ -262,21 +222,18 @@ export default async function handler(req: Request) {
   const period = hourBRT < 14 ? 'Manhã' : 'Noite'
   const dateStr = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit' }).format(new Date())
 
-  const [users, surf, logs] = await Promise.all([
+  const [users, surf] = await Promise.all([
     getUserStats(),
     getSurfConditions(),
-    getVercelLogs(),
   ])
 
-  const aiSummary = await generateSummary({ period, users, surf, errors: logs.errors, topErrors: logs.topErrors })
+  const aiSummary = await generateSummary({ period, users, surf })
 
   return new Response(JSON.stringify({
     period,
     date: dateStr,
     users,
     surf,
-    errors: logs.errors,
-    topErrors: logs.topErrors,
     aiSummary,
   }), {
     headers: { 'Content-Type': 'application/json' },
