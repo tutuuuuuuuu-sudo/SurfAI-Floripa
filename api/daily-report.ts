@@ -24,9 +24,11 @@ async function getUserStats(): Promise<{
   newPremiumToday: number
   revenueToday: number
   cancelledToday: number
+  mrr: number
+  conversionRate: number
 }> {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-    return { total: 0, newToday: 0, premiumActive: 0, newPremiumToday: 0, revenueToday: 0, cancelledToday: 0 }
+    return { total: 0, newToday: 0, premiumActive: 0, newPremiumToday: 0, revenueToday: 0, cancelledToday: 0, mrr: 0, conversionRate: 0 }
   }
 
   const todayStart = new Date()
@@ -86,10 +88,22 @@ async function getUserStats(): Promise<{
     const newToday = allUsers.filter((u: any) => u.created_at >= todayISO).length
     const total = totalData.total ?? allUsers.length
 
-    return { total, newToday, premiumActive, newPremiumToday, revenueToday, cancelledToday }
+    const mrr = premiumActive * 29.90
+    const conversionRate = total > 0 ? Number(((premiumActive / total) * 100).toFixed(1)) : 0
+
+    return { total, newToday, premiumActive, newPremiumToday, revenueToday, cancelledToday, mrr, conversionRate }
   } catch {
-    return { total: 0, newToday: 0, premiumActive: 0, newPremiumToday: 0, revenueToday: 0, cancelledToday: 0 }
+    return { total: 0, newToday: 0, premiumActive: 0, newPremiumToday: 0, revenueToday: 0, cancelledToday: 0, mrr: 0, conversionRate: 0 }
   }
+}
+
+interface SpotResult {
+  name: string
+  score: number
+  waveHeight: number
+  swellPeriod: number
+  windSpeed: number
+  windDirection: string
 }
 
 async function getSurfConditions(): Promise<{
@@ -100,7 +114,10 @@ async function getSurfConditions(): Promise<{
   bestPeriod: number
   bestWind: number
   bestWindDir: string
+  top3: SpotResult[]
+  tainhaSeasonActive: boolean
 }> {
+  const fallback = { bestSpot: 'N/A', bestScore: 0, avgScore: 0, bestWave: 0, bestPeriod: 0, bestWind: 0, bestWindDir: 'N/A', top3: [], tainhaSeasonActive: false }
   try {
     const WIND_DEG: Record<string, number> = {
       N: 0, NNE: 22.5, NE: 45, ENE: 67.5, E: 90, ESE: 112.5, SE: 135, SSE: 157.5,
@@ -138,11 +155,16 @@ async function getSurfConditions(): Promise<{
       })
     )
 
-    const valid = results.filter(Boolean) as any[]
-    if (valid.length === 0) return { bestSpot: 'N/A', bestScore: 0, avgScore: 0, bestWave: 0, bestPeriod: 0, bestWind: 0, bestWindDir: 'N/A' }
+    const valid = results.filter(Boolean) as SpotResult[]
+    if (valid.length === 0) return fallback
 
-    const best = valid.sort((a, b) => b.score - a.score)[0]
+    const sorted = valid.sort((a, b) => b.score - a.score)
+    const best = sorted[0]
     const avg = Number((valid.reduce((s, r) => s + r.score, 0) / valid.length).toFixed(1))
+
+    // Temporada da tainha: maio a agosto
+    const month = new Date().getMonth() + 1
+    const tainhaSeasonActive = month >= 5 && month <= 8
 
     return {
       bestSpot: best.name,
@@ -152,9 +174,11 @@ async function getSurfConditions(): Promise<{
       bestPeriod: best.swellPeriod,
       bestWind: best.windSpeed,
       bestWindDir: best.windDirection,
+      top3: sorted.slice(0, 3),
+      tainhaSeasonActive,
     }
   } catch {
-    return { bestSpot: 'N/A', bestScore: 0, avgScore: 0, bestWave: 0, bestPeriod: 0, bestWind: 0, bestWindDir: 'N/A' }
+    return fallback
   }
 }
 
@@ -177,11 +201,14 @@ DADOS DO DIA:
 - Novas assinaturas hoje: ${data.users.newPremiumToday}
 - Receita hoje: R$ ${data.users.revenueToday.toFixed(2)}
 - Cancelamentos hoje: ${data.users.cancelledToday}
+- MRR estimado: R$ ${data.users.mrr.toFixed(2)}
+- Taxa de conversão free→premium: ${data.users.conversionRate}%
 
 CONDIÇÕES DO MAR:
 - Melhor praia: ${data.surf.bestSpot} (score ${data.surf.bestScore}/10)
 - Score médio das praias: ${data.surf.avgScore}/10
 - Condições: ondas ${data.surf.bestWave}m, período ${data.surf.bestPeriod}s, vento ${data.surf.bestWind}km/h ${data.surf.bestWindDir}
+- Temporada da tainha: ${data.surf.tainhaSeasonActive ? 'ATIVA' : 'fora de temporada'}
 
 Escreva 3-4 frases de análise: o que foi bom, o que precisa de atenção, e uma ação sugerida se necessário. Tom direto e profissional, sem emojis.`
 
@@ -235,6 +262,8 @@ export default async function handler(req: Request) {
     users,
     surf,
     aiSummary,
+    githubActionsUrl: 'https://github.com/tutuuuuuuuu-sudo/SurfAI-Floripa/actions',
+    supabaseUrl: SUPABASE_URL ? `${SUPABASE_URL.replace('/rest/v1', '').replace('https://', 'https://supabase.com/dashboard/project/')}` : null,
   }), {
     headers: { 'Content-Type': 'application/json' },
   })

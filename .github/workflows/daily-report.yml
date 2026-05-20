@@ -53,77 +53,164 @@ jobs:
             }
 
             const data = await res.json()
-            const { period, date, users, surf, errors, topErrors, aiSummary } = data
+            const { period, date, users, surf, aiSummary } = data
 
             const hourBRT = (new Date().getUTCHours() - 3 + 24) % 24
             const greeting = hourBRT < 14 ? 'Bom dia' : 'Boa noite'
 
-            const scoreColor = surf.bestScore >= 8 ? '#22c55e' : surf.bestScore >= 6 ? '#0ea5e9' : '#f59e0b'
+            function scoreColor(s) {
+              return s >= 8 ? '#22c55e' : s >= 6 ? '#0ea5e9' : '#f59e0b'
+            }
+            function scoreLabel(s) {
+              return s >= 8 ? 'ÉPICO' : s >= 7 ? 'EXCELENTE' : s >= 6 ? 'BOM' : s >= 5 ? 'REGULAR' : 'FRACO'
+            }
+
+            // Top 3 praias
+            const top3Rows = (surf.top3 ?? []).map((s, i) => `
+              <tr>
+                <td style="padding:10px 14px;border-bottom:1px solid #1a1a1a;color:${i === 0 ? '#fff' : '#aaa'};font-weight:${i === 0 ? '700' : '400'}">${i === 0 ? '🥇 ' : i === 1 ? '🥈 ' : '🥉 '}${s.name}</td>
+                <td style="padding:10px 14px;border-bottom:1px solid #1a1a1a;font-weight:700;color:${scoreColor(s.score)}">${s.score}</td>
+                <td style="padding:10px 14px;border-bottom:1px solid #1a1a1a;color:#666;font-size:12px">${scoreLabel(s.score)}</td>
+                <td style="padding:10px 14px;border-bottom:1px solid #1a1a1a;color:#555;font-size:12px">${s.waveHeight}m · ${s.swellPeriod}s · ${s.windSpeed}km/h</td>
+              </tr>`).join('')
+
+            // Tainha
+            const tainhaBar = surf.tainhaSeasonActive
+              ? `<div style="background:linear-gradient(135deg,#92400e20,#f59e0b20);border:1px solid #f59e0b40;border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px">
+                  <span style="font-size:18px">🐟</span>
+                  <div>
+                    <p style="margin:0;font-size:12px;font-weight:700;color:#f59e0b">TEMPORADA DA TAINHA ATIVA</p>
+                    <p style="margin:2px 0 0;font-size:11px;color:#666">Maio a Agosto — período de maior movimento nas praias</p>
+                  </div>
+                </div>`
+              : ''
 
             const html = `
-            <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0a0a0a;color:#fff;border-radius:16px;overflow:hidden">
-              <div style="padding:28px 32px;background:linear-gradient(135deg,#6366f120,#0ea5e920);border-bottom:1px solid #222">
-                <p style="margin:0 0 4px;font-size:12px;color:#6366f1;font-weight:600;letter-spacing:1px">RELATÓRIO ${period.toUpperCase()} · ${date}</p>
-                <h1 style="margin:0;font-size:22px;font-weight:800">${greeting}! Aqui está o resumo do app</h1>
+            <!DOCTYPE html>
+            <html>
+            <head><meta charset="utf-8"><meta name="color-scheme" content="dark"></head>
+            <body style="margin:0;padding:16px;background:#050505;">
+            <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:620px;margin:0 auto;background:#0d0d0d;color:#fff;border-radius:16px;overflow:hidden;border:1px solid #1f1f1f">
+
+              <!-- Header -->
+              <div style="padding:28px 32px;background:linear-gradient(135deg,#1a1040,#0a1628);border-bottom:1px solid #1f1f1f">
+                <p style="margin:0 0 6px;font-size:11px;color:#6366f1;font-weight:700;letter-spacing:2px;text-transform:uppercase">Surf AI Floripa · Relatório ${period} · ${date}</p>
+                <h1 style="margin:0;font-size:20px;font-weight:800;color:#fff">${greeting}! Resumo do dia</h1>
               </div>
 
-              <div style="padding:28px 32px">
+              <div style="padding:24px 32px">
 
+                <!-- Análise IA -->
                 ${aiSummary ? `
-                <div style="background:#111;border:1px solid #333;border-left:3px solid #6366f1;border-radius:8px;padding:16px;margin-bottom:24px">
-                  <p style="margin:0 0 6px;font-size:11px;color:#6366f1;font-weight:600;letter-spacing:1px">ANÁLISE DE IA</p>
-                  <p style="margin:0;color:#ccc;font-size:14px;line-height:1.6">${aiSummary}</p>
+                <div style="background:#111827;border:1px solid #1f2937;border-left:3px solid #6366f1;border-radius:8px;padding:16px;margin-bottom:20px">
+                  <p style="margin:0 0 8px;font-size:10px;color:#6366f1;font-weight:700;letter-spacing:2px">ANÁLISE DE IA</p>
+                  <p style="margin:0;color:#d1d5db;font-size:13px;line-height:1.7">${aiSummary}</p>
                 </div>` : ''}
 
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
-                  <div style="background:#111;border:1px solid #222;border-radius:10px;padding:16px">
-                    <p style="margin:0 0 4px;font-size:11px;color:#666;font-weight:600;letter-spacing:1px">USUÁRIOS TOTAIS</p>
-                    <p style="margin:0;font-size:28px;font-weight:800">${users.total}</p>
-                    ${users.newToday > 0 ? `<p style="margin:4px 0 0;font-size:12px;color:#22c55e">+${users.newToday} hoje</p>` : `<p style="margin:4px 0 0;font-size:12px;color:#666">0 novos hoje</p>`}
-                  </div>
+                <!-- Métricas principais — grid 2x2 -->
+                <p style="margin:0 0 10px;font-size:10px;color:#444;font-weight:700;letter-spacing:2px">USUÁRIOS & RECEITA</p>
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px">
+                  <tr>
+                    <td width="50%" style="padding-right:6px">
+                      <div style="background:#111;border:1px solid #1f1f1f;border-radius:10px;padding:16px">
+                        <p style="margin:0 0 4px;font-size:10px;color:#444;font-weight:600;letter-spacing:1px">USUÁRIOS TOTAIS</p>
+                        <p style="margin:0;font-size:30px;font-weight:800;color:#fff">${users.total}</p>
+                        <p style="margin:4px 0 0;font-size:12px;color:${users.newToday > 0 ? '#22c55e' : '#444'}">${users.newToday > 0 ? '+' + users.newToday + ' hoje' : 'nenhum novo hoje'}</p>
+                      </div>
+                    </td>
+                    <td width="50%" style="padding-left:6px">
+                      <div style="background:#111;border:1px solid #1f1f1f;border-radius:10px;padding:16px">
+                        <p style="margin:0 0 4px;font-size:10px;color:#444;font-weight:600;letter-spacing:1px">PREMIUM ATIVO</p>
+                        <p style="margin:0;font-size:30px;font-weight:800;color:#fff">${users.premiumActive}</p>
+                        <p style="margin:4px 0 0;font-size:12px;color:${users.newPremiumToday > 0 ? '#22c55e' : '#444'}">${users.newPremiumToday > 0 ? '+' + users.newPremiumToday + ' hoje' : 'nenhum novo hoje'}</p>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr><td colspan="2" style="padding-top:12px"></td></tr>
+                  <tr>
+                    <td width="50%" style="padding-right:6px">
+                      <div style="background:#111;border:1px solid #1f1f1f;border-radius:10px;padding:16px">
+                        <p style="margin:0 0 4px;font-size:10px;color:#444;font-weight:600;letter-spacing:1px">RECEITA HOJE</p>
+                        <p style="margin:0;font-size:24px;font-weight:800;color:${users.revenueToday > 0 ? '#22c55e' : '#fff'}">R$ ${users.revenueToday.toFixed(2)}</p>
+                        <p style="margin:4px 0 0;font-size:12px;color:${users.cancelledToday > 0 ? '#ef4444' : '#444'}">${users.cancelledToday > 0 ? users.cancelledToday + ' cancelamento(s)' : 'sem cancelamentos'}</p>
+                      </div>
+                    </td>
+                    <td width="50%" style="padding-left:6px">
+                      <div style="background:#111;border:1px solid #1f1f1f;border-radius:10px;padding:16px">
+                        <p style="margin:0 0 4px;font-size:10px;color:#444;font-weight:600;letter-spacing:1px">MRR ESTIMADO</p>
+                        <p style="margin:0;font-size:24px;font-weight:800;color:#a78bfa">R$ ${users.mrr.toFixed(2)}</p>
+                        <p style="margin:4px 0 0;font-size:12px;color:#444">${users.conversionRate}% de conversão</p>
+                      </div>
+                    </td>
+                  </tr>
+                </table>
 
-                  <div style="background:#111;border:1px solid #222;border-radius:10px;padding:16px">
-                    <p style="margin:0 0 4px;font-size:11px;color:#666;font-weight:600;letter-spacing:1px">PREMIUM ATIVO</p>
-                    <p style="margin:0;font-size:28px;font-weight:800">${users.premiumActive}</p>
-                    ${users.newPremiumToday > 0 ? `<p style="margin:4px 0 0;font-size:12px;color:#22c55e">+${users.newPremiumToday} hoje</p>` : `<p style="margin:4px 0 0;font-size:12px;color:#666">0 novos hoje</p>`}
-                  </div>
+                <!-- Condições do mar -->
+                <p style="margin:0 0 10px;font-size:10px;color:#444;font-weight:700;letter-spacing:2px">CONDIÇÕES DO MAR AGORA</p>
 
-                  <div style="background:#111;border:1px solid #222;border-radius:10px;padding:16px">
-                    <p style="margin:0 0 4px;font-size:11px;color:#666;font-weight:600;letter-spacing:1px">RECEITA HOJE</p>
-                    <p style="margin:0;font-size:28px;font-weight:800">R$ ${users.revenueToday.toFixed(2)}</p>
-                    ${users.cancelledToday > 0 ? `<p style="margin:4px 0 0;font-size:12px;color:#ef4444">${users.cancelledToday} cancelamento(s)</p>` : `<p style="margin:4px 0 0;font-size:12px;color:#666">0 cancelamentos</p>`}
-                  </div>
+                ${tainhaBar}
 
+                <div style="background:#0a1628;border:1px solid #0ea5e930;border-radius:10px;overflow:hidden;margin-bottom:20px">
+                  <table width="100%" cellpadding="0" cellspacing="0">
+                    <thead>
+                      <tr style="background:#0f1f38">
+                        <th style="padding:10px 14px;text-align:left;font-size:10px;color:#444;font-weight:700;letter-spacing:1px">PRAIA</th>
+                        <th style="padding:10px 14px;text-align:left;font-size:10px;color:#444;font-weight:700;letter-spacing:1px">SCORE</th>
+                        <th style="padding:10px 14px;text-align:left;font-size:10px;color:#444;font-weight:700;letter-spacing:1px">STATUS</th>
+                        <th style="padding:10px 14px;text-align:left;font-size:10px;color:#444;font-weight:700;letter-spacing:1px">CONDIÇÕES</th>
+                      </tr>
+                    </thead>
+                    <tbody>${top3Rows}</tbody>
+                  </table>
+                  <div style="padding:10px 14px;background:#070f1c;border-top:1px solid #0ea5e920">
+                    <p style="margin:0;font-size:11px;color:#444">Score médio geral das praias: <span style="color:#0ea5e9;font-weight:700">${surf.avgScore}/10</span></p>
+                  </div>
                 </div>
 
-                <div style="background:linear-gradient(135deg,#0ea5e910,#22c55e10);border:1px solid #0ea5e930;border-radius:10px;padding:16px;margin-bottom:24px">
-                  <p style="margin:0 0 10px;font-size:11px;color:#0ea5e9;font-weight:600;letter-spacing:1px">CONDIÇÕES DO MAR AGORA</p>
-                  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-                    <div>
-                      <p style="margin:0;font-size:16px;font-weight:700">${surf.bestSpot}</p>
-                      <p style="margin:2px 0 0;font-size:12px;color:#999">Melhor praia agora · score médio geral: ${surf.avgScore}/10</p>
-                    </div>
-                    <div style="text-align:right">
-                      <p style="margin:0;font-size:28px;font-weight:800;color:${scoreColor}">${surf.bestScore}</p>
-                      <p style="margin:0;font-size:11px;color:#666">/10</p>
-                    </div>
-                  </div>
-                  <div style="margin-top:10px;display:flex;gap:16px;flex-wrap:wrap">
-                    <span style="font-size:12px;color:#999">🌊 ${surf.bestWave}m</span>
-                    <span style="font-size:12px;color:#999">⏱ ${surf.bestPeriod}s</span>
-                    <span style="font-size:12px;color:#999">💨 ${surf.bestWind}km/h ${surf.bestWindDir}</span>
-                  </div>
+                <!-- Rodapé informativo -->
+                <div style="background:#111;border:1px solid #1f1f1f;border-radius:10px;padding:16px">
+                  <p style="margin:0 0 12px;font-size:10px;color:#444;font-weight:700;letter-spacing:2px">STATUS DOS AGENTES HOJE</p>
+                  <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="padding:4px 0;font-size:12px;color:#666;width:60%">Email alert (6h e 15h BRT)</td>
+                      <td style="padding:4px 0;font-size:12px;color:#22c55e;text-align:right">✓ agendado</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font-size:12px;color:#666">Agente de conteúdo (10h e 19h BRT)</td>
+                      <td style="padding:4px 0;font-size:12px;color:#22c55e;text-align:right">✓ agendado</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font-size:12px;color:#666">Relatório diário (9h e 20h BRT)</td>
+                      <td style="padding:4px 0;font-size:12px;color:#22c55e;text-align:right">✓ este email</td>
+                    </tr>
+                    <tr>
+                      <td colspan="2" style="padding-top:12px;border-top:1px solid #1f1f1f"></td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font-size:12px;color:#444">Ver histórico de execuções</td>
+                      <td style="padding:4px 0;font-size:12px;text-align:right"><a href="https://github.com/tutuuuuuuuu-sudo/SurfAI-Floripa/actions" style="color:#6366f1;text-decoration:none">GitHub Actions →</a></td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font-size:12px;color:#444">Ver usuários no banco</td>
+                      <td style="padding:4px 0;font-size:12px;text-align:right"><a href="https://supabase.com/dashboard" style="color:#6366f1;text-decoration:none">Supabase →</a></td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 0;font-size:12px;color:#444">Ver app ao vivo</td>
+                      <td style="padding:4px 0;font-size:12px;text-align:right"><a href="${APP_URL}" style="color:#6366f1;text-decoration:none">surf-ai-floripa.vercel.app →</a></td>
+                    </tr>
+                  </table>
                 </div>
 
-                <a href="${APP_URL}" style="display:block;text-align:center;background:linear-gradient(135deg,#6366f1,#0ea5e9);color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:700;font-size:14px">
-                  Abrir painel do app
-                </a>
               </div>
 
-              <div style="padding:16px 32px;background:#111;text-align:center">
-                <p style="margin:0;font-size:11px;color:#444">Surf AI Floripa · Relatório automático ${period.toLowerCase()} · ${date}</p>
+              <!-- Footer -->
+              <div style="padding:14px 32px;background:#080808;border-top:1px solid #151515;text-align:center">
+                <p style="margin:0;font-size:10px;color:#2a2a2a;letter-spacing:1px">SURF AI FLORIPA · RELATÓRIO AUTOMÁTICO · ${date}</p>
               </div>
-            </div>`
+
+            </div>
+            </body>
+            </html>`
 
             const transporter = nodemailer.createTransport({
               service: 'gmail',
@@ -133,14 +220,14 @@ jobs:
             await transporter.sendMail({
               from: `Surf AI Floripa <${GMAIL_USER}>`,
               to: REPORT_EMAIL,
-              subject: `📊 Relatório ${period} ${date} — +${users.newToday} usuários · R$ ${users.revenueToday.toFixed(2)} hoje`,
+              subject: `📊 Relatório ${period} ${date} — ${users.total} usuários · R$ ${users.mrr.toFixed(2)} MRR`,
               html,
             })
 
             console.log(`Relatório ${period} enviado para ${REPORT_EMAIL}`)
             console.log(`Usuários: ${users.total} total, +${users.newToday} hoje`)
-            console.log(`Premium: ${users.premiumActive} ativos, +${users.newPremiumToday} hoje`)
-            console.log(`Receita: R$ ${users.revenueToday.toFixed(2)}`)
+            console.log(`Premium: ${users.premiumActive} ativos (${users.conversionRate}% conversão)`)
+            console.log(`MRR: R$ ${users.mrr.toFixed(2)} · Receita hoje: R$ ${users.revenueToday.toFixed(2)}`)
             console.log(`Mar: ${surf.bestSpot} score ${surf.bestScore} (média ${surf.avgScore})`)
           }
 
