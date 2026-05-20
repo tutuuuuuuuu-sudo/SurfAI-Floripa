@@ -2,7 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { BeachCondition } from '@/lib/surfData'
 import { getRatingInfo } from '@/lib/rating'
-import { Waves, Wind, Clock, Thermometer, ThumbsUp } from 'lucide-react'
+import { getTainhaInfo } from '@/lib/tainha'
+import { Waves, Wind, Clock, Thermometer, ThumbsUp, Fish } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 interface SpotCardProps {
@@ -26,6 +27,7 @@ export function SpotCard({ spot }: SpotCardProps) {
   const navigate = useNavigate()
   const rating = getRatingInfo(spot.score)
   const personalBadge = getPersonalizedBadge(spot, getUserLevel())
+  const tainha = getTainhaInfo(spot.id)
 
   const getLevelColor = (level: string) => {
     switch (level) {
@@ -106,6 +108,21 @@ export function SpotCard({ spot }: SpotCardProps) {
             <Badge className="bg-green-500/15 text-green-500 border-green-500/30" variant="outline">
               <ThumbsUp className="h-3 w-3 mr-1" />
               {personalBadge}
+            </Badge>
+          )}
+          {tainha.status === 'liberada' && (
+            <Badge className="bg-green-500/15 text-green-500 border-green-500/30" variant="outline">
+              <Fish className="h-3 w-3 mr-1" />Liberada
+            </Badge>
+          )}
+          {tainha.status === 'parcial' && (
+            <Badge className="bg-yellow-500/15 text-yellow-500 border-yellow-500/30" variant="outline">
+              <Fish className="h-3 w-3 mr-1" />Área parcial
+            </Badge>
+          )}
+          {tainha.status === 'fechada' && (
+            <Badge className="bg-destructive/15 text-destructive border-destructive/30" variant="outline">
+              <Fish className="h-3 w-3 mr-1" />Fechada — tainha
             </Badge>
           )}
         </div>

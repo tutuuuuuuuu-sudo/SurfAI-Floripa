@@ -24,8 +24,9 @@ import { AppLogo } from '@/components/AppLogo'
 import {
   Waves, TrendingUp, TrendingDown, Minus, MapPin, Info, Heart, Settings,
   Bell, BellOff, X, ChevronDown, ChevronUp, Navigation, Crown, Sparkles,
-  Flame, Store
+  Flame, Store, Fish
 } from 'lucide-react'
+import { isTainhaSeasonActive } from '@/lib/tainha'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
 
@@ -378,6 +379,16 @@ export default function Home() {
         </div>
 
         <SwellAlert spots={allSpots} />
+
+        {isTainhaSeasonActive() && (
+          <div className="flex items-start gap-3 bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-4 py-3 anim-slide" style={{ animationDelay: '0.12s' }}>
+            <Fish className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <span className="text-sm font-semibold text-yellow-500">Temporada da Tainha</span>
+              <span className="text-sm text-muted-foreground ml-2">Várias praias com restrição até 31 de julho. Verifique o status em cada pico.</span>
+            </div>
+          </div>
+        )}
 
         {/* Card de relatório de IA */}
         {(aiReport || aiLoading) && (
