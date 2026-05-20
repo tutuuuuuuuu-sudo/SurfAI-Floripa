@@ -38,11 +38,14 @@ jobs:
           const SCORE_THRESHOLD = 6.0
 
           const SPOTS = [
-            { name: 'Campeche', lat: -27.68, lng: -48.49, orientation: 90 },
-            { name: 'Joaquina', lat: -27.63, lng: -48.44, orientation: 90 },
-            { name: 'Praia Mole', lat: -27.60, lng: -48.44, orientation: 90 },
-            { name: 'Barra da Lagoa', lat: -27.57, lng: -48.43, orientation: 90 },
-            { name: 'Santinho', lat: -27.51, lng: -48.39, orientation: 60 },
+            { name: 'Campeche', lat: -27.697703, lng: -48.4898603, orientation: 90 },
+            { name: 'Joaquina', lat: -27.6293577, lng: -48.4490173, orientation: 90 },
+            { name: 'Praia Mole', lat: -27.6022459, lng: -48.4326839, orientation: 85 },
+            { name: 'Barra da Lagoa', lat: -27.5734502, lng: -48.424939, orientation: 75 },
+            { name: 'Santinho', lat: -27.4618653, lng: -48.3761513, orientation: 70 },
+            { name: 'Morro das Pedras', lat: -27.7170897, lng: -48.503436, orientation: 100 },
+            { name: 'Novo Campeche', lat: -27.6661001, lng: -48.4755307, orientation: 90 },
+            { name: 'Moçambique', lat: -27.4937746, lng: -48.3955175, orientation: 80 },
           ]
 
           const WIND_DEG = {
