@@ -35,7 +35,7 @@ jobs:
           const APP_URL = process.env.APP_URL ?? 'https://surf-ai-floripa.vercel.app'
           const SUPABASE_URL = process.env.SUPABASE_URL
           const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY
-          const SCORE_THRESHOLD = 0.0 // TESTE — reverter para 6.0
+          const SCORE_THRESHOLD = 6.0
 
           const SPOTS = [
             { name: 'Campeche', lat: -27.68, lng: -48.49, orientation: 90 },
@@ -45,17 +45,67 @@ jobs:
             { name: 'Santinho', lat: -27.51, lng: -48.39, orientation: 60 },
           ]
 
+          const WIND_DEG = {
+            'N': 0, 'NNE': 22.5, 'NE': 45, 'ENE': 67.5, 'E': 90, 'ESE': 112.5, 'SE': 135, 'SSE': 157.5,
+            'S': 180, 'SSW': 202.5, 'SW': 225, 'WSW': 247.5, 'W': 270, 'WNW': 292.5, 'NW': 315, 'NNW': 337.5,
+          }
+
+          function calculateScore(waveHeight, windSpeed, swellPeriod, windDir, beachOrientation) {
+            let waveBase = 0
+            if (waveHeight >= 2.5) waveBase = 10
+            else if (waveHeight >= 2.0) waveBase = 9.5
+            else if (waveHeight >= 1.5) waveBase = 9.0
+            else if (waveHeight >= 1.2) waveBase = 8.5
+            else if (waveHeight >= 1.0) waveBase = 8.0
+            else if (waveHeight >= 0.8) waveBase = 7.5
+            else if (waveHeight >= 0.6) waveBase = 7.0
+            else if (waveHeight >= 0.5) waveBase = 6.5
+            else if (waveHeight >= 0.4) waveBase = 5.5
+            else waveBase = 4.0
+
+            const wDir = WIND_DEG[windDir] ?? 0
+            const offshoreDir = (beachOrientation + 180) % 360
+            let angleDiff = Math.abs(wDir - offshoreDir)
+            if (angleDiff > 180) angleDiff = 360 - angleDiff
+
+            let windPenalty = 0
+            if (angleDiff <= 45) {
+              if (windSpeed <= 10) windPenalty = 0
+              else if (windSpeed <= 15) windPenalty = -0.3
+              else if (windSpeed <= 20) windPenalty = -0.8
+              else windPenalty = -1.5
+            } else if (angleDiff <= 90) {
+              if (windSpeed <= 10) windPenalty = -0.5
+              else if (windSpeed <= 15) windPenalty = -1.0
+              else if (windSpeed <= 20) windPenalty = -1.8
+              else windPenalty = -2.5
+            } else {
+              if (windSpeed <= 10) windPenalty = -1.0
+              else if (windSpeed <= 15) windPenalty = -2.0
+              else if (windSpeed <= 20) windPenalty = -3.0
+              else windPenalty = -4.0
+            }
+
+            let periodAdjust = 0
+            if (swellPeriod >= 16) periodAdjust = +0.5
+            else if (swellPeriod >= 14) periodAdjust = +0.3
+            else if (swellPeriod >= 12) periodAdjust = +0.2
+            else if (swellPeriod >= 10) periodAdjust = 0
+            else if (swellPeriod >= 8) periodAdjust = -0.2
+            else if (swellPeriod >= 7) periodAdjust = -0.4
+            else periodAdjust = -0.6
+
+            return Math.min(10, Math.max(1, Number((waveBase + windPenalty + periodAdjust).toFixed(1))))
+          }
+
           async function fetchSpotScore(spot) {
             try {
               const res = await fetch(`${APP_URL}/api/surf?lat=${spot.lat}&lng=${spot.lng}&orientation=${spot.orientation}`)
               if (!res.ok) return null
               const data = await res.json()
-              const waveScore = Math.min(data.waveHeight / 2, 1) * 40
-              const periodScore = Math.min(data.swellPeriod / 14, 1) * 30
-              const windPenalty = data.windSpeed > 20 ? -15 : data.windSpeed > 15 ? -8 : 0
-              const isTermal = (data.windDirection ?? '').includes('Terral') ? 10 : 0
-              const score = Math.max(0, Math.min(10, (waveScore + periodScore + windPenalty + isTermal) / 8))
-              return { name: spot.name, score: Number(score.toFixed(1)), waveHeight: data.waveHeight, windSpeed: data.windSpeed, windDirection: data.windDirection, swellPeriod: data.swellPeriod }
+              const windDir = (data.windDirection ?? 'N').split(' ')[0].split('(')[0].trim()
+              const score = calculateScore(data.waveHeight, data.windSpeed, data.swellPeriod, windDir, spot.orientation)
+              return { name: spot.name, score, waveHeight: data.waveHeight, windSpeed: data.windSpeed, windDirection: data.windDirection, swellPeriod: data.swellPeriod }
             } catch { return null }
           }
 
