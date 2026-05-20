@@ -35,7 +35,7 @@ jobs:
           const APP_URL = process.env.APP_URL ?? 'https://surf-ai-floripa.vercel.app'
           const SUPABASE_URL = process.env.SUPABASE_URL
           const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY
-          const SCORE_THRESHOLD = 0.0 // TESTE temporário
+          const SCORE_THRESHOLD = 6.0
 
           const SPOTS = [
             { name: 'Campeche', lat: -27.697703, lng: -48.4898603, orientation: 90 },
