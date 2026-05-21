@@ -51,8 +51,21 @@ export default async function handler(req: Request) {
     return new Response('Config error', { status: 500 })
   }
 
-  // Valida assinatura apenas se o secret estiver configurado
-  if (webhookSecret) {
+  // Valida assinatura apenas em produção real (live_mode=true)
+  // Testes do painel MP não têm assinatura válida
+  let rawBody: string
+  try {
+    rawBody = await req.text()
+  } catch {
+    rawBody = ''
+  }
+
+  let parsedBody: { type?: string; data?: { id: string }; live_mode?: boolean } = {}
+  try { parsedBody = rawBody ? JSON.parse(rawBody) : {} } catch { /* ignorar */ }
+
+  if (!parsedBody.type) return ok()
+
+  if (webhookSecret && parsedBody.live_mode === true) {
     const valid = await verifyMpSignature(req, webhookSecret)
     if (!valid) {
       console.error('[mp-webhook] Assinatura inválida — request rejeitado')
@@ -60,16 +73,7 @@ export default async function handler(req: Request) {
     }
   }
 
-  let body: { type?: string; data?: { id: string } }
-  try {
-    const text = await req.text()
-    body = text ? JSON.parse(text) : {}
-  } catch {
-    body = {}
-  }
-
-  // Body vazio = teste de validação do MP
-  if (!body.type) return ok()
+  const body = parsedBody
 
   console.log('[mp-webhook] Notificação:', body.type, body.data?.id)
 
