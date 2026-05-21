@@ -5,6 +5,8 @@ const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY
 const AGENT_SECRET = process.env.AGENT_SECRET
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
+const RESEND_API_KEY = process.env.RESEND_API_KEY
+const REPORT_EMAIL = process.env.REPORT_EMAIL ?? 'r2rgarraza@gmail.com'
 
 const SPOTS = [
   { name: 'Campeche',        lat: -27.697703, lng: -48.4898603, orientation: 90 },
@@ -234,6 +236,186 @@ Escreva 3-4 frases de análise: o que foi bom, o que precisa de atenção, e uma
   }
 }
 
+// ── Email ─────────────────────────────────────────────────────────────────────
+
+function scoreColor(score: number): string {
+  if (score >= 8) return '#22c55e'
+  if (score >= 6) return '#eab308'
+  if (score >= 4) return '#f97316'
+  return '#ef4444'
+}
+
+function medal(i: number): string {
+  return i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'
+}
+
+function buildEmailHtml(data: {
+  period: string
+  date: string
+  users: Awaited<ReturnType<typeof getUserStats>>
+  surf: Awaited<ReturnType<typeof getSurfConditions>>
+  aiSummary: string
+}): string {
+  const { period, date, users, surf, aiSummary } = data
+
+  const top3Rows = surf.top3.map((s, i) => `
+    <tr>
+      <td style="padding:10px 8px;border-bottom:1px solid #1a1a1a;font-size:14px;">
+        ${medal(i)} <strong>${s.name}</strong>
+      </td>
+      <td style="padding:10px 8px;border-bottom:1px solid #1a1a1a;text-align:center;">
+        <span style="color:${scoreColor(s.score)};font-weight:700;font-size:16px;">${s.score}</span>
+      </td>
+      <td style="padding:10px 8px;border-bottom:1px solid #1a1a1a;text-align:center;font-size:13px;color:#aaa;">
+        ${s.waveHeight}m · ${s.swellPeriod}s · ${s.windSpeed}km/h
+      </td>
+    </tr>
+  `).join('')
+
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#050505;font-family:'Helvetica Neue',Arial,sans-serif;color:#e5e5e5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#050505;padding:32px 16px;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#0d0d0d;border-radius:12px;overflow:hidden;max-width:600px;width:100%;">
+
+        <!-- Header -->
+        <tr>
+          <td style="background:#111;padding:28px 32px;border-bottom:1px solid #1f1f1f;">
+            <p style="margin:0 0 4px;font-size:12px;color:#666;text-transform:uppercase;letter-spacing:1px;">Surf AI Floripa</p>
+            <h1 style="margin:0;font-size:22px;font-weight:700;">Relatório de ${period} · ${date}</h1>
+          </td>
+        </tr>
+
+        <!-- Métricas de usuários -->
+        <tr>
+          <td style="padding:28px 32px 0;">
+            <p style="margin:0 0 16px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">Usuários</p>
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td width="25%" style="text-align:center;padding:0 8px 20px;">
+                  <p style="margin:0;font-size:28px;font-weight:700;color:#fff;">${users.total}</p>
+                  <p style="margin:4px 0 0;font-size:11px;color:#666;">Total</p>
+                </td>
+                <td width="25%" style="text-align:center;padding:0 8px 20px;">
+                  <p style="margin:0;font-size:28px;font-weight:700;color:${users.newToday > 0 ? '#22c55e' : '#fff'};">+${users.newToday}</p>
+                  <p style="margin:4px 0 0;font-size:11px;color:#666;">Novos hoje</p>
+                </td>
+                <td width="25%" style="text-align:center;padding:0 8px 20px;">
+                  <p style="margin:0;font-size:28px;font-weight:700;color:#a855f7;">${users.premiumActive}</p>
+                  <p style="margin:4px 0 0;font-size:11px;color:#666;">Premium</p>
+                </td>
+                <td width="25%" style="text-align:center;padding:0 8px 20px;">
+                  <p style="margin:0;font-size:28px;font-weight:700;color:#22c55e;">R$${users.mrr.toFixed(0)}</p>
+                  <p style="margin:4px 0 0;font-size:11px;color:#666;">MRR</p>
+                </td>
+              </tr>
+            </table>
+            <table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #1a1a1a;padding-top:16px;">
+              <tr>
+                <td width="33%" style="text-align:center;padding:12px 8px;">
+                  <p style="margin:0;font-size:18px;font-weight:600;color:${users.newPremiumToday > 0 ? '#22c55e' : '#fff'};">+${users.newPremiumToday}</p>
+                  <p style="margin:4px 0 0;font-size:11px;color:#666;">Novos premium hoje</p>
+                </td>
+                <td width="33%" style="text-align:center;padding:12px 8px;">
+                  <p style="margin:0;font-size:18px;font-weight:600;color:${users.cancelledToday > 0 ? '#ef4444' : '#fff'};">${users.cancelledToday}</p>
+                  <p style="margin:4px 0 0;font-size:11px;color:#666;">Cancelamentos</p>
+                </td>
+                <td width="33%" style="text-align:center;padding:12px 8px;">
+                  <p style="margin:0;font-size:18px;font-weight:600;">${users.conversionRate}%</p>
+                  <p style="margin:4px 0 0;font-size:11px;color:#666;">Conversão free→premium</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Condições do mar -->
+        <tr>
+          <td style="padding:24px 32px 0;">
+            <p style="margin:0 0 16px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">Condições do Mar</p>
+            <table width="100%" cellpadding="0" cellspacing="0" style="border-radius:8px;overflow:hidden;border:1px solid #1a1a1a;">
+              <thead>
+                <tr style="background:#111;">
+                  <th style="padding:10px 8px;text-align:left;font-size:11px;color:#666;font-weight:500;">Praia</th>
+                  <th style="padding:10px 8px;text-align:center;font-size:11px;color:#666;font-weight:500;">Score</th>
+                  <th style="padding:10px 8px;text-align:center;font-size:11px;color:#666;font-weight:500;">Condições</th>
+                </tr>
+              </thead>
+              <tbody>${top3Rows}</tbody>
+            </table>
+            ${surf.tainhaSeasonActive ? `
+            <p style="margin:12px 0 0;padding:10px 14px;background:#422006;border-radius:6px;font-size:12px;color:#fb923c;">
+              Temporada da tainha ativa — restrições em algumas praias.
+            </p>` : ''}
+          </td>
+        </tr>
+
+        <!-- Resumo IA -->
+        ${aiSummary ? `
+        <tr>
+          <td style="padding:24px 32px 0;">
+            <p style="margin:0 0 12px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">Análise do Dia</p>
+            <p style="margin:0;font-size:14px;line-height:1.7;color:#ccc;background:#111;padding:16px;border-radius:8px;border-left:3px solid #a855f7;">${aiSummary}</p>
+          </td>
+        </tr>` : ''}
+
+        <!-- Footer -->
+        <tr>
+          <td style="padding:28px 32px;margin-top:8px;border-top:1px solid #1a1a1a;margin-top:24px;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="font-size:11px;color:#444;">
+                  Surf AI Floripa · Relatório automático
+                </td>
+                <td style="text-align:right;">
+                  <a href="${APP_URL}" style="font-size:11px;color:#666;text-decoration:none;">Ver app</a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+}
+
+async function sendReportEmail(data: {
+  period: string
+  date: string
+  users: Awaited<ReturnType<typeof getUserStats>>
+  surf: Awaited<ReturnType<typeof getSurfConditions>>
+  aiSummary: string
+}): Promise<boolean> {
+  if (!RESEND_API_KEY) return false
+
+  const subject = `[${data.period}] Surf AI · ${data.date} — MRR R$${data.users.mrr.toFixed(0)} · ${data.surf.bestSpot} ${data.surf.bestScore}/10`
+  const html = buildEmailHtml(data)
+
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'Surf AI Floripa <onboarding@resend.dev>',
+        to: [REPORT_EMAIL],
+        subject,
+        html,
+      }),
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
 // ── Handler ───────────────────────────────────────────────────────────────────
 
 export default async function handler(req: Request) {
@@ -258,14 +440,15 @@ export default async function handler(req: Request) {
 
   const aiSummary = await generateSummary({ period, users, surf })
 
+  const emailSent = await sendReportEmail({ period, date: dateStr, users, surf, aiSummary })
+
   return new Response(JSON.stringify({
     period,
     date: dateStr,
     users,
     surf,
     aiSummary,
-    githubActionsUrl: 'https://github.com/tutuuuuuuuu-sudo/SurfAI-Floripa/actions',
-    supabaseUrl: SUPABASE_URL ? `${SUPABASE_URL.replace('/rest/v1', '').replace('https://', 'https://supabase.com/dashboard/project/')}` : null,
+    emailSent,
   }), {
     headers: { 'Content-Type': 'application/json' },
   })
