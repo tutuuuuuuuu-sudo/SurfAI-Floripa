@@ -108,19 +108,23 @@ export function usePremium() {
 export async function createMercadoPagoCheckout(
   userId: string,
   userEmail: string
-): Promise<string | null> {
+): Promise<{ url: string | null; error?: string }> {
   try {
     const res = await fetch('/api/create-payment', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, userEmail }),
     })
-    if (!res.ok) throw new Error('Falha ao criar preferência de pagamento')
     const data = await res.json()
-    return data.init_point ?? null
+    if (!res.ok) {
+      const detail = data?.detail ?? data?.error ?? 'Erro desconhecido do Mercado Pago'
+      console.error('[premium] MP error:', detail)
+      return { url: null, error: detail }
+    }
+    return { url: data.init_point ?? null }
   } catch (err) {
     console.error('[premium] erro ao criar checkout:', err)
-    return null
+    return { url: null, error: String(err) }
   }
 }
 

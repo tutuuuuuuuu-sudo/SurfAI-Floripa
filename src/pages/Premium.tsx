@@ -42,11 +42,11 @@ export default function PremiumPage() {
     setLoading(true)
     setError(null)
     try {
-      const checkoutUrl = await createMercadoPagoCheckout(user.id, user.email ?? '')
-      if (checkoutUrl) {
-        window.location.href = checkoutUrl
+      const result = await createMercadoPagoCheckout(user.id, user.email ?? '')
+      if (result.url) {
+        window.location.href = result.url
       } else {
-        setError('Não foi possível iniciar o pagamento. Tente novamente.')
+        setError(result.error ?? 'Não foi possível iniciar o pagamento. Tente novamente.')
       }
     } catch {
       setError('Erro ao conectar com o Mercado Pago. Tente novamente.')
