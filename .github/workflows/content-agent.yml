@@ -13,8 +13,7 @@ jobs:
     steps:
       - name: Chamar agente de conteúdo
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            -X POST \
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L \
             -H "x-agent-secret: ${{ secrets.AGENT_SECRET }}" \
             "${{ secrets.APP_URL }}/api/content-agent")
           echo "Status HTTP: $STATUS"
