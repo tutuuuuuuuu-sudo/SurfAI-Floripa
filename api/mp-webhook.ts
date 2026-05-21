@@ -37,8 +37,8 @@ async function verifyMpSignature(req: Request, secret: string): Promise<boolean>
 }
 
 export default async function handler(req: Request) {
-  // MP envia GET para validar o endpoint
-  if (req.method === 'GET') return ok()
+  // MP envia GET, HEAD ou OPTIONS para validar o endpoint
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return ok()
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 })
 
   const accessToken = process.env.MP_ACCESS_TOKEN
@@ -60,12 +60,16 @@ export default async function handler(req: Request) {
     }
   }
 
-  let body: { type: string; data?: { id: string } }
+  let body: { type?: string; data?: { id: string } }
   try {
-    body = await req.json()
+    const text = await req.text()
+    body = text ? JSON.parse(text) : {}
   } catch {
-    return new Response('Invalid body', { status: 400 })
+    body = {}
   }
+
+  // Body vazio = teste de validação do MP
+  if (!body.type) return ok()
 
   console.log('[mp-webhook] Notificação:', body.type, body.data?.id)
 
