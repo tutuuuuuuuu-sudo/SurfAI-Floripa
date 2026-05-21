@@ -238,11 +238,20 @@ Escreva 3-4 frases de análise: o que foi bom, o que precisa de atenção, e uma
 
 // ── Email ─────────────────────────────────────────────────────────────────────
 
+const GITHUB_ACTIONS_URL = 'https://github.com/tutuuuuuuuu-sudo/SurfAI-Floripa/actions'
+
 function scoreColor(score: number): string {
   if (score >= 8) return '#22c55e'
   if (score >= 6) return '#eab308'
   if (score >= 4) return '#f97316'
   return '#ef4444'
+}
+
+function conditionLabel(score: number): string {
+  if (score >= 8) return 'BOM'
+  if (score >= 6) return 'REGULAR'
+  if (score >= 4) return 'FRACO'
+  return 'RUIM'
 }
 
 function medal(i: number): string {
@@ -257,20 +266,28 @@ function buildEmailHtml(data: {
   aiSummary: string
 }): string {
   const { period, date, users, surf, aiSummary } = data
+  const greeting = period === 'Manhã' ? 'Bom dia!' : 'Boa noite!'
 
   const top3Rows = surf.top3.map((s, i) => `
     <tr>
-      <td style="padding:10px 8px;border-bottom:1px solid #1a1a1a;font-size:14px;">
+      <td style="padding:12px 14px;border-bottom:1px solid #1a1a1a;font-size:14px;">
         ${medal(i)} <strong>${s.name}</strong>
       </td>
-      <td style="padding:10px 8px;border-bottom:1px solid #1a1a1a;text-align:center;">
-        <span style="color:${scoreColor(s.score)};font-weight:700;font-size:16px;">${s.score}</span>
+      <td style="padding:12px 8px;border-bottom:1px solid #1a1a1a;text-align:center;">
+        <span style="color:${scoreColor(s.score)};font-weight:700;font-size:18px;">${s.score}</span>
       </td>
-      <td style="padding:10px 8px;border-bottom:1px solid #1a1a1a;text-align:center;font-size:13px;color:#aaa;">
+      <td style="padding:12px 8px;border-bottom:1px solid #1a1a1a;text-align:center;">
+        <span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;color:${scoreColor(s.score)};background:#1a1a1a;letter-spacing:0.5px;">${conditionLabel(s.score)}</span>
+      </td>
+      <td style="padding:12px 10px;border-bottom:1px solid #1a1a1a;text-align:right;font-size:12px;color:#666;">
         ${s.waveHeight}m · ${s.swellPeriod}s · ${s.windSpeed}km/h
       </td>
     </tr>
   `).join('')
+
+  const supabaseDashUrl = SUPABASE_URL
+    ? `https://supabase.com/dashboard/project/${SUPABASE_URL.replace('https://', '').split('.')[0]}`
+    : 'https://supabase.com'
 
   return `<!DOCTYPE html>
 <html>
@@ -283,72 +300,76 @@ function buildEmailHtml(data: {
         <!-- Header -->
         <tr>
           <td style="background:#111;padding:28px 32px;border-bottom:1px solid #1f1f1f;">
-            <p style="margin:0 0 4px;font-size:12px;color:#666;text-transform:uppercase;letter-spacing:1px;">Surf AI Floripa</p>
-            <h1 style="margin:0;font-size:22px;font-weight:700;">Relatório de ${period} · ${date}</h1>
+            <p style="margin:0 0 6px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1.5px;">RELATÓRIO ${period.toUpperCase()} · ${date}</p>
+            <h1 style="margin:0;font-size:24px;font-weight:700;">${greeting} Aqui está o resumo do app</h1>
           </td>
         </tr>
 
-        <!-- Métricas de usuários -->
-        <tr>
-          <td style="padding:28px 32px 0;">
-            <p style="margin:0 0 16px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">Usuários</p>
-            <table width="100%" cellpadding="0" cellspacing="0">
-              <tr>
-                <td width="25%" style="text-align:center;padding:0 8px 20px;">
-                  <p style="margin:0;font-size:28px;font-weight:700;color:#fff;">${users.total}</p>
-                  <p style="margin:4px 0 0;font-size:11px;color:#666;">Total</p>
-                </td>
-                <td width="25%" style="text-align:center;padding:0 8px 20px;">
-                  <p style="margin:0;font-size:28px;font-weight:700;color:${users.newToday > 0 ? '#22c55e' : '#fff'};">+${users.newToday}</p>
-                  <p style="margin:4px 0 0;font-size:11px;color:#666;">Novos hoje</p>
-                </td>
-                <td width="25%" style="text-align:center;padding:0 8px 20px;">
-                  <p style="margin:0;font-size:28px;font-weight:700;color:#a855f7;">${users.premiumActive}</p>
-                  <p style="margin:4px 0 0;font-size:11px;color:#666;">Premium</p>
-                </td>
-                <td width="25%" style="text-align:center;padding:0 8px 20px;">
-                  <p style="margin:0;font-size:28px;font-weight:700;color:#22c55e;">R$${users.mrr.toFixed(0)}</p>
-                  <p style="margin:4px 0 0;font-size:11px;color:#666;">MRR</p>
-                </td>
-              </tr>
-            </table>
-            <table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #1a1a1a;padding-top:16px;">
-              <tr>
-                <td width="33%" style="text-align:center;padding:12px 8px;">
-                  <p style="margin:0;font-size:18px;font-weight:600;color:${users.newPremiumToday > 0 ? '#22c55e' : '#fff'};">+${users.newPremiumToday}</p>
-                  <p style="margin:4px 0 0;font-size:11px;color:#666;">Novos premium hoje</p>
-                </td>
-                <td width="33%" style="text-align:center;padding:12px 8px;">
-                  <p style="margin:0;font-size:18px;font-weight:600;color:${users.cancelledToday > 0 ? '#ef4444' : '#fff'};">${users.cancelledToday}</p>
-                  <p style="margin:4px 0 0;font-size:11px;color:#666;">Cancelamentos</p>
-                </td>
-                <td width="33%" style="text-align:center;padding:12px 8px;">
-                  <p style="margin:0;font-size:18px;font-weight:600;">${users.conversionRate}%</p>
-                  <p style="margin:4px 0 0;font-size:11px;color:#666;">Conversão free→premium</p>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-
-        <!-- Condições do mar -->
+        <!-- Stats 2x2 -->
         <tr>
           <td style="padding:24px 32px 0;">
-            <p style="margin:0 0 16px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">Condições do Mar</p>
-            <table width="100%" cellpadding="0" cellspacing="0" style="border-radius:8px;overflow:hidden;border:1px solid #1a1a1a;">
-              <thead>
-                <tr style="background:#111;">
-                  <th style="padding:10px 8px;text-align:left;font-size:11px;color:#666;font-weight:500;">Praia</th>
-                  <th style="padding:10px 8px;text-align:center;font-size:11px;color:#666;font-weight:500;">Score</th>
-                  <th style="padding:10px 8px;text-align:center;font-size:11px;color:#666;font-weight:500;">Condições</th>
-                </tr>
-              </thead>
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td width="50%" style="padding:0 8px 16px 0;">
+                  <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1f1f1f;border-radius:8px;background:#111;">
+                    <tr><td style="padding:16px;">
+                      <p style="margin:0 0 10px;font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1px;">USUÁRIOS TOTAIS</p>
+                      <p style="margin:0;font-size:28px;font-weight:700;color:#fff;">${users.total}</p>
+                      <p style="margin:6px 0 0;font-size:12px;color:#555;">${users.newToday} novos hoje</p>
+                    </td></tr>
+                  </table>
+                </td>
+                <td width="50%" style="padding:0 0 16px 8px;">
+                  <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1f1f1f;border-radius:8px;background:#111;">
+                    <tr><td style="padding:16px;">
+                      <p style="margin:0 0 10px;font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1px;">PREMIUM ATIVO</p>
+                      <p style="margin:0;font-size:28px;font-weight:700;color:#a855f7;">${users.premiumActive}</p>
+                      <p style="margin:6px 0 0;font-size:12px;color:#555;">${users.newPremiumToday} novos hoje</p>
+                    </td></tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td width="50%" style="padding:0 8px 0 0;">
+                  <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1f1f1f;border-radius:8px;background:#111;">
+                    <tr><td style="padding:16px;">
+                      <p style="margin:0 0 10px;font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1px;">RECEITA HOJE</p>
+                      <p style="margin:0;font-size:22px;font-weight:700;color:${users.revenueToday > 0 ? '#22c55e' : '#fff'};">R$ ${users.revenueToday.toFixed(2)}</p>
+                      <p style="margin:6px 0 0;font-size:12px;color:#555;">${users.cancelledToday === 0 ? 'sem cancelamentos' : users.cancelledToday + ' cancelamento(s)'}</p>
+                    </td></tr>
+                  </table>
+                </td>
+                <td width="50%" style="padding:0 0 0 8px;">
+                  <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1f1f1f;border-radius:8px;background:#111;">
+                    <tr><td style="padding:16px;">
+                      <p style="margin:0 0 10px;font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1px;">MRR ESTIMADO</p>
+                      <p style="margin:0;font-size:22px;font-weight:700;color:${users.mrr > 0 ? '#22c55e' : '#fff'};">R$ ${users.mrr.toFixed(2)}</p>
+                      <p style="margin:6px 0 0;font-size:12px;color:#555;">${users.conversionRate}% de conversão</p>
+                    </td></tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Tainha banner -->
+        ${surf.tainhaSeasonActive ? `
+        <tr>
+          <td style="padding:20px 32px 0;">
+            <p style="margin:0;padding:12px 16px;background:#0f2d2e;border:1px solid #134e4e;border-radius:8px;font-size:13px;color:#2dd4bf;">
+              🐟 Temporada da tainha ativa — maio a agosto
+            </p>
+          </td>
+        </tr>` : ''}
+
+        <!-- Top 3 praias -->
+        <tr>
+          <td style="padding:24px 32px 0;">
+            <p style="margin:0 0 14px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">TOP 3 PRAIAS AGORA · SCORE MÉDIO: ${surf.avgScore}/10</p>
+            <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1f1f1f;border-radius:8px;overflow:hidden;">
               <tbody>${top3Rows}</tbody>
             </table>
-            ${surf.tainhaSeasonActive ? `
-            <p style="margin:12px 0 0;padding:10px 14px;background:#422006;border-radius:6px;font-size:12px;color:#fb923c;">
-              Temporada da tainha ativa — restrições em algumas praias.
-            </p>` : ''}
           </td>
         </tr>
 
@@ -357,23 +378,35 @@ function buildEmailHtml(data: {
         <tr>
           <td style="padding:24px 32px 0;">
             <p style="margin:0 0 12px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">Análise do Dia</p>
-            <p style="margin:0;font-size:14px;line-height:1.7;color:#ccc;background:#111;padding:16px;border-radius:8px;border-left:3px solid #a855f7;">${aiSummary}</p>
+            <p style="margin:0;font-size:13px;line-height:1.7;color:#bbb;background:#111;padding:14px 16px;border-radius:8px;border-left:3px solid #a855f7;">${aiSummary}</p>
           </td>
         </tr>` : ''}
 
+        <!-- Status dos agentes -->
+        <tr>
+          <td style="padding:24px 32px 0;">
+            <p style="margin:0 0 12px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">Status dos Agentes</p>
+            <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1f1f1f;border-radius:8px;background:#111;">
+              <tr><td style="padding:16px;">
+                <p style="margin:0 0 8px;font-size:13px;color:#ccc;"><span style="color:#22c55e;margin-right:8px;">✓</span>Email alert — agendado (8h e 19h BRT)</p>
+                <p style="margin:0 0 8px;font-size:13px;color:#ccc;"><span style="color:#22c55e;margin-right:8px;">✓</span>Agente de conteúdo — agendado (10h e 13h BRT)</p>
+                <p style="margin:0 0 16px;font-size:13px;color:#ccc;"><span style="color:#22c55e;margin-right:8px;">✓</span>Relatório diário — este email (7h e 20h BRT)</p>
+                <p style="margin:0;font-size:11px;color:#444;">
+                  <a href="${GITHUB_ACTIONS_URL}" style="color:#555;text-decoration:none;">github.com → Actions</a>
+                  <span style="color:#2a2a2a;margin:0 8px;">|</span>
+                  <a href="${supabaseDashUrl}" style="color:#555;text-decoration:none;">supabase.com → Dashboard</a>
+                  <span style="color:#2a2a2a;margin:0 8px;">|</span>
+                  <a href="${APP_URL}" style="color:#555;text-decoration:none;">surf-ai-floripa.vercel.app</a>
+                </p>
+              </td></tr>
+            </table>
+          </td>
+        </tr>
+
         <!-- Footer -->
         <tr>
-          <td style="padding:28px 32px;margin-top:8px;border-top:1px solid #1a1a1a;margin-top:24px;">
-            <table width="100%" cellpadding="0" cellspacing="0">
-              <tr>
-                <td style="font-size:11px;color:#444;">
-                  Surf AI Floripa · Relatório automático
-                </td>
-                <td style="text-align:right;">
-                  <a href="${APP_URL}" style="font-size:11px;color:#666;text-decoration:none;">Ver app</a>
-                </td>
-              </tr>
-            </table>
+          <td style="padding:24px 32px;border-top:1px solid #1a1a1a;margin-top:24px;">
+            <p style="margin:0;font-size:11px;color:#333;">Surf AI Floripa · Relatório automático ${period.toLowerCase()} · ${date}</p>
           </td>
         </tr>
 
