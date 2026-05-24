@@ -79,6 +79,9 @@ export default async function handler(req: Request) {
 
   if (body.type !== 'payment' || !body.data?.id) return ok()
 
+  // IDs de teste do painel MP (ex: 123456) — retorna ok sem buscar
+  if (!parsedBody.live_mode && Number(body.data.id) < 1000000) return ok()
+
   // Busca detalhes do pagamento no MP
   const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${body.data.id}`, {
     headers: { 'Authorization': `Bearer ${accessToken}` },
