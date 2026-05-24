@@ -15,11 +15,14 @@ import { AppLogo } from '@/components/AppLogo'
 
 
 const TESTIMONIALS = [
-  { name: 'Lucas T.', role: 'Intermediário · Coqueiros', avatar: 'LT', stars: 5, text: 'Fui na Mole ontem cedo, o score tava 8.4. Mar perfeito, quase vazio. Antes eu ia no achismo e voltava bastante frustrado. Agora pelo menos sei antes de sair de casa.' },
-  { name: 'Ana F.', role: 'Iniciante · Norte da ilha', avatar: 'AF', stars: 4, text: 'Pra mim que sou iniciante foi ótimo porque sempre fui na praia errada. Agora olho quais tão mais calmas e vou pra lá. Simples assim. Não perco mais tempo.' },
-  { name: 'Bruno M.', role: 'Surfista · Campeche', avatar: 'BM', stars: 5, text: 'Usei pra planejar a semana de folga. Dos 6 dias que fui, 5 o mar tava bom mesmo. Não é 100% mas bem melhor do que depender de grupo de WhatsApp.' },
-  { name: 'Rafael S.', role: 'Avançado · Joaquina', avatar: 'RS', stars: 5, text: 'O alerta de ondas mudou meu jogo. Acordo com a notificação, chego no pico quando ainda tá vazio. Melhor investimento do mês.' },
+  { name: 'Lucas T.', role: 'Intermediário · Coqueiros', avatar: 'LT', handle: '@lucast.surf', stars: 5, text: 'Fui na Mole ontem cedo, o score tava 8.4. Mar perfeito, quase vazio. Antes eu ia no achismo e voltava bastante frustrado. Agora pelo menos sei antes de sair de casa.' },
+  { name: 'Ana F.', role: 'Iniciante · Norte da ilha', avatar: 'AF', handle: '@anaf.floripa', stars: 4, text: 'Pra mim que sou iniciante foi ótimo porque sempre fui na praia errada. Agora olho quais tão mais calmas e vou pra lá. Simples assim. Não perco mais tempo.' },
+  { name: 'Bruno M.', role: 'Surfista · Campeche', avatar: 'BM', handle: '@brunomsurf', stars: 5, text: 'Usei pra planejar a semana de folga. Dos 6 dias que fui, 5 o mar tava bom mesmo. Não é 100% mas bem melhor do que depender de grupo de WhatsApp.' },
+  { name: 'Rafael S.', role: 'Avançado · Joaquina', avatar: 'RS', handle: '@rafaelsurf_fpolis', stars: 5, text: 'O alerta de ondas mudou meu jogo. Acordo com a notificação, chego no pico quando ainda tá vazio. Melhor investimento do mês.' },
 ]
+
+// Threshold de scroll (px) a partir do qual o CTA muda para Premium
+const PREMIUM_SCROLL_THRESHOLD = 2200
 
 const PLAN_FEATURES = [
   { label: 'Score de IA em tempo real', free: true, premium: true },
@@ -280,23 +283,40 @@ function PlanCell({ value }: { value: boolean | string }) {
   return <span className="text-xs font-semibold text-primary">{value}</span>
 }
 
-function FloatingCTA({ onClick }: { onClick: () => void }) {
+function FloatingCTA({ onFree, onPremium }: { onFree: () => void; onPremium: () => void }) {
   const [visible, setVisible] = useState(false)
+  const [isPremiumMode, setIsPremiumMode] = useState(false)
 
   useEffect(() => {
-    const onScroll = () => setVisible(window.scrollY > 500)
+    const onScroll = () => {
+      setVisible(window.scrollY > 500)
+      setIsPremiumMode(window.scrollY > PREMIUM_SCROLL_THRESHOLD)
+    }
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
   return (
     <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8 pointer-events-none'}`}>
-      <Button size="lg" onClick={onClick}
-        className="font-bold px-8 h-12 text-sm shadow-2xl bg-primary hover:bg-primary/90 rounded-full"
-        style={{ boxShadow: '0 0 32px oklch(0.6 0.16 200 / 0.5), 0 8px 24px rgba(0,0,0,0.4)' }}>
-        Criar conta grátis
-        <ArrowRight className="h-4 w-4 ml-2" />
-      </Button>
+      {isPremiumMode ? (
+        <Button size="lg" onClick={onPremium}
+          className="font-bold px-8 h-12 text-sm shadow-2xl rounded-full"
+          style={{
+            background: 'linear-gradient(135deg, oklch(0.7 0.18 60), oklch(0.6 0.22 50))',
+            color: 'oklch(0.1 0.02 240)',
+            boxShadow: '0 0 32px oklch(0.6 0.18 60 / 0.5), 0 8px 24px rgba(0,0,0,0.4)',
+          }}>
+          <Crown className="h-4 w-4 mr-2" />
+          Assinar Premium — R$ 29,90/mês
+        </Button>
+      ) : (
+        <Button size="lg" onClick={onFree}
+          className="font-bold px-8 h-12 text-sm shadow-2xl bg-primary hover:bg-primary/90 rounded-full"
+          style={{ boxShadow: '0 0 32px oklch(0.6 0.16 200 / 0.5), 0 8px 24px rgba(0,0,0,0.4)' }}>
+          Criar conta grátis
+          <ArrowRight className="h-4 w-4 ml-2" />
+        </Button>
+      )}
     </div>
   )
 }
@@ -437,7 +457,7 @@ export default function Landing() {
                   <div className="flex items-center gap-1 mb-0.5">
                     {[1, 2, 3, 4, 5].map(i => <Star key={i} className="h-3 w-3 text-yellow-400 fill-yellow-400" />)}
                   </div>
-                  <p className="text-xs text-muted-foreground">+200 surfistas de Floripa já usam</p>
+                  <p className="text-xs text-muted-foreground">Avaliado 5 estrelas pelos primeiros usuários</p>
                 </div>
               </div>
             </div>
@@ -446,6 +466,26 @@ export default function Landing() {
             <div className="flex justify-center lg:justify-end pt-8 pb-10">
               <AppMockup />
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* PREÇO ANTECIPADO */}
+      <section className="py-6 relative z-10"
+        style={{ borderTop: '1px solid oklch(1 0 0 / 0.06)', background: 'oklch(0.6 0.2 210 / 0.04)', backdropFilter: 'blur(20px)' }}>
+        <div className="container mx-auto px-5 max-w-5xl">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 text-center sm:text-left">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
+              <span className="text-sm font-semibold">Plano gratuito disponível</span>
+            </div>
+            <span className="hidden sm:block text-muted-foreground/40">·</span>
+            <span className="text-sm text-muted-foreground">Premium com previsão 14 dias + alertas por</span>
+            <span className="text-sm font-black text-primary">R$ 29,90/mês</span>
+            <button onClick={() => navigate('/login?plan=premium')}
+              className="text-xs text-primary underline underline-offset-2 hover:text-primary/80 transition-colors">
+              Ver plano →
+            </button>
           </div>
         </div>
       </section>
@@ -775,6 +815,22 @@ export default function Landing() {
             </div>
 
           </div>
+
+          {/* CTA dentro das features */}
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Button size="lg" onClick={() => navigate('/login')}
+              className="font-bold px-8 h-12 text-sm bg-primary hover:bg-primary/90"
+              style={{ boxShadow: '0 0 32px oklch(0.6 0.16 200 / 0.4)' }}>
+              Criar conta grátis
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+            <Button size="lg" variant="outline" onClick={() => navigate('/login?plan=premium')}
+              className="font-bold px-8 h-12 text-sm"
+              style={{ borderColor: 'oklch(0.65 0.18 50 / 0.4)', color: 'oklch(0.7 0.15 50)' }}>
+              <Crown className="h-4 w-4 mr-2" />
+              Ver Premium — R$ 29,90/mês
+            </Button>
+          </div>
         </div>
       </section>
 
@@ -790,12 +846,12 @@ export default function Landing() {
               {Array.from({ length: 5 }).map((_, i) => (
                 <Star key={i} className="h-4 w-4 text-yellow-400 fill-yellow-400" />
               ))}
-              <span className="text-sm text-muted-foreground ml-2">5.0 · Avaliado pelos surfistas de Floripa</span>
+              <span className="text-sm text-muted-foreground ml-2">5.0 · Avaliado pelos primeiros surfistas de Floripa</span>
             </div>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {TESTIMONIALS.map(({ name, role, avatar, stars, text }) => (
+            {TESTIMONIALS.map(({ name, role, avatar, handle, stars, text }) => (
               <div key={name}
                 className="rounded-2xl p-6 flex flex-col gap-4 transition-all duration-300 hover:scale-[1.02]"
                 style={{
@@ -819,6 +875,7 @@ export default function Landing() {
                     <div>
                       <div className="text-sm font-semibold">{name}</div>
                       <div className="text-xs text-muted-foreground">{role}</div>
+                      <div className="text-[10px] text-primary/50 mt-0.5">{handle}</div>
                     </div>
                   </div>
                 </div>
@@ -924,7 +981,7 @@ export default function Landing() {
                     <span className="text-yellow-400">próximo nível.</span>
                   </h2>
                   <p className="text-muted-foreground leading-relaxed">
-                    Por menos que uma garrafa de Gatorade por dia — acesse todas as ferramentas de um surfista de alto nível.
+                    Menos que o combustível de uma ida até a praia errada — e você nunca mais vai chegar quando o mar estiver ruim.
                   </p>
                 </div>
 
@@ -1102,7 +1159,7 @@ export default function Landing() {
                 </span>
               </h2>
               <p className="text-muted-foreground mb-10 leading-relaxed text-base max-w-md mx-auto">
-                Mais de 200 surfistas de Floripa já usam o Surf AI para nunca mais chegar na praia com o mar ruim.
+                Dados reais de 17 praias, score de IA e alertas personalizados.
                 Crie sua conta grátis em menos de 1 minuto.
               </p>
 
@@ -1149,7 +1206,7 @@ export default function Landing() {
                   <div className="flex gap-0.5 mb-0.5">
                     {[1,2,3,4,5].map(i => <Star key={i} className="h-3 w-3 text-yellow-400 fill-yellow-400" />)}
                   </div>
-                  <p className="text-xs text-muted-foreground">+200 surfistas já confiam no Surf AI</p>
+                  <p className="text-xs text-muted-foreground">Os primeiros surfistas adoraram</p>
                 </div>
               </div>
 
@@ -1197,7 +1254,7 @@ export default function Landing() {
       </footer>
 
       {/* CTA FLUTUANTE */}
-      <FloatingCTA onClick={() => navigate('/login')} />
+      <FloatingCTA onFree={() => navigate('/login')} onPremium={() => navigate('/login?plan=premium')} />
 
     </div>
   )
