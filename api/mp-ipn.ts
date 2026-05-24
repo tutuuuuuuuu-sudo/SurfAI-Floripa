@@ -7,6 +7,11 @@ export default async function handler(req: Request) {
 
   const headers = { 'Content-Type': 'text/plain' }
 
+  // Aceita GET, POST e qualquer método que o MP envie
+  if (!['GET', 'POST', 'HEAD', 'OPTIONS'].includes(req.method)) {
+    return new Response('OK', { status: 200, headers })
+  }
+
   // Retorna 200 imediatamente para qualquer requisição de validação/teste
   if (!topic || !id || Number(id) < 1000000) {
     return new Response('OK', { status: 200, headers })
