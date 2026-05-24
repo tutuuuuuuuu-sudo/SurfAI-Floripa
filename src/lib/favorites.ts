@@ -27,10 +27,7 @@ export async function getFavorites(forceRefresh = false): Promise<string[]> {
     .select('beach_id')
     .eq('user_id', userId)
 
-  if (error) {
-    console.error('[favorites] Erro ao buscar favoritos:', error.message)
-    return favoritesCache.get(userId)?.ids ?? []
-  }
+  if (error) return favoritesCache.get(userId)?.ids ?? []
 
   const ids = data?.map(f => f.beach_id) ?? []
   favoritesCache.set(userId, { ids, fetchedAt: Date.now() })
@@ -56,10 +53,7 @@ export async function toggleFavorite(spotId: string, spotName: string): Promise<
       .eq('user_id', userId)
       .eq('beach_id', spotId)
 
-    if (error) {
-      console.error('[favorites] Erro ao remover favorito:', error.message)
-      return true
-    }
+    if (error) return true
 
     if (cached) {
       cached.ids = cached.ids.filter(id => id !== spotId)
@@ -71,10 +65,7 @@ export async function toggleFavorite(spotId: string, spotName: string): Promise<
       .from('favorites')
       .insert({ user_id: userId, beach_id: spotId, beach_name: spotName })
 
-    if (error) {
-      console.error('[favorites] Erro ao adicionar favorito:', error.message)
-      return false
-    }
+    if (error) return false
 
     if (cached) {
       cached.ids = [...cached.ids, spotId]
@@ -93,10 +84,7 @@ export async function clearFavorites(): Promise<void> {
     .delete()
     .eq('user_id', userId)
 
-  if (error) {
-    console.error('[favorites] Erro ao limpar favoritos:', error.message)
-    return
-  }
+  if (error) return
 
   favoritesCache.delete(userId)
 }

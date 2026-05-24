@@ -109,7 +109,7 @@ export default function SurfLog() {
 
     if (error) {
       if (error.code === '42P01') setTableError(true) // table does not exist
-      else console.error('[surf-log]', error)
+      else setTableError(true)
     } else {
       setSessions(data ?? [])
     }
@@ -135,7 +135,6 @@ export default function SurfLog() {
 
     if (error) {
       toast.error('Erro ao salvar sessão')
-      console.error(error)
     } else {
       toast.success('Sessão registrada!')
       setShowForm(false)

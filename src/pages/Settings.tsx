@@ -35,7 +35,7 @@ function loadPref<T>(key: string, fallback: T): T {
   catch { return fallback }
 }
 function savePref(key: string, value: unknown) {
-  localStorage.setItem(key, JSON.stringify(value))
+  try { localStorage.setItem(key, JSON.stringify(value)) } catch { /* modo privado ou quota */ }
 }
 
 export default function Settings() {

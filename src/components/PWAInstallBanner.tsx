@@ -14,12 +14,15 @@ export function PWAInstallBanner() {
   const [dismissed, setDismissed] = useState(false)
 
   useEffect(() => {
-    const wasDismissed = localStorage.getItem('pwa-banner-dismissed') === 'true'
+    const wasDismissed = (() => { try { return localStorage.getItem('pwa-banner-dismissed') === 'true' } catch { return false } })()
+    const navigatorExt = window.navigator as Navigator & { standalone?: boolean }
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-      || (window.navigator as any).standalone === true
+      || navigatorExt.standalone === true
     if (wasDismissed || isStandalone) return
 
-    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream
+    // MSStream é propriedade do IE11 — seu presença indica IE, não iOS real
+    const windowExt = window as Window & { MSStream?: unknown }
+    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) && !windowExt.MSStream
     setIsIOS(ios)
 
     if (ios) {
@@ -47,7 +50,7 @@ export function PWAInstallBanner() {
   const handleDismiss = () => {
     setShow(false)
     setDismissed(true)
-    localStorage.setItem('pwa-banner-dismissed', 'true')
+    try { localStorage.setItem('pwa-banner-dismissed', 'true') } catch { /* ignore */ }
   }
 
   if (!show || dismissed) return null

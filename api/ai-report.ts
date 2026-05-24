@@ -116,7 +116,7 @@ Não inclua emojis. Responda APENAS o texto do relatório, sem títulos ou forma
       })
     }
 
-    const data = await response.json() as any
+    const data = await response.json() as { content?: { text?: string }[] }
     const report = data.content?.[0]?.text ?? ''
 
     return new Response(JSON.stringify({ report }), {

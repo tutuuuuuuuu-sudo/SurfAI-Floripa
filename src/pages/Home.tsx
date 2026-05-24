@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
+import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -46,7 +47,7 @@ const AdBanner = ({ ad = PLACEHOLDER_AD }: { ad?: AdData }) => (
     className="block w-full rounded-xl border border-border/40 overflow-hidden hover:border-primary/30 transition-all" style={{ textDecoration: 'none' }}>
     <div className="flex items-center gap-3 px-4 py-3 bg-muted/10">
       {ad.imagem_url
-        ? <img src={ad.imagem_url} alt={ad.empresa} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+        ? <img src={ad.imagem_url} alt={ad.empresa} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" onError={e => { e.currentTarget.style.display = 'none' }} />
         : <div className="w-12 h-12 rounded-lg bg-muted/30 flex items-center justify-center flex-shrink-0"><Waves className="h-6 w-6 text-muted-foreground" /></div>
       }
       <div className="flex-1 min-w-0">
@@ -63,7 +64,7 @@ const AdCard = ({ ad = PLACEHOLDER_AD }: { ad?: AdData }) => (
     className="block" style={{ textDecoration: 'none' }}>
     <div className="rounded-xl border border-dashed border-border/50 hover:border-primary/30 bg-muted/5 hover:bg-primary/5 transition-all p-4 flex items-center gap-3">
       {ad.imagem_url
-        ? <img src={ad.imagem_url} alt={ad.empresa} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+        ? <img src={ad.imagem_url} alt={ad.empresa} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" onError={e => { e.currentTarget.style.display = 'none' }} />
         : <div className="w-10 h-10 rounded-lg bg-muted/20 flex items-center justify-center flex-shrink-0"><Store className="h-5 w-5 text-muted-foreground" /></div>
       }
       <div className="flex-1 min-w-0">
@@ -118,10 +119,11 @@ const SwellPeriodWidget = () => {
 
 // getScoreColor e getThemeGradient agora vêm de @/lib/rating
 
+// Tendência baseada em dados reais: score acima de 7 com vento fraco (<12km/h) = melhorando;
+// score abaixo de 5 com vento forte (>20km/h) = piorando; demais casos = estável.
 function getTrend(spot: BeachCondition): 'up' | 'down' | 'stable' {
-  const hour = new Date().getHours()
-  if (hour >= 5 && hour <= 9) return spot.windSpeed <= 15 ? 'up' : 'stable'
-  if (hour >= 14 && hour <= 18) return spot.windSpeed >= 15 ? 'down' : 'stable'
+  if (spot.score >= 7 && spot.windSpeed <= 12) return 'up'
+  if (spot.score <= 5 && spot.windSpeed >= 20) return 'down'
   return 'stable'
 }
 
@@ -225,8 +227,14 @@ const NotificationPanel = ({ spots, favorites }: { spots: BeachCondition[], favo
               </div>
             </div>
             {settings.enabled && permission === 'granted' && (
-              <button onClick={() => checkAndNotifyGoodConditions(spots, favorites, settings.minScore, settings.favoriteOnly)}
-                className="w-full text-xs py-2 border border-primary/30 rounded-lg text-primary hover:bg-primary/10 transition-colors">Testar notificação</button>
+              <button
+                onClick={async () => {
+                  await checkAndNotifyGoodConditions(spots, favorites, settings.minScore, settings.favoriteOnly)
+                  toast.success('Notificação de teste enviada!')
+                }}
+                className="w-full text-xs py-2 border border-primary/30 rounded-lg text-primary hover:bg-primary/10 transition-colors">
+                Testar notificação
+              </button>
             )}
           </>
         )}
@@ -243,12 +251,14 @@ export default function Home() {
   const [topSpot, setTopSpot] = useState<BeachCondition | null>(null)
   const lastUpdated = useRef<Date>(new Date())
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
   const [favorites, setFavorites] = useState<string[]>([])
   const [visible, setVisible] = useState(false)
   const [aiReport, setAiReport] = useState<string | null>(null)
   const [aiLoading, setAiLoading] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(() => {
-    try { return !localStorage.getItem('onboarding_done') } catch { return false }
+    try { return !localStorage.getItem('onboarding_done') } catch { return true }
   })
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -266,13 +276,20 @@ export default function Home() {
     setLoading(true)
     const updateData = async () => {
       lastUpdated.current = new Date()
-      const allConditions = await fetchCurrentConditions()
-      const favs = await getFavorites()
-      setFavorites(favs)
-      const sortedAll = [...allConditions].sort((a, b) => b.score - a.score)
-      const top = sortedAll[0] ?? null
-      setAllSpots(allConditions)
-      setTopSpot(top)
+      try {
+        const allConditions = await fetchCurrentConditions()
+        setFetchError(allConditions.length === 0)
+        const favs = await getFavorites()
+        setFavorites(favs)
+        const sortedAll = [...allConditions].sort((a, b) => b.score - a.score)
+        const top = sortedAll[0] ?? null
+        setAllSpots(allConditions)
+        setTopSpot(top)
+      } catch {
+        setFetchError(true)
+        setLoading(false)
+        return
+      }
       setLoading(false)
       setTimeout(() => setVisible(true), 100)
       const notifSettings = getSavedNotificationSettings()
@@ -280,7 +297,7 @@ export default function Home() {
       if (top) {
         setAiLoading(true)
         try {
-          const userLevel = localStorage.getItem('pref_skill') ?? undefined
+          const userLevel = (() => { try { return localStorage.getItem('pref_skill') ?? undefined } catch { return undefined } })()
           const report = await fetchAIReport(sortedAll.slice(0, 6), top, userLevel ?? undefined)
           setAiReport(report)
           if (report) track('ai_report_loaded', { top_spot: top.name, score: top.score })
@@ -291,7 +308,7 @@ export default function Home() {
     updateData()
     const interval = setInterval(updateData, 15 * 60 * 1000)
     return () => clearInterval(interval)
-  }, []) // activeRegion não é dependência: troca de região só re-filtra via useMemo, sem novo fetch
+  }, [refreshKey]) // refreshKey força re-fetch manual; activeRegion não é dependência (só re-filtra via useMemo)
 
   const userName = user ? getUserDisplayName(user) : 'Surfista'
   const userInitial = userName.charAt(0).toUpperCase()
@@ -408,7 +425,10 @@ export default function Home() {
                   <span>Analisando condições com IA...</span>
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground leading-relaxed">{aiReport}</p>
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground leading-relaxed">{aiReport}</p>
+                  <p className="text-xs text-muted-foreground/50">Gerado por IA com base nos dados atuais. Confirme as condições antes de entrar no mar.</p>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -494,7 +514,20 @@ export default function Home() {
           {spots.length === 0 && (
             <div className="col-span-full text-center py-12 text-muted-foreground">
               <Waves className="h-12 w-12 mx-auto mb-4 opacity-20" />
-              <p>Nenhuma praia encontrada nesta região.</p>
+              {fetchError ? (
+                <>
+                  <p className="font-medium">Erro ao carregar as condições.</p>
+                  <p className="text-sm mt-1">Verifique sua conexão e tente novamente.</p>
+                  <button
+                    onClick={() => { setFetchError(false); setRefreshKey(k => k + 1) }}
+                    className="mt-4 text-sm text-primary border border-primary/30 px-4 py-2 rounded-xl hover:bg-primary/10 transition-colors"
+                  >
+                    Tentar novamente
+                  </button>
+                </>
+              ) : (
+                <p>Nenhuma praia encontrada nesta região.</p>
+              )}
             </div>
           )}
         </div>

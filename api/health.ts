@@ -24,14 +24,14 @@ async function testSurfAPI(): Promise<TestResult> {
     const ms = Date.now() - start
     if (!res.ok) return { name: 'API de Surf', ok: false, detail: `Status ${res.status}`, ms }
 
-    const data = await res.json() as any
+    const data = await res.json() as { waveHeight?: unknown; windSpeed?: unknown; windDirection?: unknown }
     if (typeof data.waveHeight !== 'number') return { name: 'API de Surf', ok: false, detail: 'waveHeight ausente ou inválido', ms }
     if (typeof data.windSpeed !== 'number') return { name: 'API de Surf', ok: false, detail: 'windSpeed ausente ou inválido', ms }
     if (data.waveHeight < 0 || data.waveHeight > 15) return { name: 'API de Surf', ok: false, detail: `waveHeight fora do intervalo: ${data.waveHeight}m`, ms }
 
-    return { name: 'API de Surf', ok: true, detail: `Ondas ${data.waveHeight}m · Vento ${data.windSpeed}km/h · ${data.windDirection}`, ms }
-  } catch (e: any) {
-    return { name: 'API de Surf', ok: false, detail: e?.message ?? 'Timeout ou erro de rede', ms: Date.now() - start }
+    return { name: 'API de Surf', ok: true, detail: `Ondas ${data.waveHeight}m · Vento ${data.windSpeed}km/h · ${String(data.windDirection ?? '')}`, ms }
+  } catch (e) {
+    return { name: 'API de Surf', ok: false, detail: e instanceof Error ? e.message : 'Timeout ou erro de rede', ms: Date.now() - start }
   }
 }
 
@@ -44,11 +44,11 @@ async function testOpenMeteo(): Promise<TestResult> {
     )
     const ms = Date.now() - start
     if (!res.ok) return { name: 'Open-Meteo (Marine)', ok: false, detail: `Status ${res.status}`, ms }
-    const data = await res.json() as any
+    const data = await res.json() as { error?: boolean; reason?: string; current?: { wave_height?: number } }
     if (data.error) return { name: 'Open-Meteo (Marine)', ok: false, detail: data.reason ?? 'Erro desconhecido', ms }
     return { name: 'Open-Meteo (Marine)', ok: true, detail: `Ondas ${data.current?.wave_height ?? '?'}m`, ms }
-  } catch (e: any) {
-    return { name: 'Open-Meteo (Marine)', ok: false, detail: e?.message ?? 'Timeout', ms: Date.now() - start }
+  } catch (e) {
+    return { name: 'Open-Meteo (Marine)', ok: false, detail: e instanceof Error ? e.message : 'Timeout', ms: Date.now() - start }
   }
 }
 
@@ -69,8 +69,8 @@ async function testSupabase(): Promise<TestResult> {
     const ms = Date.now() - start
     if (!res.ok) return { name: 'Supabase', ok: false, detail: `Status ${res.status}`, ms }
     return { name: 'Supabase', ok: true, detail: 'Banco de dados respondendo', ms }
-  } catch (e: any) {
-    return { name: 'Supabase', ok: false, detail: e?.message ?? 'Timeout', ms: Date.now() - start }
+  } catch (e) {
+    return { name: 'Supabase', ok: false, detail: e instanceof Error ? e.message : 'Timeout', ms: Date.now() - start }
   }
 }
 
@@ -87,11 +87,11 @@ async function testWindy(): Promise<TestResult> {
       signal: AbortSignal.timeout(8000),
     })
     const ms = Date.now() - start
-    const data = await res.json() as any
+    const data = await res.json() as { error?: string; message?: string }
     if (data.error) return { name: 'Windy API', ok: false, detail: data.message ?? 'Erro na API', ms }
     return { name: 'Windy API', ok: true, detail: 'Respondendo normalmente', ms }
-  } catch (e: any) {
-    return { name: 'Windy API', ok: false, detail: e?.message ?? 'Timeout', ms: Date.now() - start }
+  } catch (e) {
+    return { name: 'Windy API', ok: false, detail: e instanceof Error ? e.message : 'Timeout', ms: Date.now() - start }
   }
 }
 
@@ -109,8 +109,8 @@ async function testPaymentAPI(): Promise<TestResult> {
     // 400 = rota funcionando e validando. 500 = problema real.
     if (res.status === 500) return { name: 'API de Pagamento', ok: false, detail: 'Erro interno (500) — verificar logs', ms }
     return { name: 'API de Pagamento', ok: true, detail: `Rota ativa (status ${res.status})`, ms }
-  } catch (e: any) {
-    return { name: 'API de Pagamento', ok: false, detail: e?.message ?? 'Timeout', ms: Date.now() - start }
+  } catch (e) {
+    return { name: 'API de Pagamento', ok: false, detail: e instanceof Error ? e.message : 'Timeout', ms: Date.now() - start }
   }
 }
 

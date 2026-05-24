@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
 import { track } from '@/lib/monitoring'
+import { getRatingInfo } from '@/lib/rating'
 
 interface ContentResult {
   instagram: { caption: string; hashtags: string; fullPost: string }
@@ -38,7 +39,7 @@ function CopyButton({ text, label }: { text: string; label?: string }) {
 }
 
 function ScoreBadge({ score }: { score: number }) {
-  const color = score >= 8 ? 'text-green-400' : score >= 7 ? 'text-blue-400' : score >= 6 ? 'text-yellow-400' : 'text-muted-foreground'
+  const { color } = getRatingInfo(score)
   return <span className={`font-bold text-lg ${color}`}>{score}</span>
 }
 

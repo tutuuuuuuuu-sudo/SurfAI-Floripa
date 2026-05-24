@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../lib/supabase'
 import { AppLogo } from '@/components/AppLogo'
 
 export default function LoginPage() {
@@ -13,6 +14,21 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
 
   const { signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth()
+
+  const handleForgotPassword = async () => {
+    if (!email.trim()) { setError('Digite seu email primeiro.'); return }
+    setLoading(true)
+    setError('')
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+    setLoading(false)
+    if (error) {
+      setError('Não foi possível enviar o email. Verifique o endereço.')
+    } else {
+      setMessage('Email enviado! Verifique sua caixa de entrada para redefinir a senha.')
+    }
+  }
   const navigate = useNavigate()
 
   const handleSubmit = async () => {
@@ -120,7 +136,7 @@ export default function LoginPage() {
           <div className="mb-4">
             <div className="flex justify-between items-center mb-1.5">
               <label className="text-xs font-medium text-gray-600">Senha</label>
-              {tab === 'login' && <button className="text-xs text-[#1d9e75]">Esqueci a senha</button>}
+              {tab === 'login' && <button onClick={handleForgotPassword} disabled={loading} className="text-xs text-[#1d9e75] hover:underline disabled:opacity-50">Esqueci a senha</button>}
             </div>
             <input type="password" value={password} onChange={e => setPassword(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSubmit()}

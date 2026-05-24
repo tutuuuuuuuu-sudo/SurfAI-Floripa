@@ -1,3 +1,5 @@
+import { lsGet, lsSet, lsGetJson, lsSetJson } from './utils'
+
 export async function requestNotificationPermission(): Promise<boolean> {
   if (!('Notification' in window)) return false
   if (Notification.permission === 'granted') return true
@@ -24,7 +26,6 @@ export async function subscribeToNotifications(): Promise<boolean> {
 
     return true
   } catch (error) {
-    console.error('Erro ao registrar service worker:', error)
     return false
   }
 }
@@ -52,11 +53,7 @@ export function getSavedNotificationSettings(): {
   minScore: number
   favoriteOnly: boolean
 } {
-  try {
-    const saved = localStorage.getItem('notification_settings')
-    if (saved) return JSON.parse(saved)
-  } catch (_) {}
-  return { enabled: false, minScore: 7, favoriteOnly: true }
+  return lsGetJson('notification_settings', { enabled: false, minScore: 7, favoriteOnly: true })
 }
 
 export function saveNotificationSettings(settings: {
@@ -64,9 +61,7 @@ export function saveNotificationSettings(settings: {
   minScore: number
   favoriteOnly: boolean
 }) {
-  try {
-    localStorage.setItem('notification_settings', JSON.stringify(settings))
-  } catch (_) {}
+  lsSetJson('notification_settings', settings)
 }
 
 export async function checkAndNotifyGoodConditions(
@@ -77,7 +72,7 @@ export async function checkAndNotifyGoodConditions(
 ) {
   if (Notification.permission !== 'granted') return
 
-  const lastNotified = localStorage.getItem('last_notified_time')
+  const lastNotified = lsGet('last_notified_time')
   const now = Date.now()
 
   if (lastNotified && now - Number(lastNotified) < 60 * 60 * 1000) return
@@ -92,10 +87,10 @@ export async function checkAndNotifyGoodConditions(
 
   const best = goodSpots.sort((a, b) => b.score - a.score)[0]
   await sendLocalNotification(
-    `🔥 ${best.name} está excelente agora!`,
-    `Score ${best.score.toFixed(1)} — Clique para ver as condições`,
+    `${best.name} está excelente agora!`,
+    `Score ${best.score.toFixed(1)}/10 — Toque para ver as condições`,
     `/spot/${best.id}`
   )
 
-  localStorage.setItem('last_notified_time', String(now))
+  lsSet('last_notified_time', String(now))
 }

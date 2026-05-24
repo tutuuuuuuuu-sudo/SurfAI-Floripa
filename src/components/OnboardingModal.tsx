@@ -19,10 +19,10 @@ export function OnboardingModal({ onDone }: Props) {
   const [level, setLevel] = useState<SkillLevel | null>(null)
 
   const handleDone = (skip = false) => {
-    if (!skip && level) {
-      localStorage.setItem('pref_skill', JSON.stringify(level))
-    }
-    localStorage.setItem('onboarding_done', '1')
+    try {
+      if (!skip && level) localStorage.setItem('pref_skill', JSON.stringify(level))
+      localStorage.setItem('onboarding_done', '1')
+    } catch { /* modo privado */ }
     onDone()
   }
 

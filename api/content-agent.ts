@@ -49,21 +49,21 @@ async function fetchSpot(spot: typeof SPOTS[0]): Promise<SpotData | null> {
       { signal: AbortSignal.timeout(10000) }
     )
     if (!res.ok) return null
-    const data = await res.json() as any
+    const data = await res.json() as { waveHeight?: number; swellPeriod?: number; windSpeed?: number; windDirection?: string; waterTemperature?: number }
 
-    const waveScore = Math.min(data.waveHeight / 2, 1) * 40
-    const periodScore = Math.min(data.swellPeriod / 14, 1) * 30
-    const windPenalty = data.windSpeed > 20 ? -15 : data.windSpeed > 15 ? -8 : 0
+    const waveScore = Math.min((data.waveHeight ?? 0) / 2, 1) * 40
+    const periodScore = Math.min((data.swellPeriod ?? 0) / 14, 1) * 30
+    const windPenalty = (data.windSpeed ?? 0) > 20 ? -15 : (data.windSpeed ?? 0) > 15 ? -8 : 0
     const isTermal = (data.windDirection ?? '').includes('Terral') ? 10 : 0
     const score = Math.max(0, Math.min(10, (waveScore + periodScore + windPenalty + isTermal) / 8))
 
     return {
       name: spot.name,
       score: Number(score.toFixed(1)),
-      waveHeight: data.waveHeight,
-      swellPeriod: data.swellPeriod,
-      windSpeed: data.windSpeed,
-      windDirection: data.windDirection,
+      waveHeight: data.waveHeight ?? 0,
+      swellPeriod: data.swellPeriod ?? 0,
+      windSpeed: data.windSpeed ?? 0,
+      windDirection: data.windDirection ?? 'N',
       waterTemperature: data.waterTemperature ?? null,
     }
   } catch {
@@ -138,7 +138,7 @@ Responda APENAS em JSON com este formato exato:
 
     if (!res.ok) return null
 
-    const data = await res.json() as any
+    const data = await res.json() as { content?: { text?: string }[] }
     const raw = data.content?.[0]?.text ?? ''
 
     // Extrai JSON da resposta

@@ -130,8 +130,10 @@ async function fetchOpenMeteo(lat: string, lng: string): Promise<ForecastResult 
     ])
     if (!marineRes.ok || !weatherRes.ok) return null
 
-    const marine = await marineRes.json() as any
-    const weather = await weatherRes.json() as any
+    interface OpenMeteoMarine { error?: string; current?: { swell_wave_height?: number; swell_wave_period?: number; swell_wave_direction?: number; wave_height?: number; wave_period?: number; wave_direction?: number; sea_surface_temperature?: number } }
+    interface OpenMeteoWeather { error?: string; current?: { wind_speed_10m?: number; wind_direction_10m?: number }; daily?: { sunrise?: string[]; sunset?: string[] } }
+    const marine = await marineRes.json() as OpenMeteoMarine
+    const weather = await weatherRes.json() as OpenMeteoWeather
     if (marine.error || weather.error) return null
 
     const waveHeight = Number((marine.current?.swell_wave_height ?? marine.current?.wave_height ?? 0).toFixed(1))
@@ -166,19 +168,20 @@ async function fetchStormglass(lat: string, lng: string): Promise<ForecastResult
       `https://api.stormglass.io/v2/weather/point?lat=${lat}&lng=${lng}&params=${params}`,
       { headers: { Authorization: key } }
     )
-    const data = await res.json() as any
+    interface StormglassHour { time: string; [key: string]: Record<string, number> | string }
+    const data = await res.json() as { hours?: StormglassHour[] }
     if (!data.hours?.length) return null
 
     const nowMs = Date.now()
-    const hour = data.hours.reduce((best: any, h: any) =>
+    const hour = data.hours.reduce((best, h) =>
       Math.abs(new Date(h.time).getTime() - nowMs) < Math.abs(new Date(best.time).getTime() - nowMs) ? h : best
     )
 
     const pick = (k: string): number | null => {
       const obj = hour[k]
-      if (!obj) return null
-      const vals = Object.values(obj) as number[]
-      return vals.length ? vals.reduce((a: number, b: number) => a + b, 0) / vals.length : null
+      if (!obj || typeof obj === 'string') return null
+      const vals = Object.values(obj).filter((v): v is number => typeof v === 'number')
+      return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null
     }
 
     const wH = pick('swellHeight') ?? pick('waveHeight')
@@ -232,7 +235,7 @@ export default async function handler(req: Request) {
     if (!sunrise || !sunset) {
       try {
         const sunRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=sunrise,sunset&wind_speed_unit=kmh&timezone=America%2FSao_Paulo`)
-        const sunData = await sunRes.json() as any
+        const sunData = await sunRes.json() as { daily?: { sunrise?: string[]; sunset?: string[] } }
         sunrise = formatTimeBrasilia(sunData.daily?.sunrise?.[0] ?? '')
         sunset = formatTimeBrasilia(sunData.daily?.sunset?.[0] ?? '')
       } catch { /* sunrise/sunset não crítico */ }
@@ -252,8 +255,8 @@ export default async function handler(req: Request) {
             { headers: { Authorization: stormKey } }
           )
           if (tideRes.ok) {
-            const tideJson = await tideRes.json() as any
-            tideData = (tideJson.data ?? []).map((item: any) => ({
+            const tideJson = await tideRes.json() as { data?: { time: string; height: number; type?: string }[] }
+            tideData = (tideJson.data ?? []).map((item) => ({
               time: item.time,
               height: Number(item.height.toFixed(2)),
               type: item.type,

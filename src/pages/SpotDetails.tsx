@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
-import { fetchCurrentConditions, analyzeConditions, BeachCondition, SubRegion } from '@/lib/surfData'
+import { fetchCurrentConditions, getCurrentConditions, analyzeConditions, BeachCondition, SubRegion, WIND_DEG } from '@/lib/surfData'
 import { getWeatherForecast, WeatherForecast, getRealTide } from '@/lib/weatherData'
 import { isFavorite, toggleFavorite } from '@/lib/favorites'
 import { getComments, addComment, deleteComment, formatCommentTime, Comment } from '@/lib/comments'
@@ -34,13 +34,7 @@ const directionNames: Record<string, string> = {
 
 const getWindDirectionCode = (d: string) => d.split(' ')[0]
 const formatWindDirection = (d: string) => ({ code: getWindDirectionCode(d), name: directionNames[getWindDirectionCode(d)] ?? getWindDirectionCode(d) })
-const directionToDegrees = (d: string): number => {
-  const map: Record<string, number> = {
-    'N':0,'NNE':22.5,'NE':45,'ENE':67.5,'E':90,'ESE':112.5,'SE':135,'SSE':157.5,
-    'S':180,'SSW':202.5,'SW':225,'WSW':247.5,'W':270,'WNW':292.5,'NW':315,'NNW':337.5
-  }
-  return map[getWindDirectionCode(d)] ?? 0
-}
+const directionToDegrees = (d: string): number => WIND_DEG[getWindDirectionCode(d)] ?? 0
 
 const WindCompass = ({ direction, speed }: { direction: string, speed: number }) => {
   const degrees = directionToDegrees(direction)
@@ -559,22 +553,37 @@ export default function SpotDetails() {
 
   useEffect(() => {
     if (!id) return
-    setLoadingSpot(true)
     setForecast([])
     setVisible(false)
-    fetchCurrentConditions().then(async spots => {
-      const found = spots.find(s => s.id === id) ?? null
-      setSpot(found)
+
+    // Usa o cache global se disponível — evita refetch de todas as praias
+    const cached = getCurrentConditions()
+    const fromCache = cached.find(s => s.id === id)
+    if (fromCache) {
+      setSpot(fromCache)
       setLoadingSpot(false)
       setTimeout(() => setVisible(true), 50)
-      if (found) {
-        getWeatherForecast(
-          found.id,
-          { waveHeight: found.waveHeight, windSpeed: found.windSpeed, swellPeriod: found.swellPeriod, windDirection: found.windDirection, waterTemperature: found.waterConditions.temperature, score: found.score },
-          isPremium
-        ).then(setForecast)
-      }
-    })
+      getWeatherForecast(
+        fromCache.id,
+        { waveHeight: fromCache.waveHeight, windSpeed: fromCache.windSpeed, swellPeriod: fromCache.swellPeriod, windDirection: fromCache.windDirection, waterTemperature: fromCache.waterConditions.temperature, score: fromCache.score },
+        isPremium
+      ).then(setForecast)
+    } else {
+      setLoadingSpot(true)
+      fetchCurrentConditions().then(spots => {
+        const found = spots.find(s => s.id === id) ?? null
+        setSpot(found)
+        setLoadingSpot(false)
+        setTimeout(() => setVisible(true), 50)
+        if (found) {
+          getWeatherForecast(
+            found.id,
+            { waveHeight: found.waveHeight, windSpeed: found.windSpeed, swellPeriod: found.swellPeriod, windDirection: found.windDirection, waterTemperature: found.waterConditions.temperature, score: found.score },
+            isPremium
+          ).then(setForecast)
+        }
+      })
+    }
     isFavorite(id).then(val => { setFavorite(val); setLoadingFav(false) })
   }, [id, isPremium])
 
@@ -912,6 +921,12 @@ export default function SpotDetails() {
               </div>
             ) : (
               <>
+                {forecast[0]?.isFallback && (
+                  <div className="flex items-center gap-2 text-xs text-yellow-600 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-3 py-2">
+                    <AlertCircle className="h-3.5 w-3.5 flex-shrink-0"/>
+                    Previsão estimada — dados da API indisponíveis no momento.
+                  </div>
+                )}
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                   {forecast.map((day, index) => (
                     <ForecastCard

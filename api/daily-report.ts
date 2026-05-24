@@ -59,17 +59,20 @@ async function getUserStats(): Promise<{
       }),
     ])
 
-    const totalData = totalRes.ok ? await totalRes.json() as any : {}
-    const premiumData = premiumRes.ok ? await premiumRes.json() as any[] : []
+    interface SubRecord { id: string; created_at: string; plan?: string; amount?: number }
+    interface AuthUsersResponse { total?: number; users?: { id: string; created_at: string }[] }
+
+    const totalData = totalRes.ok ? await totalRes.json() as AuthUsersResponse : {}
+    const premiumData = premiumRes.ok ? await premiumRes.json() as SubRecord[] : []
 
     const premiumActive = Array.isArray(premiumData) ? premiumData.length : 0
     const newPremiumToday = Array.isArray(premiumData)
-      ? premiumData.filter((s: any) => s.created_at >= todayISO).length
+      ? premiumData.filter((s) => s.created_at >= todayISO).length
       : 0
     const revenueToday = Array.isArray(premiumData)
       ? premiumData
-          .filter((s: any) => s.created_at >= todayISO)
-          .reduce((sum: number, s: any) => sum + (s.amount ?? 2990), 0) / 100
+          .filter((s) => s.created_at >= todayISO)
+          .reduce((sum, s) => sum + (s.amount ?? 2990), 0) / 100
       : 0
 
     // Cancelamentos (subscriptions com status cancelled hoje)
@@ -77,7 +80,7 @@ async function getUserStats(): Promise<{
       `${SUPABASE_URL}/rest/v1/subscriptions?status=eq.cancelled&cancelled_at=gte.${todayISO}&select=id`,
       { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } }
     )
-    const cancelData = cancelRes.ok ? await cancelRes.json() as any[] : []
+    const cancelData = cancelRes.ok ? await cancelRes.json() as { id: string }[] : []
     const cancelledToday = Array.isArray(cancelData) ? cancelData.length : 0
 
     // Novos usuários hoje (via auth.users)
@@ -85,9 +88,9 @@ async function getUserStats(): Promise<{
       `${SUPABASE_URL}/auth/v1/admin/users?per_page=500`,
       { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } }
     )
-    const usersData = usersRes.ok ? await usersRes.json() as any : {}
-    const allUsers: any[] = usersData.users ?? []
-    const newToday = allUsers.filter((u: any) => u.created_at >= todayISO).length
+    const usersData = usersRes.ok ? await usersRes.json() as AuthUsersResponse : {}
+    const allUsers = usersData.users ?? []
+    const newToday = allUsers.filter((u) => u.created_at >= todayISO).length
     const total = totalData.total ?? allUsers.length
 
     const mrr = premiumActive * 29.90
@@ -149,7 +152,7 @@ async function getSurfConditions(): Promise<{
             { signal: AbortSignal.timeout(10000) }
           )
           if (!res.ok) return null
-          const d = await res.json() as any
+          const d = await res.json() as { waveHeight?: number; swellPeriod?: number; windSpeed?: number; windDirection?: string }
           const dir = (d.windDirection ?? 'N').split(' ')[0].split('(')[0].trim()
           const score = calcScore(d.waveHeight, d.windSpeed, d.swellPeriod, dir, s.orientation)
           return { name: s.name, score, waveHeight: d.waveHeight, swellPeriod: d.swellPeriod, windSpeed: d.windSpeed, windDirection: d.windDirection }
@@ -229,7 +232,7 @@ Escreva 3-4 frases de análise: o que foi bom, o que precisa de atenção, e uma
       }),
     })
     if (!res.ok) return ''
-    const d = await res.json() as any
+    const d = await res.json() as { content?: { text?: string }[] }
     return d.content?.[0]?.text ?? ''
   } catch {
     return ''

@@ -21,22 +21,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Timeout de 6s garante que o loading nunca trava para sempre
-    const timeout = setTimeout(() => setLoading(false), 6000)
+    let settled = false
 
-    supabase.auth.getSession()
-      .then(({ data: { session } }) => {
-        clearTimeout(timeout)
-        setSession(session)
-        setUser(session?.user ?? null)
-        setLoading(false)
-      })
-      .catch(() => {
-        clearTimeout(timeout)
-        setLoading(false)
-      })
+    const resolve = (session: Session | null) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timeout)
+      setSession(session)
+      setUser(session?.user ?? null)
+      setLoading(false)
+    }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    // Fallback: se nem getSession nem onAuthStateChange responderem em 8s,
+    // desbloqueia o app como usuário não autenticado
+    const timeout = setTimeout(() => resolve(null), 8000)
+
+    // onAuthStateChange dispara imediatamente com a sessão atual (INITIAL_SESSION)
+    // e depois para cada mudança subsequente — é a fonte única de verdade
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'INITIAL_SESSION') {
+        resolve(session)
+        return
+      }
+      // Mudanças após o carregamento inicial
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
@@ -48,6 +55,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         resetUser()
       }
     })
+
+    // getSession como fallback caso onAuthStateChange demore (versões antigas do SDK)
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => resolve(session))
+      .catch(() => resolve(null))
 
     return () => {
       clearTimeout(timeout)

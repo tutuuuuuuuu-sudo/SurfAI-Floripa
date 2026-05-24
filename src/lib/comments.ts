@@ -20,10 +20,7 @@ export async function getComments(beachId: string): Promise<Comment[]> {
     .order('created_at', { ascending: false })
     .limit(20)
 
-  if (error) {
-    console.error('[comments] Erro ao buscar comentários:', error.message)
-    return []
-  }
+  if (error) return []
   return data ?? []
 }
 
@@ -49,10 +46,7 @@ export async function addComment(
     score,
   })
 
-  if (error) {
-    console.error('[comments] Erro ao adicionar comentário:', error.message)
-    return false
-  }
+  if (error) return false
   return true
 }
 
@@ -66,10 +60,7 @@ export async function deleteComment(commentId: string): Promise<boolean> {
     .eq('id', commentId)
     .eq('user_id', user.id)
 
-  if (error) {
-    console.error('[comments] Erro ao deletar comentário:', error.message)
-    return false
-  }
+  if (error) return false
   return true
 }
 

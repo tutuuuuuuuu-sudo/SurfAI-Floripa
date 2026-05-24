@@ -43,7 +43,6 @@ export function usePremium() {
         .maybeSingle()
 
       if (error) {
-        console.error('[premium] erro ao buscar assinatura:', error)
         setStatus('free')
         setLoading(false)
         return
@@ -118,45 +117,15 @@ export async function createMercadoPagoCheckout(
     const data = await res.json()
     if (!res.ok) {
       const detail = data?.detail ?? data?.error ?? 'Erro desconhecido do Mercado Pago'
-      console.error('[premium] MP error:', detail)
       return { url: null, error: detail }
     }
     return { url: data.init_point ?? null }
-  } catch (err) {
-    console.error('[premium] erro ao criar checkout:', err)
-    return { url: null, error: String(err) }
+  } catch {
+    return { url: null, error: 'Erro ao conectar com o Mercado Pago. Tente novamente.' }
   }
 }
 
-// ─── Benefícios e preço ───────────────────────────────────────────────────────
-
-export const PREMIUM_BENEFITS = [
-  {
-    icon: 'Calendar',
-    title: 'Previsão 14 dias',
-    desc: 'Veja as condições dos próximos 14 dias em todas as praias',
-  },
-  {
-    icon: 'Bell',
-    title: 'Alertas de ondas',
-    desc: 'Receba notificações push quando as condições estiverem perfeitas',
-  },
-  {
-    icon: 'BarChart3',
-    title: 'Histórico de condições',
-    desc: 'Consulte como estava o mar nos últimos 7 dias',
-  },
-  {
-    icon: 'ShieldOff',
-    title: 'Sem anúncios',
-    desc: 'Navegue pelo app sem nenhum anúncio',
-  },
-  {
-    icon: 'Crown',
-    title: 'Badge Premium',
-    desc: 'Destaque no seu perfil com o selo de surfista premium',
-  },
-] as const
+// ─── Preço ────────────────────────────────────────────────────────────────────
 
 export const PREMIUM_PRICE = 'R$ 29,90'
 export const PREMIUM_PRICE_MONTHLY = 29.90

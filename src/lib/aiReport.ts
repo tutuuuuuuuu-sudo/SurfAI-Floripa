@@ -56,6 +56,27 @@ export async function fetchAIReport(
       },
       body: JSON.stringify({ spots, topSpot, userLevel }),
     })
+
+    if (res.status === 401) {
+      // Token expirado — tenta refresh antes de desistir
+      const { data: refreshed } = await supabase.auth.refreshSession()
+      const newToken = refreshed.session?.access_token
+      if (!newToken) return null
+
+      const retryRes = await fetch('/api/ai-report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${newToken}`,
+        },
+        body: JSON.stringify({ spots, topSpot, userLevel }),
+      })
+      if (!retryRes.ok) return null
+      const retryData = await retryRes.json()
+      if (retryData.report) { setCached(retryData.report); return retryData.report }
+      return null
+    }
+
     if (!res.ok) return null
     const data = await res.json()
     if (data.report) {

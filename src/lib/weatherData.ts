@@ -1,73 +1,5 @@
-// ✅ MARÉ REAL via Open-Meteo Marine (sea_level_height_msl via Copernicus)
-// Disponível para costas abertas como Florianópolis
-export async function getRealTide(): Promise<{
-  level: number
-  state: 'Enchendo' | 'Secando' | 'Cheia' | 'Vazia'
-  hourlyLevels: number[]
-} | null> {
-  try {
-    // ✅ CORRIGIDO: parâmetro correto é sea_level_height_msl (não sea_level)
-    const res = await fetch(
-      'https://marine-api.open-meteo.com/v1/marine?latitude=-27.62&longitude=-48.48&hourly=sea_level_height_msl&timezone=America%2FSao_Paulo&forecast_days=1'
-    )
-    const data = await res.json() as any
-    if (data.error || !data.hourly?.sea_level_height_msl) return null
-
-    const levels: number[] = data.hourly.sea_level_height_msl
-    const hour = new Date().getHours()
-    const current = levels[hour] ?? 0
-    const next = levels[Math.min(23, hour + 1)] ?? current
-
-    let state: 'Enchendo' | 'Secando' | 'Cheia' | 'Vazia'
-    if (next > current + 0.03) state = 'Enchendo'
-    else if (next < current - 0.03) state = 'Secando'
-    else if (current > 0.6) state = 'Cheia'
-    else state = 'Vazia'
-
-    return { level: Number(current.toFixed(2)), state, hourlyLevels: levels }
-  } catch {
-    return null
-  }
-}
-
-// ✅ TEMPERATURA DA ÁGUA REAL
-// Fonte 1: NOAA CoastWatch ERDDAP — SST satélite real do Atlântico Sul (sem API key)
-// Fonte 2: Open-Meteo Marine com modelo Copernicus
-// Fonte 3: Fallback sazonal calibrado para Florianópolis
-export async function getRealWaterTemp(): Promise<number> {
-  // Fonte 1: NOAA ERDDAP — SST satélite (produto GHRSST MUR 0.01°)
-  try {
-    const now = new Date()
-    // ERDDAP usa data de ontem pois há delay de 1 dia no produto MUR
-    const yesterday = new Date(now.getTime() - 86400000)
-    const dateStr = yesterday.toISOString().split('T')[0]
-    const url = `https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41.json?analysed_sst[${dateStr}T09:00:00Z][(-27.62)][(-48.48)]`
-    const res = await fetch(url, { signal: AbortSignal.timeout(5000) })
-    if (res.ok) {
-      const data = await res.json() as any
-      const sst = data?.table?.rows?.[0]?.[3]
-      if (sst != null && typeof sst === 'number' && sst >= 15 && sst <= 27) {
-        return Math.round(sst)
-      }
-    }
-  } catch { /* tenta próxima fonte */ }
-
-  // Fonte 2: Open-Meteo Marine com modelo Copernicus
-  try {
-    const res = await fetch(
-      'https://marine-api.open-meteo.com/v1/marine?latitude=-27.62&longitude=-48.48&current=sea_surface_temperature&models=meteofrance_wave',
-      { signal: AbortSignal.timeout(5000) }
-    )
-    const data = await res.json() as any
-    const sst = data.current?.sea_surface_temperature
-    if (sst != null && sst >= 15 && sst <= 27) return Math.round(sst)
-  } catch { /* ignora */ }
-
-  // Fonte 3: Fallback sazonal CORRETO para Florianópolis (médias históricas reais)
-  // Jan Feb Mar Abr Mai Jun Jul Ago Set Out Nov Dez
-  const month = new Date().getMonth()
-  return [25, 25, 24, 22, 21, 20, 19, 18, 19, 20, 22, 24][month]
-}
+// Reexporta de weatherApi para manter compatibilidade com imports existentes
+export { getRealTide, getRealWaterTemp } from './weatherApi'
 
 export interface WeatherForecast {
   date: string
@@ -79,7 +11,8 @@ export interface WeatherForecast {
   temperature: number
   condition: 'Excelente' | 'Bom' | 'Regular' | 'Ruim'
   score: number
-  locked?: boolean  // true = dia bloqueado para free
+  locked?: boolean     // true = dia bloqueado para free
+  isFallback?: boolean // true = API falhou, dados estimados
 }
 
 function calculateForecastScore(wave: number, wind: number, period: number): number {
@@ -176,8 +109,10 @@ export async function getWeatherForecast(
       fetch(`https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lng}&hourly=temperature_2m&daily=wind_speed_10m_max,wind_direction_10m_dominant,temperature_2m_max&wind_speed_unit=kmh&timezone=America%2FSao_Paulo`)
     ])
 
-    const marine = await marineRes.json() as any
-    const weather = await weatherRes.json() as any
+    interface MarineDaily { time: string[]; wave_height_max?: number[]; wave_period_max?: number[]; swell_wave_height_max?: number[]; swell_wave_period_max?: number[] }
+    interface WeatherDaily { wind_speed_10m_max?: number[]; wind_direction_10m_dominant?: number[]; temperature_2m_max?: number[] }
+    const marine = await marineRes.json() as { daily?: MarineDaily }
+    const weather = await weatherRes.json() as { daily?: WeatherDaily; hourly?: { temperature_2m: number[] } }
 
     const days = marine.daily?.time ?? []
     const forecasts: WeatherForecast[] = []
@@ -227,8 +162,7 @@ export async function getWeatherForecast(
 
     forecastCache[spotId] = { data: forecasts, time: now }
     return applyPremiumLock(forecasts, isPremium)
-  } catch (error) {
-    console.error('Erro ao buscar previsão:', error)
+  } catch {
     return applyPremiumLock(getFallbackForecast(), isPremium)
   }
 }
@@ -254,6 +188,7 @@ function getFallbackForecast(): WeatherForecast[] {
       condition: getConditionFromScore(score),
       score: Number(score.toFixed(1)),
       locked: false,
+      isFallback: true,
     }
   })
 }

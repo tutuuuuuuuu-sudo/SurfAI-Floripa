@@ -34,7 +34,7 @@ function registerServiceWorker() {
 function useDefaultDark() {
   useEffect(() => {
     const html = document.documentElement
-    const savedTheme = localStorage.getItem('theme')
+    const savedTheme = (() => { try { return localStorage.getItem('theme') } catch { return null } })()
     if (!savedTheme) {
       html.classList.add('dark')
     } else {

@@ -15,6 +15,22 @@ export interface WindyForecastData {
 const cache: Record<string, { data: WindyForecastData; time: number }> = {}
 const CACHE_DURATION = 15 * 60 * 1000
 
+async function fetchWithRetry(url: string, maxAttempts = 3): Promise<Response | null> {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(8000) })
+      if (res.ok) return res
+      if (res.status >= 400 && res.status < 500) return null // client error — don't retry
+    } catch {
+      // network error or timeout
+    }
+    if (attempt < maxAttempts - 1) {
+      await new Promise(r => setTimeout(r, 500 * Math.pow(2, attempt)))
+    }
+  }
+  return null
+}
+
 export async function getWindyForecast(
   lat: number,
   lng: number,
@@ -33,8 +49,8 @@ export async function getWindyForecast(
       lng: lng.toString(),
       orientation: (beachOrientation ?? 90).toString(),
     })
-    const res = await fetch(`/api/surf?${params}`)
-    if (!res.ok) return null
+    const res = await fetchWithRetry(`/api/surf?${params}`)
+    if (!res) return null
 
     const data = await res.json() as WindyForecastData & { error?: string }
     if (data.error) return null
@@ -65,10 +81,11 @@ export async function getRealTide(): Promise<{
   hourlyLevels: number[]
 } | null> {
   try {
-    const res = await fetch(
+    const res = await fetchWithRetry(
       'https://marine-api.open-meteo.com/v1/marine?latitude=-27.62&longitude=-48.48&hourly=sea_level_height_msl&timezone=America%2FSao_Paulo&forecast_days=1'
     )
-    const data = await res.json() as any
+    if (!res) return null
+    const data = await res.json() as { error?: string; hourly?: { sea_level_height_msl: number[] } }
     if (data.error || !data.hourly?.sea_level_height_msl) return null
 
     const levels: number[] = data.hourly.sea_level_height_msl
@@ -93,9 +110,9 @@ export async function getRealWaterTemp(): Promise<number> {
   try {
     const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
     const url = `https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41.json?analysed_sst[${yesterday}T09:00:00Z][(-27.62)][(-48.48)]`
-    const res = await fetch(url, { signal: AbortSignal.timeout(5000) })
-    if (res.ok) {
-      const data = await res.json() as any
+    const res = await fetchWithRetry(url)
+    if (res) {
+      const data = await res.json() as { table?: { rows?: [string, string, string, number][] } }
       const sst = data?.table?.rows?.[0]?.[3]
       if (typeof sst === 'number' && sst >= 15 && sst <= 27) return Math.round(sst)
     }
@@ -103,13 +120,14 @@ export async function getRealWaterTemp(): Promise<number> {
 
   // Fonte 2: Open-Meteo Marine
   try {
-    const res = await fetch(
-      'https://marine-api.open-meteo.com/v1/marine?latitude=-27.62&longitude=-48.48&current=sea_surface_temperature&models=meteofrance_wave',
-      { signal: AbortSignal.timeout(5000) }
+    const res = await fetchWithRetry(
+      'https://marine-api.open-meteo.com/v1/marine?latitude=-27.62&longitude=-48.48&current=sea_surface_temperature&models=meteofrance_wave'
     )
-    const data = await res.json() as any
-    const sst = data.current?.sea_surface_temperature
-    if (sst != null && sst >= 15 && sst <= 27) return Math.round(sst)
+    if (res) {
+      const data = await res.json() as { current?: { sea_surface_temperature?: number } }
+      const sst = data.current?.sea_surface_temperature
+      if (sst != null && sst >= 15 && sst <= 27) return Math.round(sst)
+    }
   } catch { /* fallback */ }
 
   // Fonte 3: Fallback sazonal calibrado para Florianópolis

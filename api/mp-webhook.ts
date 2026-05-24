@@ -51,8 +51,6 @@ export default async function handler(req: Request) {
     return new Response('Config error', { status: 500 })
   }
 
-  // Valida assinatura apenas em produção real (live_mode=true)
-  // Testes do painel MP não têm assinatura válida
   let rawBody: string
   try {
     rawBody = await req.text()
@@ -65,11 +63,31 @@ export default async function handler(req: Request) {
 
   if (!parsedBody.type) return ok()
 
-  if (webhookSecret && parsedBody.live_mode === true) {
+  // Valida assinatura HMAC sempre que o secret estiver configurado.
+  // Testes do painel MP (live_mode === false) não têm assinatura válida, então
+  // só pulamos a verificação quando o secret NÃO está configurado (ambiente de dev).
+  // Em produção o secret DEVE estar configurado — sem ele, rejeitamos live_mode=true.
+  if (parsedBody.live_mode === true) {
+    if (!webhookSecret) {
+      console.error('[mp-webhook] MP_WEBHOOK_SECRET não configurado — rejeitando live_mode')
+      return new Response('Unauthorized', { status: 401 })
+    }
     const valid = await verifyMpSignature(req, webhookSecret)
     if (!valid) {
       console.error('[mp-webhook] Assinatura inválida — request rejeitado')
       return new Response('Unauthorized', { status: 401 })
+    }
+  } else if (webhookSecret) {
+    // live_mode === false COM secret configurado: deve ser teste do painel MP.
+    // Verificamos a assinatura; se não tiver (testes do painel não enviam), aceitamos
+    // mas NÃO processamos pagamentos reais (guard abaixo por live_mode + id < 1M).
+    const xSignature = req.headers.get('x-signature')
+    if (xSignature) {
+      const valid = await verifyMpSignature(req, webhookSecret)
+      if (!valid) {
+        console.error('[mp-webhook] Assinatura inválida em teste — rejeitado')
+        return new Response('Unauthorized', { status: 401 })
+      }
     }
   }
 

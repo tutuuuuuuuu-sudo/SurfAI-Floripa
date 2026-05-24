@@ -56,7 +56,7 @@ async function fetchRealTideData(): Promise<{ heights: number[], times: string[]
       '&hourly=sea_level_height_msl' +
       '&timezone=America%2FSao_Paulo&forecast_days=2'
     )
-    const data = await res.json() as any
+    const data = await res.json() as { error?: string; hourly?: { sea_level_height_msl: number[]; time: string[] } }
     if (data.error || !data.hourly?.sea_level_height_msl) return null
     tideCache = { heights: data.hourly.sea_level_height_msl, times: data.hourly.time, fetched: now }
     return { heights: tideCache.heights, times: tideCache.times }
@@ -106,7 +106,7 @@ export function degreesToWindDir(deg: number): string {
   return dirs[Math.round(deg / 22.5) % 16]
 }
 
-const WIND_DEG: Record<string, number> = {
+export const WIND_DEG: Record<string, number> = {
   'N': 0, 'NNE': 22.5, 'NE': 45, 'ENE': 67.5, 'E': 90, 'ESE': 112.5, 'SE': 135, 'SSE': 157.5,
   'S': 180, 'SSW': 202.5, 'SW': 225, 'WSW': 247.5, 'W': 270, 'WNW': 292.5, 'NW': 315, 'NNW': 337.5,
 }
@@ -183,9 +183,11 @@ const getTide = (): 'Enchendo' | 'Secando' | 'Cheia' | 'Vazia' => {
   return 'Vazia'
 }
 
-const getLevel = (waveHeight: number): 'Iniciante' | 'Intermediário' | 'Avançado' => {
+// Nível baseado na altura de onda E no score — evita dizer "Iniciante" numa praia com
+// score baixo por vento onshore forte, o que pode ser perigoso para iniciantes.
+const getLevel = (waveHeight: number, score: number): 'Iniciante' | 'Intermediário' | 'Avançado' => {
   if (waveHeight > 1.0) return 'Avançado'
-  if (waveHeight >= 0.5) return 'Intermediário'
+  if (waveHeight >= 0.5 || score < 5) return 'Intermediário'
   return 'Iniciante'
 }
 
@@ -214,8 +216,19 @@ function getWindAnalysis(windDir: string, windSpeed: number, beachOrientation: n
   return `Vento ${windDir} ${windSpeed}km/h frontal bagunçando as ondas. `
 }
 
+interface BeachDefinition {
+  id: string
+  name: string
+  region: 'Sul' | 'Leste' | 'Norte' | 'Centro'
+  lat: number
+  lng: number
+  orientation: number
+  bestTimeWindow: string
+  subRegions?: { id: string; name: string; lat: number; lng: number; swellDirections?: string[] }[]
+}
+
 // ✅ Canajurê REMOVIDO
-const BEACHES = [
+const BEACHES: BeachDefinition[] = [
   // ✅ GPS corrigido conforme verificação no Google Maps (prints do usuário)
   { id: 'campeche', name: 'Campeche', region: 'Sul' as const,
     lat: -27.697703, lng: -48.4898603, // Campeche — Lomba do Sabão (bem na areia)
@@ -307,8 +320,18 @@ const BEACHES = [
     lat: -27.4802204, lng: -48.3769892, orientation: 65, bestTimeWindow: '09h - 12h' },
 ]
 
+interface WindyData {
+  waveHeight: number
+  windSpeed: number
+  windDirection: string
+  swellPeriod: number
+  swellDirection: string
+  sunrise?: string
+  sunset?: string
+}
+
 // Calcula melhor janela do dia dinamicamente usando dados horários da API
-function calculateBestWindow(windyData: any, beachOrientation: number): string {
+function calculateBestWindow(windyData: WindyData | null, beachOrientation: number): string {
   // windyData pode ter hourlyData se a API retornar dados horários
   // Por enquanto usa lógica baseada no vento atual e hora do nascer/pôr do sol
   if (!windyData) return 'Verificar condições'
@@ -364,15 +387,16 @@ export async function fetchCurrentConditions(): Promise<BeachCondition[]> {
       const swellPeriod = Math.round(windyData?.swellPeriod ?? 10)
       const swellDirection = windyData?.swellDirection ?? 'SE'
       const waterTemp = realWaterTemp
-      const windDirection = (windyData?.windDirection ?? 'N').split(' ')[0].split('(')[0].trim()
+      const rawWindDir = (windyData?.windDirection ?? 'N').split('(')[0].split(/\s+/)[0].trim().toUpperCase()
+      const windDirection = WIND_DEG[rawWindDir] !== undefined ? rawWindDir : 'N'
 
       const score = calculateScore(waveHeight, windSpeed, swellPeriod, windDirection, beach.orientation)
 
-      let subRegions = undefined
-      if ((beach as any).subRegions?.length > 0) {
-        const beachSubs = (beach as any).subRegions
+      let subRegions: SubRegion[] | undefined = undefined
+      if (beach.subRegions && beach.subRegions.length > 0) {
+        const beachSubs = beach.subRegions
         const bestSubId = getBestSubRegion(beachSubs, swellDirection)
-        subRegions = beachSubs.map((sub: any) => ({
+        subRegions = beachSubs.map(sub => ({
           id: sub.id, name: sub.name, lat: sub.lat, lng: sub.lng,
           swellDirections: sub.swellDirections ?? [],
           description: sub.id === bestSubId
@@ -385,7 +409,7 @@ export async function fetchCurrentConditions(): Promise<BeachCondition[]> {
       return {
         id: beach.id, name: beach.name, region: beach.region, subRegions,
         score, waveHeight, windSpeed, windDirection, swellDirection, swellPeriod, tide,
-        tideHeight: tideInfo.height, level: getLevel(waveHeight),
+        tideHeight: tideInfo.height, level: getLevel(waveHeight, score),
         boardSuggestion: getBoardSuggestion(waveHeight),
         waterConditions: { temperature: waterTemp, wetsuit: getWetsuitInfo(waterTemp) },
         bestTimeWindow: calculateBestWindow(windyData, beach.orientation),
@@ -410,8 +434,8 @@ export function getTopSpots(limit = 3): BeachCondition[] { return getCurrentCond
 export function getSpotsByRegion(region: BeachCondition['region']): BeachCondition[] { return getCurrentConditions().filter(s => s.region === region).sort((a, b) => b.score - a.score) }
 export function getSpotById(id: string): BeachCondition | undefined { return getCurrentConditions().find(s => s.id === id) }
 
-export function analyzeConditions(spot: BeachCondition): string {
-  const orientation = (spot as any)._beachOrientation ?? 90
+export function analyzeConditions(spot: BeachCondition & { _beachOrientation?: number }): string {
+  const orientation = spot._beachOrientation ?? 90
   let analysis = ''
   if (spot.score >= 8) analysis = '🔥 Condições EXCELENTES! '
   else if (spot.score >= 6.5) analysis = '✅ Boas condições para surfar. '
