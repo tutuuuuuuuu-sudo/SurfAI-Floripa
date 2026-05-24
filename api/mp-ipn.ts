@@ -5,19 +5,21 @@ export default async function handler(req: Request) {
   const topic = url.searchParams.get('topic')
   const id = url.searchParams.get('id')
 
+  const headers = { 'Content-Type': 'text/plain' }
+
   // Retorna 200 imediatamente para qualquer requisição de validação/teste
   if (!topic || !id || Number(id) < 1000000) {
-    return new Response('OK', { status: 200 })
+    return new Response('OK', { status: 200, headers })
   }
 
-  if (topic !== 'payment') return new Response('OK', { status: 200 })
+  if (topic !== 'payment') return new Response('OK', { status: 200, headers })
 
   const accessToken = process.env.MP_ACCESS_TOKEN
   const supabaseUrl = process.env.SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_KEY
 
   if (!accessToken || !supabaseUrl || !serviceKey) {
-    return new Response('OK', { status: 200 })
+    return new Response('OK', { status: 200, headers })
   }
 
   try {
@@ -25,7 +27,7 @@ export default async function handler(req: Request) {
       headers: { 'Authorization': `Bearer ${accessToken}` },
     })
 
-    if (!mpRes.ok) return new Response('OK', { status: 200 })
+    if (!mpRes.ok) return new Response('OK', { status: 200, headers })
 
     const payment = await mpRes.json() as {
       id: number; status: string; external_reference: string;
@@ -53,5 +55,5 @@ export default async function handler(req: Request) {
     // Sempre retorna 200 mesmo com erro
   }
 
-  return new Response('OK', { status: 200 })
+  return new Response('OK', { status: 200, headers })
 }
