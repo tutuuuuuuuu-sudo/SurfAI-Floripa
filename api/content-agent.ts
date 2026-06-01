@@ -1,5 +1,5 @@
 export const config = { runtime: 'edge' }
-import { calculateSurfScore } from './_scoreEngine'
+import { calculateSurfScore } from './_scoreEngine.js'
 
 // Agente de Conteúdo Viral
 // Gera legendas otimizadas para Instagram e TikTok baseadas nas condições reais do mar

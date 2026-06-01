@@ -1,5 +1,5 @@
 export const config = { runtime: 'edge' }
-import { calculateSurfScore } from './_scoreEngine'
+import { calculateSurfScore } from './_scoreEngine.js'
 
 const APP_URL = process.env.APP_URL ?? 'https://surf-ai-floripa.vercel.app'
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY
@@ -42,18 +42,9 @@ async function getUserStats(): Promise<{
 
   try {
     // Total de usuários
-    const [totalRes, newTodayRes, premiumRes] = await Promise.all([
+    const [totalRes, premiumRes] = await Promise.all([
       fetch(`${SUPABASE_URL}/auth/v1/admin/users?per_page=1`, {
         headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` },
-      }),
-      fetch(`${SUPABASE_URL}/rest/v1/rpc/count_new_users_today`, {
-        method: 'POST',
-        headers: {
-          apikey: SUPABASE_SERVICE_KEY,
-          Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ since: todayISO }),
       }),
       fetch(`${SUPABASE_URL}/rest/v1/subscriptions?status=eq.active&select=id,created_at,plan,amount`, {
         headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` },
