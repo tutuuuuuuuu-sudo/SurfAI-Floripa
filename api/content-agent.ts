@@ -1,4 +1,5 @@
 export const config = { runtime: 'edge' }
+import { calculateSurfScore } from './_scoreEngine'
 
 // Agente de Conteúdo Viral
 // Gera legendas otimizadas para Instagram e TikTok baseadas nas condições reais do mar
@@ -51,11 +52,10 @@ async function fetchSpot(spot: typeof SPOTS[0]): Promise<SpotData | null> {
     if (!res.ok) return null
     const data = await res.json() as { waveHeight?: number; swellPeriod?: number; windSpeed?: number; windDirection?: string; waterTemperature?: number }
 
-    const waveScore = Math.min((data.waveHeight ?? 0) / 2, 1) * 40
-    const periodScore = Math.min((data.swellPeriod ?? 0) / 14, 1) * 30
-    const windPenalty = (data.windSpeed ?? 0) > 20 ? -15 : (data.windSpeed ?? 0) > 15 ? -8 : 0
-    const isTermal = (data.windDirection ?? '').includes('Terral') ? 10 : 0
-    const score = Math.max(0, Math.min(10, (waveScore + periodScore + windPenalty + isTermal) / 8))
+    // Extrai direção limpa (ex: "SE (Terral)" → "SE") para cálculo de score
+    const rawDir = (data.windDirection ?? 'N').split('(')[0].split(/\s+/)[0].trim().toUpperCase()
+    // Orientação padrão 90° (leste) para spots sem orientação definida no content-agent
+    const score = calculateSurfScore(data.waveHeight ?? 0, data.windSpeed ?? 0, data.swellPeriod ?? 0, rawDir, spot.orientation)
 
     return {
       name: spot.name,

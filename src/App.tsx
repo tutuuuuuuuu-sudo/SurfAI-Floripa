@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from '@/components/ui/sonner'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { SurfDataProvider } from './contexts/SurfDataContext'
 import { PWAInstallBanner } from './components/PWAInstallBanner'
 import Home from './pages/Home'
 import SpotDetails from './pages/SpotDetails'
@@ -97,7 +98,9 @@ export function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppRoutes />
+        <SurfDataProvider>
+          <AppRoutes />
+        </SurfDataProvider>
       </AuthProvider>
     </BrowserRouter>
   )

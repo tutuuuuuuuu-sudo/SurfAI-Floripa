@@ -64,7 +64,7 @@ const BEACH_COORDS: Record<string, { lat: number, lng: number }> = {
 const forecastCache: Record<string, { data: WeatherForecast[], time: number }> = {}
 const CACHE_DURATION = 15 * 60 * 1000
 
-// Quantos dias mostrar sem bloqueio para usuário free
+// Dias gratuitos — controle de UX local (bloquear além desse limite no servidor via /api/forecast)
 const FREE_DAYS = 3
 
 export interface CurrentConditionsForForecast {
@@ -82,8 +82,11 @@ export async function getWeatherForecast(
   isPremium = false
 ): Promise<WeatherForecast[]> {
   const now = Date.now()
+
+  // Cache hit: retorna dados em memória sem bater na rede
   if (forecastCache[spotId] && (now - forecastCache[spotId].time) < CACHE_DURATION) {
     const cached = [...forecastCache[spotId].data]
+    // Substitui o dia 0 pelos dados reais já carregados na tela
     if (currentConditions && cached.length > 0) {
       cached[0] = {
         ...cached[0],
@@ -104,70 +107,58 @@ export async function getWeatherForecast(
   if (!coords) return applyPremiumLock(getFallbackForecast(), isPremium)
 
   try {
-    const [marineRes, weatherRes] = await Promise.all([
-      fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${coords.lat}&longitude=${coords.lng}&daily=wave_height_max,wave_period_max,swell_wave_height_max,swell_wave_period_max&length_unit=metric&timezone=America%2FSao_Paulo`),
-      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lng}&hourly=temperature_2m&daily=wind_speed_10m_max,wind_direction_10m_dominant,temperature_2m_max&wind_speed_unit=kmh&timezone=America%2FSao_Paulo`)
-    ])
+    // Chama o endpoint do servidor que controla quantos dias retornar baseado no plano do usuário.
+    // O token é enviado para que o servidor valide o premium — dados além de 3 dias nunca chegam ao browser.
+    const { data: { session } } = await (await import('./supabase')).supabase.auth.getSession()
+    const token = session?.access_token
 
-    interface MarineDaily { time: string[]; wave_height_max?: number[]; wave_period_max?: number[]; swell_wave_height_max?: number[]; swell_wave_period_max?: number[] }
-    interface WeatherDaily { wind_speed_10m_max?: number[]; wind_direction_10m_dominant?: number[]; temperature_2m_max?: number[] }
-    const marine = await marineRes.json() as { daily?: MarineDaily }
-    const weather = await weatherRes.json() as { daily?: WeatherDaily; hourly?: { temperature_2m: number[] } }
+    const params = new URLSearchParams({
+      lat: coords.lat.toString(),
+      lng: coords.lng.toString(),
+      spotId,
+    })
 
-    const days = marine.daily?.time ?? []
-    const forecasts: WeatherForecast[] = []
-    const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (token) headers['Authorization'] = `Bearer ${token}`
 
-    for (let i = 0; i < Math.min(7, days.length); i++) {
-      const date = new Date(days[i] + 'T12:00:00')
-      const dayName = i === 0 ? 'Hoje' : i === 1 ? 'Amanhã' : dayNames[date.getDay()]
+    const res = await fetch(`/api/forecast?${params}`, { headers })
+    if (!res.ok) return applyPremiumLock(getFallbackForecast(), isPremium)
 
-      let waveHeight: number, windSpeed: number, swellPeriod: number, temperature: number, score: number
+    const apiData = await res.json() as {
+      forecasts: WeatherForecast[]
+      isPremium: boolean
+      forecastDays: number
+    }
 
-      const currentHour = new Date().getHours()
-      const hourlyTemps: number[] = weather.hourly?.temperature_2m ?? []
-      const hourIdx = i === 0 ? currentHour : i * 24 + 12
-      const hourlyTemp = hourlyTemps[hourIdx] != null ? Math.round(hourlyTemps[hourIdx]) : null
+    if (!apiData.forecasts?.length) return applyPremiumLock(getFallbackForecast(), isPremium)
 
-      if (i === 0 && currentConditions) {
-        waveHeight = currentConditions.waveHeight
-        windSpeed = currentConditions.windSpeed
-        swellPeriod = currentConditions.swellPeriod
-        temperature = hourlyTemp ?? Math.round(weather.daily?.temperature_2m_max?.[i] ?? 24)
-        score = currentConditions.score
-      } else {
-        waveHeight = Number((marine.daily?.swell_wave_height_max?.[i] ?? marine.daily?.wave_height_max?.[i] ?? 1.0).toFixed(1))
-        swellPeriod = Math.round(marine.daily?.swell_wave_period_max?.[i] ?? marine.daily?.wave_period_max?.[i] ?? 10)
-        windSpeed = Math.round(weather.daily?.wind_speed_10m_max?.[i] ?? 12)
-        temperature = Math.round(weather.daily?.temperature_2m_max?.[i] ?? 24)
-        score = calculateForecastScore(waveHeight, windSpeed, swellPeriod)
-      }
+    let forecasts = apiData.forecasts
 
-      const windDeg = weather.daily?.wind_direction_10m_dominant?.[i] ?? 0
-      const windDirection = degreesToDir(windDeg)
-
-      forecasts.push({
-        date: days[i],
-        dayName,
-        waveHeight,
-        windSpeed,
-        windDirection,
-        swellPeriod,
-        temperature,
-        condition: getConditionFromScore(score),
-        score: Number(score.toFixed(1)),
+    // Sobrescreve o dia 0 com as condições atuais (mais precisas) se disponíveis
+    if (currentConditions && forecasts.length > 0) {
+      forecasts[0] = {
+        ...forecasts[0],
+        waveHeight: currentConditions.waveHeight,
+        windSpeed: currentConditions.windSpeed,
+        swellPeriod: currentConditions.swellPeriod,
+        windDirection: currentConditions.windDirection.split(' ')[0].trim(),
+        temperature: currentConditions.waterTemperature ?? forecasts[0].temperature,
+        score: currentConditions.score,
+        condition: getConditionFromScore(currentConditions.score),
         locked: false,
-      })
+      }
     }
 
     forecastCache[spotId] = { data: forecasts, time: now }
+    // O servidor já filtrou os dias — applyPremiumLock garante UX consistente no cliente
     return applyPremiumLock(forecasts, isPremium)
   } catch {
     return applyPremiumLock(getFallbackForecast(), isPremium)
   }
 }
 
-// Marca dias além do limite free como locked=true
+// Aplica o lock de UX nos dias além do limite free.
+// O servidor já bloqueou o dado real — esse lock é apenas visual (cadeado na UI).
 function applyPremiumLock(forecasts: WeatherForecast[], isPremium: boolean): WeatherForecast[] {
   if (isPremium) return forecasts.map(f => ({ ...f, locked: false }))
   return forecasts.map((f, i) => ({ ...f, locked: i >= FREE_DAYS }))

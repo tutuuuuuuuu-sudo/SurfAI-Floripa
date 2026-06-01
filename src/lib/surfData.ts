@@ -42,12 +42,13 @@ export interface BeachCondition {
 }
 
 // Cache de maré real para Floripa (lat -27.62, lng -48.48)
-let tideCache: { heights: number[], times: string[], fetched: number } | null = null
+// Usar objeto em vez de variável solta para facilitar reset em testes
+const tideState: { cache: { heights: number[], times: string[], fetched: number } | null } = { cache: null }
 
 async function fetchRealTideData(): Promise<{ heights: number[], times: string[] } | null> {
   const now = Date.now()
-  if (tideCache && (now - tideCache.fetched) < 30 * 60 * 1000) {
-    return { heights: tideCache.heights, times: tideCache.times }
+  if (tideState.cache && (now - tideState.cache.fetched) < 30 * 60 * 1000) {
+    return { heights: tideState.cache.heights, times: tideState.cache.times }
   }
   try {
     const res = await fetch(
@@ -58,8 +59,8 @@ async function fetchRealTideData(): Promise<{ heights: number[], times: string[]
     )
     const data = await res.json() as { error?: string; hourly?: { sea_level_height_msl: number[]; time: string[] } }
     if (data.error || !data.hourly?.sea_level_height_msl) return null
-    tideCache = { heights: data.hourly.sea_level_height_msl, times: data.hourly.time, fetched: now }
-    return { heights: tideCache.heights, times: tideCache.times }
+    tideState.cache = { heights: data.hourly.sea_level_height_msl, times: data.hourly.time, fetched: now }
+    return { heights: tideState.cache.heights, times: tideState.cache.times }
   } catch { return null }
 }
 
@@ -360,15 +361,17 @@ function calculateBestWindow(windyData: WindyData | null, beachOrientation: numb
   return '06h - 09h'
 }
 
-let cachedConditions: BeachCondition[] | null = null
-let lastFetchTime = 0
 const CACHE_DURATION = 15 * 60 * 1000
+// Estado do cache isolado — não é variável solta no módulo para facilitar rastreamento
+const conditionsState: {
+  data: BeachCondition[] | null
+  fetchedAt: number
+  // Promise em andamento — qualquer chamada concurrent espera essa promise ao invés de
+  // disparar um novo fetch. Elimina a race condition de múltiplos useEffect simultâneos.
+  inflight: Promise<BeachCondition[]> | null
+} = { data: null, fetchedAt: 0, inflight: null }
 
-export async function fetchCurrentConditions(): Promise<BeachCondition[]> {
-  const now = Date.now()
-  if (cachedConditions && (now - lastFetchTime) < CACHE_DURATION) return cachedConditions
-
-  // ✅ Busca maré real + temperatura da água UMA vez para toda a ilha
+async function _doFetchConditions(): Promise<BeachCondition[]> {
   const [tideData, realWaterTemp] = await Promise.all([
     fetchRealTideData(),
     getRealWaterTemp(),
@@ -378,58 +381,86 @@ export async function fetchCurrentConditions(): Promise<BeachCondition[]> {
     : { height: getTideHeight(), state: getTide() }
   const tide = tideInfo.state
 
-  const results = await Promise.allSettled(
-    BEACHES.map(async (beach) => {
-      const windyData = await getWindyForecast(beach.lat, beach.lng, beach.orientation)
+  // Limita concorrência a 5 praias por vez para não exceder os limites do Vercel Free
+  const BATCH_SIZE = 5
+  const allResults: PromiseSettledResult<BeachCondition & { _beachOrientation: number }>[] = []
 
-      const waveHeight = Number((windyData?.waveHeight ?? 1.0).toFixed(1))
-      const windSpeed = Math.round(windyData?.windSpeed ?? 12)
-      const swellPeriod = Math.round(windyData?.swellPeriod ?? 10)
-      const swellDirection = windyData?.swellDirection ?? 'SE'
-      const waterTemp = realWaterTemp
-      const rawWindDir = (windyData?.windDirection ?? 'N').split('(')[0].split(/\s+/)[0].trim().toUpperCase()
-      const windDirection = WIND_DEG[rawWindDir] !== undefined ? rawWindDir : 'N'
+  for (let i = 0; i < BEACHES.length; i += BATCH_SIZE) {
+    const batch = BEACHES.slice(i, i + BATCH_SIZE)
+    const batchResults = await Promise.allSettled(
+      batch.map(async (beach) => {
+        const windyData = await getWindyForecast(beach.lat, beach.lng, beach.orientation)
 
-      const score = calculateScore(waveHeight, windSpeed, swellPeriod, windDirection, beach.orientation)
+        const waveHeight = Number((windyData?.waveHeight ?? 1.0).toFixed(1))
+        const windSpeed = Math.round(windyData?.windSpeed ?? 12)
+        const swellPeriod = Math.round(windyData?.swellPeriod ?? 10)
+        const swellDirection = windyData?.swellDirection ?? 'SE'
+        const waterTemp = realWaterTemp
+        const rawWindDir = (windyData?.windDirection ?? 'N').split('(')[0].split(/\s+/)[0].trim().toUpperCase()
+        const windDirection = WIND_DEG[rawWindDir] !== undefined ? rawWindDir : 'N'
 
-      let subRegions: SubRegion[] | undefined = undefined
-      if (beach.subRegions && beach.subRegions.length > 0) {
-        const beachSubs = beach.subRegions
-        const bestSubId = getBestSubRegion(beachSubs, swellDirection)
-        subRegions = beachSubs.map(sub => ({
-          id: sub.id, name: sub.name, lat: sub.lat, lng: sub.lng,
-          swellDirections: sub.swellDirections ?? [],
-          description: sub.id === bestSubId
-            ? `Melhor com swell de ${swellDirection}`
-            : `Funciona melhor com swell de ${sub.swellDirections?.join(', ') ?? 'E'}`,
-          bestNow: sub.id === bestSubId
-        }))
-      }
+        const score = calculateScore(waveHeight, windSpeed, swellPeriod, windDirection, beach.orientation)
 
-      return {
-        id: beach.id, name: beach.name, region: beach.region, subRegions,
-        score, waveHeight, windSpeed, windDirection, swellDirection, swellPeriod, tide,
-        tideHeight: tideInfo.height, level: getLevel(waveHeight, score),
-        boardSuggestion: getBoardSuggestion(waveHeight),
-        waterConditions: { temperature: waterTemp, wetsuit: getWetsuitInfo(waterTemp) },
-        bestTimeWindow: calculateBestWindow(windyData, beach.orientation),
-        sunrise: windyData?.sunrise, sunset: windyData?.sunset,
-        lat: beach.lat, lng: beach.lng,
-        _beachOrientation: beach.orientation,
-      } as BeachCondition & { _beachOrientation: number }
-    })
-  )
+        let subRegions: SubRegion[] | undefined = undefined
+        if (beach.subRegions && beach.subRegions.length > 0) {
+          const beachSubs = beach.subRegions
+          const bestSubId = getBestSubRegion(beachSubs, swellDirection)
+          subRegions = beachSubs.map(sub => ({
+            id: sub.id, name: sub.name, lat: sub.lat, lng: sub.lng,
+            swellDirections: sub.swellDirections ?? [],
+            description: sub.id === bestSubId
+              ? `Melhor com swell de ${swellDirection}`
+              : `Funciona melhor com swell de ${sub.swellDirections?.join(', ') ?? 'E'}`,
+            bestNow: sub.id === bestSubId
+          }))
+        }
 
-  const conditions = results
+        return {
+          id: beach.id, name: beach.name, region: beach.region, subRegions,
+          score, waveHeight, windSpeed, windDirection, swellDirection, swellPeriod, tide,
+          tideHeight: tideInfo.height, level: getLevel(waveHeight, score),
+          boardSuggestion: getBoardSuggestion(waveHeight),
+          waterConditions: { temperature: waterTemp, wetsuit: getWetsuitInfo(waterTemp) },
+          bestTimeWindow: calculateBestWindow(windyData, beach.orientation),
+          sunrise: windyData?.sunrise, sunset: windyData?.sunset,
+          lat: beach.lat, lng: beach.lng,
+          _beachOrientation: beach.orientation,
+        } as BeachCondition & { _beachOrientation: number }
+      })
+    )
+    allResults.push(...batchResults)
+  }
+
+  return allResults
     .filter((r): r is PromiseFulfilledResult<BeachCondition & { _beachOrientation: number }> => r.status === 'fulfilled')
     .map(r => r.value)
-
-  cachedConditions = conditions
-  lastFetchTime = now
-  return conditions
 }
 
-export function getCurrentConditions(): BeachCondition[] { return cachedConditions ?? [] }
+export async function fetchCurrentConditions(): Promise<BeachCondition[]> {
+  const now = Date.now()
+
+  // Cache válido — retorna imediatamente
+  if (conditionsState.data && (now - conditionsState.fetchedAt) < CACHE_DURATION) {
+    return conditionsState.data
+  }
+
+  // Já há um fetch em andamento — espera ele terminar em vez de disparar outro
+  if (conditionsState.inflight) return conditionsState.inflight
+
+  conditionsState.inflight = _doFetchConditions().then(conditions => {
+    conditionsState.data = conditions
+    conditionsState.fetchedAt = Date.now()
+    conditionsState.inflight = null
+    return conditions
+  }).catch(err => {
+    conditionsState.inflight = null
+    throw err
+  })
+
+  return conditionsState.inflight
+}
+
+export function getCurrentConditions(): BeachCondition[] { return conditionsState.data ?? [] }
 export function getTopSpots(limit = 3): BeachCondition[] { return getCurrentConditions().sort((a, b) => b.score - a.score).slice(0, limit) }
 export function getSpotsByRegion(region: BeachCondition['region']): BeachCondition[] { return getCurrentConditions().filter(s => s.region === region).sort((a, b) => b.score - a.score) }
 export function getSpotById(id: string): BeachCondition | undefined { return getCurrentConditions().find(s => s.id === id) }
@@ -455,3 +486,7 @@ export function analyzeConditions(spot: BeachCondition & { _beachOrientation?: n
 
   return analysis
 }
+
+// IDs das praias que pertencem à região "Centro" no contexto do filtro de regiões.
+// Centralizado aqui para evitar duplicação em Home, Navigation e demais páginas.
+export const CENTRO_SPOT_IDS = ['novo-campeche', 'joaquina', 'mole', 'barra-lagoa'] as const

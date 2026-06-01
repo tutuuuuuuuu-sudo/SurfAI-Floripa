@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { fetchCurrentConditions, BeachCondition } from '@/lib/surfData'
+import { BeachCondition } from '@/lib/surfData'
+import { useSurfData } from '@/contexts/SurfDataContext'
 import { ArrowLeft, Waves, Wind, Thermometer, X, Plus, TrendingUp } from 'lucide-react'
 import { getScoreColor, getRatingInfo } from '@/lib/rating'
 
@@ -12,20 +13,18 @@ const MAX_COMPARE = 3
 
 export default function ComparePage() {
   const navigate = useNavigate()
-  const [allSpots, setAllSpots] = useState<BeachCondition[]>([])
+  const { conditions, loading } = useSurfData()
+  const allSpots = [...conditions].sort((a, b) => b.score - a.score)
   const [selected, setSelected] = useState<BeachCondition[]>([])
-  const [loading, setLoading] = useState(true)
   const [showPicker, setShowPicker] = useState(false)
   const [search, setSearch] = useState('')
 
+  // Inicializa as 2 melhores quando os dados chegam
   useEffect(() => {
-    fetchCurrentConditions().then(spots => {
-      setAllSpots(spots.sort((a, b) => b.score - a.score))
-      // Começa com as 2 melhores praias selecionadas
-      setSelected(spots.sort((a, b) => b.score - a.score).slice(0, 2))
-      setLoading(false)
-    })
-  }, [])
+    if (allSpots.length > 0 && selected.length === 0) {
+      setSelected(allSpots.slice(0, 2))
+    }
+  }, [conditions]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const addSpot = (spot: BeachCondition) => {
     if (selected.find(s => s.id === spot.id)) return

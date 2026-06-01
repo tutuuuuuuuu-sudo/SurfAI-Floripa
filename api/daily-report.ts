@@ -1,4 +1,5 @@
 export const config = { runtime: 'edge' }
+import { calculateSurfScore } from './_scoreEngine'
 
 const APP_URL = process.env.APP_URL ?? 'https://surf-ai-floripa.vercel.app'
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY
@@ -83,15 +84,32 @@ async function getUserStats(): Promise<{
     const cancelData = cancelRes.ok ? await cancelRes.json() as { id: string }[] : []
     const cancelledToday = Array.isArray(cancelData) ? cancelData.length : 0
 
-    // Novos usuários hoje (via auth.users)
-    const usersRes = await fetch(
-      `${SUPABASE_URL}/auth/v1/admin/users?per_page=500`,
-      { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } }
+    // Total de usuários via Content-Range (não carrega todos os registros na memória)
+    const countRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?select=id`,
+      {
+        headers: {
+          apikey: SUPABASE_SERVICE_KEY,
+          Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+          Prefer: 'count=exact',
+          Range: '0-0',
+        }
+      }
     )
-    const usersData = usersRes.ok ? await usersRes.json() as AuthUsersResponse : {}
-    const allUsers = usersData.users ?? []
-    const newToday = allUsers.filter((u) => u.created_at >= todayISO).length
-    const total = totalData.total ?? allUsers.length
+    const contentRange = countRes.headers.get('Content-Range') ?? ''
+    const total = parseInt(contentRange.split('/')[1] ?? '0') || (totalData.total ?? 0)
+
+    // Novos usuários hoje via RPC (evita carregar até 500 registros só para contar)
+    const newTodayRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/count_new_users_today`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ since: todayISO }),
+    })
+    const newToday = newTodayRes.ok ? (await newTodayRes.json() as number) || 0 : 0
 
     const mrr = premiumActive * 29.90
     const conversionRate = total > 0 ? Number(((premiumActive / total) * 100).toFixed(1)) : 0
@@ -124,26 +142,6 @@ async function getSurfConditions(): Promise<{
 }> {
   const fallback = { bestSpot: 'N/A', bestScore: 0, avgScore: 0, bestWave: 0, bestPeriod: 0, bestWind: 0, bestWindDir: 'N/A', top3: [], tainhaSeasonActive: false }
   try {
-    const WIND_DEG: Record<string, number> = {
-      N: 0, NNE: 22.5, NE: 45, ENE: 67.5, E: 90, ESE: 112.5, SE: 135, SSE: 157.5,
-      S: 180, SSW: 202.5, SW: 225, WSW: 247.5, W: 270, WNW: 292.5, NW: 315, NNW: 337.5,
-    }
-
-    function calcScore(h: number, w: number, p: number, dir: string, orientation: number): number {
-      let base = h >= 2.5 ? 10 : h >= 2.0 ? 9.5 : h >= 1.5 ? 9.0 : h >= 1.2 ? 8.5 : h >= 1.0 ? 8.0
-        : h >= 0.8 ? 7.5 : h >= 0.6 ? 7.0 : h >= 0.5 ? 6.5 : h >= 0.4 ? 5.5 : 4.0
-      const offshore = (orientation + 180) % 360
-      let diff = Math.abs((WIND_DEG[dir] ?? 0) - offshore)
-      if (diff > 180) diff = 360 - diff
-      const penalty = diff <= 45
-        ? (w <= 10 ? 0 : w <= 15 ? -0.3 : w <= 20 ? -0.8 : -1.5)
-        : diff <= 90
-        ? (w <= 10 ? -0.5 : w <= 15 ? -1.0 : w <= 20 ? -1.8 : -2.5)
-        : (w <= 10 ? -1.0 : w <= 15 ? -2.0 : w <= 20 ? -3.0 : -4.0)
-      const pAdj = p >= 16 ? 0.5 : p >= 14 ? 0.3 : p >= 12 ? 0.2 : p >= 10 ? 0 : p >= 8 ? -0.2 : p >= 7 ? -0.4 : -0.6
-      return Math.min(10, Math.max(1, Number((base + penalty + pAdj).toFixed(1))))
-    }
-
     const results = await Promise.all(
       SPOTS.map(async (s) => {
         try {
@@ -154,7 +152,7 @@ async function getSurfConditions(): Promise<{
           if (!res.ok) return null
           const d = await res.json() as { waveHeight?: number; swellPeriod?: number; windSpeed?: number; windDirection?: string }
           const dir = (d.windDirection ?? 'N').split(' ')[0].split('(')[0].trim()
-          const score = calcScore(d.waveHeight, d.windSpeed, d.swellPeriod, dir, s.orientation)
+          const score = calculateSurfScore(d.waveHeight ?? 0, d.windSpeed ?? 0, d.swellPeriod ?? 0, dir, s.orientation)
           return { name: s.name, score, waveHeight: d.waveHeight, swellPeriod: d.swellPeriod, windSpeed: d.windSpeed, windDirection: d.windDirection }
         } catch { return null }
       })

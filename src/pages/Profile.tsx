@@ -7,7 +7,7 @@ import { Separator } from '@/components/ui/separator'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePremium } from '@/lib/premium'
 import { getFavorites } from '@/lib/favorites'
-import { getCurrentConditions, fetchCurrentConditions } from '@/lib/surfData'
+import { useSurfData } from '@/contexts/SurfDataContext'
 import { supabase, getUserDisplayName } from '@/lib/supabase'
 import {
   ArrowLeft, Crown, Heart, MessageCircle, Waves, Settings,
@@ -21,6 +21,7 @@ export default function ProfilePage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { isPremium, subscription } = usePremium()
+  const { conditions } = useSurfData()
   const [favorites, setFavorites] = useState<string[]>([])
   const [commentCount, setCommentCount] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -37,12 +38,20 @@ export default function ProfilePage() {
   const userInitial = userName.charAt(0).toUpperCase()
   const memberSince = user?.created_at ? new Date(user.created_at).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) : '—'
 
+  // Filtra spots favoritos a partir dos dados já no contexto — sem fetch extra
+  useEffect(() => {
+    if (conditions.length > 0 && favorites.length > 0) {
+      setFavoriteSpots(conditions.filter(s => favorites.includes(s.id)))
+    }
+  }, [conditions, favorites])
+
   useEffect(() => {
     const load = async () => {
       setLoading(true)
-      const [favs, spots] = await Promise.all([getFavorites(), fetchCurrentConditions()])
+      // Não faz fetchCurrentConditions — usa o contexto global
+      const favs = await getFavorites().catch(() => [] as string[])
       setFavorites(favs)
-      setFavoriteSpots(spots.filter(s => favs.includes(s.id)))
+      setFavoriteSpots(conditions.filter(s => favs.includes(s.id)))
       if (user) {
         const { count } = await supabase
           .from('comments')
@@ -65,7 +74,7 @@ export default function ProfilePage() {
       setLoading(false)
     }
     load()
-  }, [user])
+  }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -303,7 +312,7 @@ export default function ProfilePage() {
         )}
 
         {!loading && (() => {
-          const best = getCurrentConditions().sort((a, b) => b.score - a.score)[0] ?? null
+          const best = [...conditions].sort((a, b) => b.score - a.score)[0] ?? null
           if (!best) return null
           const rating = getRatingInfo(best.score)
           return (

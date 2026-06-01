@@ -21,4 +21,11 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  test: {
+    environmentMatchGlobs: [
+      ['src/**/*.test.ts', 'jsdom'],
+      ['api/**/*.test.ts', 'node'],
+    ],
+    include: ['src/**/*.test.ts', 'api/**/*.test.ts'],
+  },
 })

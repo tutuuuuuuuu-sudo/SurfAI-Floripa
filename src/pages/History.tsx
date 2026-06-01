@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { usePremium } from '@/lib/premium'
-import { fetchCurrentConditions } from '@/lib/surfData'
-import { getWeatherForecast } from '@/lib/weatherData'
+import { BeachCondition } from '@/lib/surfData'
+import { useSurfData } from '@/contexts/SurfDataContext'
+import { getWeatherForecast, WeatherForecast } from '@/lib/weatherData'
 import { ArrowLeft, Waves, Wind, Calendar, Crown, Lock, TrendingUp, Thermometer } from 'lucide-react'
 import { getScoreColor, getRatingInfo } from '@/lib/rating'
 
@@ -16,20 +17,16 @@ export default function HistoryPage() {
   const navigate = useNavigate()
   const { id } = useParams<{ id?: string }>()
   const { isPremium } = usePremium()
-  const [spots, setSpots] = useState<any[]>([])
+  const { conditions, loading } = useSurfData()
+  const spots = [...conditions].sort((a, b) => b.score - a.score)
   const [selectedSpot, setSelectedSpot] = useState<string>(id ?? '')
-  const [forecast, setForecast] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [forecast, setForecast] = useState<WeatherForecast[]>([])
   const [loadingForecast, setLoadingForecast] = useState(false)
 
+  // Seleciona a melhor praia por padrão quando os dados chegam
   useEffect(() => {
-    fetchCurrentConditions().then(data => {
-      const sorted = data.sort((a, b) => b.score - a.score)
-      setSpots(sorted)
-      if (!selectedSpot && sorted.length > 0) setSelectedSpot(sorted[0].id)
-      setLoading(false)
-    })
-  }, [])
+    if (!selectedSpot && spots.length > 0) setSelectedSpot(spots[0].id)
+  }, [conditions]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!selectedSpot || !isPremium) return

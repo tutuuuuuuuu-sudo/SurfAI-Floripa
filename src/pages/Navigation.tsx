@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { fetchCurrentConditions, BeachCondition } from '@/lib/surfData'
+import { BeachCondition, CENTRO_SPOT_IDS } from '@/lib/surfData'
+import { useSurfData } from '@/contexts/SurfDataContext'
 import { ArrowLeft, Navigation, Waves, MapPin, ExternalLink } from 'lucide-react'
 
 import { getScoreColor, getRatingInfo } from '@/lib/rating'
@@ -205,26 +206,18 @@ const NavModal = ({
 
 export default function NavigationPage() {
   const navigate = useNavigate()
-  const [spots, setSpots] = useState<BeachCondition[]>([])
-  const [loading, setLoading] = useState(true)
+  const { conditions, loading } = useSurfData()
+  const spots = useMemo(() => [...conditions].sort((a, b) => b.score - a.score), [conditions])
   const [selectedSpot, setSelectedSpot] = useState<BeachCondition | null>(null)
   const [activeRegion, setActiveRegion] = useState<string>('all')
 
-  useEffect(() => {
-    fetchCurrentConditions().then(data => {
-      setSpots(data.sort((a, b) => b.score - a.score))
-      setLoading(false)
-    })
-  }, [])
-
   const regions = ['all', 'Sul', 'Centro', 'Leste', 'Norte']
   const regionLabels: Record<string, string> = { all: 'Todas', Sul: 'Sul', Centro: 'Centro', Leste: 'Leste', Norte: 'Norte' }
-  const CENTRO_IDS = ['novo-campeche', 'joaquina', 'mole', 'barra-lagoa']
   const filtered = activeRegion === 'all'
     ? spots
     : activeRegion === 'Centro'
-      ? spots.filter(s => CENTRO_IDS.includes(s.id))
-      : spots.filter(s => s.region === activeRegion && !CENTRO_IDS.includes(s.id))
+      ? spots.filter(s => CENTRO_SPOT_IDS.includes(s.id as typeof CENTRO_SPOT_IDS[number]))
+      : spots.filter(s => s.region === activeRegion && !CENTRO_SPOT_IDS.includes(s.id as typeof CENTRO_SPOT_IDS[number]))
 
   return (
     <div className="min-h-screen bg-background">

@@ -57,6 +57,11 @@ export async function fetchAIReport(
       body: JSON.stringify({ spots, topSpot, userLevel }),
     })
 
+    if (res.status === 403) {
+      // Usuário free — não tenta retry, apenas retorna null silenciosamente
+      return null
+    }
+
     if (res.status === 401) {
       // Token expirado — tenta refresh antes de desistir
       const { data: refreshed } = await supabase.auth.refreshSession()
@@ -71,6 +76,7 @@ export async function fetchAIReport(
         },
         body: JSON.stringify({ spots, topSpot, userLevel }),
       })
+      // Se ainda for 403 após refresh, o usuário não tem premium
       if (!retryRes.ok) return null
       const retryData = await retryRes.json()
       if (retryData.report) { setCached(retryData.report); return retryData.report }

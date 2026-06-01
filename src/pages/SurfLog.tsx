@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { getRatingInfo } from '@/lib/rating'
-import { getCurrentConditions } from '@/lib/surfData'
+import { useSurfData } from '@/contexts/SurfDataContext'
 import {
   ArrowLeft, Waves, Plus, Clock, Star, Trash2, X,
   CalendarDays, MapPin, FileText
@@ -24,15 +24,16 @@ interface SurfSession {
   created_at: string
 }
 
-function getBeachesList(): string[] {
-  const cached = getCurrentConditions()
-  if (cached.length > 0) return cached.map(s => s.name).sort()
-  return [
-    'Campeche', 'Novo Campeche', 'Morro das Pedras', 'Matadeiro',
-    'Lagoinha do Leste', 'Açores', 'Solidão', 'Armação', 'Naufragados',
-    'Joaquina', 'Praia Mole', 'Moçambique', 'Barra da Lagoa',
-    'Santinho', 'Ponta das Aranhas',
-  ]
+const FALLBACK_BEACHES = [
+  'Campeche', 'Novo Campeche', 'Morro das Pedras', 'Matadeiro',
+  'Lagoinha do Leste', 'Açores', 'Solidão', 'Armação', 'Naufragados',
+  'Joaquina', 'Praia Mole', 'Moçambique', 'Barra da Lagoa',
+  'Santinho', 'Ponta das Aranhas',
+]
+
+function getBeachesList(conditions: { name: string }[]): string[] {
+  if (conditions.length > 0) return conditions.map(s => s.name).sort()
+  return FALLBACK_BEACHES
 }
 
 const STAR_LABELS = ['', 'Ruim', 'Regular', 'Bom', 'Excelente', 'Épico']
@@ -81,6 +82,7 @@ function formatDate(dateStr: string): string {
 export default function SurfLog() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { conditions } = useSurfData()
   const [sessions, setSessions] = useState<SurfSession[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -235,7 +237,7 @@ CREATE POLICY "users see own sessions" ON surf_sessions
                   className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
                 >
                   <option value="">Selecionar praia...</option>
-                  {getBeachesList().map(b => <option key={b} value={b}>{b}</option>)}
+                  {getBeachesList(conditions).map(b => <option key={b} value={b}>{b}</option>)}
                 </select>
               </div>
 

@@ -66,8 +66,20 @@ async function sendWelcomeEmail(name: string, email: string) {
   }
 }
 
+const WEBHOOK_SECRET = process.env.SUPABASE_WEBHOOK_SECRET
+
 export default async function handler(req: Request) {
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 })
+
+  // Valida assinatura do webhook Supabase para evitar spam/abuso.
+  // Configurar SUPABASE_WEBHOOK_SECRET no Vercel e no painel Supabase → Webhooks.
+  if (WEBHOOK_SECRET) {
+    const authHeader = req.headers.get('Authorization')
+    if (authHeader !== `Bearer ${WEBHOOK_SECRET}`) {
+      console.error('[email-welcome] Assinatura de webhook inválida')
+      return new Response('Unauthorized', { status: 401 })
+    }
+  }
 
   if (!RESEND_KEY) {
     return new Response('RESEND_API_KEY não configurada', { status: 500 })

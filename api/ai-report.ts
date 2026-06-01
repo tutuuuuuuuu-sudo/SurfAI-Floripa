@@ -11,16 +11,42 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 }
 
-// Verifica se o token JWT do Supabase é válido consultando o endpoint /auth/v1/user
-async function verifySupabaseToken(token: string): Promise<boolean> {
+interface AuthResult {
+  valid: boolean
+  userId: string | null
+}
+
+// Valida o token JWT e retorna o userId — uma única chamada para ambos os checks
+async function verifyToken(token: string): Promise<AuthResult> {
   const supabaseUrl = process.env.SUPABASE_URL
   const supabaseAnonKey = process.env.SUPABASE_ANON_KEY
-  if (!supabaseUrl || !supabaseAnonKey) return false
+  if (!supabaseUrl || !supabaseAnonKey) return { valid: false, userId: null }
   try {
     const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
       headers: { 'Authorization': `Bearer ${token}`, 'apikey': supabaseAnonKey },
     })
-    return res.ok
+    if (!res.ok) return { valid: false, userId: null }
+    const user = await res.json() as { id?: string }
+    return { valid: true, userId: user.id ?? null }
+  } catch {
+    return { valid: false, userId: null }
+  }
+}
+
+// Verifica se o userId tem assinatura premium ativa no Supabase
+async function isPremiumUser(userId: string): Promise<boolean> {
+  const supabaseUrl = process.env.SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!supabaseUrl || !serviceKey) return false
+  try {
+    const now = new Date().toISOString()
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/subscriptions?user_id=eq.${userId}&status=eq.premium&expires_at=gte.${now}&select=id&limit=1`,
+      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
+    )
+    if (!res.ok) return false
+    const rows = await res.json() as { id: string }[]
+    return Array.isArray(rows) && rows.length > 0
   } catch {
     return false
   }
@@ -35,7 +61,7 @@ export default async function handler(req: Request) {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 })
   }
 
-  // Requer autenticação — só usuários logados podem gerar relatórios
+  // Requer autenticação — só usuários logados e com plano premium podem gerar relatórios
   const authHeader = req.headers.get('Authorization')
   const token = authHeader?.replace('Bearer ', '').trim()
   if (!token) {
@@ -44,10 +70,20 @@ export default async function handler(req: Request) {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
     })
   }
-  const isValid = await verifySupabaseToken(token)
-  if (!isValid) {
+
+  const { valid, userId } = await verifyToken(token)
+  if (!valid || !userId) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
+    })
+  }
+
+  // Relatório de IA consome créditos da Anthropic — restrito a usuários premium
+  const premium = await isPremiumUser(userId)
+  if (!premium) {
+    return new Response(JSON.stringify({ error: 'Premium required', code: 'NOT_PREMIUM' }), {
+      status: 403,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
     })
   }

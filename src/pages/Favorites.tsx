@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { fetchCurrentConditions, BeachCondition } from '@/lib/surfData'
+import { BeachCondition } from '@/lib/surfData'
+import { useSurfData } from '@/contexts/SurfDataContext'
 import { getFavorites, toggleFavorite } from '@/lib/favorites'
 import { ArrowLeft, Heart, Waves, Wind, Thermometer, Star } from 'lucide-react'
 import { toast } from 'sonner'
@@ -11,17 +12,17 @@ import { getRatingInfo } from '@/lib/rating'
 
 export default function Favorites() {
   const navigate = useNavigate()
+  const { conditions, loading: spotsLoading } = useSurfData()
   const [favorites, setFavorites] = useState<BeachCondition[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const load = async () => {
-      const [favIds, spots] = await Promise.all([getFavorites(), fetchCurrentConditions()])
-      setFavorites(spots.filter(s => favIds.includes(s.id)).sort((a, b) => b.score - a.score))
+    if (spotsLoading) return
+    getFavorites().then(favIds => {
+      setFavorites(conditions.filter(s => favIds.includes(s.id)).sort((a, b) => b.score - a.score))
       setLoading(false)
-    }
-    load()
-  }, [])
+    })
+  }, [conditions, spotsLoading])
 
   const handleRemoveFavorite = async (spot: BeachCondition) => {
     await toggleFavorite(spot.id, spot.name)
