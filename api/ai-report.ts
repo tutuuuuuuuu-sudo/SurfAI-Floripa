@@ -109,16 +109,35 @@ export default async function handler(req: Request) {
     return new Response(JSON.stringify({ error: 'Dados insuficientes' }), { status: 400 })
   }
 
-  const spotsContext = (spots ?? []).slice(0, 5).map(s =>
-    `${s.name}: score ${s.score}, ondas ${s.waveHeight}m, vento ${s.windSpeed}km/h ${s.windDirection}, período ${s.swellPeriod}s`
-  ).join('\n')
+  const sanitizeName  = (v: unknown) => String(v ?? '').slice(0, 50).replace(/[^\w\s\-áéíóúàâêôãõçÁÉÍÓÚÀÂÊÔÃÕÇ]/g, '')
+  const sanitizeNum   = (v: unknown, min: number, max: number) => Math.max(min, Math.min(max, Number(v) || 0))
+  const sanitizeDir   = (v: unknown) => String(v ?? '').slice(0, 20).replace(/[^a-zA-Z ()]/g, '')
+  const sanitizeLevel = (v: unknown) => String(v ?? '').slice(0, 30).replace(/[^\w\s]/g, '')
 
-  const prompt = `Você é um analista de surf experiente de Florianópolis, SC. Escreva um relatório de surf diário em português brasileiro, informal e direto, para ${userLevel ? `surfistas de nível ${userLevel}` : 'todos os níveis'}.
+  const spotsContext = (spots ?? []).slice(0, 5).map(s => {
+    const name   = sanitizeName(s.name)
+    const score  = sanitizeNum(s.score, 0, 10)
+    const wave   = sanitizeNum(s.waveHeight, 0, 20)
+    const wind   = sanitizeNum(s.windSpeed, 0, 200)
+    const dir    = sanitizeDir(s.windDirection)
+    const period = sanitizeNum(s.swellPeriod, 0, 30)
+    return `${name}: score ${score.toFixed(1)}, ondas ${wave.toFixed(1)}m, vento ${wind}km/h ${dir}, período ${period}s`
+  }).join('\n')
+
+  const topName   = sanitizeName(topSpot.name)
+  const topScore  = sanitizeNum(topSpot.score, 0, 10)
+  const topWave   = sanitizeNum(topSpot.waveHeight, 0, 20)
+  const topPeriod = sanitizeNum(topSpot.swellPeriod, 0, 30)
+  const topWind   = sanitizeNum(topSpot.windSpeed, 0, 200)
+  const topDir    = sanitizeDir(topSpot.windDirection)
+  const safeLevel = userLevel ? sanitizeLevel(userLevel) : ''
+
+  const prompt = `Você é um analista de surf experiente de Florianópolis, SC. Escreva um relatório de surf diário em português brasileiro, informal e direto, para ${safeLevel ? `surfistas de nível ${safeLevel}` : 'todos os níveis'}.
 
 Dados das condições atuais das praias de Floripa:
 ${spotsContext}
 
-Melhor praia agora: ${topSpot.name} (score ${topSpot.score}/10, ondas ${topSpot.waveHeight}m, período ${topSpot.swellPeriod}s, vento ${topSpot.windSpeed}km/h ${topSpot.windDirection})
+Melhor praia agora: ${topName} (score ${topScore.toFixed(1)}/10, ondas ${topWave.toFixed(1)}m, período ${topPeriod}s, vento ${topWind}km/h ${topDir})
 
 Escreva um relatório de 3-4 frases que:
 1. Diga como está o mar hoje em geral em Floripa

@@ -73,7 +73,7 @@ export default async function handler(req: Request) {
   if (!mpRes.ok) {
     const err = await mpRes.text()
     console.error('[create-payment] MP error:', err)
-    return json({ error: 'Erro ao criar preferência no Mercado Pago', detail: err, status: mpRes.status }, 500)
+    return json({ error: 'Erro ao criar preferência de pagamento' }, 500)
   }
 
   const data = await mpRes.json() as { id: string; init_point: string; sandbox_init_point: string }

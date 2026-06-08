@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, useCallback, ReactNode } from 'react'
 import { fetchCurrentConditions, getCurrentConditions, BeachCondition } from '@/lib/surfData'
 
 interface SurfDataContextType {
@@ -23,7 +23,7 @@ export function SurfDataProvider({ children }: { children: ReactNode }) {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(conditions.length > 0 ? new Date() : null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       const data = await fetchCurrentConditions()
       setConditions(data)
@@ -33,7 +33,7 @@ export function SurfDataProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     load()

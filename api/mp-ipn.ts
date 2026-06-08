@@ -96,9 +96,8 @@ export default async function handler(req: Request) {
         }),
       })
     }
-  } catch {
-    // Sempre retorna 200 mesmo com erro
+  } catch (err) {
+    console.error('[mp-ipn] Erro ao processar pagamento:', err)
+    return new Response('Internal error', { status: 500, headers })
   }
-
-  return new Response('OK', { status: 200, headers })
 }

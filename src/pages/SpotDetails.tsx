@@ -7,7 +7,7 @@ import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
 import { analyzeConditions, BeachCondition, SubRegion, WIND_DEG } from '@/lib/surfData'
 import { useSurfData } from '@/contexts/SurfDataContext'
-import { getWeatherForecast, WeatherForecast, getRealTide } from '@/lib/weatherData'
+import { getWeatherForecast, WeatherForecast, getRealTide, FREE_DAYS } from '@/lib/weatherData'
 import { isFavorite, toggleFavorite } from '@/lib/favorites'
 import { getComments, addComment, deleteComment, formatCommentTime, Comment } from '@/lib/comments'
 import { supabase } from '@/lib/supabase'
@@ -575,7 +575,6 @@ export default function SpotDetails() {
   })
   const { isPremium } = usePremium()
 
-  const FREE_DAYS = 3
 
   useEffect(() => {
     if (!id) return

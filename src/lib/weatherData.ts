@@ -43,6 +43,8 @@ function degreesToDir(deg: number): string {
   return dirs[Math.round(deg / 22.5) % 16]
 }
 
+// Coordenadas aproximadas (centro geográfico) para busca de previsão meteorológica.
+// Diferem intencionalmente das coords em surfData.ts, que apontam para a areia exata.
 const BEACH_COORDS: Record<string, { lat: number, lng: number }> = {
   'campeche': { lat: -27.6683, lng: -48.4772 },
   'novo-campeche': { lat: -27.6450, lng: -48.4650 },
@@ -65,7 +67,7 @@ const forecastCache: Record<string, { data: WeatherForecast[], time: number }> =
 const CACHE_DURATION = 15 * 60 * 1000
 
 // Dias gratuitos — controle de UX local (bloquear além desse limite no servidor via /api/forecast)
-const FREE_DAYS = 3
+export const FREE_DAYS = 3
 
 export interface CurrentConditionsForForecast {
   waveHeight: number

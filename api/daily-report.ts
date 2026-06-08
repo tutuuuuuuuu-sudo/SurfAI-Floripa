@@ -7,7 +7,7 @@ const AGENT_SECRET = process.env.AGENT_SECRET
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
 const RESEND_API_KEY = process.env.RESEND_API_KEY
-const REPORT_EMAIL = process.env.REPORT_EMAIL ?? 'r2rgarraza@gmail.com'
+const REPORT_EMAIL = process.env.REPORT_EMAIL
 
 const SPOTS = [
   { name: 'Campeche',        lat: -27.697703, lng: -48.4898603, orientation: 90 },
@@ -34,10 +34,10 @@ async function getUserStats(): Promise<{
     return { total: 0, newToday: 0, premiumActive: 0, newPremiumToday: 0, revenueToday: 0, cancelledToday: 0, mrr: 0, conversionRate: 0 }
   }
 
+  // Brasil não usa horário de verão desde 2019 — UTC-3 fixo é correto
   const todayStart = new Date()
   todayStart.setUTCHours(0, 0, 0, 0)
-  // Ajuste para BRT (UTC-3)
-  todayStart.setTime(todayStart.getTime() + 3 * 60 * 60 * 1000)
+  todayStart.setTime(todayStart.getTime() + 3 * 60 * 60 * 1000) // +3h = meia-noite BRT
   const todayISO = todayStart.toISOString()
 
   try {
@@ -230,7 +230,7 @@ Escreva 3-4 frases de análise: o que foi bom, o que precisa de atenção, e uma
 
 // ── Email ─────────────────────────────────────────────────────────────────────
 
-const GITHUB_ACTIONS_URL = 'https://github.com/tutuuuuuuuu-sudo/SurfAI-Floripa/actions'
+const GITHUB_ACTIONS_URL = process.env.GITHUB_ACTIONS_URL ?? ''
 
 function scoreColor(score: number): string {
   if (score >= 8) return '#22c55e'
@@ -277,9 +277,7 @@ function buildEmailHtml(data: {
     </tr>
   `).join('')
 
-  const supabaseDashUrl = SUPABASE_URL
-    ? `https://supabase.com/dashboard/project/${SUPABASE_URL.replace('https://', '').split('.')[0]}`
-    : 'https://supabase.com'
+  const supabaseDashUrl = process.env.SUPABASE_DASHBOARD_URL ?? 'https://supabase.com'
 
   return `<!DOCTYPE html>
 <html>
@@ -416,7 +414,7 @@ async function sendReportEmail(data: {
   surf: Awaited<ReturnType<typeof getSurfConditions>>
   aiSummary: string
 }): Promise<boolean> {
-  if (!RESEND_API_KEY) return false
+  if (!RESEND_API_KEY || !REPORT_EMAIL) return false
 
   const subject = `[${data.period}] Surf AI · ${data.date} — MRR R$${data.users.mrr.toFixed(0)} · ${data.surf.bestSpot} ${data.surf.bestScore}/10`
   const html = buildEmailHtml(data)
@@ -446,11 +444,23 @@ async function sendReportEmail(data: {
 export default async function handler(req: Request) {
   const url = new URL(req.url)
   const secret = req.headers.get('x-agent-secret') ?? url.searchParams.get('secret')
-  if (AGENT_SECRET && secret !== AGENT_SECRET) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    })
+
+  // Crons internos da Vercel chegam como GET sem secret — permite apenas esse caso
+  const isVercelCron = req.method === 'GET' && !req.headers.get('x-agent-secret')
+  if (!isVercelCron) {
+    if (!AGENT_SECRET) {
+      console.error('[daily-report] AGENT_SECRET não configurado')
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+    if (secret !== AGENT_SECRET) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
   }
 
   const hourBRT = (new Date().getUTCHours() - 3 + 24) % 24

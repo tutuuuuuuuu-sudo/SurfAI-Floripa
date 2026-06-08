@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -39,6 +39,7 @@ export default function Home() {
   const [showOnboarding, setShowOnboarding] = useState(() => {
     try { return !localStorage.getItem('onboarding_done') } catch { return true }
   })
+  const aiReportRequestedRef = useRef(false)
   const navigate = useNavigate()
   const { user } = useAuth()
   const { isPremium } = usePremium()
@@ -68,7 +69,8 @@ export default function Home() {
     })
 
     const top = sortedAll[0]
-    if (top && !aiReport) {
+    if (top && !aiReportRequestedRef.current) {
+      aiReportRequestedRef.current = true
       setAiLoading(true)
       const userLevel = (() => { try { return localStorage.getItem('pref_skill') ?? undefined } catch { return undefined } })()
       fetchAIReport(sortedAll.slice(0, 6), top, userLevel ?? undefined)
@@ -79,7 +81,7 @@ export default function Home() {
         .catch(() => {})
         .finally(() => setAiLoading(false))
     }
-  }, [allSpots]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [allSpots])
 
   const userName = user ? getUserDisplayName(user) : 'Surfista'
   const userInitial = userName.charAt(0).toUpperCase()

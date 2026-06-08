@@ -147,7 +147,13 @@ export default function SurfLog() {
   }
 
   async function handleDelete(id: string) {
-    const { error } = await supabase.from('surf_sessions').delete().eq('id', id)
+    if (!confirm('Remover esta sessão? Esta ação não pode ser desfeita.')) return
+    if (!user) return
+    const { error } = await supabase
+      .from('surf_sessions')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id)
     if (error) { toast.error('Erro ao deletar'); return }
     toast.success('Sessão removida')
     setSessions(prev => prev.filter(s => s.id !== id))

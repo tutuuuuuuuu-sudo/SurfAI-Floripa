@@ -473,38 +473,6 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden relative">
 
-      {/* KEYFRAMES globais via style tag */}
-      <style>{`
-        @keyframes phoneFloat {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-14px); }
-        }
-        @keyframes particleFloat {
-          0%, 100% { transform: translateY(0px) scale(1); opacity: 0.4; }
-          50% { transform: translateY(-18px) scale(1.3); opacity: 0.7; }
-        }
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(24px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes gradientShift {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-        @keyframes pulse-glow {
-          0%, 100% { box-shadow: 0 0 20px oklch(0.6 0.2 210 / 0.3); }
-          50% { box-shadow: 0 0 48px oklch(0.6 0.2 210 / 0.7); }
-        }
-        @keyframes textReveal {
-          from { opacity: 0; transform: translateY(20px) skewY(2deg); }
-          to { opacity: 1; transform: translateY(0) skewY(0deg); }
-        }
-      `}</style>
-
       {/* CAMADAS DE FUNDO */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-0 left-1/4 w-[700px] h-[700px] rounded-full blur-[140px] opacity-[0.06]"

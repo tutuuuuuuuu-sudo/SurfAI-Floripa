@@ -118,8 +118,8 @@ async function testPaymentAPI(): Promise<TestResult> {
 
 async function sendReport(results: TestResult[]) {
   const resendKey = process.env.RESEND_API_KEY
-  const reportEmail = process.env.REPORT_EMAIL ?? 'r2rgarraza@gmail.com'
-  if (!resendKey) return
+  const reportEmail = process.env.REPORT_EMAIL
+  if (!resendKey || !reportEmail) return
 
   const allOk = results.every(r => r.ok)
   const failed = results.filter(r => !r.ok)

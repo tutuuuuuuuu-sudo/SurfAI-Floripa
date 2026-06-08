@@ -33,6 +33,7 @@ export default function ProfilePage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [showPhotoOptions, setShowPhotoOptions] = useState(false)
 
   const userName = user ? getUserDisplayName(user) : 'Surfista'
   const userInitial = userName.charAt(0).toUpperCase()

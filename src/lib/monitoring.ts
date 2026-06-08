@@ -8,7 +8,7 @@ export function initMonitoring() {
     Sentry.init({
       dsn: sentryDsn,
       environment: import.meta.env.MODE,
-      release: 'surf-ai@1.0.0',
+      release: import.meta.env.VITE_SENTRY_RELEASE ?? 'surf-ai@dev',
       tracesSampleRate: 0.2,
       replaysSessionSampleRate: 0,
       integrations: [Sentry.browserTracingIntegration()],

@@ -1,5 +1,7 @@
 import { Waves, Store } from 'lucide-react'
 
+const CONTACT_EMAIL = 'surfaifloripa@gmail.com'
+
 export interface AdData {
   id: string
   empresa: string
@@ -11,7 +13,7 @@ export interface AdData {
 export const PLACEHOLDER_AD: AdData = {
   id: 'placeholder',
   empresa: 'Sua Empresa Aqui',
-  slogan: 'Anuncie para surfistas de Floripa • surfaifloripa@gmail.com',
+  slogan: `Anuncie para surfistas de Floripa • ${CONTACT_EMAIL}`,
   imagem_url: '',
   link_url: 'mailto:surfaifloripa@gmail.com',
 }

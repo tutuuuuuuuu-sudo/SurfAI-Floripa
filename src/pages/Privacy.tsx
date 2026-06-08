@@ -110,8 +110,16 @@ export default function Privacy() {
               <div className="text-sm text-muted-foreground leading-relaxed space-y-2">
                 {content.split('\n').map((line, i) => {
                   if (!line.trim()) return null
-                  const formatted = line.replace(/\*\*(.*?)\*\*/g, '<strong class="text-foreground">$1</strong>')
-                  return <p key={i} dangerouslySetInnerHTML={{ __html: formatted }} />
+                  const parts = line.split(/\*\*(.*?)\*\*/)
+                  return (
+                    <p key={i}>
+                      {parts.map((part, j) =>
+                        j % 2 === 1
+                          ? <strong key={j} className="text-foreground">{part}</strong>
+                          : part
+                      )}
+                    </p>
+                  )
                 })}
               </div>
             </section>

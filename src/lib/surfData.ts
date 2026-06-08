@@ -113,6 +113,8 @@ export const WIND_DEG: Record<string, number> = {
 }
 
 
+// Cópia local de api/_scoreEngine.ts — Edge Functions não podem importar de src/.
+// Se alterar o algoritmo, atualizar os dois arquivos em sync.
 const calculateScore = (waveHeight: number, windSpeed: number, swellPeriod: number, windDir: string, beachOrientation: number): number => {
   // Escala baseada na realidade de Florianópolis:
   // 0.5m-1m = nota 6-8 base, vento >15km/h penaliza abaixo de 7, período curto = 5 base
@@ -228,7 +230,6 @@ interface BeachDefinition {
   subRegions?: { id: string; name: string; lat: number; lng: number; swellDirections?: string[] }[]
 }
 
-// ✅ Canajurê REMOVIDO
 const BEACHES: BeachDefinition[] = [
   // ✅ GPS corrigido conforme verificação no Google Maps (prints do usuário)
   { id: 'campeche', name: 'Campeche', region: 'Sul' as const,
