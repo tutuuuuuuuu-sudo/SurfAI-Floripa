@@ -68,13 +68,21 @@ function AppRoutes() {
     }
   }, [])
 
+  // /reset-password nunca bloqueia — a página gerencia o token ela mesma
+  if (window.location.pathname === '/reset-password') {
+    return (
+      <Routes>
+        <Route path="/reset-password" element={<ResetPassword />} />
+      </Routes>
+    )
+  }
+
   if (loading) return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="text-primary text-sm">Carregando...</div>
     </div>
   )
 
-  // Token de reset de senha detectado — forçar para /reset-password independente de rota
   if (isPasswordRecovery) {
     return (
       <Routes>

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { AppLogo } from '@/components/AppLogo'
 import { Button } from '@/components/ui/button'
-import { Waves, CheckCircle2, XCircle } from 'lucide-react'
+import { CheckCircle2 } from 'lucide-react'
 
 export default function ResetPassword() {
   const navigate = useNavigate()
@@ -12,25 +12,20 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
-  const [validSession, setValidSession] = useState<boolean | null>(null)
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    // O Supabase processa o token da URL automaticamente via onAuthStateChange
+    // Aguarda o Supabase processar o token do hash e estabelecer a sessão
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setValidSession(true)
+      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+        setReady(true)
       }
     })
-
-    // Timeout: se não chegou evento de recovery em 3s, link inválido ou expirado
-    const timeout = setTimeout(() => {
-      setValidSession(prev => prev === null ? false : prev)
-    }, 3000)
-
-    return () => {
-      subscription.unsubscribe()
-      clearTimeout(timeout)
-    }
+    // Se já há sessão ativa (token já foi processado antes de montar)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) setReady(true)
+    })
+    return () => subscription.unsubscribe()
   }, [])
 
   const handleSubmit = async () => {
@@ -55,42 +50,9 @@ export default function ResetPassword() {
     }
 
     setSuccess(true)
-    setTimeout(() => navigate('/'), 3000)
+    setTimeout(() => navigate('/'), 2500)
   }
 
-  // Carregando — aguardando Supabase processar o token
-  if (validSession === null) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Waves className="h-10 w-10 text-primary animate-bounce" />
-          <p className="text-sm text-muted-foreground">Verificando link...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Link inválido ou expirado
-  if (validSession === false) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <div className="w-full max-w-sm text-center space-y-5">
-          <XCircle className="h-14 w-14 text-destructive mx-auto" />
-          <div>
-            <h1 className="text-xl font-bold mb-2">Link inválido ou expirado</h1>
-            <p className="text-sm text-muted-foreground">
-              Este link de redefinição de senha não é mais válido. Solicite um novo.
-            </p>
-          </div>
-          <Button className="w-full" onClick={() => navigate('/login')}>
-            Voltar ao login
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
-  // Senha redefinida com sucesso
   if (success) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
@@ -107,7 +69,6 @@ export default function ResetPassword() {
     )
   }
 
-  // Formulário de nova senha
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-sm space-y-6">
