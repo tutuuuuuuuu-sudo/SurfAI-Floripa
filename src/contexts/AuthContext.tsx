@@ -7,6 +7,7 @@ interface AuthContextType {
   user: User | null
   session: Session | null
   loading: boolean
+  isPasswordRecovery: boolean
   signInWithGoogle: () => Promise<void>
   signInWithEmail: (email: string, password: string) => Promise<{ error: string | null }>
   signUpWithEmail: (name: string, email: string, password: string) => Promise<{ error: string | null }>
@@ -19,31 +20,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false)
 
   useEffect(() => {
-    let settled = false
+    // Captura o hash ANTES que o Supabase JS o consuma e limpe da URL
+    const hash = window.location.hash
+    const isRecoveryUrl = hash.includes('type=recovery') ||
+      new URLSearchParams(window.location.search).get('type') === 'recovery'
 
-    const resolve = (session: Session | null) => {
-      if (settled) return
-      settled = true
-      clearTimeout(timeout)
-      setSession(session)
-      setUser(session?.user ?? null)
+    if (isRecoveryUrl) {
+      setIsPasswordRecovery(true)
       setLoading(false)
     }
 
-    // Fallback: se nem getSession nem onAuthStateChange responderem em 8s,
-    // desbloqueia o app como usuário não autenticado
-    const timeout = setTimeout(() => resolve(null), 8000)
-
-    // onAuthStateChange dispara imediatamente com a sessão atual (INITIAL_SESSION)
-    // e depois para cada mudança subsequente — é a fonte única de verdade
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'INITIAL_SESSION') {
-        resolve(session)
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsPasswordRecovery(true)
+        setUser(null)
+        setSession(null)
+        setLoading(false)
         return
       }
-      // Mudanças após o carregamento inicial
+
+      // SIGNED_IN logo após PASSWORD_RECOVERY = Supabase autenticou com token de recovery
+      // Nesse caso manter isPasswordRecovery = true até o usuário salvar a nova senha
+      if (event === 'SIGNED_IN' && isRecoveryUrl) {
+        setIsPasswordRecovery(true)
+        setUser(session?.user ?? null)
+        setSession(session)
+        setLoading(false)
+        return
+      }
+
+      setIsPasswordRecovery(false)
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
@@ -56,15 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     })
 
-    // getSession como fallback caso onAuthStateChange demore (versões antigas do SDK)
-    supabase.auth.getSession()
-      .then(({ data: { session } }) => resolve(session))
-      .catch(() => resolve(null))
-
-    return () => {
-      clearTimeout(timeout)
-      subscription.unsubscribe()
-    }
+    return () => subscription.unsubscribe()
   }, [])
 
   const signInWithGoogle = async () => {
@@ -93,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, isPasswordRecovery, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut }}>
       {children}
     </AuthContext.Provider>
   )

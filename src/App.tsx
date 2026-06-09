@@ -56,15 +56,33 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AppRoutes() {
-  const { user, loading } = useAuth()
+  const { user, loading, isPasswordRecovery } = useAuth()
   useDefaultDark()
   useEffect(() => { registerServiceWorker() }, [])
+
+  // Detecta hash de recovery na URL e redireciona para /reset-password antes de renderizar
+  useEffect(() => {
+    const hash = window.location.hash
+    if (hash.includes('type=recovery') && window.location.pathname !== '/reset-password') {
+      window.location.replace('/reset-password' + hash)
+    }
+  }, [])
 
   if (loading) return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="text-primary text-sm">Carregando...</div>
     </div>
   )
+
+  // Token de reset de senha detectado — forçar para /reset-password independente de rota
+  if (isPasswordRecovery) {
+    return (
+      <Routes>
+        <Route path="*" element={<Navigate to="/reset-password" replace />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+      </Routes>
+    )
+  }
 
   return (
     <>
