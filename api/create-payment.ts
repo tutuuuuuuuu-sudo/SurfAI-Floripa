@@ -1,6 +1,6 @@
 export const config = { runtime: 'edge' }
 
-const ALLOWED_ORIGIN = process.env.APP_URL ?? 'https://surfaifloripa.com.br'
+const ALLOWED_ORIGIN = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 
 const CORS = {
   'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
@@ -37,7 +37,7 @@ export default async function handler(req: Request) {
   if (!emailRegex.test(userEmail)) return json({ error: 'Email inválido' }, 400)
   if (userId.length > 128) return json({ error: 'userId inválido' }, 400)
 
-  const baseUrl = process.env.APP_URL ?? 'https://surfaifloripa.com.br'
+  const baseUrl = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 
   const preference = {
     items: [{
