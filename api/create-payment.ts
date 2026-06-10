@@ -77,5 +77,7 @@ export default async function handler(req: Request) {
   }
 
   const data = await mpRes.json() as { id: string; init_point: string; sandbox_init_point: string }
-  return json({ id: data.id, init_point: data.init_point, sandbox_init_point: data.sandbox_init_point })
+  const isSandbox = accessToken.startsWith('TEST-')
+  const init_point = isSandbox ? data.sandbox_init_point : data.init_point
+  return json({ id: data.id, init_point, sandbox_init_point: data.sandbox_init_point })
 }
