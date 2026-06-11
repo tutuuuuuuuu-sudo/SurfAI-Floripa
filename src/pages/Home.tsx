@@ -39,7 +39,7 @@ export default function Home() {
   const [showOnboarding, setShowOnboarding] = useState(() => {
     try { return !localStorage.getItem('onboarding_done') } catch { return true }
   })
-  const aiReportRequestedRef = useRef(false)
+  const aiReportFetchedRef = useRef(false)
   const navigate = useNavigate()
   const { user } = useAuth()
   const { isPremium } = usePremium()
@@ -52,14 +52,13 @@ export default function Home() {
     return filtered.sort((a, b) => b.score - a.score)
   }, [allSpots, activeRegion])
 
+  // Atualiza top spot, favoritos e notificações sempre que os dados mudam
   useEffect(() => {
     if (allSpots.length === 0) return
-
     setFetchError(false)
     const sortedAll = [...allSpots].sort((a, b) => b.score - a.score)
     setTopSpot(sortedAll[0] ?? null)
     setTimeout(() => setVisible(true), 100)
-
     getFavorites().catch(() => [] as string[]).then(favs => {
       setFavorites(favs)
       const notifSettings = getSavedNotificationSettings()
@@ -67,20 +66,24 @@ export default function Home() {
         checkAndNotifyGoodConditions(allSpots, favs, notifSettings.minScore, notifSettings.favoriteOnly)
       }
     })
+  }, [allSpots])
 
+  // Busca o relatório AI uma única vez quando os dados chegam pela primeira vez
+  useEffect(() => {
+    if (allSpots.length === 0 || aiReportFetchedRef.current) return
+    aiReportFetchedRef.current = true
+    const sortedAll = [...allSpots].sort((a, b) => b.score - a.score)
     const top = sortedAll[0]
-    if (top && !aiReportRequestedRef.current) {
-      aiReportRequestedRef.current = true
-      setAiLoading(true)
-      const userLevel = (() => { try { return localStorage.getItem('pref_skill') ?? undefined } catch { return undefined } })()
-      fetchAIReport(sortedAll.slice(0, 6), top, userLevel ?? undefined)
-        .then(report => {
-          setAiReport(report)
-          if (report) track('ai_report_loaded', { top_spot: top.name, score: top.score })
-        })
-        .catch(() => {})
-        .finally(() => setAiLoading(false))
-    }
+    if (!top) return
+    setAiLoading(true)
+    const userLevel = (() => { try { return localStorage.getItem('pref_skill') ?? undefined } catch { return undefined } })()
+    fetchAIReport(sortedAll.slice(0, 6), top, userLevel)
+      .then(report => {
+        setAiReport(report)
+        if (report) track('ai_report_loaded', { top_spot: top.name, score: top.score })
+      })
+      .catch(() => {})
+      .finally(() => setAiLoading(false))
   }, [allSpots])
 
   const userName = user ? getUserDisplayName(user) : 'Surfista'
@@ -129,11 +132,11 @@ export default function Home() {
 
               {!isPremium && (
                 <>
-                  <Button variant="outline" size="sm" onClick={() => navigate('/premium')} className="hidden sm:flex border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/10">
+                  <Button variant="outline" size="sm" onClick={() => navigate('/premium')} className="hidden sm:flex border-rating-fair/50 text-rating-fair hover:bg-rating-fair/10">
                     <Crown className="h-4 w-4 mr-1.5" />Premium
                   </Button>
-                  <button onClick={() => navigate('/premium')} className="sm:hidden p-2 rounded-xl border border-yellow-500/50 hover:bg-yellow-500/10 transition-colors" title="Premium">
-                    <Crown className="h-4 w-4 text-yellow-500" />
+                  <button onClick={() => navigate('/premium')} className="sm:hidden p-2 rounded-xl border border-rating-fair/50 hover:bg-rating-fair/10 transition-colors" title="Premium">
+                    <Crown className="h-4 w-4 text-rating-fair" />
                   </button>
                 </>
               )}
@@ -144,7 +147,7 @@ export default function Home() {
                   : <span className="text-xs font-bold text-primary">{userInitial}</span>
                 }
                 {isPremium && (
-                  <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-yellow-500 flex items-center justify-center">
+                  <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rating-fair flex items-center justify-center">
                     <Crown className="h-2.5 w-2.5 text-white" />
                   </div>
                 )}
@@ -170,17 +173,17 @@ export default function Home() {
         <SwellAlert spots={allSpots} />
 
         {isTainhaSeasonActive() && (
-          <div className="flex items-start gap-3 bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-4 py-3 anim-slide" style={{ animationDelay: '0.12s' }}>
-            <Fish className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+          <div className="flex items-start gap-3 bg-rating-fair/10 border border-rating-fair/30 rounded-xl px-4 py-3 anim-slide" style={{ animationDelay: '0.12s' }}>
+            <Fish className="h-5 w-5 text-rating-fair flex-shrink-0 mt-0.5" />
             <div>
-              <span className="text-sm font-semibold text-yellow-500">Temporada da Tainha</span>
+              <span className="text-sm font-semibold text-rating-fair">Temporada da Tainha</span>
               <span className="text-sm text-muted-foreground ml-2">Várias praias com restrição até 31 de julho. Verifique o status em cada pico.</span>
             </div>
           </div>
         )}
 
         {(aiReport || aiLoading) && (
-          <Card className="border-primary/30 anim-slide" style={{ animationDelay: '0.15s', background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--primary)/.05) 100%)' }}>
+          <Card className="border-primary/30 bg-primary/5 anim-slide" style={{ animationDelay: '0.15s' }}>
             <CardHeader className="pb-2 pt-4 px-4">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-primary" />Relatório do dia — IA

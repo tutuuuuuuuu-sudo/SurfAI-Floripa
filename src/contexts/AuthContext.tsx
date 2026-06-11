@@ -23,10 +23,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false)
 
   useEffect(() => {
-    // Captura o hash ANTES que o Supabase JS o consuma e limpe da URL
+    // Captura o hash ANTES que o Supabase JS o consuma e limpe da URL.
+    // Se o link de recovery abriu na raiz, redireciona para /reset-password preservando o hash.
     const hash = window.location.hash
     const isRecoveryUrl = hash.includes('type=recovery') ||
       new URLSearchParams(window.location.search).get('type') === 'recovery'
+
+    if (isRecoveryUrl && window.location.pathname !== '/reset-password') {
+      window.location.replace('/reset-password' + hash)
+      return
+    }
 
     if (isRecoveryUrl) {
       setIsPasswordRecovery(true)

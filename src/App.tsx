@@ -60,23 +60,6 @@ function AppRoutes() {
   useDefaultDark()
   useEffect(() => { registerServiceWorker() }, [])
 
-  // Detecta hash de recovery na URL e redireciona para /reset-password antes de renderizar
-  useEffect(() => {
-    const hash = window.location.hash
-    if (hash.includes('type=recovery') && window.location.pathname !== '/reset-password') {
-      window.location.replace('/reset-password' + hash)
-    }
-  }, [])
-
-  // /reset-password nunca bloqueia — a página gerencia o token ela mesma
-  if (window.location.pathname === '/reset-password') {
-    return (
-      <Routes>
-        <Route path="/reset-password" element={<ResetPassword />} />
-      </Routes>
-    )
-  }
-
   if (loading) return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="text-primary text-sm">Carregando...</div>
@@ -86,8 +69,8 @@ function AppRoutes() {
   if (isPasswordRecovery) {
     return (
       <Routes>
-        <Route path="*" element={<Navigate to="/reset-password" replace />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="*" element={<Navigate to="/reset-password" replace />} />
       </Routes>
     )
   }
