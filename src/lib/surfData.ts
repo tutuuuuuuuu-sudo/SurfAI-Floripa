@@ -1,5 +1,6 @@
 import { getWindyForecast } from './weatherApi'
 import { getRealWaterTemp } from './weatherData'
+import { calculateSurfScore, WIND_DEG as _WIND_DEG } from '../../api/_scoreEngine'
 
 export interface SubRegion {
   id: string
@@ -107,74 +108,7 @@ export function degreesToWindDir(deg: number): string {
   return dirs[Math.round(deg / 22.5) % 16]
 }
 
-export const WIND_DEG: Record<string, number> = {
-  'N': 0, 'NNE': 22.5, 'NE': 45, 'ENE': 67.5, 'E': 90, 'ESE': 112.5, 'SE': 135, 'SSE': 157.5,
-  'S': 180, 'SSW': 202.5, 'SW': 225, 'WSW': 247.5, 'W': 270, 'WNW': 292.5, 'NW': 315, 'NNW': 337.5,
-}
-
-
-// Cópia local de api/_scoreEngine.ts — Edge Functions não podem importar de src/.
-// Se alterar o algoritmo, atualizar os dois arquivos em sync.
-const calculateScore = (waveHeight: number, windSpeed: number, swellPeriod: number, windDir: string, beachOrientation: number): number => {
-  // Escala baseada na realidade de Florianópolis:
-  // 0.5m-1m = nota 6-8 base, vento >15km/h penaliza abaixo de 7, período curto = 5 base
-
-  // ONDA: 0.5m já dá nota 6, 1m dá nota 8, 2m+ nota 10
-  let waveBase = 0
-  if (waveHeight >= 2.5) waveBase = 10
-  else if (waveHeight >= 2.0) waveBase = 9.5
-  else if (waveHeight >= 1.5) waveBase = 9.0
-  else if (waveHeight >= 1.2) waveBase = 8.5
-  else if (waveHeight >= 1.0) waveBase = 8.0
-  else if (waveHeight >= 0.8) waveBase = 7.5
-  else if (waveHeight >= 0.6) waveBase = 7.0
-  else if (waveHeight >= 0.5) waveBase = 6.5
-  else if (waveHeight >= 0.4) waveBase = 5.5
-  else waveBase = 4.0
-
-  // VENTO: penalização sobre o waveBase
-  // Offshore (<= 45° da direção offshore) = bônus
-  // Onshore (> 90°) = penaliza muito
-  const wDir = WIND_DEG[windDir] ?? 0
-  const offshoreDir = (beachOrientation + 180) % 360
-  let angleDiff = Math.abs(wDir - offshoreDir)
-  if (angleDiff > 180) angleDiff = 360 - angleDiff
-
-  let windPenalty = 0
-  if (angleDiff <= 45) {
-    // Offshore — penaliza pouco mesmo com vento forte
-    if (windSpeed <= 10) windPenalty = 0
-    else if (windSpeed <= 15) windPenalty = -0.3
-    else if (windSpeed <= 20) windPenalty = -0.8
-    else windPenalty = -1.5
-  } else if (angleDiff <= 90) {
-    // Lateral
-    if (windSpeed <= 10) windPenalty = -0.5
-    else if (windSpeed <= 15) windPenalty = -1.0
-    else if (windSpeed <= 20) windPenalty = -1.8
-    else windPenalty = -2.5
-  } else {
-    // Onshore — penaliza bastante
-    if (windSpeed <= 10) windPenalty = -1.0
-    else if (windSpeed <= 15) windPenalty = -2.0
-    else if (windSpeed <= 20) windPenalty = -3.0
-    else windPenalty = -4.0
-  }
-
-  // PERÍODO: ajuste fino em Floripa, período curto é normal (nota base 5)
-  // Período longo é bônus, curto não penaliza muito
-  let periodAdjust = 0
-  if (swellPeriod >= 16) periodAdjust = +0.5
-  else if (swellPeriod >= 14) periodAdjust = +0.3
-  else if (swellPeriod >= 12) periodAdjust = +0.2
-  else if (swellPeriod >= 10) periodAdjust = 0
-  else if (swellPeriod >= 8) periodAdjust = -0.2
-  else if (swellPeriod >= 7) periodAdjust = -0.4
-  else periodAdjust = -0.6  // 5s = ruim mas não catastrófico
-
-  const finalScore = waveBase + windPenalty + periodAdjust
-  return Math.min(10, Math.max(1, Number(finalScore.toFixed(1))))
-}
+export const WIND_DEG = _WIND_DEG
 
 // Fallback de maré por hora do dia (usado se API falhar)
 const getTide = (): 'Enchendo' | 'Secando' | 'Cheia' | 'Vazia' => {
@@ -400,7 +334,7 @@ async function _doFetchConditions(): Promise<BeachCondition[]> {
         const rawWindDir = (windyData?.windDirection ?? 'N').split('(')[0].split(/\s+/)[0].trim().toUpperCase()
         const windDirection = WIND_DEG[rawWindDir] !== undefined ? rawWindDir : 'N'
 
-        const score = calculateScore(waveHeight, windSpeed, swellPeriod, windDirection, beach.orientation)
+        const score = calculateSurfScore(waveHeight, windSpeed, swellPeriod, windDirection, beach.orientation)
 
         let subRegions: SubRegion[] | undefined = undefined
         if (beach.subRegions && beach.subRegions.length > 0) {
