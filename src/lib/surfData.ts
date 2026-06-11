@@ -178,7 +178,7 @@ const BEACHES: BeachDefinition[] = [
     lat: -27.6661001, lng: -48.4755307, // Praia do Novo Campeche — bem na areia
     orientation: 90,
     subRegions: [
-      { id: 'riozinho', name: 'Riozinho', lat: -27.6545, lng: -48.4710, swellDirections: ['NE', 'E', 'ENE'] },
+      { id: 'riozinho', name: 'Riozinho', lat: -27.686650, lng: -48.481560, swellDirections: ['NE', 'E', 'ENE'] },
       { id: 'centro', name: 'Centro', lat: -27.6648, lng: -48.4784, swellDirections: ['E', 'SE'] },
       { id: 'pico-da-cruz', name: 'Pico da Cruz', lat: -27.6498, lng: -48.4739, swellDirections: ['SE', 'S', 'SSE'] },
     ], bestTimeWindow: '06h - 09h' },
