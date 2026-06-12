@@ -194,31 +194,14 @@ export default function SurfLog() {
           <Card className="border-yellow-500/30 bg-yellow-500/5">
             <CardContent className="py-4 space-y-3">
               <div className="flex items-start gap-3">
-                <FileText className="h-5 w-5 text-yellow-500 mt-0.5 flex-shrink-0" />
+                <FileText className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
                 <div>
-                  <div className="text-sm font-semibold text-yellow-500">Configuração necessária</div>
+                  <div className="text-sm font-semibold">Log de sessões temporariamente indisponível</div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    Para usar o Log de Sessões, crie a tabela no Supabase. Vá em{' '}
-                    <strong>Supabase → SQL Editor</strong> e execute:
+                    Não foi possível acessar seus registros. Tente novamente em breve.
                   </div>
                 </div>
               </div>
-              <pre className="text-xs bg-muted/40 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">{`CREATE TABLE surf_sessions (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-  beach_id text NOT NULL,
-  beach_name text NOT NULL,
-  date date NOT NULL,
-  duration_minutes integer,
-  rating integer CHECK (rating >= 1 AND rating <= 5),
-  notes text,
-  created_at timestamptz DEFAULT now()
-);
-
-ALTER TABLE surf_sessions ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "users see own sessions" ON surf_sessions
-  FOR ALL USING (auth.uid() = user_id);`}</pre>
             </CardContent>
           </Card>
         )}
@@ -347,7 +330,7 @@ CREATE POLICY "users see own sessions" ON surf_sessions
                           <span className="font-semibold text-sm">{session.beach_name}</span>
                           {session.rating && (
                             <Badge variant="outline" className={`text-xs ${ratingInfo?.color}`}>
-                              {STAR_LABELS[session.rating]}
+                              {STAR_LABELS[session.rating]} ({session.rating}/5)
                             </Badge>
                           )}
                         </div>

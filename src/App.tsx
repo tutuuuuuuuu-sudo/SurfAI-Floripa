@@ -13,7 +13,7 @@ import Favorites from './pages/Favorites'
 import NavigationPage from './pages/Navigation'
 import PremiumPage from './pages/Premium'
 import ComparePage from './pages/Compare'
-import HistoryPage from './pages/History'
+import ForecastPage from './pages/History'
 import SurfLog from './pages/SurfLog'
 import Landing from './pages/Landing'
 import NotFound from './pages/NotFound'
@@ -88,8 +88,8 @@ function AppRoutes() {
         <Route path="/navigation" element={<ProtectedRoute><NavigationPage /></ProtectedRoute>} />
         <Route path="/premium" element={<ProtectedRoute><PremiumPage /></ProtectedRoute>} />
         <Route path="/compare" element={<ProtectedRoute><ComparePage /></ProtectedRoute>} />
-        <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
-        <Route path="/history/:id" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
+        <Route path="/forecast" element={<ProtectedRoute><ForecastPage /></ProtectedRoute>} />
+        <Route path="/forecast/:id" element={<ProtectedRoute><ForecastPage /></ProtectedRoute>} />
         <Route path="/surf-log" element={<ProtectedRoute><SurfLog /></ProtectedRoute>} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/reset-password" element={<ResetPassword />} />

@@ -58,14 +58,11 @@ export function PWAInstallBanner() {
   return (
     <div className="fixed bottom-4 left-4 right-4 z-50" style={{ animation: 'slideUp 0.4s ease-out' }}>
       <div className="flex items-center gap-3 p-3 rounded-2xl border border-primary/30 bg-card/95 backdrop-blur-md shadow-2xl">
-        <div
-          className="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center"
-          style={{ background: 'linear-gradient(135deg, #0a0f1e 0%, #061220 100%)', border: '1px solid rgba(6,182,212,0.3)' }}
-        >
+        <div className="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center bg-card border border-primary/30">
           <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-            <path d="M4 18 Q9 13 14 17 Q19 21 24 16" stroke="#06b6d4" strokeWidth="2.2" strokeLinecap="round" fill="none"/>
-            <path d="M5 13 Q10 8 14 12 Q18 16 23 11" stroke="#22d3ee" strokeWidth="1.8" strokeLinecap="round" fill="none"/>
-            <path d="M7 8 Q11 4 14 7 Q17 10 21 6" stroke="#67e8f9" strokeWidth="1.4" strokeLinecap="round" fill="none"/>
+            <path d="M4 18 Q9 13 14 17 Q19 21 24 16" stroke="var(--color-primary)" strokeWidth="2.2" strokeLinecap="round" fill="none"/>
+            <path d="M5 13 Q10 8 14 12 Q18 16 23 11" stroke="var(--color-primary)" strokeWidth="1.8" strokeLinecap="round" fill="none" opacity="0.7"/>
+            <path d="M7 8 Q11 4 14 7 Q17 10 21 6" stroke="var(--color-primary)" strokeWidth="1.4" strokeLinecap="round" fill="none" opacity="0.4"/>
           </svg>
         </div>
         <div className="flex-1 min-w-0">
@@ -81,8 +78,7 @@ export function PWAInstallBanner() {
         {!isIOS && (
           <button
             onClick={handleInstall}
-            className="flex-shrink-0 text-xs font-bold px-3 py-1.5 rounded-xl text-white transition-all active:scale-95"
-            style={{ background: 'linear-gradient(135deg, #06b6d4, #0891b2)' }}
+            className="flex-shrink-0 text-xs font-bold px-3 py-1.5 rounded-xl bg-primary text-primary-foreground transition-all active:scale-95"
           >
             Instalar
           </button>

@@ -278,7 +278,7 @@ export default function Settings() {
         </Card>
 
         <p className="text-center text-xs text-muted-foreground pb-4">
-          Surf AI · Florianópolis, SC · v1.0
+          Surf AI · Florianópolis, SC · v{__APP_VERSION__}
         </p>
       </main>
     </div>

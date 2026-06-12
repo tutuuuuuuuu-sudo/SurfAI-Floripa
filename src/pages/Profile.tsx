@@ -154,7 +154,7 @@ export default function ProfilePage() {
       <main className="container mx-auto px-4 py-6 max-w-2xl space-y-5">
 
         <Card className="anim-slide overflow-hidden" style={{ animationDelay: '0s' }}>
-          <div className="h-16 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/10" />
+          <div className="h-16 bg-primary/10" />
           <CardContent className="pb-5 -mt-8">
             <div className="flex items-end justify-between">
               <div className="relative">
@@ -261,13 +261,13 @@ export default function ProfilePage() {
 
         <div className="grid grid-cols-3 gap-3 anim-slide" style={{ animationDelay: '0.1s' }}>
           {[
-            { icon: Heart, label: 'Favoritas', value: favorites.length, color: '#ef4444', action: () => navigate('/favorites') },
-            { icon: MessageCircle, label: 'Relatos', value: commentCount, color: '#06b6d4', action: undefined },
-            { icon: Award, label: 'Nível', value: isPremium ? 'Pro' : 'Free', color: isPremium ? '#f59e0b' : '#6b7280', action: undefined },
+            { icon: Heart, label: 'Favoritas', value: favorites.length, cls: 'text-destructive', action: () => navigate('/favorites') },
+            { icon: MessageCircle, label: 'Relatos', value: commentCount, cls: 'text-primary', action: undefined },
+            { icon: Award, label: 'Nível', value: isPremium ? 'Pro' : 'Free', cls: isPremium ? 'text-rating-excellent' : 'text-muted-foreground', action: undefined },
           ].map(stat => (
             <Card key={stat.label} className={`text-center ${stat.action ? 'cursor-pointer hover:border-primary/30 transition-colors' : ''}`} onClick={stat.action}>
               <CardContent className="pt-4 pb-4 space-y-1">
-                <stat.icon className="h-5 w-5 mx-auto" style={{ color: stat.color }} />
+                <stat.icon className={`h-5 w-5 mx-auto ${stat.cls}`} />
                 <div className="text-2xl font-bold">{stat.value}</div>
                 <div className="text-xs text-muted-foreground">{stat.label}</div>
               </CardContent>
@@ -348,14 +348,14 @@ export default function ProfilePage() {
         <Card className="anim-slide" style={{ animationDelay: '0.4s' }}>
           <CardContent className="py-3 space-y-1">
             {[
-              { icon: Heart, label: 'Praias Favoritas', path: '/favorites', color: '#ef4444' },
-              { icon: Waves, label: 'Todas as Praias', path: '/', color: '#06b6d4' },
-              { icon: MapPin, label: 'Me Leva ao Pico', path: '/navigation', color: '#22c55e' },
-              { icon: Settings, label: 'Configurações', path: '/settings', color: '#6b7280' },
+              { icon: Heart, label: 'Praias Favoritas', path: '/favorites', cls: 'text-destructive' },
+              { icon: Waves, label: 'Todas as Praias', path: '/', cls: 'text-primary' },
+              { icon: MapPin, label: 'Me Leva ao Pico', path: '/navigation', cls: 'text-rating-good' },
+              { icon: Settings, label: 'Configurações', path: '/settings', cls: 'text-muted-foreground' },
             ].map(item => (
               <button key={item.path} onClick={() => navigate(item.path)}
                 className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted/20 transition-colors text-left">
-                <item.icon className="h-5 w-5 flex-shrink-0" style={{ color: item.color }} />
+                <item.icon className={`h-5 w-5 flex-shrink-0 ${item.cls}`} />
                 <span className="text-sm font-medium">{item.label}</span>
                 <span className="ml-auto text-muted-foreground text-sm">→</span>
               </button>

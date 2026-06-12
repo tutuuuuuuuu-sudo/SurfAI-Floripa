@@ -13,12 +13,12 @@ export function TrendBadge({ spot, size = 'sm' }: { spot: BeachCondition; size?:
   const textClass = size === 'lg' ? 'text-sm' : 'text-xs'
 
   if (trend === 'up') return (
-    <span className={`inline-flex items-center gap-1 ${textClass} text-green-500 font-semibold`}>
+    <span className={`inline-flex items-center gap-1 ${textClass} text-rating-good font-semibold`}>
       <TrendingUp className={iconClass} />Boas condições
     </span>
   )
   if (trend === 'down') return (
-    <span className={`inline-flex items-center gap-1 ${textClass} text-orange-400 font-semibold`}>
+    <span className={`inline-flex items-center gap-1 ${textClass} text-rating-fair font-semibold`}>
       <TrendingDown className={iconClass} />Condições fracas
     </span>
   )

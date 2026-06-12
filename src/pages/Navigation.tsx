@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { BeachCondition, CENTRO_SPOT_IDS } from '@/lib/surfData'
 import { useSurfData } from '@/contexts/SurfDataContext'
-import { ArrowLeft, Navigation, Waves, MapPin, ExternalLink } from 'lucide-react'
+import { ArrowLeft, Navigation, Waves, MapPin, ExternalLink, Wind, Timer, Thermometer, Map, Car, Apple } from 'lucide-react'
 
 import { getScoreColor, getRatingInfo } from '@/lib/rating'
 
@@ -104,16 +104,16 @@ const NavModal = ({
             <span style={{ color }}>{getScoreLabel(score)}</span>
           </div>
           <div className="flex gap-3 mt-3 text-xs text-muted-foreground">
-            <span>🌊 {waveHeight.toFixed(1)}m</span>
-            <span>💨 {Math.round(windSpeed)}km/h</span>
-            <span>⏱️ {Math.round(swellPeriod)}s</span>
-            <span>🌡️ {waterTemp}°C</span>
+            <span className="flex items-center gap-1"><Waves className="h-3 w-3" />{waveHeight.toFixed(1)}m</span>
+            <span className="flex items-center gap-1"><Wind className="h-3 w-3" />{Math.round(windSpeed)}km/h</span>
+            <span className="flex items-center gap-1"><Timer className="h-3 w-3" />{Math.round(swellPeriod)}s</span>
+            <span className="flex items-center gap-1"><Thermometer className="h-3 w-3" />{waterTemp}°C</span>
           </div>
 
           {/* O Maps/Waze detecta automaticamente a posição do dispositivo */}
           <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
             <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-            <span>Rota a partir da sua posição atual 📍</span>
+            <span>Rota a partir da sua posição atual</span>
           </div>
         </div>
 
@@ -142,7 +142,7 @@ const NavModal = ({
         {/* Trilha warning */}
         {dest.hasTrilha && (
           <div className="mx-5 mt-4 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-xs text-yellow-600 dark:text-yellow-400">
-            ⚠️ Acesso por trilha — o GPS leva até o ponto de partida da trilha, não à areia.
+            Acesso por trilha — o GPS leva até o ponto de partida da trilha, não à areia.
           </div>
         )}
 
@@ -153,7 +153,7 @@ const NavModal = ({
             className="w-full flex items-center gap-4 p-4 rounded-xl border border-border hover:border-blue-500/50 hover:bg-blue-500/5 transition-all group"
           >
             <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-              <span className="text-xl">🗺️</span>
+              <Map className="h-5 w-5 text-blue-500" />
             </div>
             <div className="text-left flex-1">
               <div className="font-semibold text-sm group-hover:text-blue-500 transition-colors">Google Maps</div>
@@ -167,7 +167,7 @@ const NavModal = ({
             className="w-full flex items-center gap-4 p-4 rounded-xl border border-border hover:border-cyan-500/50 hover:bg-cyan-500/5 transition-all group"
           >
             <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center flex-shrink-0">
-              <span className="text-xl">🚗</span>
+              <Car className="h-5 w-5 text-cyan-500" />
             </div>
             <div className="text-left flex-1">
               <div className="font-semibold text-sm group-hover:text-cyan-500 transition-colors">Waze</div>
@@ -181,7 +181,7 @@ const NavModal = ({
             className="w-full flex items-center gap-4 p-4 rounded-xl border border-border hover:border-gray-400/50 hover:bg-gray-400/5 transition-all group"
           >
             <div className="w-10 h-10 rounded-xl bg-gray-400/10 flex items-center justify-center flex-shrink-0">
-              <span className="text-xl">🍎</span>
+              <Apple className="h-5 w-5 text-muted-foreground" />
             </div>
             <div className="text-left flex-1">
               <div className="font-semibold text-sm group-hover:text-gray-300 transition-colors">Apple Maps</div>
@@ -288,9 +288,9 @@ export default function NavigationPage() {
                           {dest?.hasTrilha && <span className="text-yellow-500">· via trilha</span>}
                         </div>
                         <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
-                          <span>🌊 {spot.waveHeight.toFixed(1)}m</span>
-                          <span>💨 {Math.round(spot.windSpeed)}km/h</span>
-                          <span>⏱️ {Math.round(spot.swellPeriod)}s</span>
+                          <span className="flex items-center gap-1"><Waves className="h-3 w-3" />{spot.waveHeight.toFixed(1)}m</span>
+                          <span className="flex items-center gap-1"><Wind className="h-3 w-3" />{Math.round(spot.windSpeed)}km/h</span>
+                          <span className="flex items-center gap-1"><Timer className="h-3 w-3" />{Math.round(spot.swellPeriod)}s</span>
                         </div>
                       </div>
                       <div className="flex flex-col items-center gap-1 flex-shrink-0">

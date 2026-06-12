@@ -1,7 +1,7 @@
 export const config = { runtime: 'edge' }
 import { calculateSurfScore } from './_scoreEngine.js'
 
-const APP_URL = process.env.APP_URL ?? 'https://surf-ai-floripa.vercel.app'
+const APP_URL = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY
 const AGENT_SECRET = process.env.AGENT_SECRET
 const SUPABASE_URL = process.env.SUPABASE_URL
@@ -46,7 +46,7 @@ async function getUserStats(): Promise<{
       fetch(`${SUPABASE_URL}/auth/v1/admin/users?per_page=1`, {
         headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` },
       }),
-      fetch(`${SUPABASE_URL}/rest/v1/subscriptions?status=eq.active&select=id,created_at,plan,amount`, {
+      fetch(`${SUPABASE_URL}/rest/v1/subscriptions?status=eq.premium&select=id,created_at,plan,amount`, {
         headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` },
       }),
     ])

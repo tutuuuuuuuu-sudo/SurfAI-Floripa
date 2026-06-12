@@ -109,10 +109,17 @@ export async function createMercadoPagoCheckout(
   userEmail: string
 ): Promise<{ url: string | null; error?: string }> {
   try {
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token
+    if (!token) return { url: null, error: 'Usuário não autenticado' }
+
     const res = await fetch('/api/create-payment', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, userEmail }),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ userEmail }),
     })
     const data = await res.json()
     if (!res.ok) {

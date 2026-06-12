@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { supabase } from '@/lib/supabase'
 import { ArrowLeft, Copy, Check, RefreshCw, Instagram, Sparkles, Zap, Hash } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -52,7 +53,13 @@ export default function ContentStudio() {
     setLoading(true)
     track('content_studio_generate_clicked')
     try {
-      const res = await fetch('/api/content-agent')
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      if (!token) throw new Error('Usuário não autenticado')
+
+      const res = await fetch('/api/content-agent', {
+        headers: { 'Authorization': `Bearer ${token}` },
+      })
       if (!res.ok) throw new Error('Falha ao gerar conteúdo')
       const data = await res.json() as ContentResult
       setContent(data)

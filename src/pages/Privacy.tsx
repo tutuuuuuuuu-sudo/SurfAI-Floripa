@@ -73,7 +73,7 @@ Para exercer qualquer um desses direitos, entre em contato pelo email abaixo.`,
   },
   {
     title: '10. Contato',
-    content: `Para dúvidas, solicitações ou exercício dos seus direitos, entre em contato:\n\nEmail: privacidade@surfai.com.br\n\nResponderemos em até 15 dias úteis.`,
+    content: `Para dúvidas, solicitações ou exercício dos seus direitos, entre em contato:\n\nEmail: surfaifloripa@gmail.com\n\nResponderemos em até 15 dias úteis.`,
   },
 ]
 

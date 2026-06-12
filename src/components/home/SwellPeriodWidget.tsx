@@ -3,11 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Waves, ChevronDown, ChevronUp } from 'lucide-react'
 
 const PERIODS = [
-  { range: '< 8s',   label: 'Fraco',     color: '#ef4444', desc: 'Vento local, ondas curtas e bagunçadas. Difícil de surfar.' },
-  { range: '8-10s',  label: 'Regular',   color: '#f59e0b', desc: 'Ondulação moderada. Surfável mas sem muita qualidade.' },
-  { range: '10-12s', label: 'Bom',       color: '#22c55e', desc: 'Boa ondulação. Ondas bem formadas e com energia.' },
-  { range: '12-14s', label: 'Muito Bom', color: '#06b6d4', desc: 'Excelente! Ondas longas, limpas e com muito poder.' },
-  { range: '> 14s',  label: 'Épico',     color: '#8b5cf6', desc: 'Swell de longo período. Ondas perfeitas e muito potentes.' },
+  { range: '< 8s',   label: 'Fraco',     cls: 'text-rating-poor',      bgCls: 'bg-rating-poor',      desc: 'Vento local, ondas curtas e bagunçadas. Difícil de surfar.' },
+  { range: '8-10s',  label: 'Regular',   cls: 'text-rating-fair',      bgCls: 'bg-rating-fair',      desc: 'Ondulação moderada. Surfável mas sem muita qualidade.' },
+  { range: '10-12s', label: 'Bom',       cls: 'text-rating-good',      bgCls: 'bg-rating-good',      desc: 'Boa ondulação. Ondas bem formadas e com energia.' },
+  { range: '12-14s', label: 'Muito Bom', cls: 'text-rating-excellent', bgCls: 'bg-rating-excellent', desc: 'Excelente! Ondas longas, limpas e com muito poder.' },
+  { range: '> 14s',  label: 'Épico',     cls: 'text-rating-epic',      bgCls: 'bg-rating-epic',      desc: 'Swell de longo período. Ondas perfeitas e muito potentes.' },
 ]
 
 export function SwellPeriodWidget() {
@@ -32,11 +32,11 @@ export function SwellPeriodWidget() {
           <div className="space-y-2">
             {PERIODS.map(p => (
               <div key={p.range} className="flex items-start gap-3">
-                <div className="min-w-[52px] text-xs font-bold rounded px-1.5 py-0.5 text-center text-white" style={{ backgroundColor: p.color }}>
+                <div className={`min-w-[52px] text-xs font-bold rounded px-1.5 py-0.5 text-center text-white ${p.bgCls}`}>
                   {p.range}
                 </div>
                 <div>
-                  <span className="text-xs font-semibold" style={{ color: p.color }}>{p.label}</span>
+                  <span className={`text-xs font-semibold ${p.cls}`}>{p.label}</span>
                   <span className="text-xs text-muted-foreground ml-1">— {p.desc}</span>
                 </div>
               </div>

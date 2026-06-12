@@ -10,7 +10,7 @@ interface TestResult {
   ms: number
 }
 
-const APP_URL = process.env.APP_URL ?? 'https://surf-ai-floripa.vercel.app'
+const APP_URL = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 
 // ── Testes ────────────────────────────────────────────────────────────────────
 

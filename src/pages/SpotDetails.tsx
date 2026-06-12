@@ -170,7 +170,8 @@ export default function SpotDetails() {
       getWeatherForecast(
         found.id,
         { waveHeight: found.waveHeight, windSpeed: found.windSpeed, swellPeriod: found.swellPeriod, windDirection: found.windDirection, waterTemperature: found.waterConditions.temperature, score: found.score },
-        isPremium
+        isPremium,
+        found.orientation
       ).then(setForecast)
     }
 

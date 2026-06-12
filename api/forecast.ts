@@ -1,6 +1,8 @@
 export const config = { runtime: 'edge' }
 
-const ALLOWED_ORIGIN = process.env.APP_URL ?? 'https://surf-ai-floripa.vercel.app'
+import { calculateSurfScore } from './_scoreEngine.js'
+
+const ALLOWED_ORIGIN = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 
 const CORS = {
   'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
@@ -66,20 +68,6 @@ function degreesToDir(deg: number): string {
   return dirs[Math.round(deg / 22.5) % 16]
 }
 
-function calcScore(wave: number, wind: number, period: number): number {
-  let score = 5
-  if (wave >= 1.5) score += 2
-  else if (wave >= 1.0) score += 1.5
-  else if (wave >= 0.8) score += 1
-  else score -= 1
-  if (wind <= 10) score += 2
-  else if (wind <= 15) score += 1
-  else score -= 1
-  if (period >= 12) score += 2
-  else if (period >= 10) score += 1
-  else if (period < 8) score -= 1
-  return Math.min(10, Math.max(0, Number(score.toFixed(1))))
-}
 
 export default async function handler(req: Request) {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS })
@@ -89,6 +77,7 @@ export default async function handler(req: Request) {
   const lat = url.searchParams.get('lat')
   const lng = url.searchParams.get('lng')
   const spotId = url.searchParams.get('spotId') ?? ''
+  const orientation = parseInt(url.searchParams.get('orientation') ?? '90', 10)
 
   if (!isValidCoord(lat, lng)) return json({ error: 'lat/lng inválidos' }, 400)
 
@@ -164,7 +153,7 @@ export default async function handler(req: Request) {
         ? Math.round(hourlyTemps[hourIdx])
         : Math.round(weather.daily?.temperature_2m_max?.[i] ?? 24)
 
-      const score = calcScore(waveHeight, windSpeed, swellPeriod)
+      const score = calculateSurfScore(waveHeight, windSpeed, swellPeriod, windDirection, orientation)
 
       return {
         date,

@@ -14,7 +14,8 @@ export const directionToDegrees = (d: string): number => WIND_DEG[getWindDirecti
 export const WindCompass = ({ direction, speed }: { direction: string, speed: number }) => {
   const degrees = directionToDegrees(direction)
   const { code, name } = formatWindDirection(direction)
-  const color = speed <= 10 ? '#22c55e' : speed <= 20 ? '#f59e0b' : speed <= 30 ? '#f97316' : '#ef4444'
+  const colorVar = speed <= 10 ? 'var(--color-rating-good)' : speed <= 20 ? 'var(--color-rating-fair)' : speed <= 30 ? 'var(--color-rating-poor)' : 'var(--color-rating-poor)'
+  const color = colorVar
   const allDirs = [0,22.5,45,67.5,90,112.5,135,157.5,180,202.5,225,247.5,270,292.5,315,337.5]
   return (
     <div className="flex flex-col items-center gap-2">

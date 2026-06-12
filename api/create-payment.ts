@@ -1,11 +1,12 @@
 export const config = { runtime: 'edge' }
+import { createClient } from '@supabase/supabase-js'
 
 const ALLOWED_ORIGIN = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 
 const CORS = {
   'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 }
 
 function json(data: unknown, status = 200) {
@@ -22,20 +23,31 @@ export default async function handler(req: Request) {
   const accessToken = process.env.MP_ACCESS_TOKEN
   if (!accessToken) return json({ error: 'MP_ACCESS_TOKEN não configurado no Vercel' }, 500)
 
-  let userId: string, userEmail: string
+  // Valida JWT do usuário — impede que alguém crie pagamento com userId de outra pessoa
+  const authHeader = req.headers.get('Authorization')
+  if (!authHeader?.startsWith('Bearer ')) return json({ error: 'Unauthorized' }, 401)
+  const token = authHeader.slice(7)
+
+  const supabaseUrl = process.env.SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
+  if (!supabaseUrl || !serviceKey) return json({ error: 'Configuração de servidor incompleta' }, 500)
+
+  const supabase = createClient(supabaseUrl, serviceKey)
+  const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+  if (authError || !user) return json({ error: 'Unauthorized' }, 401)
+
+  let userEmail: string
   try {
-    const body = await req.json() as { userId: string; userEmail: string }
-    userId = body.userId
-    userEmail = body.userEmail
+    const body = await req.json() as { userEmail?: string }
+    userEmail = body.userEmail ?? user.email ?? ''
   } catch {
-    return json({ error: 'Body inválido' }, 400)
+    userEmail = user.email ?? ''
   }
 
-  if (!userId || !userEmail) return json({ error: 'userId e userEmail são obrigatórios' }, 400)
+  const userId = user.id
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!emailRegex.test(userEmail)) return json({ error: 'Email inválido' }, 400)
-  if (userId.length > 128) return json({ error: 'userId inválido' }, 400)
 
   const baseUrl = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 

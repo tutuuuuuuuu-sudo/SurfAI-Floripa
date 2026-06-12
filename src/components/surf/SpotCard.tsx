@@ -83,7 +83,7 @@ export function SpotCard({ spot }: SpotCardProps) {
             </div>
           </div>
           <div className="flex items-center gap-1.5">
-            <Clock className="h-4 w-4 text-violet-400 flex-shrink-0" />
+            <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             <div>
               <div className="text-sm font-semibold">{Math.round(spot.swellPeriod)}s</div>
               <div className="text-xs text-muted-foreground">Período</div>

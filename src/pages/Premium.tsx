@@ -74,9 +74,8 @@ export default function PremiumPage() {
 
         {/* Hero */}
         <div className="text-center space-y-3" style={{ animation: 'fadeIn 0.5s ease-out' }}>
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-2"
-            style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #eab308 50%, #ca8a04 100%)', boxShadow: '0 0 40px rgba(234,179,8,0.3)' }}>
-            <Crown className="h-10 w-10 text-white" />
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-2 bg-primary/20 ring-4 ring-primary/30">
+            <Crown className="h-10 w-10 text-primary" />
           </div>
           <h1 className="text-3xl font-bold">Surf AI Premium</h1>
           <p className="text-muted-foreground text-sm leading-relaxed">
@@ -127,13 +126,8 @@ export default function PremiumPage() {
 
         {/* Card de preço */}
         {!isPremium && (
-          <Card className="overflow-hidden" style={{
-            animation: 'slideUp 0.4s 0.1s ease-out both',
-            border: '1.5px solid rgba(234,179,8,0.5)',
-            background: 'linear-gradient(135deg, hsl(var(--card)) 0%, rgba(234,179,8,0.05) 100%)',
-          }}>
-            <div className="text-center py-2 text-xs font-bold tracking-wider"
-              style={{ background: 'linear-gradient(90deg, #f59e0b, #eab308, #f59e0b)', color: 'white' }}>
+          <Card className="overflow-hidden border-primary/50" style={{ animation: 'slideUp 0.4s 0.1s ease-out both' }}>
+            <div className="text-center py-2 text-xs font-bold tracking-wider bg-primary text-primary-foreground">
               PLANO MAIS POPULAR
             </div>
 
@@ -171,7 +165,6 @@ export default function PremiumPage() {
               )}
 
               <Button className="w-full h-12 text-base font-bold"
-                style={{ background: 'linear-gradient(135deg, #f59e0b, #eab308)', color: 'white', border: 'none' }}
                 onClick={handleSubscribe} disabled={loading || loadingStatus}>
                 {loading
                   ? <><Loader2 className="h-5 w-5 mr-2 animate-spin" />Redirecionando...</>

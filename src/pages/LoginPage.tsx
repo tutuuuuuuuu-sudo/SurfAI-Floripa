@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { AppLogo } from '@/components/AppLogo'
@@ -16,6 +16,8 @@ export default function LoginPage() {
 
   const { signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const redirectToPremium = searchParams.get('plan') === 'premium'
 
   const handleForgotPassword = async () => {
     if (!email.trim()) { setError('Digite seu email primeiro.'); return }
@@ -42,7 +44,7 @@ export default function LoginPage() {
       if (error) {
         setError('Email ou senha incorretos.')
       } else {
-        navigate('/')
+        navigate(redirectToPremium ? '/premium' : '/')
       }
     } else {
       if (!name.trim()) { setError('Informe seu nome.'); setLoading(false); return }
@@ -73,7 +75,7 @@ export default function LoginPage() {
           </p>
         </div>
         <div className="flex gap-8">
-          {[['17', 'praias'], ['4', 'regiões'], ['24/7', 'ao vivo']].map(([val, label]) => (
+          {[['15', 'praias'], ['4', 'regiões'], ['24/7', 'ao vivo']].map(([val, label]) => (
             <div key={label}>
               <p className="text-primary text-2xl font-bold">{val}</p>
               <p className="text-muted-foreground text-xs">{label}</p>

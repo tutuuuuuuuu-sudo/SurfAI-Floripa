@@ -16,6 +16,12 @@ import {
   TESTIMONIALS, PLAN_FEATURES, FAQS, STATS, MOCK_SPOTS, PAIN_POINTS,
 } from '@/components/landing/landingData'
 
+function scrollToPlanos() {
+  const el = document.getElementById('planos')
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  else window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+}
+
 export default function Landing() {
   const navigate = useNavigate()
 
@@ -165,7 +171,10 @@ export default function Landing() {
             </div>
 
             {/* Mockup 3D */}
-            <AppMockup3D />
+            <div className="flex flex-col items-center gap-1">
+              <AppMockup3D />
+              <span className="text-xs text-muted-foreground italic">Dados ilustrativos</span>
+            </div>
           </div>
         </div>
       </section>
@@ -578,7 +587,7 @@ export default function Landing() {
       </section>
 
       {/* COMPARATIVO PLANOS */}
-      <section className="py-20 border-t border-border/30">
+      <section id="planos" className="py-20 border-t border-border/30">
         <div className="container mx-auto px-5 max-w-3xl">
           <Reveal className="text-center mb-14">
             <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 mb-4 px-4 py-1">Planos</Badge>

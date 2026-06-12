@@ -382,7 +382,11 @@ export async function fetchCurrentConditions(): Promise<BeachCondition[]> {
   // Já há um fetch em andamento — espera ele terminar em vez de disparar outro
   if (conditionsState.inflight) return conditionsState.inflight
 
-  conditionsState.inflight = _doFetchConditions().then(conditions => {
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('fetchCurrentConditions timeout')), 15000)
+  )
+
+  conditionsState.inflight = Promise.race([_doFetchConditions(), timeout]).then(conditions => {
     conditionsState.data = conditions
     conditionsState.fetchedAt = Date.now()
     conditionsState.inflight = null
@@ -403,10 +407,10 @@ export function getSpotById(id: string): BeachCondition | undefined { return get
 export function analyzeConditions(spot: BeachCondition & { _beachOrientation?: number }): string {
   const orientation = spot._beachOrientation ?? 90
   let analysis = ''
-  if (spot.score >= 8) analysis = '🔥 Condições EXCELENTES! '
-  else if (spot.score >= 6.5) analysis = '✅ Boas condições para surfar. '
-  else if (spot.score >= 5) analysis = '⚠️ Condições medianas. '
-  else analysis = '❌ Condições fracas. '
+  if (spot.score >= 8) analysis = 'Condições EXCELENTES! '
+  else if (spot.score >= 6.5) analysis = 'Boas condições para surfar. '
+  else if (spot.score >= 5) analysis = 'Condições medianas. '
+  else analysis = 'Condições fracas. '
 
   analysis += getWindAnalysis(spot.windDirection, spot.windSpeed, orientation)
 

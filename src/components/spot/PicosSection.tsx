@@ -28,8 +28,8 @@ export const PicosSection = ({ spot }: { spot: BeachCondition }) => {
     const waveMin = (waveEst * 0.95).toFixed(1)
     const waveMax = (waveEst * 1.05).toFixed(1)
     const match = minDiff===0?'Swell perfeito':minDiff<=2?'Swell bom':minDiff<=4?'Swell parcial':'Swell ruim'
-    const matchColor = minDiff===0?'#22c55e':minDiff<=2?'#06b6d4':minDiff<=4?'#f59e0b':'#ef4444'
-    return { ...sub, waveMin, waveMax, match, matchColor, idealDirs, minDiff }
+    const matchCls = minDiff===0?'text-rating-good':minDiff<=2?'text-rating-excellent':minDiff<=4?'text-rating-fair':'text-rating-poor'
+    return { ...sub, waveMin, waveMax, match, matchCls, idealDirs, minDiff }
   })
 
   return (
@@ -67,7 +67,7 @@ export const PicosSection = ({ spot }: { spot: BeachCondition }) => {
                 </div>
                 <div className="text-right flex-shrink-0">
                   <div className="text-sm font-bold">{pico.waveMin}–{pico.waveMax}m</div>
-                  <div className="text-xs font-semibold" style={{color: pico.matchColor}}>{pico.match}</div>
+                  <div className={`text-xs font-semibold ${pico.matchCls}`}>{pico.match}</div>
                 </div>
                 <ChevronRight className={`h-4 w-4 text-muted-foreground flex-shrink-0 transition-transform ${isSelected ? 'rotate-90' : ''}`}/>
               </div>

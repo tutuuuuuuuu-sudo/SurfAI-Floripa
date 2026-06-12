@@ -143,7 +143,7 @@ export function AppMockup3D() {
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 lg:left-auto lg:right-8 lg:translate-x-0"
         style={{
           width: 180, height: 30,
-          background: `radial-gradient(ellipse, ${MOCK_SPOTS[active].color}55, transparent 70%)`,
+          background: `radial-gradient(ellipse, ${MOCK_SPOTS[active].colorAlpha(33)}, transparent 70%)`,
           filter: 'blur(16px)',
           transition: 'background 0.8s ease',
         }} />
@@ -186,18 +186,18 @@ export function AppMockup3D() {
               </div>
               <div className="flex items-center gap-1.5 rounded-full px-2 py-1"
                 style={{ background: 'oklch(0.5 0.16 150 / 0.15)', border: '1px solid oklch(0.5 0.16 150 / 0.3)' }}>
-                <div className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ background: '#22c55e' }} />
-                <span className="text-[8px] font-semibold" style={{ color: '#22c55e' }}>ao vivo</span>
+                <div className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ background: 'var(--color-rating-good)' }} />
+                <span className="text-[8px] font-semibold" style={{ color: 'var(--color-rating-good)' }}>ao vivo</span>
               </div>
             </div>
             <div className="mx-3 mb-3 rounded-2xl p-3.5 relative overflow-hidden"
               style={{
-                background: `${MOCK_SPOTS[active].color}18`,
-                border: `1px solid ${MOCK_SPOTS[active].color}35`,
+                background: MOCK_SPOTS[active].colorAlpha(9),
+                border: `1px solid ${MOCK_SPOTS[active].colorAlpha(21)}`,
                 transition: 'background 0.6s ease, border-color 0.6s ease',
               }}>
               <div className="absolute inset-0 pointer-events-none"
-                style={{ background: `radial-gradient(ellipse at 80% 50%, ${MOCK_SPOTS[active].color}15, transparent)` }} />
+                style={{ background: `radial-gradient(ellipse at 80% 50%, ${MOCK_SPOTS[active].colorAlpha(8)}, transparent)` }} />
               <div className="text-[8px] font-bold uppercase tracking-wider mb-1.5"
                 style={{ color: MOCK_SPOTS[active].color, transition: 'color 0.6s ease' }}>
                 Melhor pico agora
@@ -228,8 +228,8 @@ export function AppMockup3D() {
                 {MOCK_SPOTS.map((spot, i) => (
                   <div key={spot.beach} className="flex items-center justify-between rounded-xl px-3 py-2 transition-all duration-300"
                     style={{
-                      background: i === active ? `${spot.color}18` : 'oklch(0.18 0.02 240)',
-                      border: `1px solid ${i === active ? spot.color + '40' : 'oklch(0.28 0.03 240)'}`,
+                      background: i === active ? spot.colorAlpha(9) : 'oklch(0.18 0.02 240)',
+                      border: `1px solid ${i === active ? spot.colorAlpha(25) : 'oklch(0.28 0.03 240)'}`,
                     }}>
                     <div className="flex items-center gap-2">
                       <div className="h-1.5 w-1.5 rounded-full flex-shrink-0" style={{ background: spot.color }} />

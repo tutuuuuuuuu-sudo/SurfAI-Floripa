@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { BeachCondition } from '@/lib/surfData'
 import { useSurfData } from '@/contexts/SurfDataContext'
-import { ArrowLeft, Waves, Wind, Thermometer, X, Plus, TrendingUp } from 'lucide-react'
+import { ArrowLeft, Waves, Wind, Thermometer, X, Plus, TrendingUp, Crown, Lock } from 'lucide-react'
 import { getScoreColor, getRatingInfo } from '@/lib/rating'
+import { usePremium } from '@/lib/premium'
 
 const getScoreLabel = (score: number) => getRatingInfo(score).label.charAt(0) + getRatingInfo(score).label.slice(1).toLowerCase()
 
@@ -14,6 +15,7 @@ const MAX_COMPARE = 3
 export default function ComparePage() {
   const navigate = useNavigate()
   const { conditions, loading } = useSurfData()
+  const { isPremium, status } = usePremium()
   const allSpots = [...conditions].sort((a, b) => b.score - a.score)
   const [selected, setSelected] = useState<BeachCondition[]>([])
   const [showPicker, setShowPicker] = useState(false)
@@ -61,6 +63,26 @@ export default function ComparePage() {
     // Só destaca se houver diferença
     const allSame = vals.every(v => v.val === vals[0].val)
     return allSame ? '' : best.id
+  }
+
+  if (status !== 'loading' && !isPremium) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8 text-center">
+        <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-4">
+          <Lock className="h-8 w-8 text-primary" />
+        </div>
+        <h2 className="text-xl font-bold mb-2">Comparação é Premium</h2>
+        <p className="text-muted-foreground text-sm mb-6 max-w-xs">
+          Compare até 3 praias lado a lado em tempo real. Disponível no plano Premium.
+        </p>
+        <Button onClick={() => navigate('/premium')} className="gap-2">
+          <Crown className="h-4 w-4" />Ver planos
+        </Button>
+        <Button variant="ghost" onClick={() => navigate('/')} className="mt-2">
+          Voltar ao início
+        </Button>
+      </div>
+    )
   }
 
   return (

@@ -1,5 +1,6 @@
 // Reexporta de weatherApi para manter compatibilidade com imports existentes
 export { getRealTide, getRealWaterTemp } from './weatherApi'
+import { calculateSurfScore } from '../../api/_scoreEngine'
 
 export interface WeatherForecast {
   date: string
@@ -15,20 +16,6 @@ export interface WeatherForecast {
   isFallback?: boolean // true = API falhou, dados estimados
 }
 
-function calculateForecastScore(wave: number, wind: number, period: number): number {
-  let score = 5
-  if (wave >= 1.5) score += 2
-  else if (wave >= 1.0) score += 1.5
-  else if (wave >= 0.8) score += 1
-  else score -= 1
-  if (wind <= 10) score += 2
-  else if (wind <= 15) score += 1
-  else score -= 1
-  if (period >= 12) score += 2
-  else if (period >= 10) score += 1
-  else if (period < 8) score -= 1
-  return Math.min(10, Math.max(0, score))
-}
 
 function getConditionFromScore(score: number): 'Excelente' | 'Bom' | 'Regular' | 'Ruim' {
   if (score >= 8) return 'Excelente'
@@ -81,7 +68,8 @@ export interface CurrentConditionsForForecast {
 export async function getWeatherForecast(
   spotId: string,
   currentConditions?: CurrentConditionsForForecast,
-  isPremium = false
+  isPremium = false,
+  orientation = 90
 ): Promise<WeatherForecast[]> {
   const now = Date.now()
 
@@ -118,6 +106,7 @@ export async function getWeatherForecast(
       lat: coords.lat.toString(),
       lng: coords.lng.toString(),
       spotId,
+      orientation: orientation.toString(),
     })
 
     const headers: Record<string, string> = { 'Content-Type': 'application/json' }
@@ -172,7 +161,7 @@ function getFallbackForecast(): WeatherForecast[] {
   return Array.from({ length: 7 }, (_, i) => {
     const date = new Date(today)
     date.setDate(today.getDate() + i)
-    const score = calculateForecastScore(1.0, 12, 10)
+    const score = calculateSurfScore(1.0, 12, 10, 'N', 90)
     return {
       date: date.toISOString().split('T')[0],
       dayName: i === 0 ? 'Hoje' : i === 1 ? 'Amanhã' : dayNames[date.getDay()],

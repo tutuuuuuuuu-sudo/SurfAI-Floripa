@@ -61,7 +61,7 @@ export default async function handler(req: Request) {
 
   const accessToken = process.env.MP_ACCESS_TOKEN
   const supabaseUrl = process.env.SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_KEY
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
 
   if (!accessToken || !supabaseUrl || !serviceKey) {
     return new Response('{"ok":true}', { status: 200, headers })

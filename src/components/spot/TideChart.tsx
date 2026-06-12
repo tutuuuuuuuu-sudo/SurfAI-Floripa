@@ -93,29 +93,29 @@ const TideChartSVG = memo(({ tide, expanded=false, realLevels }: { tide:string, 
       <div className="flex items-center gap-4">
         <div><div className="text-xs text-muted-foreground">Estado Atual</div><div className="text-xl font-bold">{tide}</div></div>
         <Separator orientation="vertical" className="h-10"/>
-        <div><div className="text-xs text-muted-foreground">Nível Agora</div><div className="text-xl font-bold text-cyan-500">~{currentHeight}m</div></div>
+        <div><div className="text-xs text-muted-foreground">Nível Agora</div><div className="text-xl font-bold text-primary">~{currentHeight}m</div></div>
       </div>
       <div className="relative rounded-xl overflow-hidden bg-muted/10 border border-border/30 p-1">
         <svg ref={svgRef} width="100%" viewBox={`0 0 ${viewWidth} ${viewHeight}`} className="overflow-visible cursor-crosshair" onMouseMove={handleMouseMove} onMouseLeave={() => setTooltip(null)}>
-          <defs><linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#06b6d4" stopOpacity="0.5"/><stop offset="100%" stopColor="#06b6d4" stopOpacity="0.03"/></linearGradient></defs>
+          <defs><linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.5"/><stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0.03"/></linearGradient></defs>
           <path d={chart.areaData} fill={`url(#${gradId})`}/>
-          <path d={chart.pathData} fill="none" stroke="#06b6d4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d={chart.pathData} fill="none" stroke="var(--color-primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
           {tideEvents.map((event, i) => {
             const ex=xScale(event.hour), ey=yScale(event.height), isHigh=event.type==='alta'
             const labelX=Math.min(Math.max(ex, padding.left+24), viewWidth-padding.right-24)
-            return <g key={i}><circle cx={ex} cy={ey} r="3.5" fill={isHigh?'#22c55e':'#f59e0b'}/><text x={labelX} y={isHigh?ey-20:ey+24} textAnchor="middle" fontSize="8.5" fill={isHigh?'#22c55e':'#f59e0b'} fontWeight="600">{formatHour(event.hour)}</text></g>
+            return <g key={i}><circle cx={ex} cy={ey} r="3.5" fill={isHigh?'var(--color-rating-good)':'var(--color-rating-fair)'}/><text x={labelX} y={isHigh?ey-20:ey+24} textAnchor="middle" fontSize="8.5" fill={isHigh?'var(--color-rating-good)':'var(--color-rating-fair)'} fontWeight="600">{formatHour(event.hour)}</text></g>
           })}
-          {[0,6,12,18,24].map(h => <g key={h}><text x={xScale(h)} y={viewHeight-4} textAnchor="middle" fontSize="8" fill="#6b7280">{h===24?'00h':`${h}h`}</text></g>)}
-          <line x1={currentX} y1={padding.top} x2={currentX} y2={chartHeight+padding.top} stroke="#ffffff" strokeWidth="1" strokeDasharray="3,2" opacity="0.4"/>
-          <rect x={Math.min(currentX-16, viewWidth-padding.right-32)} y={padding.top-14} width="32" height="13" rx="3" fill="#06b6d4" opacity="0.9"/>
+          {[0,6,12,18,24].map(h => <g key={h}><text x={xScale(h)} y={viewHeight-4} textAnchor="middle" fontSize="8" fill="currentColor" opacity="0.5">{h===24?'00h':`${h}h`}</text></g>)}
+          <line x1={currentX} y1={padding.top} x2={currentX} y2={chartHeight+padding.top} stroke="currentColor" strokeWidth="1" strokeDasharray="3,2" opacity="0.4"/>
+          <rect x={Math.min(currentX-16, viewWidth-padding.right-32)} y={padding.top-14} width="32" height="13" rx="3" fill="var(--color-primary)" opacity="0.9"/>
           <text x={Math.min(currentX, viewWidth-padding.right-16)} y={padding.top-4} textAnchor="middle" fontSize="8" fill="white" fontWeight="bold">Agora</text>
-          <circle cx={currentX} cy={currentY} r="5" fill="#06b6d4" stroke="white" strokeWidth="2"/>
+          <circle cx={currentX} cy={currentY} r="5" fill="var(--color-primary)" stroke="white" strokeWidth="2"/>
           {tooltip && (<>
-            <line x1={tooltip.x} y1={padding.top} x2={tooltip.x} y2={chartHeight+padding.top} stroke="#ffffff" strokeWidth="1" strokeDasharray="2,2" opacity="0.4"/>
-            <circle cx={tooltip.x} cy={tooltip.y} r="4" fill="white" stroke="#06b6d4" strokeWidth="2"/>
-            <rect x={tooltipX} y={tooltipY} width={tooltipBoxW} height={tooltipBoxH} rx="5" fill="#0e1117" stroke="#06b6d4" strokeWidth="1" opacity="0.95"/>
-            <text x={tooltipX+tooltipBoxW/2} y={tooltipY+13} textAnchor="middle" fontSize="9" fill="#06b6d4" fontWeight="bold">{formatHour(tooltip.hour)}</text>
-            <text x={tooltipX+tooltipBoxW/2} y={tooltipY+27} textAnchor="middle" fontSize="11" fill="white" fontWeight="bold">{tooltip.height.toFixed(2)}m</text>
+            <line x1={tooltip.x} y1={padding.top} x2={tooltip.x} y2={chartHeight+padding.top} stroke="currentColor" strokeWidth="1" strokeDasharray="2,2" opacity="0.4"/>
+            <circle cx={tooltip.x} cy={tooltip.y} r="4" fill="white" stroke="var(--color-primary)" strokeWidth="2"/>
+            <rect x={tooltipX} y={tooltipY} width={tooltipBoxW} height={tooltipBoxH} rx="5" fill="var(--color-card)" stroke="var(--color-primary)" strokeWidth="1" opacity="0.95"/>
+            <text x={tooltipX+tooltipBoxW/2} y={tooltipY+13} textAnchor="middle" fontSize="9" fill="var(--color-primary)" fontWeight="bold">{formatHour(tooltip.hour)}</text>
+            <text x={tooltipX+tooltipBoxW/2} y={tooltipY+27} textAnchor="middle" fontSize="11" fill="var(--color-foreground)" fontWeight="bold">{tooltip.height.toFixed(2)}m</text>
           </>)}
         </svg>
       </div>

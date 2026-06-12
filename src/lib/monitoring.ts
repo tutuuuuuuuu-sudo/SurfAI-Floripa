@@ -26,7 +26,7 @@ export function initMonitoring() {
     posthog.init(posthogKey, {
       api_host: import.meta.env.VITE_POSTHOG_HOST ?? 'https://us.i.posthog.com',
       person_profiles: 'identified_only', // só cria perfil quando o usuário faz login
-      capture_pageview: true,             // rastreia navegação entre páginas automaticamente
+      capture_pageview: false,             // pageviews rastreados manualmente para evitar expor IDs de spots
       capture_pageleave: true,            // rastreia quando o usuário sai
       autocapture: false,                 // eventos manuais são mais precisos para surf app
     })

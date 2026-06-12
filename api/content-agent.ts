@@ -5,7 +5,7 @@ import { calculateSurfScore } from './_scoreEngine.js'
 // Gera legendas otimizadas para Instagram e TikTok baseadas nas condições reais do mar
 // Pode ser chamado manualmente via POST ou agendado via cron
 
-const APP_URL = process.env.APP_URL ?? 'https://surf-ai-floripa.vercel.app'
+const APP_URL = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY
 const AGENT_SECRET = process.env.AGENT_SECRET // proteção para chamadas externas
 
@@ -166,20 +166,57 @@ Responda APENAS em JSON com este formato exato:
   }
 }
 
+async function verifyPremiumUser(token: string): Promise<boolean> {
+  const supabaseUrl = process.env.SUPABASE_URL
+  const anonKey = process.env.SUPABASE_ANON_KEY
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
+  if (!supabaseUrl || !anonKey || !serviceKey) return false
+  try {
+    const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: { Authorization: `Bearer ${token}`, apikey: anonKey },
+    })
+    if (!userRes.ok) return false
+    const user = await userRes.json() as { id?: string }
+    if (!user.id) return false
+    const now = new Date().toISOString()
+    const subRes = await fetch(
+      `${supabaseUrl}/rest/v1/subscriptions?user_id=eq.${user.id}&status=eq.premium&expires_at=gte.${now}&select=id&limit=1`,
+      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
+    )
+    if (!subRes.ok) return false
+    const rows = await subRes.json() as { id: string }[]
+    return Array.isArray(rows) && rows.length > 0
+  } catch {
+    return false
+  }
+}
+
 export default async function handler(req: Request) {
-  // Crons internos do Vercel chegam como GET sem secret — permite apenas esse caso
-  // Chamadas externas (GitHub Actions, Make.com) devem enviar x-agent-secret
-  const isVercelCron = req.method === 'GET' && !req.headers.get('x-agent-secret')
+  // Crons internos do Vercel chegam como GET com header x-vercel-signature
+  // Chamadas externas com AGENT_SECRET via x-agent-secret
+  // Usuários premium via Bearer token JWT
+  const agentSecret = req.headers.get('x-agent-secret')
+  const authHeader = req.headers.get('Authorization')
+  const isVercelCron = req.method === 'GET' && req.headers.get('x-vercel-signature')
+
   if (!isVercelCron) {
-    if (!AGENT_SECRET) {
-      console.error('[content-agent] AGENT_SECRET não configurado')
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
-    const secret = req.headers.get('x-agent-secret') ?? new URL(req.url).searchParams.get('secret')
-    if (secret !== AGENT_SECRET) {
+    if (agentSecret) {
+      if (!AGENT_SECRET || agentSecret !== AGENT_SECRET) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+    } else if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.slice(7)
+      const isPremium = await verifyPremiumUser(token)
+      if (!isPremium) {
+        return new Response(JSON.stringify({ error: 'Premium required' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+    } else {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
