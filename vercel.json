@@ -40,6 +40,7 @@
     { "path": "/api/content-agent", "schedule": "0 13 * * *" },
     { "path": "/api/content-agent", "schedule": "0 22 * * *" },
     { "path": "/api/daily-report", "schedule": "0 10 * * *" },
-    { "path": "/api/daily-report", "schedule": "0 22 * * *" }
+    { "path": "/api/daily-report", "schedule": "0 22 * * *" },
+    { "path": "/api/snapshot", "schedule": "0 * * * *" }
   ]
 }

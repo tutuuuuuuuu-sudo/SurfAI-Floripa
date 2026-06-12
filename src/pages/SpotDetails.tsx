@@ -246,11 +246,6 @@ export default function SpotDetails() {
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                 <span className="text-xs text-muted-foreground bg-muted/40 px-2 py-0.5 rounded-full">{spot.region} da Ilha</span>
                 <span className="text-xs text-muted-foreground bg-muted/40 px-2 py-0.5 rounded-full">{spot.level}</span>
-                {spot.bestTimeWindow && spot.bestTimeWindow !== 'Não recomendado hoje' && (
-                  <span className="text-xs text-muted-foreground bg-muted/40 px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <Clock className="h-3 w-3"/>{spot.bestTimeWindow}
-                  </span>
-                )}
               </div>
             </div>
             <button
@@ -306,6 +301,45 @@ export default function SpotDetails() {
             </div>
           </div>
         </div>
+
+        {/* Widget: Melhor janela hoje */}
+        {spot.bestTimeWindow && (() => {
+          const isNow = spot.bestTimeWindow.toLowerCase().includes('agora') ||
+            (() => {
+              const m = spot.bestTimeWindow.match(/^(\d{2})h/)
+              if (!m) return false
+              const start = parseInt(m[1], 10)
+              const h = new Date().getHours()
+              return h >= start && h <= start + 3
+            })()
+          return (
+            <div
+              className={`flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all ${
+                isNow
+                  ? 'bg-primary/10 border-primary/30'
+                  : 'bg-card border-border/50'
+              }`}
+              style={{ animation: 'slideUp 0.3s ease-out' }}
+            >
+              <div className={`h-9 w-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                isNow ? 'bg-primary/20' : 'bg-muted/40'
+              }`}>
+                <Clock className={`h-5 w-5 ${isNow ? 'text-primary' : 'text-muted-foreground'}`} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs text-muted-foreground font-medium">Melhor janela hoje</div>
+                <div className={`text-sm font-bold ${isNow ? 'text-primary' : 'text-foreground'}`}>
+                  {spot.bestTimeWindow}
+                </div>
+              </div>
+              {isNow && (
+                <span className="text-xs font-bold text-primary bg-primary/15 px-2 py-0.5 rounded-full flex-shrink-0">
+                  Agora
+                </span>
+              )}
+            </div>
+          )
+        })()}
 
         {/* Relatos */}
         <button

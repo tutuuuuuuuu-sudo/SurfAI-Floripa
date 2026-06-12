@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '@/lib/supabase'
 import { usePremium } from '@/lib/premium'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -48,6 +49,23 @@ export default function Settings() {
   const [notifMinScore, setNotifMinScore] = useState<number>(loadPref('notif_minScore', 7))
   const [notifFavOnly, setNotifFavOnly] = useState<boolean>(loadPref('notif_favOnly', false))
 
+  // Carrega preferências do Supabase ao montar (override do localStorage se existir)
+  useEffect(() => {
+    if (!user) return
+    supabase
+      .from('user_preferences')
+      .select('pref_skill, pref_region, notif_min_score, notif_fav_only')
+      .eq('user_id', user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) return
+        if (data.pref_skill != null) { setSkillLevel(data.pref_skill as SkillLevel); savePref('pref_skill', data.pref_skill) }
+        if (data.pref_region != null) { setDefaultRegion(data.pref_region as Region); savePref('pref_region', data.pref_region) }
+        if (data.notif_min_score != null) { setNotifMinScore(data.notif_min_score); savePref('notif_minScore', data.notif_min_score) }
+        if (data.notif_fav_only != null) { setNotifFavOnly(data.notif_fav_only); savePref('notif_favOnly', data.notif_fav_only) }
+      })
+  }, [user])
+
   const handleSignOut = async () => {
     await signOut()
     navigate('/login')
@@ -56,6 +74,22 @@ export default function Settings() {
   const save = (key: string, value: unknown, label: string) => {
     savePref(key, value)
     toast.success(`${label} salvo!`)
+    // Sync assíncrono com Supabase — falha silenciosa (não bloqueia UX)
+    if (user) {
+      const colMap: Record<string, string> = {
+        pref_skill: 'pref_skill',
+        pref_region: 'pref_region',
+        notif_minScore: 'notif_min_score',
+        notif_favOnly: 'notif_fav_only',
+      }
+      const col = colMap[key]
+      if (col) {
+        supabase.from('user_preferences').upsert(
+          { user_id: user.id, [col]: value, updated_at: new Date().toISOString() },
+          { onConflict: 'user_id' }
+        ).then(() => {})
+      }
+    }
   }
 
   return (

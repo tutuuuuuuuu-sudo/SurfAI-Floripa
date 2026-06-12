@@ -65,32 +65,49 @@ export function saveNotificationSettings(settings: {
 }
 
 export async function checkAndNotifyGoodConditions(
-  spots: { id: string, name: string, score: number }[],
+  spots: { id: string, name: string, score: number, tide?: string, bestTimeWindow?: string }[],
   favorites: string[],
   minScore: number,
   favoriteOnly: boolean
 ) {
   if (Notification.permission !== 'granted') return
 
-  const lastNotified = lsGet('last_notified_time')
   const now = Date.now()
+  const notifiedKey = 'notified_spots_v2'
+  const notifiedMap: Record<string, number> = lsGetJson(notifiedKey, {})
 
-  if (lastNotified && now - Number(lastNotified) < 60 * 60 * 1000) return
+  // Limpa entradas antigas (> 6h)
+  const cleaned: Record<string, number> = {}
+  for (const [id, ts] of Object.entries(notifiedMap)) {
+    if (now - ts < 6 * 60 * 60 * 1000) cleaned[id] = ts
+  }
 
   const goodSpots = spots.filter(s => {
     if (s.score < minScore) return false
     if (favoriteOnly && !favorites.includes(s.id)) return false
+    // Não renotifica a mesma praia em menos de 6h
+    if (cleaned[s.id] && now - cleaned[s.id] < 6 * 60 * 60 * 1000) return false
     return true
-  })
+  }).sort((a, b) => b.score - a.score)
 
   if (goodSpots.length === 0) return
 
-  const best = goodSpots.sort((a, b) => b.score - a.score)[0]
-  await sendLocalNotification(
-    `${best.name} está excelente agora!`,
-    `Score ${best.score.toFixed(1)}/10 — Toque para ver as condições`,
-    `/spot/${best.id}`
-  )
+  // Notifica no máximo 2 praias por vez para não spammar
+  const toNotify = goodSpots.slice(0, 2)
+  for (const spot of toNotify) {
+    const tideCtx = spot.tide === 'Enchendo' || spot.tide === 'Cheia'
+      ? ' · Maré boa'
+      : spot.tide === 'Secando' ? ' · Maré secando' : ''
+    const windowCtx = spot.bestTimeWindow && !spot.bestTimeWindow.includes('Aguardar')
+      ? ` · ${spot.bestTimeWindow}` : ''
 
-  lsSet('last_notified_time', String(now))
+    await sendLocalNotification(
+      `${spot.name} está ótima agora!`,
+      `Score ${spot.score.toFixed(1)}/10${tideCtx}${windowCtx}`,
+      `/spot/${spot.id}`
+    )
+    cleaned[spot.id] = now
+  }
+
+  lsSetJson(notifiedKey, cleaned)
 }
