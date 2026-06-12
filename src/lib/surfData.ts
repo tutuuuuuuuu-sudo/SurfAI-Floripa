@@ -52,15 +52,11 @@ async function fetchRealTideData(): Promise<{ heights: number[], times: string[]
     return { heights: tideState.cache.heights, times: tideState.cache.times }
   }
   try {
-    const res = await fetch(
-      'https://marine-api.open-meteo.com/v1/marine?' +
-      'latitude=-27.62&longitude=-48.48' +
-      '&hourly=sea_level_height_msl' +
-      '&timezone=America%2FSao_Paulo&forecast_days=2'
-    )
-    const data = await res.json() as { error?: string; hourly?: { sea_level_height_msl: number[]; time: string[] } }
-    if (data.error || !data.hourly?.sea_level_height_msl) return null
-    tideState.cache = { heights: data.hourly.sea_level_height_msl, times: data.hourly.time, fetched: now }
+    const res = await fetch('/api/tide?type=tide', { signal: AbortSignal.timeout(10000) })
+    if (!res.ok) return null
+    const data = await res.json() as { heights?: number[]; times?: string[]; error?: string }
+    if (data.error || !data.heights || !data.times) return null
+    tideState.cache = { heights: data.heights, times: data.times, fetched: now }
     return { heights: tideState.cache.heights, times: tideState.cache.times }
   } catch { return null }
 }

@@ -73,7 +73,7 @@ export async function getWindyForecast(
   }
 }
 
-// ── Temperatura e maré real (Open-Meteo direto — sem chave, dados públicos) ──
+// ── Temperatura e maré real (via /api/tide — proxy serverless) ──
 
 export async function getRealTide(): Promise<{
   level: number
@@ -81,17 +81,15 @@ export async function getRealTide(): Promise<{
   hourlyLevels: number[]
 } | null> {
   try {
-    const res = await fetchWithRetry(
-      'https://marine-api.open-meteo.com/v1/marine?latitude=-27.62&longitude=-48.48&hourly=sea_level_height_msl&timezone=America%2FSao_Paulo&forecast_days=1'
-    )
+    const res = await fetchWithRetry('/api/tide?type=tide')
     if (!res) return null
-    const data = await res.json() as { error?: string; hourly?: { sea_level_height_msl: number[] } }
-    if (data.error || !data.hourly?.sea_level_height_msl) return null
+    const data = await res.json() as { heights?: number[]; times?: string[]; error?: string }
+    if (data.error || !data.heights) return null
 
-    const levels: number[] = data.hourly.sea_level_height_msl
+    const levels: number[] = data.heights
     const hour = new Date().getHours()
     const current = levels[hour] ?? 0
-    const next = levels[Math.min(23, hour + 1)] ?? current
+    const next = levels[Math.min(levels.length - 1, hour + 1)] ?? current
 
     let state: 'Enchendo' | 'Secando' | 'Cheia' | 'Vazia'
     if (next > current + 0.03) state = 'Enchendo'
@@ -106,30 +104,14 @@ export async function getRealTide(): Promise<{
 }
 
 export async function getRealWaterTemp(): Promise<number> {
-  // Fonte 1: NOAA ERDDAP — SST satélite
   try {
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
-    const url = `https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41.json?analysed_sst[${yesterday}T09:00:00Z][(-27.62)][(-48.48)]`
-    const res = await fetchWithRetry(url)
+    const res = await fetchWithRetry('/api/tide?type=temp')
     if (res) {
-      const data = await res.json() as { table?: { rows?: [string, string, string, number][] } }
-      const sst = data?.table?.rows?.[0]?.[3]
-      if (typeof sst === 'number' && sst >= 15 && sst <= 27) return Math.round(sst)
-    }
-  } catch { /* tenta próxima */ }
-
-  // Fonte 2: Open-Meteo Marine
-  try {
-    const res = await fetchWithRetry(
-      'https://marine-api.open-meteo.com/v1/marine?latitude=-27.62&longitude=-48.48&current=sea_surface_temperature&models=meteofrance_wave'
-    )
-    if (res) {
-      const data = await res.json() as { current?: { sea_surface_temperature?: number } }
-      const sst = data.current?.sea_surface_temperature
-      if (sst != null && sst >= 15 && sst <= 27) return Math.round(sst)
+      const data = await res.json() as { temp?: number }
+      if (typeof data.temp === 'number') return data.temp
     }
   } catch { /* fallback */ }
 
-  // Fonte 3: Fallback sazonal calibrado para Florianópolis
+  // Fallback sazonal calibrado para Florianópolis
   return [25, 25, 24, 22, 21, 20, 19, 18, 19, 20, 22, 24][new Date().getMonth()]
 }
