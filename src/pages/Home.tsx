@@ -44,7 +44,7 @@ export default function Home() {
   const aiReportFetchedRef = useRef(false)
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { isPremium } = usePremium()
+  const { isPremium, loading: premiumLoading } = usePremium()
   const { conditions: allSpots, loading, lastUpdated, refresh } = useSurfData()
 
   const spots = useMemo(() => {
@@ -73,9 +73,9 @@ export default function Home() {
     getLatestCommentsForSpots(ids).then(setLatestComments).catch(() => {})
   }, [allSpots])
 
-  // Busca o relatório AI uma única vez quando os dados chegam pela primeira vez
+  // Busca o relatório AI uma única vez — aguarda status premium ser resolvido
   useEffect(() => {
-    if (allSpots.length === 0 || aiReportFetchedRef.current) return
+    if (allSpots.length === 0 || premiumLoading || aiReportFetchedRef.current) return
     aiReportFetchedRef.current = true
     const sortedAll = [...allSpots].sort((a, b) => b.score - a.score)
     const top = sortedAll[0]
@@ -89,7 +89,7 @@ export default function Home() {
       })
       .catch(() => {})
       .finally(() => setAiLoading(false))
-  }, [allSpots])
+  }, [allSpots, premiumLoading])
 
   const userName = user ? getUserDisplayName(user) : 'Surfista'
   const userInitial = userName.charAt(0).toUpperCase()
@@ -187,7 +187,7 @@ export default function Home() {
           </div>
         )}
 
-        {(aiReport || aiLoading || (!isPremium && topSpot)) && (
+        {(aiReport || aiLoading || (!premiumLoading && !isPremium && topSpot)) && (
           <Card className="border-primary/30 bg-primary/5 anim-slide" style={{ animationDelay: '0.15s' }}>
             <CardHeader className="pb-2 pt-4 px-4">
               <CardTitle className="text-sm flex items-center gap-2">
