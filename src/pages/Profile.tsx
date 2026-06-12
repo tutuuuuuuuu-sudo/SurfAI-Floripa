@@ -12,7 +12,7 @@ import { supabase, getUserDisplayName } from '@/lib/supabase'
 import {
   ArrowLeft, Crown, Heart, MessageCircle, Waves, Settings,
   LogOut, User, TrendingUp, MapPin, Star, Calendar, Award,
-  Camera, Edit2, Check, X, Image, Wind, Clock
+  Camera, Edit2, Check, X, Wind, Clock, Flame
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { getRatingInfo } from '@/lib/rating'
@@ -31,6 +31,8 @@ export default function ProfilePage() {
   const [bioInput, setBioInput] = useState('')
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [sessionDates, setSessionDates] = useState<string[]>([])
+  const [streak, setStreak] = useState(0)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [showPhotoOptions, setShowPhotoOptions] = useState(false)
@@ -72,6 +74,34 @@ export default function ProfilePage() {
           setAvatarUrl((user.user_metadata?.avatar_url as string | undefined) ?? null)
         }
       }
+      // Busca datas de sessões do surf log para o heatmap (últimas 52 semanas)
+      if (user) {
+        const since = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        const { data: sessions } = await supabase
+          .from('surf_log')
+          .select('date')
+          .eq('user_id', user.id)
+          .gte('date', since)
+          .order('date', { ascending: false })
+        if (sessions && sessions.length > 0) {
+          const dates = sessions.map((s: { date: string }) => s.date as string)
+          setSessionDates(dates)
+
+          // Calcula streak: dias consecutivos com sessão até hoje
+          const todayStr = new Date().toISOString().split('T')[0]
+          const dateSet = new Set(dates)
+          let s = 0
+          const cur = new Date()
+          while (true) {
+            const d = cur.toISOString().split('T')[0]
+            if (dateSet.has(d)) { s++; cur.setDate(cur.getDate() - 1) }
+            else if (d === todayStr) { cur.setDate(cur.getDate() - 1) } // hoje sem sessão ainda
+            else break
+          }
+          setStreak(s)
+        }
+      }
+
       setLoading(false)
     }
     load()
@@ -274,6 +304,83 @@ export default function ProfilePage() {
             </Card>
           ))}
         </div>
+
+        {/* Card de streak + heatmap */}
+        {sessionDates.length > 0 && (() => {
+          // Gera heatmap das últimas 16 semanas (112 dias)
+          const today = new Date()
+          today.setHours(0, 0, 0, 0)
+          const dateSet = new Set(sessionDates)
+          const weeks: string[][] = []
+          // Começa na segunda-feira da semana atual e vai 16 semanas para trás
+          const startDay = new Date(today)
+          startDay.setDate(startDay.getDate() - (startDay.getDay() === 0 ? 6 : startDay.getDay() - 1))
+          startDay.setDate(startDay.getDate() - 15 * 7)
+
+          for (let w = 0; w < 16; w++) {
+            const week: string[] = []
+            for (let d = 0; d < 7; d++) {
+              const day = new Date(startDay)
+              day.setDate(startDay.getDate() + w * 7 + d)
+              week.push(day.toISOString().split('T')[0])
+            }
+            weeks.push(week)
+          }
+
+          return (
+            <Card className="anim-slide" style={{ animationDelay: '0.15s' }}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Flame className="h-5 w-5 text-orange-400" />Suas Sessões
+                  </div>
+                  {streak > 0 && (
+                    <div className="flex items-center gap-1.5 bg-orange-500/10 px-3 py-1 rounded-full">
+                      <Flame className="h-3.5 w-3.5 text-orange-400" />
+                      <span className="text-xs font-bold text-orange-400">{streak} dias seguidos</span>
+                    </div>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pb-4">
+                <div className="overflow-x-auto">
+                  <div className="flex gap-0.5 min-w-max">
+                    {weeks.map((week, wi) => (
+                      <div key={wi} className="flex flex-col gap-0.5">
+                        {week.map(dateStr => {
+                          const hasSession = dateSet.has(dateStr)
+                          const isToday = dateStr === today.toISOString().split('T')[0]
+                          const isFuture = dateStr > today.toISOString().split('T')[0]
+                          return (
+                            <div
+                              key={dateStr}
+                              title={dateStr}
+                              className={`w-3 h-3 rounded-sm transition-colors ${
+                                isFuture
+                                  ? 'bg-transparent'
+                                  : hasSession
+                                    ? 'bg-primary'
+                                    : isToday
+                                      ? 'bg-muted border border-border'
+                                      : 'bg-muted/40'
+                              }`}
+                            />
+                          )
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between mt-3">
+                  <p className="text-xs text-muted-foreground">{sessionDates.length} sessões no último ano</p>
+                  <button onClick={() => navigate('/surf-log')} className="text-xs text-primary hover:underline">
+                    Ver diário →
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })()}
 
         {favoriteSpots.length > 0 && (
           <Card className="anim-slide" style={{ animationDelay: '0.2s' }}>

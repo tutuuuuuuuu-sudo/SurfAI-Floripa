@@ -37,9 +37,11 @@ export default async function handler(req: Request) {
   if (authError || !user) return json({ error: 'Unauthorized' }, 401)
 
   let userEmail: string
+  let plan: 'monthly' | 'annual' = 'monthly'
   try {
-    const body = await req.json() as { userEmail?: string }
+    const body = await req.json() as { userEmail?: string; plan?: string }
     userEmail = body.userEmail ?? user.email ?? ''
+    if (body.plan === 'annual') plan = 'annual'
   } catch {
     userEmail = user.email ?? ''
   }
@@ -51,17 +53,20 @@ export default async function handler(req: Request) {
 
   const baseUrl = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 
+  const isAnnual = plan === 'annual'
   const preference = {
     items: [{
-      id: 'surf-ai-premium-mensal',
-      title: 'Surf AI Premium — Mensal',
-      description: 'Acesso completo ao Surf AI Floripa por 30 dias',
+      id: isAnnual ? 'surf-ai-premium-anual' : 'surf-ai-premium-mensal',
+      title: isAnnual ? 'Surf AI Premium — Anual' : 'Surf AI Premium — Mensal',
+      description: isAnnual
+        ? 'Acesso completo ao Surf AI Floripa por 12 meses (equivale a R$ 19,90/mês)'
+        : 'Acesso completo ao Surf AI Floripa por 30 dias',
       quantity: 1,
       currency_id: 'BRL',
-      unit_price: 29.90,
+      unit_price: isAnnual ? 238.80 : 29.90,
     }],
     payer: { email: userEmail },
-    external_reference: userId,
+    external_reference: `${userId}|${plan}`,
     back_urls: {
       success: `${baseUrl}/premium?status=success`,
       failure: `${baseUrl}/premium?status=failure`,

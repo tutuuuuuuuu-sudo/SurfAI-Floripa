@@ -64,6 +64,34 @@ export async function deleteComment(commentId: string): Promise<boolean> {
   return true
 }
 
+export interface LatestComment {
+  beach_id: string
+  user_name: string
+  content: string
+  created_at: string
+}
+
+export async function getLatestCommentsForSpots(beachIds: string[]): Promise<Record<string, LatestComment>> {
+  if (beachIds.length === 0) return {}
+
+  const { data, error } = await supabase
+    .from('comments')
+    .select('beach_id, user_name, content, created_at')
+    .in('beach_id', beachIds)
+    .order('created_at', { ascending: false })
+    .limit(beachIds.length * 3)
+
+  if (error || !data) return {}
+
+  const result: Record<string, LatestComment> = {}
+  for (const row of data) {
+    if (!result[row.beach_id as string]) {
+      result[row.beach_id as string] = row as LatestComment
+    }
+  }
+  return result
+}
+
 export function formatCommentTime(createdAt: string): string {
   const now = new Date()
   const date = new Date(createdAt)

@@ -15,6 +15,7 @@ import { NotificationPanel } from '@/components/home/NotificationPanel'
 import { analyzeConditions, BeachCondition, CENTRO_SPOT_IDS } from '@/lib/surfData'
 import { useSurfData } from '@/contexts/SurfDataContext'
 import { getFavorites } from '@/lib/favorites'
+import { getLatestCommentsForSpots, LatestComment } from '@/lib/comments'
 import { useAuth } from '@/contexts/AuthContext'
 import { getUserDisplayName } from '@/lib/supabase'
 import { usePremium } from '@/lib/premium'
@@ -39,6 +40,7 @@ export default function Home() {
   const [showOnboarding, setShowOnboarding] = useState(() => {
     try { return !localStorage.getItem('onboarding_done') } catch { return true }
   })
+  const [latestComments, setLatestComments] = useState<Record<string, LatestComment>>({})
   const aiReportFetchedRef = useRef(false)
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -66,6 +68,9 @@ export default function Home() {
         checkAndNotifyGoodConditions(allSpots, favs, notifSettings.minScore, notifSettings.favoriteOnly)
       }
     })
+    // Busca o relato mais recente de cada praia em um único request
+    const ids = allSpots.map(s => s.id)
+    getLatestCommentsForSpots(ids).then(setLatestComments).catch(() => {})
   }, [allSpots])
 
   // Busca o relatório AI uma única vez quando os dados chegam pela primeira vez
@@ -182,7 +187,7 @@ export default function Home() {
           </div>
         )}
 
-        {(aiReport || aiLoading) && (
+        {(aiReport || aiLoading || (!isPremium && topSpot)) && (
           <Card className="border-primary/30 bg-primary/5 anim-slide" style={{ animationDelay: '0.15s' }}>
             <CardHeader className="pb-2 pt-4 px-4">
               <CardTitle className="text-sm flex items-center gap-2">
@@ -197,12 +202,33 @@ export default function Home() {
                   <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" style={{ animationDelay: '0.4s' }} />
                   <span>Analisando condições com IA...</span>
                 </div>
-              ) : (
+              ) : aiReport ? (
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground leading-relaxed">{aiReport}</p>
                   <p className="text-xs text-muted-foreground/50">Gerado por IA com base nos dados atuais. Confirme as condições antes de entrar no mar.</p>
                 </div>
-              )}
+              ) : !isPremium && topSpot ? (
+                // Prévia com blur para usuários free
+                <div className="space-y-3">
+                  <div className="relative">
+                    <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
+                      As condições em {topSpot.name} estão {topSpot.score >= 7 ? 'excelentes' : topSpot.score >= 5.5 ? 'boas' : 'moderadas'} com ondas de {topSpot.waveHeight.toFixed(1)}m e período de {Math.round(topSpot.swellPeriod)}s. A análise completa indica a melhor janela do dia...
+                    </p>
+                    <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-card/90 to-transparent pointer-events-none" />
+                  </div>
+                  <div className="relative overflow-hidden rounded-lg">
+                    <p className="text-sm text-muted-foreground leading-relaxed blur-sm select-none" aria-hidden>
+                      O vento {topSpot.windDirection} favorece as ondas neste momento, com maré em condição ideal para surfistas de nível intermediário. Recomendamos chegar antes das 9h para aproveitar o melhor do swell.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/premium')}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary/10 border border-primary/30 hover:bg-primary/20 transition-colors text-sm font-semibold text-primary"
+                  >
+                    <Crown className="h-4 w-4" />Ver relatório completo — Premium
+                  </button>
+                </div>
+              ) : null}
             </CardContent>
           </Card>
         )}
@@ -288,7 +314,7 @@ export default function Home() {
               </div>
             ) : (
               <div key={(item as BeachCondition).id} style={{ animation: `slideUp 0.4s ${idx * 0.05}s ease-out both` }}>
-                <SpotCard spot={item as BeachCondition} />
+                <SpotCard spot={item as BeachCondition} latestComment={latestComments[(item as BeachCondition).id]} />
               </div>
             )
           )}

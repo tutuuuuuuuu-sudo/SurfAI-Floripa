@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import {
   ArrowLeft, Check, Crown, Loader2, CheckCircle2, XCircle, Clock,
-  Sparkles, Calendar, Bell, BookOpen, BarChart3, Zap, ShieldOff
+  Sparkles, Calendar, Bell, BookOpen, BarChart3, Zap, ShieldOff, TrendingDown
 } from 'lucide-react'
 import { createMercadoPagoCheckout, usePremium } from '@/lib/premium'
 import { useAuth } from '@/contexts/AuthContext'
+import { supabase } from '@/lib/supabase'
 
 const PREMIUM_BENEFITS = [
   { icon: Sparkles, title: 'Relatório de IA personalizado', desc: 'IA analisa as condições e escreve um relatório diário pro seu nível de surf.' },
@@ -26,7 +28,22 @@ export default function PremiumPage() {
   const { user } = useAuth()
   const { isPremium, loading: loadingStatus } = usePremium()
   const [loading, setLoading] = useState(false)
+  const [loadingAnnual, setLoadingAnnual] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'annual'>('annual')
+  const [recentSignups, setRecentSignups] = useState<number | null>(null)
+
+  useEffect(() => {
+    // Conta assinaturas criadas nos últimos 7 dias para social proof
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    supabase
+      .from('subscriptions')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', since)
+      .eq('status', 'premium')
+      .then(({ count }) => { if (count && count > 0) setRecentSignups(count) })
+      .catch(() => {})
+  }, [])
 
   const paymentStatus = searchParams.get('status') as 'success' | 'failure' | 'pending' | null
 
@@ -37,12 +54,12 @@ export default function PremiumPage() {
     }
   }, [paymentStatus])
 
-  const handleSubscribe = async () => {
+  const handleSubscribe = async (plan: 'monthly' | 'annual' = 'monthly') => {
     if (!user) { navigate('/login'); return }
-    setLoading(true)
+    if (plan === 'annual') setLoadingAnnual(true); else setLoading(true)
     setError(null)
     try {
-      const result = await createMercadoPagoCheckout(user.id, user.email ?? '')
+      const result = await createMercadoPagoCheckout(user.id, user.email ?? '', plan)
       if (result.url) {
         window.location.href = result.url
       } else {
@@ -52,6 +69,7 @@ export default function PremiumPage() {
       setError('Erro ao conectar com o Mercado Pago. Tente novamente.')
     } finally {
       setLoading(false)
+      setLoadingAnnual(false)
     }
   }
 
@@ -124,23 +142,85 @@ export default function PremiumPage() {
           </Card>
         )}
 
+        {/* Social proof */}
+        {!isPremium && recentSignups && recentSignups >= 3 && (
+          <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground" style={{ animation: 'fadeIn 0.5s ease-out' }}>
+            <div className="h-2 w-2 rounded-full bg-rating-good animate-pulse" />
+            <span><span className="font-semibold text-foreground">{recentSignups} surfistas</span> assinaram nos últimos 7 dias</span>
+          </div>
+        )}
+
+        {/* Seletor de planos */}
+        {!isPremium && (
+          <div className="flex rounded-xl bg-muted/30 p-1 border border-border/30" style={{ animation: 'slideUp 0.4s 0.05s ease-out both' }}>
+            <button
+              onClick={() => setSelectedPlan('annual')}
+              className={`flex-1 flex flex-col items-center py-2.5 rounded-lg text-sm font-semibold transition-all relative ${
+                selectedPlan === 'annual' ? 'bg-card shadow-sm text-foreground border border-border/40' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <span>Anual</span>
+              <span className={`text-xs font-bold ${selectedPlan === 'annual' ? 'text-rating-good' : 'text-muted-foreground'}`}>R$ 19,90/mês</span>
+              {selectedPlan === 'annual' && (
+                <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-rating-good/20 text-rating-good border-rating-good/30 text-[10px] px-1.5 py-0 whitespace-nowrap">
+                  Economize R$ 120
+                </Badge>
+              )}
+            </button>
+            <button
+              onClick={() => setSelectedPlan('monthly')}
+              className={`flex-1 flex flex-col items-center py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                selectedPlan === 'monthly' ? 'bg-card shadow-sm text-foreground border border-border/40' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <span>Mensal</span>
+              <span className={`text-xs font-bold ${selectedPlan === 'monthly' ? 'text-foreground' : 'text-muted-foreground'}`}>R$ 29,90/mês</span>
+            </button>
+          </div>
+        )}
+
         {/* Card de preço */}
         {!isPremium && (
           <Card className="overflow-hidden border-primary/50" style={{ animation: 'slideUp 0.4s 0.1s ease-out both' }}>
-            <div className="text-center py-2 text-xs font-bold tracking-wider bg-primary text-primary-foreground">
-              PLANO MAIS POPULAR
-            </div>
+            {selectedPlan === 'annual' && (
+              <div className="text-center py-2 text-xs font-bold tracking-wider bg-primary text-primary-foreground">
+                MELHOR VALOR — PLANO ANUAL
+              </div>
+            )}
+            {selectedPlan === 'monthly' && (
+              <div className="text-center py-2 text-xs font-bold tracking-wider bg-muted text-muted-foreground">
+                PLANO MENSAL — CANCELE QUANDO QUISER
+              </div>
+            )}
 
             <CardContent className="p-6 space-y-5">
-              {/* Preço */}
+              {/* Preço com âncora */}
               <div className="text-center">
-                <div className="flex items-end justify-center gap-1">
-                  <span className="text-sm text-muted-foreground mb-1">R$</span>
-                  <span className="text-5xl font-bold text-yellow-500">29</span>
-                  <span className="text-2xl font-bold text-yellow-500">,90</span>
-                  <span className="text-sm text-muted-foreground mb-1">/mês</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">Cancele quando quiser</p>
+                {selectedPlan === 'annual' ? (
+                  <>
+                    <div className="flex items-end justify-center gap-1">
+                      <span className="text-sm text-muted-foreground mb-1">R$</span>
+                      <span className="text-5xl font-bold text-yellow-500">19</span>
+                      <span className="text-2xl font-bold text-yellow-500">,90</span>
+                      <span className="text-sm text-muted-foreground mb-1">/mês</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">Cobrado anualmente — R$ 238,80/ano</p>
+                    <div className="flex items-center justify-center gap-1.5 mt-1.5">
+                      <TrendingDown className="h-3.5 w-3.5 text-rating-good" />
+                      <span className="text-xs font-semibold text-rating-good">Menos de R$ 0,66/dia · você economiza R$ 120/ano</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-end justify-center gap-1">
+                      <span className="text-sm text-muted-foreground mb-1">R$</span>
+                      <span className="text-5xl font-bold text-yellow-500">29</span>
+                      <span className="text-2xl font-bold text-yellow-500">,90</span>
+                      <span className="text-sm text-muted-foreground mb-1">/mês</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">Cancele quando quiser · menos de R$ 1/dia</p>
+                  </>
+                )}
               </div>
 
               {/* Benefícios */}
@@ -165,17 +245,19 @@ export default function PremiumPage() {
               )}
 
               <Button className="w-full h-12 text-base font-bold"
-                onClick={handleSubscribe} disabled={loading || loadingStatus}>
-                {loading
+                onClick={() => handleSubscribe(selectedPlan)} disabled={loading || loadingAnnual || loadingStatus}>
+                {(loading || loadingAnnual)
                   ? <><Loader2 className="h-5 w-5 mr-2 animate-spin" />Redirecionando...</>
-                  : <><Crown className="h-5 w-5 mr-2" />Assinar por R$ 29,90/mês</>
+                  : selectedPlan === 'annual'
+                    ? <><Crown className="h-5 w-5 mr-2" />Assinar por R$ 238,80/ano</>
+                    : <><Crown className="h-5 w-5 mr-2" />Assinar por R$ 29,90/mês</>
                 }
               </Button>
 
               <div className="text-center space-y-1.5">
                 <p className="text-xs text-muted-foreground">Pagamento seguro via</p>
                 <div className="flex items-center justify-center gap-3">
-                  {['💳 Cartão', '📱 PIX', '🏦 Boleto'].map(method => (
+                  {['Cartão', 'PIX', 'Boleto'].map(method => (
                     <span key={method} className="text-xs text-muted-foreground bg-muted/30 px-2.5 py-1 rounded-full">{method}</span>
                   ))}
                 </div>

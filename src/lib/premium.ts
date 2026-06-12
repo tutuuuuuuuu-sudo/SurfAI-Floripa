@@ -106,7 +106,8 @@ export function usePremium() {
 
 export async function createMercadoPagoCheckout(
   userId: string,
-  userEmail: string
+  userEmail: string,
+  plan: 'monthly' | 'annual' = 'monthly'
 ): Promise<{ url: string | null; error?: string }> {
   try {
     const { data: { session } } = await supabase.auth.getSession()
@@ -119,7 +120,7 @@ export async function createMercadoPagoCheckout(
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ userEmail }),
+      body: JSON.stringify({ userEmail, plan }),
     })
     const data = await res.json()
     if (!res.ok) {

@@ -3,11 +3,13 @@ import { Badge } from '@/components/ui/badge'
 import { BeachCondition } from '@/lib/surfData'
 import { getRatingInfo } from '@/lib/rating'
 import { getTainhaInfo } from '@/lib/tainha'
-import { Waves, Wind, Clock, Thermometer, ThumbsUp, Fish } from 'lucide-react'
+import { LatestComment, formatCommentTime } from '@/lib/comments'
+import { Waves, Wind, Clock, Thermometer, ThumbsUp, Fish, MessageCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 interface SpotCardProps {
   spot: BeachCondition
+  latestComment?: LatestComment
 }
 
 function getUserLevel(): string | null {
@@ -23,7 +25,7 @@ function getPersonalizedBadge(spot: BeachCondition, level: string | null): strin
   return null
 }
 
-export function SpotCard({ spot }: SpotCardProps) {
+export function SpotCard({ spot, latestComment }: SpotCardProps) {
   const navigate = useNavigate()
   const rating = getRatingInfo(spot.score)
   const personalBadge = getPersonalizedBadge(spot, getUserLevel())
@@ -126,6 +128,17 @@ export function SpotCard({ spot }: SpotCardProps) {
             </Badge>
           )}
         </div>
+
+        {latestComment && (
+          <div className="flex items-start gap-2 pt-1 border-t border-border/40">
+            <MessageCircle className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-muted-foreground leading-snug line-clamp-2">
+              <span className="font-medium text-foreground/70">{latestComment.user_name}:</span>{' '}
+              &ldquo;{latestComment.content}&rdquo;{' '}
+              <span className="text-muted-foreground/60">· {formatCommentTime(latestComment.created_at)}</span>
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   )

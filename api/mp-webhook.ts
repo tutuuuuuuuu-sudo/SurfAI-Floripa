@@ -119,11 +119,15 @@ export default async function handler(req: Request) {
 
   if (payment.status !== 'approved') return ok()
 
-  const userId = payment.external_reference
+  // external_reference pode ser "userId|plan" (novo) ou só "userId" (legado)
+  const [userId, plan] = (payment.external_reference ?? '').split('|')
   if (!userId) {
     console.error('[mp-webhook] userId não encontrado no pagamento')
     return new Response('Missing userId', { status: 400 })
   }
+
+  // Duração: 12 meses para anual, 30 dias para mensal
+  const durationDays = plan === 'annual' ? 365 : 30
 
   // Chama a função activate_premium via Supabase REST
   const rpcRes = await fetch(`${supabaseUrl}/rest/v1/rpc/activate_premium`, {
@@ -139,6 +143,7 @@ export default async function handler(req: Request) {
       p_mp_preference_id: payment.preference_id ?? '',
       p_amount: payment.transaction_amount,
       p_payment_method: payment.payment_type_id ?? 'unknown',
+      p_duration_days: durationDays,
     }),
   })
 

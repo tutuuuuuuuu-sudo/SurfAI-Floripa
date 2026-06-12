@@ -18,6 +18,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { toast } from 'sonner'
 import { getRatingInfo } from '@/lib/rating'
+import { supabase } from '@/lib/supabase'
 import { WindCompass, formatWindDirection } from '@/components/spot/WindCompass'
 import { TideChart } from '@/components/spot/TideChart'
 import { CommentsSection } from '@/components/spot/CommentsSection'
@@ -150,6 +151,7 @@ export default function SpotDetails() {
   const [visible, setVisible] = useState(false)
   const [showScoreExplainer, setShowScoreExplainer] = useState(false)
   const [activeTab, setActiveTab] = useState<'agora'|'previsao'>('agora')
+  const [scoreHistory, setScoreHistory] = useState<{ avg30: number | null; isMonthBest: boolean } | null>(null)
   const [commentsOpen, setCommentsOpen] = useState(false)
   const [usesFeet, setUsesFeet] = useState(() => {
     try { return JSON.parse(localStorage.getItem('pref_units') ?? '"metric"') === 'imperial' } catch { return false }
@@ -176,6 +178,26 @@ export default function SpotDetails() {
     }
 
     isFavorite(id).then(val => { setFavorite(val); setLoadingFav(false) })
+
+    // Busca média histórica dos últimos 30 dias para contexto comparativo
+    const since30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+    supabase
+      .from('score_snapshots')
+      .select('score')
+      .eq('beach_id', id)
+      .gte('captured_at', since30)
+      .then(({ data }) => {
+        if (!data || data.length < 5) { setScoreHistory(null); return }
+        const scores = data.map(r => Number(r.score))
+        const avg = scores.reduce((a, b) => a + b, 0) / scores.length
+        const maxScore = Math.max(...scores)
+        setScoreHistory({ avg30: avg, isMonthBest: false })
+        if (found) {
+          const currentScore = found.score
+          setScoreHistory({ avg30: avg, isMonthBest: currentScore >= maxScore - 0.3 })
+        }
+      })
+      .catch(() => {})
   }, [id, isPremium, conditions, conditionsLoading])
 
   if (loadingSpot) return (
@@ -301,6 +323,35 @@ export default function SpotDetails() {
             </div>
           </div>
         </div>
+
+        {/* Widget: contexto histórico do score */}
+        {scoreHistory && scoreHistory.avg30 !== null && (() => {
+          const diff = spot.score - scoreHistory.avg30
+          const pct = Math.round(Math.abs(diff / scoreHistory.avg30) * 100)
+          if (pct < 5 && !scoreHistory.isMonthBest) return null
+          return (
+            <div
+              className={`flex items-center gap-3 px-4 py-3 rounded-2xl border ${
+                scoreHistory.isMonthBest
+                  ? 'bg-rating-epic/10 border-rating-epic/30'
+                  : diff > 0
+                    ? 'bg-rating-good/10 border-rating-good/30'
+                    : 'bg-muted/20 border-border/50'
+              }`}
+              style={{ animation: 'slideUp 0.3s ease-out' }}
+            >
+              <TrendingUp className={`h-5 w-5 flex-shrink-0 ${scoreHistory.isMonthBest ? 'text-rating-epic' : diff > 0 ? 'text-rating-good' : 'text-muted-foreground'}`} />
+              <p className="text-sm font-medium">
+                {scoreHistory.isMonthBest
+                  ? <><span className={`font-bold ${diff > 0 ? 'text-rating-epic' : 'text-foreground'}`}>Melhor condição do mês</span> <span className="text-muted-foreground">neste pico.</span></>
+                  : diff > 0
+                    ? <><span className={`font-bold text-rating-good`}>{pct}% acima</span> <span className="text-muted-foreground">da média dos últimos 30 dias.</span></>
+                    : <><span className="text-muted-foreground">{pct}% abaixo da média dos últimos 30 dias.</span></>
+                }
+              </p>
+            </div>
+          )
+        })()}
 
         {/* Widget: Melhor janela hoje */}
         {spot.bestTimeWindow && (() => {
