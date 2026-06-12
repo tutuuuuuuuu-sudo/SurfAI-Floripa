@@ -42,6 +42,7 @@ export default function Home() {
   })
   const [latestComments, setLatestComments] = useState<Record<string, LatestComment>>({})
   const aiReportFetchedRef = useRef(false)
+  const premiumResolvedRef = useRef(false)
   const navigate = useNavigate()
   const { user } = useAuth()
   const { isPremium, loading: premiumLoading } = usePremium()
@@ -75,7 +76,14 @@ export default function Home() {
 
   // Busca o relatório AI uma única vez — aguarda status premium ser resolvido
   useEffect(() => {
-    if (allSpots.length === 0 || premiumLoading || aiReportFetchedRef.current) return
+    if (premiumLoading) return
+    // Reseta o ref quando o status premium resolve pela primeira vez,
+    // garantindo que o fetch ocorra com o token correto (premium ou free)
+    if (!premiumResolvedRef.current) {
+      premiumResolvedRef.current = true
+      aiReportFetchedRef.current = false
+    }
+    if (allSpots.length === 0 || aiReportFetchedRef.current) return
     aiReportFetchedRef.current = true
     const sortedAll = [...allSpots].sort((a, b) => b.score - a.score)
     const top = sortedAll[0]
