@@ -24,12 +24,6 @@ function getConditionFromScore(score: number): 'Excelente' | 'Bom' | 'Regular' |
   return 'Ruim'
 }
 
-// Converte graus para código de direção limpo (N, SE, SW etc)
-function degreesToDir(deg: number): string {
-  const dirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
-  return dirs[Math.round(deg / 22.5) % 16]
-}
-
 // Coordenadas aproximadas (centro geográfico) para busca de previsão meteorológica.
 // Diferem intencionalmente das coords em surfData.ts, que apontam para a areia exata.
 const BEACH_COORDS: Record<string, { lat: number, lng: number }> = {

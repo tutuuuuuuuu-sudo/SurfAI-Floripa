@@ -34,14 +34,11 @@ export default function PremiumPage() {
   const [recentSignups, setRecentSignups] = useState<number | null>(null)
 
   useEffect(() => {
-    // Conta assinaturas criadas nos últimos 7 dias para social proof
-    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    // Busca contagem de novos assinantes via RPC pública — não expõe dados individuais
+    // A função SQL deve ter SECURITY DEFINER e retornar apenas um número agregado
     supabase
-      .from('subscriptions')
-      .select('*', { count: 'exact', head: true })
-      .gte('created_at', since)
-      .eq('status', 'premium')
-      .then(({ count }) => { if (count && count > 0) setRecentSignups(count) })
+      .rpc('count_recent_premium', { since_days: 7 })
+      .then(({ data }) => { if (typeof data === 'number' && data >= 3) setRecentSignups(data) })
       .catch(() => {})
   }, [])
 

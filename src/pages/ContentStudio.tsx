@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, Copy, Check, RefreshCw, Instagram, Sparkles, Zap, Hash } from 'lucide-react'
+import { ArrowLeft, Copy, Check, RefreshCw, Instagram, Sparkles, Zap, Hash, Crown, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
 import { track } from '@/lib/monitoring'
 import { getRatingInfo } from '@/lib/rating'
+import { usePremium } from '@/lib/premium'
 
 interface ContentResult {
   instagram: { caption: string; hashtags: string; fullPost: string }
@@ -46,8 +47,29 @@ function ScoreBadge({ score }: { score: number }) {
 
 export default function ContentStudio() {
   const navigate = useNavigate()
+  const { isPremium, loading: premiumLoading } = usePremium()
   const [content, setContent] = useState<ContentResult | null>(null)
   const [loading, setLoading] = useState(false)
+
+  if (!premiumLoading && !isPremium) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8 text-center">
+        <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-4">
+          <Lock className="h-8 w-8 text-primary" />
+        </div>
+        <h2 className="text-xl font-bold mb-2">Content Studio é Premium</h2>
+        <p className="text-muted-foreground text-sm mb-6 max-w-xs">
+          Gere legendas virais para Instagram e TikTok com as condições reais do mar. Exclusivo para assinantes Premium.
+        </p>
+        <Button onClick={() => navigate('/premium')} className="gap-2">
+          <Crown className="h-4 w-4" />Assinar Premium
+        </Button>
+        <Button variant="ghost" onClick={() => navigate('/')} className="mt-2">
+          Voltar ao início
+        </Button>
+      </div>
+    )
+  }
 
   async function generate() {
     setLoading(true)
