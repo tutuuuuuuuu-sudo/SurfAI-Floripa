@@ -9,7 +9,7 @@ const NAV_ITEMS = [
   { path: '/profile',    label: 'Perfil',    Icon: User },
 ]
 
-const HIDDEN_PATHS = ['/landing', '/login']
+const HIDDEN_PATHS = ['/landing', '/login', '/reset-password']
 
 export function BottomNav() {
   const location = useLocation()

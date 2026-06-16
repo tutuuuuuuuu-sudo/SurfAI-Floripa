@@ -40,6 +40,7 @@ export interface BeachCondition {
   sunset?: string
   lat: number
   lng: number
+  _beachOrientation?: number
 }
 
 // Cache de maré real para Floripa (lat -27.62, lng -48.48)
@@ -314,7 +315,7 @@ async function _doFetchConditions(): Promise<BeachCondition[]> {
 
   // Limita concorrência a 5 praias por vez para não exceder os limites do Vercel Free
   const BATCH_SIZE = 5
-  const allResults: PromiseSettledResult<BeachCondition & { _beachOrientation: number }>[] = []
+  const allResults: PromiseSettledResult<BeachCondition>[] = []
 
   for (let i = 0; i < BEACHES.length; i += BATCH_SIZE) {
     const batch = BEACHES.slice(i, i + BATCH_SIZE)
@@ -356,14 +357,14 @@ async function _doFetchConditions(): Promise<BeachCondition[]> {
           sunrise: windyData?.sunrise, sunset: windyData?.sunset,
           lat: beach.lat, lng: beach.lng,
           _beachOrientation: beach.orientation,
-        } as BeachCondition & { _beachOrientation: number }
+        } satisfies BeachCondition
       })
     )
     allResults.push(...batchResults)
   }
 
   return allResults
-    .filter((r): r is PromiseFulfilledResult<BeachCondition & { _beachOrientation: number }> => r.status === 'fulfilled')
+    .filter((r): r is PromiseFulfilledResult<BeachCondition> => r.status === 'fulfilled')
     .map(r => r.value)
 }
 
@@ -400,7 +401,7 @@ export function getTopSpots(limit = 3): BeachCondition[] { return getCurrentCond
 export function getSpotsByRegion(region: BeachCondition['region']): BeachCondition[] { return getCurrentConditions().filter(s => s.region === region).sort((a, b) => b.score - a.score) }
 export function getSpotById(id: string): BeachCondition | undefined { return getCurrentConditions().find(s => s.id === id) }
 
-export function analyzeConditions(spot: BeachCondition & { _beachOrientation?: number }): string {
+export function analyzeConditions(spot: BeachCondition): string {
   const orientation = spot._beachOrientation ?? 90
   let analysis = ''
   if (spot.score >= 8) analysis = 'Condições EXCELENTES! '

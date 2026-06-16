@@ -111,7 +111,7 @@ export default function Landing() {
                 </h1>
                 <p className="text-lg text-muted-foreground max-w-lg leading-relaxed"
                   style={{ animation: 'fadeIn 0.7s ease 0.4s both' }}>
-                  Score de IA para 17 praias. Previsão de ondas, alertas e histórico —
+                  Score de IA para 15 praias. Previsão de ondas, alertas e histórico —
                   tudo que você precisa para não perder a melhor sessão da semana.
                 </p>
               </div>
@@ -274,7 +274,7 @@ export default function Landing() {
             <div className="hidden md:block absolute top-12 left-[calc(16.67%+16px)] right-[calc(16.67%+16px)] h-px"
               style={{ background: 'linear-gradient(90deg, oklch(0.6 0.16 200 / 0.5), oklch(0.6 0.16 200 / 0.2))' }} />
             {[
-              { step: '01', icon: Droplets, title: 'Dados em tempo real', desc: 'Coletamos dados de ondas, vento e maré de múltiplas fontes meteorológicas a cada hora, 24/7.' },
+              { step: '01', icon: Droplets, title: 'Dados em tempo real', desc: 'Coletamos dados de ondas, vento e maré de múltiplas fontes meteorológicas a cada 15 minutos, 24/7.' },
               { step: '02', icon: Zap, title: 'IA calcula o score', desc: 'Nossa IA analisa todos os parâmetros e gera uma nota de 0 a 10 considerando o seu nível de surf.' },
               { step: '03', icon: TrendingUp, title: 'Você decide em segundos', desc: 'Veja o score, compare praias e tome a melhor decisão — sem desperdício de tempo ou gasolina.' },
             ].map(({ step, icon: Icon, title, desc }, i) => (
@@ -352,7 +352,7 @@ export default function Landing() {
                 </div>
                 <h3 className="font-bold text-xl mb-2">Score de IA em tempo real</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">
-                  IA analisa altura, período, vento e maré para gerar uma nota de 0 a 10 para cada praia — atualizada a cada hora.
+                  IA analisa altura, período, vento e maré para gerar uma nota de 0 a 10 para cada praia — atualizada a cada 15 minutos.
                 </p>
                 <div className="mt-5 flex items-center gap-2">
                   <div className="h-1.5 w-1.5 rounded-full animate-pulse bg-green-400" />
@@ -382,7 +382,7 @@ export default function Landing() {
                       }} />
                   ))}
                 </div>
-                <h3 className="font-bold text-base mb-1.5">17 praias monitoradas</h3>
+                <h3 className="font-bold text-base mb-1.5">15 praias monitoradas</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   Cobertura completa de Florianópolis — Norte ao Sul da ilha.
                 </p>
@@ -840,7 +840,7 @@ export default function Landing() {
                 <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-6 text-xs font-semibold"
                   style={{ background: 'oklch(0.6 0.2 210 / 0.12)', border: '1px solid oklch(0.6 0.2 210 / 0.3)', color: 'oklch(0.75 0.15 200)' }}>
                   <div className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
-                  17 praias monitoradas agora
+                  15 praias monitoradas agora
                 </div>
                 <h2 className="text-3xl md:text-5xl font-black mb-4 leading-tight">
                   Sua próxima sessão épica<br />
@@ -852,7 +852,7 @@ export default function Landing() {
                   </span>
                 </h2>
                 <p className="text-muted-foreground mb-10 leading-relaxed text-base max-w-md mx-auto">
-                  Dados reais de 17 praias, score de IA e alertas personalizados.
+                  Dados reais de 15 praias, score de IA e alertas personalizados.
                   Crie sua conta grátis em menos de 1 minuto.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center mb-8">
@@ -919,7 +919,7 @@ export default function Landing() {
         <div className="container mx-auto px-5 max-w-5xl flex flex-col md:flex-row items-center justify-between gap-4">
           <AppLogo size={30} variant="full" />
           <div className="text-xs text-muted-foreground text-center">
-            Florianópolis, SC · Dados atualizados a cada hora · Feito com 🤙 para surfistas
+            Florianópolis, SC · Dados atualizados a cada 15 minutos · Feito com 🤙 para surfistas
           </div>
           <div className="flex items-center gap-3">
             <button onClick={() => navigate('/privacy')} className="text-xs text-muted-foreground hover:text-foreground transition-colors">

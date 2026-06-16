@@ -66,15 +66,23 @@ export default function ComparePage() {
   }
 
   // Controle de cota diária para free: 1 comparação por dia
+  // O estado é mantido em memória de sessão (sessionStorage) além do localStorage
+  // para dificultar bypass via DevTools (apagar localStorage não limpa a sessão ativa)
   const freeQuotaKey = 'compare_used_date'
   const todayStr = new Date().toISOString().split('T')[0]
   const usedToday = !isPremium && (() => {
-    try { return localStorage.getItem(freeQuotaKey) === todayStr } catch { return false }
+    try {
+      return (
+        localStorage.getItem(freeQuotaKey) === todayStr ||
+        sessionStorage.getItem(freeQuotaKey) === todayStr
+      )
+    } catch { return false }
   })()
 
   const markQuotaUsed = () => {
     if (!isPremium) {
       try { localStorage.setItem(freeQuotaKey, todayStr) } catch { /* */ }
+      try { sessionStorage.setItem(freeQuotaKey, todayStr) } catch { /* */ }
     }
   }
 

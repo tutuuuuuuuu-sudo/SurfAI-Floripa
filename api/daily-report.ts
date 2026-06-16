@@ -156,9 +156,9 @@ async function getSurfConditions(): Promise<{
     const best = sorted[0]
     const avg = Number((valid.reduce((s, r) => s + r.score, 0) / valid.length).toFixed(1))
 
-    // Temporada da tainha: maio a agosto
+    // Temporada da tainha: 1° de maio a 31 de julho (conforme tainha.ts)
     const month = new Date().getMonth() + 1
-    const tainhaSeasonActive = month >= 5 && month <= 8
+    const tainhaSeasonActive = month >= 5 && month <= 7
 
     return {
       bestSpot: best.name,
@@ -233,16 +233,18 @@ Escreva 3-4 frases de análise: o que foi bom, o que precisa de atenção, e uma
 const GITHUB_ACTIONS_URL = process.env.GITHUB_ACTIONS_URL ?? ''
 
 function scoreColor(score: number): string {
-  if (score >= 8) return '#22c55e'
-  if (score >= 6) return '#eab308'
-  if (score >= 4) return '#f97316'
-  return '#ef4444'
+  if (score >= 8.5) return '#a855f7' // épico — roxo
+  if (score >= 7)   return '#22c55e' // excelente — verde
+  if (score >= 5.5) return '#3b82f6' // bom — azul
+  if (score >= 4)   return '#eab308' // regular — amarelo
+  return '#ef4444'                   // ruim — vermelho
 }
 
 function conditionLabel(score: number): string {
-  if (score >= 8) return 'BOM'
-  if (score >= 6) return 'REGULAR'
-  if (score >= 4) return 'FRACO'
+  if (score >= 8.5) return 'ÉPICO'
+  if (score >= 7) return 'EXCELENTE'
+  if (score >= 5.5) return 'BOM'
+  if (score >= 4) return 'REGULAR'
   return 'RUIM'
 }
 
@@ -386,7 +388,7 @@ function buildEmailHtml(data: {
                   <span style="color:#2a2a2a;margin:0 8px;">|</span>
                   <a href="${supabaseDashUrl}" style="color:#555;text-decoration:none;">supabase.com → Dashboard</a>
                   <span style="color:#2a2a2a;margin:0 8px;">|</span>
-                  <a href="${APP_URL}" style="color:#555;text-decoration:none;">surf-ai-floripa.vercel.app</a>
+                  <a href="${APP_URL}" style="color:#555;text-decoration:none;">surfaifloripa.com.br</a>
                 </p>
               </td></tr>
             </table>

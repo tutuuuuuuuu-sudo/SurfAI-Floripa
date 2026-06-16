@@ -217,7 +217,7 @@ export function OnboardingModal({ onDone }: Props) {
                 Começar a surfar
               </Button>
               <button
-                onClick={() => navigate('/premium')}
+                onClick={() => { handleDone(true); navigate('/premium') }}
                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-rating-fair/5 border border-rating-fair/20 hover:bg-rating-fair/10 transition-colors text-sm text-rating-fair font-medium"
               >
                 <Crown className="h-4 w-4" />Ver o que é Premium

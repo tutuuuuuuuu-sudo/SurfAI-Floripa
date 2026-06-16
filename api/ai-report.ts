@@ -19,7 +19,9 @@ interface AuthResult {
 // Valida o token JWT e retorna o userId — uma única chamada para ambos os checks
 async function verifyToken(token: string): Promise<AuthResult> {
   const supabaseUrl = process.env.SUPABASE_URL
-  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY
+  // SUPABASE_ANON_KEY é a chave pública do backend (distinta de VITE_SUPABASE_ANON_KEY do frontend)
+  // Fallback para a service key — ambas funcionam como apikey no endpoint /auth/v1/user
+  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
   if (!supabaseUrl || !supabaseAnonKey) return { valid: false, userId: null }
   try {
     const res = await fetch(`${supabaseUrl}/auth/v1/user`, {

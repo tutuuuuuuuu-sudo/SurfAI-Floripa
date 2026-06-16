@@ -25,7 +25,7 @@ interface AuthResult { valid: boolean; userId: string | null }
 
 async function verifyToken(token: string): Promise<AuthResult> {
   const supabaseUrl = process.env.SUPABASE_URL
-  const anonKey = process.env.SUPABASE_ANON_KEY
+  const anonKey = process.env.SUPABASE_ANON_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
   if (!supabaseUrl || !anonKey) return { valid: false, userId: null }
   try {
     const res = await fetch(`${supabaseUrl}/auth/v1/user`, {

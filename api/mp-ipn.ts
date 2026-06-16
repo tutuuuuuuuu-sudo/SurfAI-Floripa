@@ -80,6 +80,8 @@ export default async function handler(req: Request) {
     }
 
     if (payment.status === 'approved' && payment.external_reference) {
+      const [userId, plan] = (payment.external_reference ?? '').split('|')
+      const durationDays = plan === 'annual' ? 365 : 30
       await fetch(`${supabaseUrl}/rest/v1/rpc/activate_premium`, {
         method: 'POST',
         headers: {
@@ -88,11 +90,12 @@ export default async function handler(req: Request) {
           'Authorization': `Bearer ${serviceKey}`,
         },
         body: JSON.stringify({
-          p_user_id: payment.external_reference,
+          p_user_id: userId,
           p_mp_payment_id: String(payment.id),
           p_mp_preference_id: payment.preference_id ?? '',
           p_amount: payment.transaction_amount,
           p_payment_method: payment.payment_type_id ?? 'unknown',
+          p_duration_days: durationDays,
         }),
       })
     }

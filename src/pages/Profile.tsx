@@ -78,7 +78,7 @@ export default function ProfilePage() {
       if (user) {
         const since = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
         const { data: sessions } = await supabase
-          .from('surf_log')
+          .from('surf_sessions')
           .select('date')
           .eq('user_id', user.id)
           .gte('date', since)

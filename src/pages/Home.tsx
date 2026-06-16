@@ -76,7 +76,6 @@ export default function Home() {
 
   // Busca o relatório AI uma única vez — aguarda status premium ser resolvido
   useEffect(() => {
-    console.log('[AI Effect] premiumLoading:', premiumLoading, '| isPremium:', isPremium, '| spots:', allSpots.length, '| fetchedRef:', aiReportFetchedRef.current)
     if (premiumLoading) return
     // Reseta o ref quando o status premium resolve pela primeira vez,
     // garantindo que o fetch ocorra com o token correto (premium ou free)
@@ -97,7 +96,7 @@ export default function Home() {
         setAiReport(report)
         if (report) track('ai_report_loaded', { top_spot: top.name, score: top.score })
       })
-      .catch((err) => { console.error('[AI Report] erro no fetch:', err) })
+      .catch(() => {})
       .finally(() => setAiLoading(false))
   }, [allSpots, premiumLoading])
 
