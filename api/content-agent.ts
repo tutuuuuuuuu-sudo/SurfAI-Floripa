@@ -39,6 +39,8 @@ interface ContentResult {
     hashtags: string
     fullPost: string
   }
+  whatsapp: { text: string }
+  twitter: { text: string }
   bestSpot: SpotData
   generatedAt: string
 }
@@ -71,7 +73,7 @@ async function fetchSpot(spot: typeof SPOTS[0]): Promise<SpotData | null> {
   }
 }
 
-async function generateContent(spots: SpotData[], bestSpot: SpotData): Promise<ContentResult | null> {
+async function generateContent(spots: SpotData[], bestSpot: SpotData, tone: string): Promise<ContentResult | null> {
   if (!ANTHROPIC_KEY) return null
 
   const now = new Date()
@@ -87,7 +89,15 @@ async function generateContent(spots: SpotData[], bestSpot: SpotData): Promise<C
 
   const conditionLevel = bestSpot.score >= 8 ? 'ÉPICO' : bestSpot.score >= 7 ? 'muito bom' : bestSpot.score >= 6 ? 'bom' : 'razoável'
 
-  const prompt = `Você é o social media manager do Surf AI Floripa, um app de inteligência artificial para surfistas de Florianópolis, SC. Seu estilo é autêntico, animado, usa gírias de surf brasileiro e conecta com a comunidade local.
+  const toneGuide = tone === 'informativo'
+    ? 'Tom técnico e informativo: dados precisos, linguagem clara, confiável. Poucos emojis. Foco nos números.'
+    : tone === 'minimalista'
+    ? 'Tom minimalista: frases curtas, sem emojis em excesso, direto ao ponto. Menos é mais.'
+    : 'Tom animado: empolgante, usa gírias de surf brasileiro (manda bem, mandou ver, ondão, etc.), emojis estratégicos.'
+
+  const prompt = `Você é o social media manager do Surf AI Floripa, um app de IA para surfistas de Florianópolis, SC.
+
+${toneGuide}
 
 Condições do mar em Floripa agora (${period} de ${dayOfWeek}):
 ${spotsContext}
@@ -95,30 +105,28 @@ ${spotsContext}
 Melhor praia: ${bestSpot.name} — ondas ${bestSpot.waveHeight}m, período ${bestSpot.swellPeriod}s, vento ${bestSpot.windSpeed}km/h ${bestSpot.windDirection}, score ${bestSpot.score}/10, condição ${conditionLevel}
 ${bestSpot.waterTemperature ? `Temperatura da água: ${bestSpot.waterTemperature}°C` : ''}
 
-Crie dois conteúdos virais:
+Crie conteúdo para 4 plataformas:
 
-**INSTAGRAM** — legenda engajante de 2-3 parágrafos curtos + call-to-action para baixar o app. Use emojis estrategicamente (não em excesso). Termine com uma pergunta para gerar comentários. Depois, numa linha separada, liste as hashtags (sem contar na legenda).
+**INSTAGRAM** — legenda de 2-3 parágrafos + call-to-action. Termine com pergunta para engajamento. Hashtags separadas.
 
-**TIKTOK** — primeiro o "hook" (primeira frase/gancho que aparece nos primeiros 2 segundos — deve ser impactante e gerar curiosidade). Depois a legenda curta (máx 150 caracteres). Depois as hashtags.
+**TIKTOK** — hook impactante (primeiros 2s), legenda curta (máx 150 chars), hashtags.
+
+**WHATSAPP** — mensagem direta para status ou grupo de surfistas. Máx 200 chars. Sem hashtags. Inclui link surfaifloripa.com.br.
+
+**TWITTER** — tweet direto com dados + call-to-action. Máx 270 chars incluindo hashtags.
 
 Regras:
-- Mencione praias específicas de Floripa (não "praias de SC" genérico)
-- Use o nome "Surf AI Floripa" pelo menos uma vez
-- Call-to-action: link na bio / baixa o app
-- Tom: surfista local que descobriu algo incrível, não corporativo
-- Se condição for boa/épica: celebra. Se for razoável: foca no que tem de bom e no app como diferencial
+- Mencione praias específicas de Floripa
+- Use "Surf AI Floripa" pelo menos uma vez
+- Call-to-action: link na bio / surfaifloripa.com.br / baixa o app
+- Não use tom corporativo
 
-Responda APENAS em JSON com este formato exato:
+Responda APENAS em JSON:
 {
-  "instagram": {
-    "caption": "texto da legenda sem hashtags",
-    "hashtags": "#hashtag1 #hashtag2 ..."
-  },
-  "tiktok": {
-    "hook": "primeira frase gancho",
-    "caption": "legenda curta",
-    "hashtags": "#hashtag1 #hashtag2 ..."
-  }
+  "instagram": { "caption": "...", "hashtags": "#..." },
+  "tiktok": { "hook": "...", "caption": "...", "hashtags": "#..." },
+  "whatsapp": { "text": "..." },
+  "twitter": { "text": "..." }
 }`
 
   try {
@@ -158,6 +166,8 @@ Responda APENAS em JSON com este formato exato:
         hashtags: parsed.tiktok.hashtags,
         fullPost: `${parsed.tiktok.hook}\n\n${parsed.tiktok.caption}\n\n${parsed.tiktok.hashtags}`,
       },
+      whatsapp: { text: parsed.whatsapp?.text ?? '' },
+      twitter: { text: parsed.twitter?.text ?? '' },
       bestSpot,
       generatedAt: new Date().toISOString(),
     }
@@ -242,9 +252,10 @@ export default async function handler(req: Request) {
   }
 
   const bestSpot = results.sort((a, b) => b.score - a.score)[0]
+  const tone = new URL(req.url).searchParams.get('tone') ?? 'animado'
 
   // Gera conteúdo via Claude
-  const content = await generateContent(results, bestSpot)
+  const content = await generateContent(results, bestSpot, tone)
 
   if (!content) {
     return new Response(JSON.stringify({ error: 'Falha ao gerar conteúdo' }), {
