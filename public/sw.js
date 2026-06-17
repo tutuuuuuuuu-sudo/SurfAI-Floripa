@@ -1,6 +1,6 @@
 // sw.js — Service Worker Surf AI Floripa
 // Versão: incrementar esse número a cada deploy para forçar atualização
-const CACHE_VERSION = 'surf-ai-v5'
+const CACHE_VERSION = 'surf-ai-v6'
 
 // Assets do app shell que devem funcionar offline
 const APP_SHELL = ['/', '/index.html']
@@ -66,7 +66,40 @@ self.addEventListener('fetch', (event) => {
   // Navegação (HTML): Network First, fallback para index.html (SPA)
   event.respondWith(
     fetch(event.request).catch(() =>
-      caches.match('/index.html') as Promise<Response>
+      caches.match('/index.html')
     )
+  )
+})
+
+// ── Web Push ──────────────────────────────────────────────────────────────────
+
+self.addEventListener('push', (event) => {
+  if (!event.data) return
+  let data = {}
+  try { data = event.data.json() } catch { data = { title: 'Surf AI', body: event.data.text() } }
+
+  const { title = 'Surf AI', body = '', icon = '/icon-192.png', badge = '/icon-192.png', url = '/' } = data
+
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      icon,
+      badge,
+      data: { url },
+      tag: 'surf-alert',
+      renotify: true,
+    })
+  )
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const url = event.notification.data?.url ?? '/'
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+      const existing = clientList.find(c => c.url.includes(self.location.origin))
+      if (existing) return existing.focus().then(c => c.navigate(url))
+      return clients.openWindow(url)
+    })
   )
 })

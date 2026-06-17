@@ -1,4 +1,5 @@
 import { lsGet, lsSet, lsGetJson, lsSetJson } from './utils'
+import { supabase } from './supabase'
 
 export async function requestNotificationPermission(): Promise<boolean> {
   if (!('Notification' in window)) return false
@@ -14,20 +15,70 @@ export function getNotificationPermission(): NotificationPermission | 'unsupport
   return Notification.permission
 }
 
-export async function subscribeToNotifications(): Promise<boolean> {
-  if (!('serviceWorker' in navigator)) return false
+const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined
+
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const pad = base64String.length % 4 === 0 ? '' : '='.repeat(4 - (base64String.length % 4))
+  const base64 = (base64String + pad).replace(/-/g, '+').replace(/_/g, '/')
+  const rawData = atob(base64)
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)))
+}
+
+export async function subscribeToNotifications(
+  minScore = 7,
+  favoriteOnly = true
+): Promise<boolean> {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false
 
   try {
-    await navigator.serviceWorker.register('/sw.js')
+    const reg = await navigator.serviceWorker.register('/sw.js')
     await navigator.serviceWorker.ready
 
     const granted = await requestNotificationPermission()
     if (!granted) return false
 
+    // Se não tiver VAPID key configurada, cai para notificação local apenas
+    if (!VAPID_PUBLIC_KEY) return true
+
+    const subscription = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+    })
+
+    // Salva subscription no servidor para push quando app estiver fechado
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.access_token) {
+      await fetch('/api/push-subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ subscription, minScore, favoriteOnly }),
+      }).catch(() => {}) // falha silenciosa — notificação local ainda funciona
+    }
+
     return true
-  } catch (error) {
+  } catch {
     return false
   }
+}
+
+export async function unsubscribeFromPush(): Promise<void> {
+  try {
+    const reg = await navigator.serviceWorker.getRegistration('/sw.js')
+    if (!reg) return
+    const sub = await reg.pushManager.getSubscription()
+    if (sub) await sub.unsubscribe()
+
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.access_token) {
+      await fetch('/api/push-subscribe', {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      }).catch(() => {})
+    }
+  } catch { /* silencioso */ }
 }
 
 export async function sendLocalNotification(title: string, body: string, url?: string) {

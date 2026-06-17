@@ -5,6 +5,7 @@ import { Separator } from '@/components/ui/separator'
 import { Bell, BellOff, X } from 'lucide-react'
 import {
   subscribeToNotifications,
+  unsubscribeFromPush,
   getNotificationPermission,
   getSavedNotificationSettings,
   saveNotificationSettings,
@@ -26,7 +27,7 @@ export function NotificationPanel({ spots, favorites }: Props) {
 
   const handleEnable = async () => {
     setLoading(true)
-    const success = await subscribeToNotifications()
+    const success = await subscribeToNotifications(settings.minScore, settings.favoriteOnly)
     if (success) {
       const s = { ...settings, enabled: true }
       setSettings(s)
@@ -40,6 +41,7 @@ export function NotificationPanel({ spots, favorites }: Props) {
     const s = { ...settings, enabled: false }
     setSettings(s)
     saveNotificationSettings(s)
+    unsubscribeFromPush().catch(() => {})
   }
 
   if (!open) return (
