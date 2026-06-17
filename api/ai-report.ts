@@ -3,7 +3,7 @@ export const config = { runtime: 'edge' }
 interface SpotSummary { name: string; score: number; waveHeight: number; windSpeed: number; windDirection: string; swellPeriod: number }
 interface ReportBody { spots?: SpotSummary[]; topSpot?: SpotSummary; userLevel?: string }
 
-const ALLOWED_ORIGIN = process.env.APP_URL ?? 'https://surf-ai-floripa.vercel.app'
+const ALLOWED_ORIGIN = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 
 const CORS = {
   'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
@@ -11,48 +11,7 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 }
 
-interface AuthResult {
-  valid: boolean
-  userId: string | null
-}
-
-// Valida o token JWT e retorna o userId — uma única chamada para ambos os checks
-async function verifyToken(token: string): Promise<AuthResult> {
-  const supabaseUrl = process.env.SUPABASE_URL
-  // SUPABASE_ANON_KEY é a chave pública do backend (distinta de VITE_SUPABASE_ANON_KEY do frontend)
-  // Fallback para a service key — ambas funcionam como apikey no endpoint /auth/v1/user
-  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
-  if (!supabaseUrl || !supabaseAnonKey) return { valid: false, userId: null }
-  try {
-    const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
-      headers: { 'Authorization': `Bearer ${token}`, 'apikey': supabaseAnonKey },
-    })
-    if (!res.ok) return { valid: false, userId: null }
-    const user = await res.json() as { id?: string }
-    return { valid: true, userId: user.id ?? null }
-  } catch {
-    return { valid: false, userId: null }
-  }
-}
-
-// Verifica se o userId tem assinatura premium ativa no Supabase
-async function isPremiumUser(userId: string): Promise<boolean> {
-  const supabaseUrl = process.env.SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!supabaseUrl || !serviceKey) return false
-  try {
-    const now = new Date().toISOString()
-    const res = await fetch(
-      `${supabaseUrl}/rest/v1/subscriptions?user_id=eq.${userId}&status=eq.premium&expires_at=gte.${now}&select=id&limit=1`,
-      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
-    )
-    if (!res.ok) return false
-    const rows = await res.json() as { id: string }[]
-    return Array.isArray(rows) && rows.length > 0
-  } catch {
-    return false
-  }
-}
+import { verifyToken, isPremiumUser } from './_auth.js'
 
 export default async function handler(req: Request) {
   if (req.method === 'OPTIONS') {

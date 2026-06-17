@@ -176,30 +176,7 @@ Responda APENAS em JSON:
   }
 }
 
-async function verifyPremiumUser(token: string): Promise<boolean> {
-  const supabaseUrl = process.env.SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
-  const anonKey = process.env.SUPABASE_ANON_KEY ?? serviceKey
-  if (!supabaseUrl || !anonKey || !serviceKey) return false
-  try {
-    const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
-      headers: { Authorization: `Bearer ${token}`, apikey: anonKey },
-    })
-    if (!userRes.ok) return false
-    const user = await userRes.json() as { id?: string }
-    if (!user.id) return false
-    const now = new Date().toISOString()
-    const subRes = await fetch(
-      `${supabaseUrl}/rest/v1/subscriptions?user_id=eq.${user.id}&status=eq.premium&expires_at=gte.${now}&select=id&limit=1`,
-      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
-    )
-    if (!subRes.ok) return false
-    const rows = await subRes.json() as { id: string }[]
-    return Array.isArray(rows) && rows.length > 0
-  } catch {
-    return false
-  }
-}
+import { verifyPremiumToken } from './_auth.js'
 
 export default async function handler(req: Request) {
   // Crons internos do Vercel chegam como GET com header x-vercel-signature
@@ -219,7 +196,7 @@ export default async function handler(req: Request) {
       }
     } else if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.slice(7)
-      const isPremium = await verifyPremiumUser(token)
+      const isPremium = await verifyPremiumToken(token)
       if (!isPremium) {
         return new Response(JSON.stringify({ error: 'Premium required' }), {
           status: 403,

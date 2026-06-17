@@ -17,45 +17,11 @@ function json(data: unknown, status = 200) {
   })
 }
 
-// Dias de previsão disponíveis por plano
+import { verifyToken, isPremiumUser } from './_auth.js'
+
+// FREE_DAYS deve coincidir com weatherData.ts — ambos controlam o mesmo limite de UX
 const FREE_DAYS = 3
 const PREMIUM_DAYS = 14
-
-interface AuthResult { valid: boolean; userId: string | null }
-
-async function verifyToken(token: string): Promise<AuthResult> {
-  const supabaseUrl = process.env.SUPABASE_URL
-  const anonKey = process.env.SUPABASE_ANON_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
-  if (!supabaseUrl || !anonKey) return { valid: false, userId: null }
-  try {
-    const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
-      headers: { Authorization: `Bearer ${token}`, apikey: anonKey },
-    })
-    if (!res.ok) return { valid: false, userId: null }
-    const user = await res.json() as { id?: string }
-    return { valid: true, userId: user.id ?? null }
-  } catch {
-    return { valid: false, userId: null }
-  }
-}
-
-async function isPremiumUser(userId: string): Promise<boolean> {
-  const supabaseUrl = process.env.SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!supabaseUrl || !serviceKey) return false
-  try {
-    const now = new Date().toISOString()
-    const res = await fetch(
-      `${supabaseUrl}/rest/v1/subscriptions?user_id=eq.${userId}&status=eq.premium&expires_at=gte.${now}&select=id&limit=1`,
-      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
-    )
-    if (!res.ok) return false
-    const rows = await res.json() as { id: string }[]
-    return Array.isArray(rows) && rows.length > 0
-  } catch {
-    return false
-  }
-}
 
 function isValidCoord(lat: string | null, lng: string | null): boolean {
   if (!lat || !lng) return false
@@ -65,7 +31,7 @@ function isValidCoord(lat: string | null, lng: string | null): boolean {
 
 function degreesToDir(deg: number): string {
   const dirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
-  return dirs[Math.round(deg / 22.5) % 16]
+  return dirs[Math.round(((deg % 360) + 360) % 360 / 22.5) % 16]
 }
 
 

@@ -27,31 +27,7 @@ function isValidCoord(lat: string | null, lng: string | null): boolean {
   return !isNaN(latN) && !isNaN(lngN) && latN >= -90 && latN <= 90 && lngN >= -180 && lngN <= 180
 }
 
-async function verifyPremium(token: string | null): Promise<boolean> {
-  if (!token) return false
-  const supabaseUrl = process.env.SUPABASE_URL
-  const anonKey = process.env.SUPABASE_ANON_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY
-  const serviceKey = process.env.SUPABASE_SERVICE_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!supabaseUrl || !anonKey || !serviceKey) return false
-  try {
-    const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
-      headers: { Authorization: `Bearer ${token}`, apikey: anonKey },
-    })
-    if (!userRes.ok) return false
-    const user = await userRes.json() as { id?: string }
-    if (!user.id) return false
-    const now = new Date().toISOString()
-    const subRes = await fetch(
-      `${supabaseUrl}/rest/v1/subscriptions?user_id=eq.${user.id}&status=eq.premium&expires_at=gte.${now}&select=id&limit=1`,
-      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
-    )
-    if (!subRes.ok) return false
-    const rows = await subRes.json() as { id: string }[]
-    return Array.isArray(rows) && rows.length > 0
-  } catch {
-    return false
-  }
-}
+import { verifyPremiumToken } from './_auth.js'
 
 export interface HourlySlot {
   hour: number        // 0-23
@@ -76,7 +52,7 @@ export default async function handler(req: Request) {
   if (!isValidCoord(lat, lng)) return json({ error: 'lat/lng inválidos' }, 400)
 
   const token = req.headers.get('Authorization')?.replace('Bearer ', '').trim() ?? null
-  const isPremium = await verifyPremium(token)
+  const isPremium = await verifyPremiumToken(token)
   if (!isPremium) return json({ error: 'Premium required' }, 403)
 
   try {

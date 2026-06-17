@@ -53,7 +53,7 @@ export async function toggleFavorite(spotId: string, spotName: string): Promise<
       .eq('user_id', userId)
       .eq('beach_id', spotId)
 
-    if (error) return true
+    if (error) return false
 
     if (cached) {
       cached.ids = cached.ids.filter(id => id !== spotId)
