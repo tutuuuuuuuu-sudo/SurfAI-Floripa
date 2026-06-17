@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import {
   ArrowLeft, LogOut, User, Bell, MapPin, Crown,
-  Sliders, ChevronRight, Shield
+  Sliders, ChevronRight, Shield, Waves
 } from 'lucide-react'
 import { AppLogo } from '@/components/AppLogo'
 import { toast } from 'sonner'
