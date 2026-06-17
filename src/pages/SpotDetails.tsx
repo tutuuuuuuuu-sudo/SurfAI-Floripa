@@ -24,6 +24,7 @@ import { TideChart } from '@/components/spot/TideChart'
 import { CommentsSection } from '@/components/spot/CommentsSection'
 import { ScoreExplainer } from '@/components/spot/ScoreExplainer'
 import { PicosSection } from '@/components/spot/PicosSection'
+import { BestWindowWidget } from '@/components/spot/BestWindowWidget'
 
 const FIXED_DOMAIN = typeof window !== 'undefined' ? window.location.origin : ''
 const metersToFeet = (m: number): string => `${(m * 3.281).toFixed(1)}ft`
@@ -581,6 +582,10 @@ export default function SpotDetails() {
                 </button>
               )}
             </div>
+
+            {isPremium && spot && (
+              <BestWindowWidget lat={spot.lat} lng={spot.lng} orientation={spot._beachOrientation ?? 90} />
+            )}
 
             {forecast.length === 0 ? (
               <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
