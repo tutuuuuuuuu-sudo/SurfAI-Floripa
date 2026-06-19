@@ -41,8 +41,10 @@ async function fetchSurf(lat: number, lng: number, orientation: number) {
 }
 
 export default async function handler(req: Request) {
-  // Aceita chamada do cron Vercel (GET com x-vercel-signature) ou secret manual
-  const isVercelCron = req.method === 'GET' && req.headers.get('x-vercel-signature')
+  const cronSecret = process.env.CRON_SECRET
+  const authHeader = req.headers.get('Authorization')
+  // Vercel injeta Authorization: Bearer <CRON_SECRET> automaticamente quando CRON_SECRET está configurado
+  const isVercelCron = req.method === 'GET' && cronSecret && authHeader === `Bearer ${cronSecret}`
   if (!isVercelCron) {
     const secret = process.env.SNAPSHOT_SECRET
     const provided = new URL(req.url).searchParams.get('secret')

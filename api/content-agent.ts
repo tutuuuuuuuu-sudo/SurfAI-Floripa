@@ -184,7 +184,9 @@ export default async function handler(req: Request) {
   // Usuários premium via Bearer token JWT
   const agentSecret = req.headers.get('x-agent-secret')
   const authHeader = req.headers.get('Authorization')
-  const isVercelCron = req.method === 'GET' && req.headers.get('x-vercel-signature')
+  const cronSecret = process.env.CRON_SECRET
+  // Vercel injeta Authorization: Bearer <CRON_SECRET> automaticamente nos crons quando CRON_SECRET está configurado
+  const isVercelCron = req.method === 'GET' && cronSecret && authHeader === `Bearer ${cronSecret}`
 
   if (!isVercelCron) {
     if (agentSecret) {

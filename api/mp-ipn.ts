@@ -49,7 +49,7 @@ export default async function handler(req: Request) {
   // Valida assinatura HMAC quando o secret estiver configurado em produção.
   // Em produção, requisições sem assinatura válida são rejeitadas com 401.
   const webhookSecret = process.env.MP_WEBHOOK_SECRET
-  if (webhookSecret && req.method === 'POST') {
+  if (webhookSecret) {
     const valid = await verifyMpSignature(req, webhookSecret)
     if (!valid) {
       console.error('[mp-ipn] Assinatura HMAC inválida — request rejeitado')

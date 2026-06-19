@@ -125,7 +125,7 @@ export function BestWindowWidget({ lat, lng, orientation }: Props) {
                     className={`w-full rounded-sm transition-all ${isPast ? 'opacity-30' : ''} ${slot.isPeak ? 'ring-1 ring-offset-1 ring-current' : ''}`}
                     style={{
                       height: `${heightPct}%`,
-                      backgroundColor: isPast ? 'var(--muted-foreground)' : info.color,
+                      backgroundColor: isPast ? 'var(--muted-foreground)' : info.scoreColor,
                     }}
                   />
                   {(isCurrent || slot.hour % 4 === 0) && (

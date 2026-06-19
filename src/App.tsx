@@ -15,6 +15,7 @@ import PremiumPage from './pages/Premium'
 import ComparePage from './pages/Compare'
 import ForecastPage from './pages/History'
 import SurfLog from './pages/SurfLog'
+import ContentStudio from './pages/ContentStudio'
 import Landing from './pages/Landing'
 import NotFound from './pages/NotFound'
 import Privacy from './pages/Privacy'
@@ -91,6 +92,7 @@ function AppRoutes() {
         <Route path="/forecast" element={<ProtectedRoute><ForecastPage /></ProtectedRoute>} />
         <Route path="/forecast/:id" element={<ProtectedRoute><ForecastPage /></ProtectedRoute>} />
         <Route path="/surf-log" element={<ProtectedRoute><SurfLog /></ProtectedRoute>} />
+        <Route path="/content-studio" element={<ProtectedRoute><ContentStudio /></ProtectedRoute>} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="*" element={<NotFound />} />

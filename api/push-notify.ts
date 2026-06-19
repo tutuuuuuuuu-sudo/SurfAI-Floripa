@@ -111,7 +111,10 @@ const WIND_DIR_MAP: Record<string, number> = {
 }
 
 export default async function handler(req: Request) {
-  const isVercelCron = req.method === 'GET' && req.headers.get('x-vercel-signature')
+  const cronSecret = process.env.CRON_SECRET
+  const authHeader = req.headers.get('Authorization')
+  // Vercel injeta Authorization: Bearer <CRON_SECRET> automaticamente quando CRON_SECRET está configurado
+  const isVercelCron = req.method === 'GET' && cronSecret && authHeader === `Bearer ${cronSecret}`
   if (!isVercelCron) {
     const secret = process.env.PUSH_NOTIFY_SECRET
     const provided = new URL(req.url).searchParams.get('secret')

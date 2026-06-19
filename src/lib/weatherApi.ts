@@ -87,7 +87,8 @@ export async function getRealTide(): Promise<{
     if (data.error || !data.heights) return null
 
     const levels: number[] = data.heights
-    const hour = new Date().getHours()
+    // tide API retorna array indexado por hora BRT; getHours() em UTC daria 3h de erro
+    const hour = new Date(Date.now() - 3 * 60 * 60 * 1000).getUTCHours()
     const current = levels[hour] ?? 0
     const next = levels[Math.min(levels.length - 1, hour + 1)] ?? current
 

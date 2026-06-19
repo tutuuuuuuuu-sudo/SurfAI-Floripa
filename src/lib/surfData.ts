@@ -64,7 +64,8 @@ async function fetchRealTideData(): Promise<{ heights: number[], times: string[]
 
 function getTideFromData(heights: number[], times: string[]): { height: number, state: 'Enchendo' | 'Secando' | 'Cheia' | 'Vazia' } {
   // Encontra índice atual
-  const nowStr = new Date().toISOString().slice(0, 13)
+  // Open-Meteo retorna times em horário local (BRT = UTC-3); toISOString() é UTC
+  const nowStr = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 13)
   let idx = times.findIndex(t => t.startsWith(nowStr))
   if (idx < 0) idx = 0
 
