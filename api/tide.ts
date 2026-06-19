@@ -20,7 +20,7 @@ async function fetchWaterTemp(): Promise<number> {
     if (res.ok) {
       const data = await res.json() as { table?: { rows?: [string, string, string, number][] } }
       const sst = data?.table?.rows?.[0]?.[3]
-      if (typeof sst === 'number' && sst >= 15 && sst <= 27) return Math.round(sst)
+      if (typeof sst === 'number' && sst >= 15 && sst <= 30) return Math.round(sst)
     }
   } catch { /* tenta próxima */ }
 
@@ -33,7 +33,7 @@ async function fetchWaterTemp(): Promise<number> {
     if (res.ok) {
       const data = await res.json() as { current?: { sea_surface_temperature?: number } }
       const sst = data.current?.sea_surface_temperature
-      if (sst != null && sst >= 15 && sst <= 27) return Math.round(sst)
+      if (sst != null && sst >= 15 && sst <= 30) return Math.round(sst)
     }
   } catch { /* fallback */ }
 

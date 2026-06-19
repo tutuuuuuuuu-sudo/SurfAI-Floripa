@@ -61,7 +61,8 @@ export default function Home() {
     setFetchError(false)
     const sortedAll = [...allSpots].sort((a, b) => b.score - a.score)
     setTopSpot(sortedAll[0] ?? null)
-    setTimeout(() => setVisible(true), 100)
+    const t = setTimeout(() => setVisible(true), 100)
+    return () => clearTimeout(t)
     getFavorites().catch(() => [] as string[]).then(favs => {
       setFavorites(favs)
       const notifSettings = getSavedNotificationSettings()

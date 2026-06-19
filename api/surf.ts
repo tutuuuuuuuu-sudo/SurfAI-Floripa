@@ -20,7 +20,7 @@ function classifyWind(direction: string, orientation: number): string {
   const terralSource = (orientation + 180) % 360
   let diff = Math.abs(windDeg - terralSource)
   if (diff > 180) diff = 360 - diff
-  if (diff <= 50) return `${direction} (Terral)`
+  if (diff <= 45) return `${direction} (Terral)`
   if (diff <= 90) return `${direction} (Lateral)`
   return `${direction} (Frontal)`
 }

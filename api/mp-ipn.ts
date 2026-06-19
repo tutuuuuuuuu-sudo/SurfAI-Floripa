@@ -82,7 +82,7 @@ export default async function handler(req: Request) {
     if (payment.status === 'approved' && payment.external_reference) {
       const [userId, plan] = (payment.external_reference ?? '').split('|')
       const durationDays = plan === 'annual' ? 365 : 30
-      await fetch(`${supabaseUrl}/rest/v1/rpc/activate_premium`, {
+      const rpcRes = await fetch(`${supabaseUrl}/rest/v1/rpc/activate_premium`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -98,6 +98,10 @@ export default async function handler(req: Request) {
           p_duration_days: durationDays,
         }),
       })
+      if (!rpcRes.ok) {
+        console.error('[mp-ipn] activate_premium falhou:', await rpcRes.text())
+        return new Response('{"error":"activation failed"}', { status: 500, headers })
+      }
     }
 
     return new Response('{"ok":true}', { status: 200, headers })

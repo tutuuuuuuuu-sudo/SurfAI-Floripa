@@ -226,7 +226,7 @@ Resend (emails transacionais)
 
 **Serverless** (`process.env.*`):
 - `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
-- `OPENAI_API_KEY`
+- `ANTHROPIC_API_KEY`
 - `MP_ACCESS_TOKEN` (Mercado Pago)
 - `RESEND_API_KEY`
 

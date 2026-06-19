@@ -68,7 +68,7 @@ export function BestWindowWidget({ lat, lng, orientation }: Props) {
   const { slots, bestWindow } = data
   const best = getRatingInfo(bestWindow.score)
   const nowHour = new Date().getHours()
-  const isBestNow = bestWindow.hour <= nowHour && bestWindow.hour >= nowHour - 1
+  const isBestNow = bestWindow.hour === nowHour
 
   return (
     <Card className="overflow-hidden">

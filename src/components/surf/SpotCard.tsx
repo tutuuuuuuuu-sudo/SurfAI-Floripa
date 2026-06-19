@@ -107,18 +107,18 @@ export function SpotCard({ spot, latestComment }: SpotCardProps) {
             {spot.level}
           </Badge>
           {personalBadge && (
-            <Badge className="bg-green-500/15 text-green-500 border-green-500/30" variant="outline">
+            <Badge className="bg-rating-good/15 text-rating-good border-rating-good/30" variant="outline">
               <ThumbsUp className="h-3 w-3 mr-1" />
               {personalBadge}
             </Badge>
           )}
           {tainha.status === 'liberada' && (
-            <Badge className="bg-green-500/15 text-green-500 border-green-500/30" variant="outline">
+            <Badge className="bg-rating-good/15 text-rating-good border-rating-good/30" variant="outline">
               <Fish className="h-3 w-3 mr-1" />Liberada
             </Badge>
           )}
           {tainha.status === 'parcial' && (
-            <Badge className="bg-yellow-500/15 text-yellow-500 border-yellow-500/30" variant="outline">
+            <Badge className="bg-rating-fair/15 text-rating-fair border-rating-fair/30" variant="outline">
               <Fish className="h-3 w-3 mr-1" />Área parcial
             </Badge>
           )}

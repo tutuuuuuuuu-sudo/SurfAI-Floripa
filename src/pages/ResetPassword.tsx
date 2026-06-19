@@ -17,13 +17,13 @@ export default function ResetPassword() {
   useEffect(() => {
     // Aguarda o Supabase processar o token do hash e estabelecer a sessão
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+      if (event === 'PASSWORD_RECOVERY') {
         setReady(true)
       }
     })
-    // Se já há sessão ativa (token já foi processado antes de montar)
+    // Se a sessão de recovery já foi processada antes da montagem do componente
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setReady(true)
+      if (session?.user?.recovery_sent_at) setReady(true)
     })
     return () => subscription.unsubscribe()
   }, [])

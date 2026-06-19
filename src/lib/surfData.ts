@@ -207,9 +207,9 @@ const BEACHES: BeachDefinition[] = [
   { id: 'armacao', name: 'Armação', region: 'Sul' as const,
     lat: -27.7504078, lng: -48.5017637, orientation: 115,
     subRegions: [
-      { id: 'caldeirao', name: 'Caldeirão', lat: -27.7535, lng: -48.5062, swellDirections: ['SE', 'S', 'SSE'] },
+      { id: 'caldeirao', name: 'Caldeirão', lat: -27.7520, lng: -48.5048, swellDirections: ['SE', 'S', 'SSE'] },
       { id: 'centro', name: 'Centro', lat: -27.7500, lng: -48.5045, swellDirections: ['SE', 'E'] },
-      { id: 'matadouro', name: 'Matadouro', lat: -27.7535, lng: -48.5062, swellDirections: ['S', 'SW', 'SSW'] },
+      { id: 'matadouro', name: 'Matadouro', lat: -27.7550, lng: -48.5078, swellDirections: ['S', 'SW', 'SSW'] },
     ], bestTimeWindow: '06h - 09h e 16h - 18h' },
   { id: 'naufragados', name: 'Naufragados', region: 'Sul' as const,
     lat: -27.8335587, lng: -48.5641537, // Naufragados — início da Trilha Caminho dos Naufragados
@@ -389,9 +389,11 @@ export async function fetchCurrentConditions(): Promise<BeachCondition[]> {
     conditionsState.fetchedAt = Date.now()
     conditionsState.inflight = null
     return conditions
-  }).catch(err => {
+  }).catch(() => {
     conditionsState.inflight = null
-    throw err
+    // Em timeout, retorna dados do cache anterior se disponíveis em vez de lançar erro
+    if (conditionsState.data && conditionsState.data.length > 0) return conditionsState.data
+    throw new Error('fetchCurrentConditions timeout')
   })
 
   return conditionsState.inflight
@@ -405,9 +407,10 @@ export function getSpotById(id: string): BeachCondition | undefined { return get
 export function analyzeConditions(spot: BeachCondition): string {
   const orientation = spot._beachOrientation ?? 90
   let analysis = ''
-  if (spot.score >= 8) analysis = 'Condições EXCELENTES! '
-  else if (spot.score >= 6.5) analysis = 'Boas condições para surfar. '
-  else if (spot.score >= 5) analysis = 'Condições medianas. '
+  if (spot.score >= 8.5) analysis = 'Condições ÉPICAS! '
+  else if (spot.score >= 7) analysis = 'Condições EXCELENTES! '
+  else if (spot.score >= 5.5) analysis = 'Boas condições para surfar. '
+  else if (spot.score >= 4) analysis = 'Condições medianas. '
   else analysis = 'Condições fracas. '
 
   analysis += getWindAnalysis(spot.windDirection, spot.windSpeed, orientation)

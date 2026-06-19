@@ -54,7 +54,12 @@ export default async function handler(req: Request) {
     favoriteOnly?: boolean
   }
 
-  const body = await req.json() as SubscribeBody
+  let body: SubscribeBody
+  try {
+    body = await req.json() as SubscribeBody
+  } catch {
+    return json({ error: 'body inválido' }, 400)
+  }
   if (!body.subscription?.endpoint || !body.subscription?.keys?.p256dh || !body.subscription?.keys?.auth) {
     return json({ error: 'subscription inválida' }, 400)
   }

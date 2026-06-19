@@ -51,7 +51,7 @@ export default async function handler(req: Request) {
 
   if (!isValidCoord(lat, lng)) return json({ error: 'lat/lng inválidos' }, 400)
 
-  const token = req.headers.get('Authorization')?.replace('Bearer ', '').trim() ?? null
+  const token = req.headers.get('Authorization')?.replace('Bearer ', '').trim() ?? ''
   const isPremium = await verifyPremiumToken(token)
   if (!isPremium) return json({ error: 'Premium required' }, 403)
 

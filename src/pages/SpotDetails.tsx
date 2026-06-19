@@ -192,11 +192,8 @@ export default function SpotDetails() {
         const scores = data.map(r => Number(r.score))
         const avg = scores.reduce((a, b) => a + b, 0) / scores.length
         const maxScore = Math.max(...scores)
-        setScoreHistory({ avg30: avg, isMonthBest: false })
-        if (found) {
-          const currentScore = found.score
-          setScoreHistory({ avg30: avg, isMonthBest: currentScore >= maxScore - 0.3 })
-        }
+        const currentScore = found?.score ?? 0
+        setScoreHistory({ avg30: avg, isMonthBest: !!found && currentScore >= maxScore - 0.3 })
       })
       .catch(() => {})
   }, [id, isPremium, conditions, conditionsLoading])

@@ -33,6 +33,7 @@ export default function HistoryPage() {
     const spot = spots.find(s => s.id === selectedSpot)
     if (!spot) return
     setLoadingForecast(true)
+    let cancelled = false
     getWeatherForecast(spot.id, {
       waveHeight: spot.waveHeight,
       windSpeed: spot.windSpeed,
@@ -41,9 +42,9 @@ export default function HistoryPage() {
       waterTemperature: spot.waterConditions.temperature,
       score: spot.score,
     }, isPremium, spot.orientation).then(data => {
-      setForecast(data)
-      setLoadingForecast(false)
+      if (!cancelled) { setForecast(data); setLoadingForecast(false) }
     })
+    return () => { cancelled = true }
   }, [selectedSpot, spots, isPremium])
 
   const currentSpot = spots.find(s => s.id === selectedSpot)

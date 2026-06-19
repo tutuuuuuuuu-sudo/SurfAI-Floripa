@@ -46,7 +46,7 @@ async function getUserStats(): Promise<{
       fetch(`${SUPABASE_URL}/auth/v1/admin/users?per_page=1`, {
         headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` },
       }),
-      fetch(`${SUPABASE_URL}/rest/v1/subscriptions?status=eq.premium&select=id,created_at,plan,amount`, {
+      fetch(`${SUPABASE_URL}/rest/v1/subscriptions?status=eq.premium&expires_at=gte.${new Date().toISOString()}&select=id,created_at,plan,amount`, {
         headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` },
       }),
     ])

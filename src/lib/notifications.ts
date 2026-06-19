@@ -1,4 +1,4 @@
-import { lsGet, lsSet, lsGetJson, lsSetJson } from './utils'
+import { lsGetJson, lsSetJson } from './utils'
 import { supabase } from './supabase'
 
 export async function requestNotificationPermission(): Promise<boolean> {
