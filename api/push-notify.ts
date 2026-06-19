@@ -62,20 +62,94 @@ async function makeVapidJwt(audience: string): Promise<string> {
   return `${header}.${payload}.${base64urlEncode(sig)}`
 }
 
+// ── Criptografia Web Push (RFC 8291 — AES-128-GCM) ──────────────────────────
+
+async function encryptWebPush(
+  plaintext: string,
+  clientPublicKeyB64: string,
+  authSecretB64: string,
+): Promise<{ body: Uint8Array; salt: Uint8Array; serverPublicKey: Uint8Array }> {
+  const enc = new TextEncoder()
+  const clientPublicKeyBytes = base64urlDecode(clientPublicKeyB64)
+  const authSecret = base64urlDecode(authSecretB64)
+
+  // Gera par de chaves ECDH efêmero do servidor
+  const serverKeyPair = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits'])
+  const serverPublicKeyJwk = await crypto.subtle.exportKey('jwk', serverKeyPair.publicKey)
+  const serverPublicKeyX = base64urlDecode(serverPublicKeyJwk.x!)
+  const serverPublicKeyY = base64urlDecode(serverPublicKeyJwk.y!)
+  const serverPublicKey = new Uint8Array(65)
+  serverPublicKey[0] = 0x04
+  serverPublicKey.set(serverPublicKeyX, 1)
+  serverPublicKey.set(serverPublicKeyY, 33)
+
+  // Importa chave pública do cliente para ECDH
+  const clientKey = await crypto.subtle.importKey(
+    'raw', clientPublicKeyBytes, { name: 'ECDH', namedCurve: 'P-256' }, false, [],
+  )
+
+  // Deriva shared secret ECDH (32 bytes)
+  const sharedSecret = new Uint8Array(
+    await crypto.subtle.deriveBits({ name: 'ECDH', public: clientKey }, serverKeyPair.privateKey, 256),
+  )
+
+  // HKDF extract+expand — pseudorandom key
+  const hkdfKey = await crypto.subtle.importKey('raw', sharedSecret, 'HKDF', false, ['deriveBits'])
+  const prk = new Uint8Array(await crypto.subtle.deriveBits(
+    { name: 'HKDF', hash: 'SHA-256', salt: authSecret, info: enc.encode('WebPush: info\x00').buffer },
+    hkdfKey, 256,
+  ))
+
+  const salt = crypto.getRandomValues(new Uint8Array(16))
+
+  // Deriva chave de criptografia e nonce via HKDF
+  const prkKey = await crypto.subtle.importKey('raw', prk, 'HKDF', false, ['deriveBits'])
+  const infoBase = new Uint8Array([
+    ...enc.encode('Content-Encoding: aes128gcm\x00'), 0x01,
+  ])
+  const contentKey = new Uint8Array(await crypto.subtle.deriveBits(
+    { name: 'HKDF', hash: 'SHA-256', salt, info: infoBase }, prkKey, 128,
+  ))
+  const nonceInfo = new Uint8Array([...enc.encode('Content-Encoding: nonce\x00'), 0x01])
+  const nonce = new Uint8Array(await crypto.subtle.deriveBits(
+    { name: 'HKDF', hash: 'SHA-256', salt, info: nonceInfo }, prkKey, 96,
+  ))
+
+  // Cifra o plaintext com AES-128-GCM
+  const aesKey = await crypto.subtle.importKey('raw', contentKey, 'AES-GCM', false, ['encrypt'])
+  const plaintextPadded = new Uint8Array([...enc.encode(plaintext), 0x02]) // padding delimiter
+  const ciphertext = new Uint8Array(
+    await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce }, aesKey, plaintextPadded),
+  )
+
+  // Monta o body RFC 8291: salt(16) + rs(4) + keylen(1) + serverPublicKey(65) + ciphertext
+  const rs = 4096
+  const body = new Uint8Array(16 + 4 + 1 + 65 + ciphertext.length)
+  body.set(salt, 0)
+  new DataView(body.buffer).setUint32(16, rs, false)
+  body[20] = 65
+  body.set(serverPublicKey, 21)
+  body.set(ciphertext, 86)
+
+  return { body, salt, serverPublicKey }
+}
+
 // ── Envia um push para um endpoint ───────────────────────────────────────────
 
 async function sendPush(endpoint: string, p256dh: string, auth: string, payload: string): Promise<boolean> {
   try {
     const origin = new URL(endpoint).origin
     const jwt = await makeVapidJwt(origin)
+    const { body } = await encryptWebPush(payload, p256dh, auth)
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/octet-stream',
+        'Content-Encoding': 'aes128gcm',
         Authorization: `vapid t=${jwt},k=${VAPID_PUBLIC_KEY}`,
         TTL: '86400',
       },
-      body: payload,
+      body,
     })
     // 201, 200 = entregue; 410 = subscription expirou
     if (res.status === 410) return false // sinaliza para remover

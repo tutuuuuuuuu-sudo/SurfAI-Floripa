@@ -162,7 +162,7 @@ export default function ComparePage() {
           {/* Botão adicionar */}
           {selected.length < MAX_COMPARE && (
             <button
-              onClick={() => { markQuotaUsed(); setShowPicker(true) }}
+              onClick={() => { setShowPicker(true) }}
               className="border-2 border-dashed border-border/50 hover:border-primary/40 rounded-xl p-6 flex flex-col items-center justify-center gap-2 transition-colors hover:bg-primary/5"
               style={{ animation: `fadeIn 0.3s ${selected.length * 0.1}s ease-out both`, minHeight: '120px' }}
             >

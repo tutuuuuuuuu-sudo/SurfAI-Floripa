@@ -43,9 +43,9 @@ describe('getTainhaInfo', () => {
     expect(getTainhaInfo('armacao').status).toBe('parcial')
   })
 
-  it('durante temporada: praia sem mapeamento → fechada', () => {
+  it('durante temporada: praia sem mapeamento → fora-temporada (sem restrição real)', () => {
     mockDate(6, 15)
-    expect(getTainhaInfo('praia-desconhecida').status).toBe('fechada')
+    expect(getTainhaInfo('praia-desconhecida').status).toBe('fora-temporada')
   })
 
   it('message vazio fora da temporada', () => {

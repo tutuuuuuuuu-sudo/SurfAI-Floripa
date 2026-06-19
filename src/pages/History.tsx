@@ -30,21 +30,20 @@ export default function HistoryPage() {
 
   useEffect(() => {
     if (!selectedSpot) return
-    setLoadingForecast(true)
     const spot = spots.find(s => s.id === selectedSpot)
-    if (spot) {
-      getWeatherForecast(spot.id, {
-        waveHeight: spot.waveHeight,
-        windSpeed: spot.windSpeed,
-        swellPeriod: spot.swellPeriod,
-        windDirection: spot.windDirection,
-        waterTemperature: spot.waterConditions.temperature,
-        score: spot.score,
-      }, isPremium, spot.orientation).then(data => {
-        setForecast(data)
-        setLoadingForecast(false)
-      })
-    }
+    if (!spot) return
+    setLoadingForecast(true)
+    getWeatherForecast(spot.id, {
+      waveHeight: spot.waveHeight,
+      windSpeed: spot.windSpeed,
+      swellPeriod: spot.swellPeriod,
+      windDirection: spot.windDirection,
+      waterTemperature: spot.waterConditions.temperature,
+      score: spot.score,
+    }, isPremium, spot.orientation).then(data => {
+      setForecast(data)
+      setLoadingForecast(false)
+    })
   }, [selectedSpot, spots, isPremium])
 
   const currentSpot = spots.find(s => s.id === selectedSpot)

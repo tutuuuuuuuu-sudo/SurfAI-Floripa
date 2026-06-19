@@ -40,6 +40,6 @@ export function getTainhaInfo(spotId: string): TainhaInfo {
     return { status: 'fora-temporada', message: '' }
   }
 
-  const status = TAINHA_STATUS[spotId] ?? 'fechada'
+  const status = TAINHA_STATUS[spotId] ?? 'fora-temporada'
   return { status, message: TAINHA_MESSAGES[status] }
 }

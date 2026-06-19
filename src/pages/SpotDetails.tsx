@@ -38,11 +38,11 @@ const AnimatedProgress = ({ value }: { value: number }) => {
 const SwellPeriodBadge = ({ period }: { period: number }) => {
   const [open, setOpen] = useState(false)
   const getInfo = (p: number) => {
-    if (p >= 14) return { label: 'Épico', color: '#8b5cf6', desc: 'Swell de longo período — ondas perfeitas e muito potentes.' }
-    if (p >= 12) return { label: 'Muito Bom', color: '#06b6d4', desc: 'Excelente ondulação — ondas longas, limpas e com energia.' }
-    if (p >= 10) return { label: 'Bom', color: '#22c55e', desc: 'Boa ondulação — ondas bem formadas e surfáveis.' }
-    if (p >= 8)  return { label: 'Regular', color: '#f59e0b', desc: 'Ondulação moderada — surfável mas sem muita qualidade.' }
-    return { label: 'Fraco', color: '#ef4444', desc: 'Vento local — ondas curtas e bagunçadas.' }
+    if (p >= 14) return { label: 'Épico',    color: 'var(--color-rating-epic)',      desc: 'Swell de longo período — ondas perfeitas e muito potentes.' }
+    if (p >= 12) return { label: 'Muito Bom', color: 'var(--color-rating-excellent)', desc: 'Excelente ondulação — ondas longas, limpas e com energia.' }
+    if (p >= 10) return { label: 'Bom',       color: 'var(--color-rating-good)',      desc: 'Boa ondulação — ondas bem formadas e surfáveis.' }
+    if (p >= 8)  return { label: 'Regular',   color: 'var(--color-rating-fair)',      desc: 'Ondulação moderada — surfável mas sem muita qualidade.' }
+    return       { label: 'Fraco',    color: 'var(--color-rating-poor)',      desc: 'Vento local — ondas curtas e bagunçadas.' }
   }
   const info = getInfo(period)
   return (
@@ -248,7 +248,7 @@ export default function SpotDetails() {
               <button
                 onClick={handleToggleFavorite}
                 disabled={loadingFav}
-                className={`p-2 rounded-xl border transition-colors ${favorite ? 'bg-red-500/10 border-red-500/40 text-red-500' : 'border-border hover:bg-muted/50'}`}
+                className={`p-2 rounded-xl border transition-colors ${favorite ? 'bg-destructive/10 border-destructive/40 text-destructive' : 'border-border hover:bg-muted/50'}`}
               >
                 <Heart className={`h-4 w-4 ${favorite ? 'fill-current' : ''}`}/>
               </button>

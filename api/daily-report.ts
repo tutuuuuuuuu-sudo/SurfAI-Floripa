@@ -35,10 +35,10 @@ async function getUserStats(): Promise<{
   }
 
   // Brasil não usa horário de verão desde 2019 — UTC-3 fixo é correto
-  const todayStart = new Date()
-  todayStart.setUTCHours(0, 0, 0, 0)
-  todayStart.setTime(todayStart.getTime() + 3 * 60 * 60 * 1000) // +3h = meia-noite BRT
-  const todayISO = todayStart.toISOString()
+  // Subtrai 3h para obter "agora em BRT", zera para meia-noite BRT, soma 3h de volta para UTC
+  const brtNow = new Date(Date.now() - 3 * 60 * 60 * 1000)
+  brtNow.setUTCHours(0, 0, 0, 0)
+  const todayISO = new Date(brtNow.getTime() + 3 * 60 * 60 * 1000).toISOString()
 
   try {
     // Total de usuários
