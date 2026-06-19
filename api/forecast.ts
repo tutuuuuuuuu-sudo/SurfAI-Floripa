@@ -18,9 +18,8 @@ function json(data: unknown, status = 200) {
 }
 
 import { verifyToken, isPremiumUser } from './_auth.js'
+import { FREE_DAYS } from '../src/lib/weatherData.js'
 
-// FREE_DAYS deve coincidir com weatherData.ts — ambos controlam o mesmo limite de UX
-const FREE_DAYS = 3
 const PREMIUM_DAYS = 14
 
 function isValidCoord(lat: string | null, lng: string | null): boolean {

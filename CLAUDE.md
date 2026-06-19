@@ -270,7 +270,7 @@ import { cn } from '@/lib/utils'
 
 ### Tabelas relevantes
 - `subscriptions` — plano de cada usuário (status: free/premium/cancelled, expires_at, mp_payment_id)
-- `surf_comments` — relatos da comunidade por pico
+- `comments` — relatos da comunidade por pico
 - `favorites` — picos favoritados por usuário
 - `surf_log` — diário de sessões
 

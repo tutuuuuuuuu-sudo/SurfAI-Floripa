@@ -24,9 +24,28 @@ function base64urlDecode(s: string): Uint8Array {
   return Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + pad), c => c.charCodeAt(0))
 }
 
-function base64urlEncode(buf: ArrayBuffer): string {
-  return btoa(String.fromCharCode(...new Uint8Array(buf)))
+function base64urlEncode(buf: ArrayBuffer | Uint8Array): string {
+  const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf)
+  return btoa(String.fromCharCode(...bytes))
     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+}
+
+// Importa a chave VAPID privada (base64url raw 32 bytes) via JWK — sem montar DER manualmente.
+// VAPID_PUBLIC_KEY é a chave pública em base64url (65 bytes uncompressed: 0x04 + x + y).
+async function importVapidKey(): Promise<CryptoKey> {
+  const privBytes = base64urlDecode(VAPID_PRIVATE_KEY)
+  const pubBytes = base64urlDecode(VAPID_PUBLIC_KEY)
+  // pubBytes = 0x04 || x (32) || y (32)
+  const x = base64urlEncode(pubBytes.slice(1, 33))
+  const y = base64urlEncode(pubBytes.slice(33, 65))
+  const d = base64urlEncode(privBytes)
+  return crypto.subtle.importKey(
+    'jwk',
+    { kty: 'EC', crv: 'P-256', x, y, d, key_ops: ['sign'] },
+    { name: 'ECDSA', namedCurve: 'P-256' },
+    false,
+    ['sign'],
+  )
 }
 
 async function makeVapidJwt(audience: string): Promise<string> {
@@ -34,32 +53,11 @@ async function makeVapidJwt(audience: string): Promise<string> {
   const payload = base64urlEncode(new TextEncoder().encode(JSON.stringify({
     aud: audience,
     exp: Math.floor(Date.now() / 1000) + 12 * 3600,
-    sub: `mailto:surfaifloripa@gmail.com`,
+    sub: 'mailto:surfaifloripa@gmail.com',
   })))
   const sigInput = new TextEncoder().encode(`${header}.${payload}`)
-  const keyBytes = base64urlDecode(VAPID_PRIVATE_KEY)
-  const cryptoKey = await crypto.subtle.importKey(
-    'pkcs8',
-    // Wrap raw 32-byte private key into PKCS8 DER for P-256
-    (() => {
-      const der = new Uint8Array(138)
-      // PKCS8 header for P-256
-      const header = [0x30,0x81,0x87,0x02,0x01,0x00,0x30,0x13,0x06,0x07,0x2a,0x86,0x48,0xce,0x3d,0x02,0x01,0x06,0x08,0x2a,0x86,0x48,0xce,0x3d,0x03,0x01,0x07,0x04,0x6d,0x30,0x6b,0x02,0x01,0x01,0x04,0x20]
-      header.forEach((b, i) => { der[i] = b })
-      keyBytes.forEach((b, i) => { der[36 + i] = b })
-      const suffix = [0xa1,0x44,0x03,0x42,0x00,0x04]
-      suffix.forEach((b, i) => { der[68 + i] = b })
-      // Public key bytes (uncompressed, 64 bytes) — derived from private
-      // We leave zeros here; the browser will accept it for signing only
-      return der.buffer
-    })(),
-    { name: 'ECDSA', namedCurve: 'P-256' },
-    false,
-    ['sign']
-  ).catch(() => null)
-
+  const cryptoKey = await importVapidKey().catch(() => null)
   if (!cryptoKey) throw new Error('VAPID key import failed')
-
   const sig = await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, cryptoKey, sigInput)
   return `${header}.${payload}.${base64urlEncode(sig)}`
 }
