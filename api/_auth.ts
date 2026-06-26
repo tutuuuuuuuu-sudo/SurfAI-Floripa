@@ -26,11 +26,23 @@ export async function isPremiumUser(userId: string): Promise<boolean> {
   const supabaseUrl = process.env.SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
   if (!supabaseUrl || !serviceKey) return false
+  const headers = { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` }
+  try {
+    // Admins têm acesso premium permanente
+    const adminRes = await fetch(
+      `${supabaseUrl}/rest/v1/admins?user_id=eq.${userId}&select=user_id&limit=1`,
+      { headers }
+    )
+    if (adminRes.ok) {
+      const admins = await adminRes.json() as { user_id: string }[]
+      if (Array.isArray(admins) && admins.length > 0) return true
+    }
+  } catch { /* ignora e verifica assinatura normal */ }
   try {
     const now = new Date().toISOString()
     const res = await fetch(
       `${supabaseUrl}/rest/v1/subscriptions?user_id=eq.${userId}&status=eq.premium&expires_at=gte.${now}&select=id&limit=1`,
-      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
+      { headers }
     )
     if (!res.ok) return false
     const rows = await res.json() as { id: string }[]
