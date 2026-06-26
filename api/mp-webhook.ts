@@ -31,9 +31,15 @@ async function verifyMpSignature(req: Request, secret: string): Promise<boolean>
     ['sign']
   )
   const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(manifest))
-  const computed = Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('')
-
-  return computed === hash
+  const computedBytes = new Uint8Array(sig)
+  const hashBytes = new Uint8Array(hash.length / 2)
+  for (let i = 0; i < hashBytes.length; i++) {
+    hashBytes[i] = parseInt(hash.slice(i * 2, i * 2 + 2), 16)
+  }
+  if (computedBytes.length !== hashBytes.length) return false
+  let diff = 0
+  for (let i = 0; i < computedBytes.length; i++) diff |= computedBytes[i] ^ hashBytes[i]
+  return diff === 0
 }
 
 export default async function handler(req: Request) {

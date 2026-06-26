@@ -48,7 +48,7 @@ export default async function handler(req: Request) {
   if (!isVercelCron) {
     const secret = process.env.SNAPSHOT_SECRET
     const provided = new URL(req.url).searchParams.get('secret')
-    if (secret && provided !== secret) {
+    if (!secret || provided !== secret) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
     }
   }

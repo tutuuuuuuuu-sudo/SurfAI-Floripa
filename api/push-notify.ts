@@ -93,10 +93,15 @@ async function encryptWebPush(
     await crypto.subtle.deriveBits({ name: 'ECDH', public: clientKey }, serverKeyPair.privateKey, 256),
   )
 
-  // HKDF extract+expand — pseudorandom key
+  // HKDF extract+expand — pseudorandom key (RFC 8291 §3.3: info inclui chaves do receptor e remetente)
   const hkdfKey = await crypto.subtle.importKey('raw', sharedSecret, 'HKDF', false, ['deriveBits'])
+  const infoWebPush = new Uint8Array([
+    ...enc.encode('WebPush: info\x00'),
+    ...clientPublicKeyBytes,
+    ...serverPublicKey,
+  ])
   const prk = new Uint8Array(await crypto.subtle.deriveBits(
-    { name: 'HKDF', hash: 'SHA-256', salt: authSecret, info: enc.encode('WebPush: info\x00').buffer },
+    { name: 'HKDF', hash: 'SHA-256', salt: authSecret, info: infoWebPush.buffer },
     hkdfKey, 256,
   ))
 
@@ -192,7 +197,7 @@ export default async function handler(req: Request) {
   if (!isVercelCron) {
     const secret = process.env.PUSH_NOTIFY_SECRET
     const provided = new URL(req.url).searchParams.get('secret')
-    if (secret && provided !== secret) return json({ error: 'Unauthorized' }, 401)
+    if (!secret || provided !== secret) return json({ error: 'Unauthorized' }, 401)
   }
 
   if (!SUPABASE_URL || !SUPABASE_KEY || !VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
