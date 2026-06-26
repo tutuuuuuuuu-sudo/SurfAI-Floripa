@@ -21,6 +21,7 @@ import NotFound from './pages/NotFound'
 import Privacy from './pages/Privacy'
 import ResetPassword from './pages/ResetPassword'
 import { BottomNav } from './components/BottomNav'
+import { CookieConsent } from './components/CookieConsent'
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
@@ -100,6 +101,7 @@ function AppRoutes() {
       <Toaster position="top-center" />
       <PWAInstallBanner />
       <BottomNav />
+      <CookieConsent />
     </>
   )
 }

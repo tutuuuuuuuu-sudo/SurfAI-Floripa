@@ -20,16 +20,21 @@ export function initMonitoring() {
     })
   }
 
-  // PostHog — analytics de comportamento
+  // PostHog — analytics de comportamento (respeita consentimento LGPD)
   const posthogKey = import.meta.env.VITE_POSTHOG_KEY
-  if (posthogKey) {
+  const analyticsConsent = (() => { try { return localStorage.getItem('analytics_consent') } catch { return null } })()
+  if (posthogKey && analyticsConsent !== 'declined') {
     posthog.init(posthogKey, {
       api_host: import.meta.env.VITE_POSTHOG_HOST ?? 'https://us.i.posthog.com',
-      person_profiles: 'identified_only', // só cria perfil quando o usuário faz login
-      capture_pageview: false,             // pageviews rastreados manualmente para evitar expor IDs de spots
-      capture_pageleave: true,            // rastreia quando o usuário sai
-      autocapture: false,                 // eventos manuais são mais precisos para surf app
+      person_profiles: 'identified_only',
+      capture_pageview: false,
+      capture_pageleave: true,
+      autocapture: false,
     })
+    if (analyticsConsent === null) {
+      // Consentimento ainda não dado — coleta anonimamente até o usuário decidir
+      posthog.opt_in_capturing()
+    }
   }
 }
 

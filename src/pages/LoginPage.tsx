@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { AppLogo } from '@/components/AppLogo'
@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
@@ -49,6 +50,7 @@ export default function LoginPage() {
     } else {
       if (!name.trim()) { setError('Informe seu nome.'); setLoading(false); return }
       if (password.length < 8) { setError('A senha deve ter pelo menos 8 caracteres.'); setLoading(false); return }
+      if (!acceptedTerms) { setError('Você precisa aceitar a Política de Privacidade para criar uma conta.'); setLoading(false); return }
       const { error } = await signUpWithEmail(name, email, password)
       if (error) {
         setError(error)
@@ -198,11 +200,30 @@ export default function LoginPage() {
             </div>
           )}
 
+          {/* Aceite dos termos — só no signup */}
+          {tab === 'signup' && (
+            <label className="flex items-start gap-2.5 mb-4 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={e => setAcceptedTerms(e.target.checked)}
+                className="mt-0.5 w-4 h-4 accent-primary flex-shrink-0"
+              />
+              <span className="text-xs text-muted-foreground leading-relaxed">
+                Li e aceito a{' '}
+                <Link to="/privacy" target="_blank" className="text-primary underline underline-offset-2">
+                  Política de Privacidade
+                </Link>
+                {' '}e concordo com o tratamento dos meus dados conforme a LGPD.
+              </span>
+            </label>
+          )}
+
           {/* Submit */}
           <Button
             className="w-full h-11"
             onClick={handleSubmit}
-            disabled={loading}
+            disabled={loading || (tab === 'signup' && !acceptedTerms)}
           >
             {loading ? 'Aguarde...' : tab === 'login' ? 'Entrar' : 'Criar conta grátis'}
           </Button>

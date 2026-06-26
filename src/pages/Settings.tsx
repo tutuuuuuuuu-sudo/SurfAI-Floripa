@@ -8,10 +8,15 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import {
   ArrowLeft, LogOut, User, Bell, MapPin, Crown,
-  Sliders, ChevronRight, Shield, Waves
+  Sliders, ChevronRight, Shield, Waves, Trash2
 } from 'lucide-react'
 import { AppLogo } from '@/components/AppLogo'
 import { toast } from 'sonner'
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 
 type SkillLevel = 'Iniciante' | 'Intermediário' | 'Avançado' | ''
 type Region = 'all' | 'Sul' | 'Centro' | 'Leste' | 'Norte'
@@ -66,9 +71,32 @@ export default function Settings() {
       })
   }, [user])
 
+  const [deletingAccount, setDeletingAccount] = useState(false)
+
   const handleSignOut = async () => {
     await signOut()
     navigate('/login')
+  }
+
+  const handleDeleteAccount = async () => {
+    setDeletingAccount(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      if (!token) throw new Error('Sessão inválida')
+      const res = await fetch('/api/delete-account', {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) throw new Error('Erro ao excluir conta')
+      await signOut()
+      navigate('/landing')
+      toast.success('Conta excluída com sucesso.')
+    } catch {
+      toast.error('Não foi possível excluir a conta. Tente novamente.')
+    } finally {
+      setDeletingAccount(false)
+    }
   }
 
   const save = (key: string, value: unknown, label: string) => {
@@ -304,10 +332,37 @@ export default function Settings() {
             <p className="text-xs text-muted-foreground">
               Seus dados são armazenados de forma segura e nunca compartilhados com terceiros.
             </p>
+            <Button variant="outline" className="w-full" onClick={() => navigate('/privacy')}>
+              <Shield className="h-4 w-4 mr-2" />
+              Política de Privacidade
+            </Button>
             <Button variant="destructive" className="w-full" onClick={handleSignOut}>
               <LogOut className="h-4 w-4 mr-2" />
               Sair da conta
             </Button>
+            <Separator />
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" className="w-full text-destructive hover:text-destructive hover:bg-destructive/10" disabled={deletingAccount}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {deletingAccount ? 'Excluindo...' : 'Excluir minha conta'}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir conta permanentemente?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Todos os seus dados serão removidos: favoritos, diário de surf, preferências e assinatura. Esta ação não pode ser desfeita.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Excluir permanentemente
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </CardContent>
         </Card>
 
