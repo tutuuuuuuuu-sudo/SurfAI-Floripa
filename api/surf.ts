@@ -201,9 +201,35 @@ async function fetchStormglass(lat: string, lng: string): Promise<ForecastResult
   }
 }
 
+// ── Rate limiting simples por IP ──────────────────────────────────────────────
+// 30 requisições por IP por janela de 60s
+const rateLimitMap = new Map<string, { count: number; reset: number }>()
+const RATE_LIMIT = 30
+const RATE_WINDOW_MS = 60_000
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now()
+  const entry = rateLimitMap.get(ip)
+  if (!entry || now > entry.reset) {
+    rateLimitMap.set(ip, { count: 1, reset: now + RATE_WINDOW_MS })
+    return true
+  }
+  if (entry.count >= RATE_LIMIT) return false
+  entry.count++
+  return true
+}
+
 // ── Handler principal ─────────────────────────────────────────────────────────
 
 export default async function handler(req: Request) {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown'
+  if (!checkRateLimit(ip)) {
+    return new Response(JSON.stringify({ error: 'Too Many Requests' }), {
+      status: 429,
+      headers: { 'Content-Type': 'application/json', 'Retry-After': '60' },
+    })
+  }
+
   const url = new URL(req.url)
   const lat = url.searchParams.get('lat')
   const lng = url.searchParams.get('lng')

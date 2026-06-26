@@ -59,9 +59,35 @@ async function fetchTideData(): Promise<{ heights: number[]; times: string[] } |
   } catch { return null }
 }
 
+// ── Rate limiting simples por IP ──────────────────────────────────────────────
+// 20 requisições por IP por janela de 60s
+const rateLimitMap = new Map<string, { count: number; reset: number }>()
+const RATE_LIMIT = 20
+const RATE_WINDOW_MS = 60_000
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now()
+  const entry = rateLimitMap.get(ip)
+  if (!entry || now > entry.reset) {
+    rateLimitMap.set(ip, { count: 1, reset: now + RATE_WINDOW_MS })
+    return true
+  }
+  if (entry.count >= RATE_LIMIT) return false
+  entry.count++
+  return true
+}
+
 export default async function handler(req: Request) {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: CORS })
+  }
+
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown'
+  if (!checkRateLimit(ip)) {
+    return new Response(JSON.stringify({ error: 'Too Many Requests' }), {
+      status: 429,
+      headers: { 'Content-Type': 'application/json', 'Retry-After': '60', ...CORS },
+    })
   }
 
   const url = new URL(req.url)
