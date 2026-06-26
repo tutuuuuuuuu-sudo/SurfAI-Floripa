@@ -93,7 +93,6 @@ export default function Home() {
     const userLevel = (() => { try { return localStorage.getItem('pref_skill') ?? undefined } catch { return undefined } })()
     fetchAIReport(sortedAll.slice(0, 6), top, userLevel)
       .then(report => {
-        console.log('[AI Report] resultado:', report ? 'OK (' + report.length + ' chars)' : 'null — free ou erro')
         setAiReport(report)
         if (report) track('ai_report_loaded', { top_spot: top.name, score: top.score })
       })
