@@ -178,6 +178,20 @@ Responda APENAS em JSON:
 
 import { verifyPremiumToken } from './_auth.js'
 
+// Rate limit por IP para chamadas de usuário: 20 req/hora
+const contentRateLimit = new Map<string, { count: number; reset: number }>()
+function checkContentRateLimit(ip: string): boolean {
+  const now = Date.now()
+  const entry = contentRateLimit.get(ip)
+  if (!entry || now > entry.reset) {
+    contentRateLimit.set(ip, { count: 1, reset: now + 3_600_000 })
+    return true
+  }
+  if (entry.count >= 20) return false
+  entry.count++
+  return true
+}
+
 export default async function handler(req: Request) {
   // Crons internos do Vercel chegam como GET com header x-vercel-signature
   // Chamadas externas com AGENT_SECRET via x-agent-secret
@@ -203,6 +217,13 @@ export default async function handler(req: Request) {
         return new Response(JSON.stringify({ error: 'Premium required' }), {
           status: 403,
           headers: { 'Content-Type': 'application/json' },
+        })
+      }
+      const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown'
+      if (!checkContentRateLimit(ip)) {
+        return new Response(JSON.stringify({ error: 'Too Many Requests' }), {
+          status: 429,
+          headers: { 'Content-Type': 'application/json', 'Retry-After': '3600' },
         })
       }
     } else {

@@ -29,6 +29,20 @@ function isValidCoord(lat: string | null, lng: string | null): boolean {
 
 import { verifyPremiumToken } from './_auth.js'
 
+// Rate limit por IP: 60 req/min
+const hourlyRateLimit = new Map<string, { count: number; reset: number }>()
+function checkHourlyRateLimit(ip: string): boolean {
+  const now = Date.now()
+  const entry = hourlyRateLimit.get(ip)
+  if (!entry || now > entry.reset) {
+    hourlyRateLimit.set(ip, { count: 1, reset: now + 60_000 })
+    return true
+  }
+  if (entry.count >= 60) return false
+  entry.count++
+  return true
+}
+
 export interface HourlySlot {
   hour: number        // 0-23
   label: string       // "06h", "07h", etc.
@@ -43,6 +57,11 @@ export interface HourlySlot {
 export default async function handler(req: Request) {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS })
   if (req.method !== 'GET') return json({ error: 'Method not allowed' }, 405)
+
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown'
+  if (!checkHourlyRateLimit(ip)) {
+    return json({ error: 'Too Many Requests' }, 429)
+  }
 
   const url = new URL(req.url)
   const lat = url.searchParams.get('lat')

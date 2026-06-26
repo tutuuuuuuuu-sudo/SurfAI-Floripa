@@ -13,6 +13,36 @@ const CORS = {
 
 import { verifyToken, isPremiumUser } from './_auth.js'
 
+// Rate limit por userId: 10 chamadas por hora (relatório custa créditos Anthropic)
+const aiRateLimit = new Map<string, { count: number; reset: number }>()
+function checkAiRateLimit(userId: string): boolean {
+  const now = Date.now()
+  const entry = aiRateLimit.get(userId)
+  if (!entry || now > entry.reset) {
+    aiRateLimit.set(userId, { count: 1, reset: now + 3_600_000 })
+    return true
+  }
+  if (entry.count >= 10) return false
+  entry.count++
+  return true
+}
+
+// Detecta tentativas de prompt injection nos campos de texto
+function hasPromptInjection(value: string): boolean {
+  const lower = value.toLowerCase()
+  return (
+    lower.includes('ignore') ||
+    lower.includes('esquece') ||
+    lower.includes('system:') ||
+    lower.includes('assistant:') ||
+    lower.includes('instrução') ||
+    lower.includes('instrucao') ||
+    lower.includes('prompt') ||
+    lower.includes('<|') ||
+    lower.includes('|>')
+  )
+}
+
 export default async function handler(req: Request) {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: CORS })
@@ -49,6 +79,14 @@ export default async function handler(req: Request) {
     })
   }
 
+  // Rate limit: 10 relatórios por usuário por hora
+  if (!checkAiRateLimit(userId)) {
+    return new Response(JSON.stringify({ error: 'Limite de relatórios atingido. Tente novamente em 1 hora.' }), {
+      status: 429,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': ALLOWED_ORIGIN, 'Retry-After': '3600' },
+    })
+  }
+
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
     return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY não configurada' }), {
@@ -74,6 +112,14 @@ export default async function handler(req: Request) {
   const sanitizeNum   = (v: unknown, min: number, max: number) => Math.max(min, Math.min(max, Number(v) || 0))
   const sanitizeDir   = (v: unknown) => String(v ?? '').slice(0, 20).replace(/[^a-zA-Z ()]/g, '')
   const sanitizeLevel = (v: unknown) => String(v ?? '').slice(0, 30).replace(/[^\w\s]/g, '')
+
+  // Bloqueia prompt injection nos campos de texto livre
+  if (hasPromptInjection(String(userLevel ?? '')) || hasPromptInjection(String(topSpot.name ?? ''))) {
+    return new Response(JSON.stringify({ error: 'Input inválido' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
+    })
+  }
 
   const spotsContext = (spots ?? []).slice(0, 5).map(s => {
     const name   = sanitizeName(s.name)
