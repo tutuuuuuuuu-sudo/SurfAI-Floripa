@@ -186,8 +186,8 @@ export default async function handler(req: Request) {
   const secret = process.env.HEALTH_SECRET
   const provided = url.searchParams.get('secret') ?? req.headers.get('x-health-secret')
 
-  if (secret && provided !== secret) {
-    return new Response(JSON.stringify({ error: 'Unauthorized', secret_defined: !!secret }), { status: 401, headers: { 'Content-Type': 'application/json' } })
+  if (!secret || provided !== secret) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
   }
 
   const results = await Promise.all([

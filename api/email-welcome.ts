@@ -73,12 +73,9 @@ export default async function handler(req: Request) {
 
   // Valida assinatura do webhook Supabase para evitar spam/abuso.
   // Configurar SUPABASE_WEBHOOK_SECRET no Vercel e no painel Supabase → Webhooks.
-  if (WEBHOOK_SECRET) {
-    const authHeader = req.headers.get('Authorization')
-    if (authHeader !== `Bearer ${WEBHOOK_SECRET}`) {
-      console.error('[email-welcome] Assinatura de webhook inválida')
-      return new Response('Unauthorized', { status: 401 })
-    }
+  if (!WEBHOOK_SECRET || req.headers.get('Authorization') !== `Bearer ${WEBHOOK_SECRET}`) {
+    console.error('[email-welcome] Assinatura de webhook inválida ou secret não configurado')
+    return new Response('Unauthorized', { status: 401 })
   }
 
   if (!RESEND_KEY) {
