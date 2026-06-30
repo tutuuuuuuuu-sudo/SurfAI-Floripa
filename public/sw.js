@@ -1,6 +1,6 @@
 // sw.js — Service Worker Surf AI Floripa
 // Versão: incrementar esse número a cada deploy para forçar atualização
-const CACHE_VERSION = 'surf-ai-v6'
+const CACHE_VERSION = 'surf-ai-v7'
 
 // Assets do app shell que devem funcionar offline
 const APP_SHELL = ['/', '/index.html']
