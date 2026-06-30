@@ -73,15 +73,15 @@ Para exercer qualquer um desses direitos, entre em contato pelo email abaixo.`,
   },
   {
     title: '10. Encarregado de Proteção de Dados (DPO)',
-    content: `Em conformidade com o Art. 41 da LGPD, o Surf AI designou um Encarregado de Proteção de Dados responsável por atender solicitações dos titulares e comunicar-se com a Autoridade Nacional de Proteção de Dados (ANPD).\n\n**Encarregado:** Arthur Garraza\n**Email DPO:** privacidade@surfaifloripa.com.br\n**Prazo de resposta:** até 15 dias úteis`,
+    content: `Em conformidade com o Art. 41 da LGPD, o Surf AI designou um Encarregado de Proteção de Dados responsável por atender solicitações dos titulares e comunicar-se com a Autoridade Nacional de Proteção de Dados (ANPD).\n\n**Encarregado:** Arthur Garraza\n**Email DPO:** privacidade.surfaifloripa@gmail.com\n**Prazo de resposta:** até 15 dias úteis`,
   },
   {
     title: '11. Incidentes de segurança e vazamentos',
-    content: `Em caso de incidente de segurança que possa acarretar risco ou dano relevante aos titulares, o Surf AI irá:\n\n• Notificar a ANPD em prazo razoável (Art. 48 da LGPD).\n• Comunicar os usuários afetados por email, informando a natureza dos dados, os riscos envolvidos e as medidas tomadas.\n• Adotar medidas corretivas imediatas para conter e remediar o incidente.\n\nPara reportar uma vulnerabilidade ou suspeita de vazamento: privacidade@surfaifloripa.com.br`,
+    content: `Em caso de incidente de segurança que possa acarretar risco ou dano relevante aos titulares, o Surf AI irá:\n\n• Notificar a ANPD em prazo razoável (Art. 48 da LGPD).\n• Comunicar os usuários afetados por email, informando a natureza dos dados, os riscos envolvidos e as medidas tomadas.\n• Adotar medidas corretivas imediatas para conter e remediar o incidente.\n\nPara reportar uma vulnerabilidade ou suspeita de vazamento: privacidade.surfaifloripa@gmail.com`,
   },
   {
     title: '12. Contato',
-    content: `Para dúvidas, solicitações ou exercício dos seus direitos (acesso, correção, exclusão, portabilidade), entre em contato:\n\n**Email geral:** surfaifloripa@gmail.com\n**Email DPO/Privacidade:** privacidade@surfaifloripa.com.br\n\nResponderemos em até 15 dias úteis.`,
+    content: `Para dúvidas, solicitações ou exercício dos seus direitos (acesso, correção, exclusão, portabilidade), entre em contato:\n\n**Email geral:** surfaifloripa@gmail.com\n**Email DPO/Privacidade:** privacidade.surfaifloripa@gmail.com\n\nResponderemos em até 15 dias úteis.`,
   },
 ]
 
