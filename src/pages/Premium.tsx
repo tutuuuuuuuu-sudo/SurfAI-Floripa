@@ -149,25 +149,29 @@ export default function PremiumPage() {
 
         {/* Seletor de planos */}
         {!isPremium && (
-          <div className="flex rounded-xl bg-muted/30 p-1 border border-border/30" style={{ animation: 'slideUp 0.4s 0.05s ease-out both' }}>
+          <div className="flex rounded-xl bg-muted/60 p-1.5 border border-border" style={{ animation: 'slideUp 0.4s 0.05s ease-out both' }}>
             <button
               onClick={() => setSelectedPlan('annual')}
-              className={`flex-1 flex flex-col items-center py-2.5 rounded-lg text-sm font-semibold transition-all relative ${
-                selectedPlan === 'annual' ? 'bg-card shadow-sm text-foreground border border-border/40' : 'text-muted-foreground hover:text-foreground'
+              className={`flex-1 flex flex-col items-center py-3 rounded-lg text-sm font-semibold transition-all relative ${
+                selectedPlan === 'annual'
+                  ? 'bg-primary text-primary-foreground shadow-md ring-2 ring-primary/40 scale-[1.02]'
+                  : 'text-foreground/70 hover:text-foreground hover:bg-card/50'
               }`}
             >
               <span>Anual</span>
-              <span className={`text-xs font-bold ${selectedPlan === 'annual' ? 'text-rating-good' : 'text-muted-foreground'}`}>R$ 19,90/mês</span>
+              <span className={`text-xs font-bold ${selectedPlan === 'annual' ? 'text-primary-foreground' : 'text-rating-good'}`}>R$ 19,90/mês</span>
               {selectedPlan === 'annual' && (
-                <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-rating-good/20 text-rating-good border-rating-good/30 text-[10px] px-1.5 py-0 whitespace-nowrap">
+                <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-rating-good text-white border-0 text-[10px] px-1.5 py-0 whitespace-nowrap shadow-sm">
                   Economize R$ 120
                 </Badge>
               )}
             </button>
             <button
               onClick={() => setSelectedPlan('monthly')}
-              className={`flex-1 flex flex-col items-center py-2.5 rounded-lg text-sm font-semibold transition-all ${
-                selectedPlan === 'monthly' ? 'bg-card shadow-sm text-foreground border border-border/40' : 'text-muted-foreground hover:text-foreground'
+              className={`flex-1 flex flex-col items-center py-3 rounded-lg text-sm font-semibold transition-all ${
+                selectedPlan === 'monthly'
+                  ? 'bg-card text-foreground shadow-md ring-2 ring-border scale-[1.02]'
+                  : 'text-foreground/70 hover:text-foreground hover:bg-card/50'
               }`}
             >
               <span>Mensal</span>
