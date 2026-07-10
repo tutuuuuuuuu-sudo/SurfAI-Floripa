@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTheme } from 'next-themes'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { usePremium } from '@/lib/premium'
@@ -8,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import {
   ArrowLeft, LogOut, User, Bell, MapPin, Crown,
-  Sliders, ChevronRight, Shield, Waves, Trash2
+  Sliders, ChevronRight, Shield, Waves, Trash2, Sun, Moon
 } from 'lucide-react'
 import { AppLogo } from '@/components/AppLogo'
 import { toast } from 'sonner'
@@ -47,6 +48,7 @@ function savePref(key: string, value: unknown) {
 export default function Settings() {
   const { user, signOut } = useAuth()
   const { isPremium } = usePremium()
+  const { theme, setTheme } = useTheme()
   const navigate = useNavigate()
 
   const [skillLevel, setSkillLevel] = useState<SkillLevel>(loadPref('pref_skill', ''))
@@ -173,6 +175,42 @@ export default function Settings() {
                 Upgrade para Premium — R$ 29,90/mês
               </Button>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Aparência */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Sun className="h-4 w-4 text-primary" />
+              Aparência
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setTheme('light')}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm rounded-xl border transition-colors ${
+                  theme === 'light'
+                    ? 'border-primary bg-primary/10 text-primary font-bold'
+                    : 'border-border text-muted-foreground hover:border-primary/30'
+                }`}
+              >
+                <Sun className="h-4 w-4" />
+                Claro
+              </button>
+              <button
+                onClick={() => setTheme('dark')}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm rounded-xl border transition-colors ${
+                  theme === 'dark'
+                    ? 'border-primary bg-primary/10 text-primary font-bold'
+                    : 'border-border text-muted-foreground hover:border-primary/30'
+                }`}
+              >
+                <Moon className="h-4 w-4" />
+                Escuro
+              </button>
+            </div>
           </CardContent>
         </Card>
 

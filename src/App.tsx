@@ -32,20 +32,6 @@ function registerServiceWorker() {
   }
 }
 
-// Garante dark mode como padrão apenas se o usuário não tiver preferência salva
-function useDefaultDark() {
-  useEffect(() => {
-    const html = document.documentElement
-    const savedTheme = (() => { try { return localStorage.getItem('theme') } catch { return null } })()
-    if (!savedTheme) {
-      html.classList.add('dark')
-    } else {
-      html.classList.toggle('dark', savedTheme === 'dark')
-      html.classList.toggle('light', savedTheme === 'light')
-    }
-  }, [])
-}
-
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
   if (loading) return (
@@ -59,7 +45,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function AppRoutes() {
   const { user, loading, isPasswordRecovery } = useAuth()
-  useDefaultDark()
   useEffect(() => { registerServiceWorker() }, [])
 
   if (loading) return (

@@ -249,8 +249,10 @@ import { cn } from '@/lib/utils'
 - Para cores de rating: use classes `text-rating-*` / `bg-rating-*`
 
 ### Tema
-- Padrão: **dark mode** (aplicado no `App.tsx` se não houver preferência salva)
-- Toggle: componente `<ThemeToggle />` em `src/components/theme-toggle.tsx`
+- Gerenciado por `<ThemeProvider>` do `next-themes` em `src/main.tsx` (envolve `<App />`), com `attribute="class"`, `defaultTheme="dark"`, `storageKey="theme"`.
+- Padrão: **dark mode** para quem ainda não escolheu (sem preferência salva em `localStorage`).
+- Usuário pode alternar para light mode e a escolha persiste via `next-themes`.
+- Toggle: componente `<ThemeToggle />` em `src/components/theme-toggle.tsx` (botão sol/lua) e também na página `Settings.tsx` (seção "Aparência").
 
 ### Ícones
 - **Sempre** `lucide-react` — nunca emojis como ícones na UI
