@@ -104,6 +104,7 @@ export default async function handler(req: Request) {
           p_amount: payment.transaction_amount,
           p_payment_method: payment.payment_type_id ?? 'unknown',
           p_duration_days: durationDays,
+          p_plan: plan === 'annual' ? 'annual' : 'monthly',
         }),
       })
       if (!rpcRes.ok) {

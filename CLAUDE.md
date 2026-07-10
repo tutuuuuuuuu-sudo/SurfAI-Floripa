@@ -8,14 +8,21 @@
 Domínio: `surfaifloripa.com.br` — deploy automático via Vercel conectado ao GitHub (branch `main`).
 
 ### Modelo de negócio (freemium)
-| Recurso | Free | Premium (R$ 29,90/mês) |
+Dois planos pagos: **Mensal R$ 29,90/mês** ou **Anual R$ 238,80/ano** (equivale a R$ 19,90/mês). Escolha do plano em `src/pages/Premium.tsx` (`selectedPlan: 'monthly' | 'annual'`), preferência criada em `api/create-payment.ts`.
+
+| Recurso | Free | Premium |
 |---|---|---|
 | Score de condições por pico | ✅ | ✅ |
+| Previsão 3 dias | ✅ | ✅ |
+| Previsão 14 dias | ❌ | ✅ |
 | Relatório IA diário | ❌ | ✅ |
-| Histórico de condições | ❌ | ✅ |
-| Alertas de swell | ❌ | ✅ |
+| Alertas de swell (push) | ❌ | ✅ |
+| Histórico 30 dias | ❌ | ✅ |
+| Melhor janela horária do dia | ❌ | ✅ |
 | Comparação de picos | ❌ | ✅ |
 | ContentStudio (posts para redes) | ❌ | ✅ |
+| Sem anúncios | ❌ | ✅ |
+| Badge Premium no perfil | ❌ | ✅ |
 
 Pagamento via **Mercado Pago**. Lógica de acesso em `src/lib/premium.ts` (hook `usePremium()`).
 Webhook em `api/mp-webhook.ts` e IPN em `api/mp-ipn.ts` atualizam a tabela `subscriptions` no Supabase.
@@ -71,7 +78,8 @@ src/
 │   ├── OnboardingModal.tsx    # Modal de boas-vindas / nível do surfista
 │   ├── PWAInstallBanner.tsx   # Banner "Adicionar à tela inicial"
 │   ├── error-boundary.tsx     # ⚠️ NÃO REMOVER
-│   └── theme-toggle.tsx       # Toggle dark/light mode
+│   ├── theme-toggle.tsx       # Botão sol/lua dark/light — não montado em nenhuma página hoje
+│   └── CookieConsent.tsx      # Banner de consentimento de cookies (LGPD)
 ├── contexts/
 │   ├── AuthContext.tsx        # Auth Supabase — user, session, isPasswordRecovery
 │   └── SurfDataContext.tsx    # Cache global de condições — conditions, loading, refresh
@@ -97,22 +105,34 @@ src/
 ```
 api/
 ├── _scoreEngine.ts     # ⚠️ FONTE ÚNICA do score. Importado por surfData.ts E pelos serverless
+├── _auth.ts            # Helper de validação de Bearer token Supabase, compartilhado entre endpoints
 ├── surf.ts             # Fetch Open-Meteo Marine → processa dados brutos de surf
+├── tide.ts             # Dados de maré por pico
 ├── ai-report.ts        # Gera relatório IA (OpenAI) — exige Bearer token Supabase + premium
 ├── forecast.ts         # Forecast detalhado por pico
 ├── create-payment.ts   # Cria preferência de pagamento no Mercado Pago
 ├── mp-webhook.ts       # Webhook do MP → atualiza subscriptions no Supabase
 ├── mp-ipn.ts           # IPN (notificação instantânea) do MP
-├── daily-report.ts     # Cron: envia relatório diário por email (Resend) para usuários premium
-├── content-agent.ts    # Cron: gera sugestões de conteúdo para ContentStudio
+├── delete-account.ts   # Exclusão de conta do usuário (LGPD)
+├── daily-report.ts     # Envia relatório diário por email (Resend) para usuários premium
+├── content-agent.ts    # Gera sugestões de conteúdo para ContentStudio
 ├── email-welcome.ts    # Email de boas-vindas (Resend)
-└── health.ts           # Cron health check (mantém serverless "quente")
+├── push-subscribe.ts   # Registra subscription de push notification do usuário
+├── push-notify.ts      # Envia push notifications (alertas de swell)
+├── snapshot.ts         # Grava score_snapshots (histórico de condições) periodicamente
+└── health.ts           # Health check (mantém serverless "quente")
 ```
 
-**Crons configurados no `vercel.json`** (horário UTC):
-- `health`: 10h e 22h diários
-- `content-agent`: 13h e 22h diários
-- `daily-report`: 10h e 22h diários
+**Crons — migrados do `vercel.json` para GitHub Actions** (`.github/workflows/`, horário UTC):
+- `health.yml`: 10h e 22h diários
+- `content-agent.yml`: 13h e 22h diários
+- `daily-report.yml`: 12h e 23h diários
+- `email-alert.yml`: 9h e 18h diários
+- `push-notify.yml`: a cada hora
+- `snapshot.yml`: a cada hora
+- `cronitor.yml`: monitoramento dos jobs acima
+
+`vercel.json` não tem mais nenhum cron configurado — só headers de segurança/cache e rewrites de SPA. Motivo da migração: o plano Hobby da Vercel bloqueava deploys silenciosamente acima de 2 crons/1x-dia.
 
 ---
 
@@ -252,7 +272,7 @@ import { cn } from '@/lib/utils'
 - Gerenciado por `<ThemeProvider>` do `next-themes` em `src/main.tsx` (envolve `<App />`), com `attribute="class"`, `defaultTheme="dark"`, `storageKey="theme"`.
 - Padrão: **dark mode** para quem ainda não escolheu (sem preferência salva em `localStorage`).
 - Usuário pode alternar para light mode e a escolha persiste via `next-themes`.
-- Toggle: componente `<ThemeToggle />` em `src/components/theme-toggle.tsx` (botão sol/lua) e também na página `Settings.tsx` (seção "Aparência").
+- Toggle: seção "Aparência" em `src/pages/Settings.tsx` (usa `useTheme()` do `next-themes` diretamente, com botões Claro/Escuro). O componente `<ThemeToggle />` (`src/components/theme-toggle.tsx`, botão sol/lua) existe mas não está montado em nenhuma página no momento.
 
 ### Ícones
 - **Sempre** `lucide-react` — nunca emojis como ícones na UI
@@ -271,10 +291,16 @@ import { cn } from '@/lib/utils'
 ## 🗄️ BANCO DE DADOS (Supabase)
 
 ### Tabelas relevantes
-- `subscriptions` — plano de cada usuário (status: free/premium/cancelled, expires_at, mp_payment_id)
+- `subscriptions` — plano de cada usuário (`status`: free/premium/cancelled, `plan`: monthly/annual, `amount`, `expires_at`, `mp_payment_id`). `expires_at` respeita a duração do plano via `activate_premium(p_duration_days, p_plan, ...)` — 30 dias mensal / 365 dias anual.
+- `payments` — histórico de pagamentos aprovados (mp_payment_id, amount, payment_method)
+- `profiles` — dados de perfil do usuário (nível de surf, etc)
 - `comments` — relatos da comunidade por pico
 - `favorites` — picos favoritados por usuário
 - `surf_log` — diário de sessões
+- `surf_sessions` — sessões de surf registradas pelo usuário
+- `user_preferences` — preferências salvas (notificações, filtros)
+- `push_subscriptions` — inscrições de push notification (VAPID)
+- `score_snapshots` — histórico periódico de score por pico (gravado por `api/snapshot.ts`)
 
 ### Realtime
 - `subscriptions` tem listener realtime em `usePremium()` para detectar upgrade imediato

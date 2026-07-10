@@ -64,12 +64,12 @@ async function getUserStats(): Promise<{
     const revenueToday = Array.isArray(premiumData)
       ? premiumData
           .filter((s) => s.created_at >= todayISO)
-          .reduce((sum, s) => sum + (s.amount ?? 2990), 0) / 100
+          .reduce((sum, s) => sum + (s.amount ?? 29.90), 0)
       : 0
 
-    // Cancelamentos (subscriptions com status cancelled hoje)
+    // Cancelamentos (subscriptions com status cancelled, atualizadas hoje)
     const cancelRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/subscriptions?status=eq.cancelled&cancelled_at=gte.${todayISO}&select=id`,
+      `${SUPABASE_URL}/rest/v1/subscriptions?status=eq.cancelled&updated_at=gte.${todayISO}&select=id`,
       { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } }
     )
     const cancelData = cancelRes.ok ? await cancelRes.json() as { id: string }[] : []
@@ -90,17 +90,20 @@ async function getUserStats(): Promise<{
     const contentRange = countRes.headers.get('Content-Range') ?? ''
     const total = parseInt(contentRange.split('/')[1] ?? '0') || (totalData.total ?? 0)
 
-    // Novos usuários hoje via RPC (evita carregar até 500 registros só para contar)
-    const newTodayRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/count_new_users_today`, {
-      method: 'POST',
-      headers: {
-        apikey: SUPABASE_SERVICE_KEY,
-        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ since: todayISO }),
-    })
-    const newToday = newTodayRes.ok ? (await newTodayRes.json() as number) || 0 : 0
+    // Novos usuários hoje via Content-Range (evita carregar registros só para contar)
+    const newTodayRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?select=id&created_at=gte.${todayISO}`,
+      {
+        headers: {
+          apikey: SUPABASE_SERVICE_KEY,
+          Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+          Prefer: 'count=exact',
+          Range: '0-0',
+        }
+      }
+    )
+    const newTodayRange = newTodayRes.headers.get('Content-Range') ?? ''
+    const newToday = parseInt(newTodayRange.split('/')[1] ?? '0') || 0
 
     const mrr = premiumActive * 29.90
     const conversionRate = total > 0 ? Number(((premiumActive / total) * 100).toFixed(1)) : 0
