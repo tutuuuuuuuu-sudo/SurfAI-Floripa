@@ -430,3 +430,7 @@ export function analyzeConditions(spot: BeachCondition): string {
 // IDs das praias que pertencem à região "Centro" no contexto do filtro de regiões.
 // Centralizado aqui para evitar duplicação em Home, Navigation e demais páginas.
 export const CENTRO_SPOT_IDS = ['novo-campeche', 'joaquina', 'mole', 'barra-lagoa'] as const
+
+// Picos vitrine: acessíveis em /spot/:id sem login, para reduzir a fricção de entrada
+// de quem chega por link direto, busca ou anúncio — vê o produto real antes de criar conta.
+export const PUBLIC_SPOT_IDS = ['joaquina', 'mole'] as const

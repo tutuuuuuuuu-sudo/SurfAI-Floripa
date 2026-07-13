@@ -59,11 +59,11 @@ export default async function handler(req: Request) {
       id: isAnnual ? 'surf-ai-premium-anual' : 'surf-ai-premium-mensal',
       title: isAnnual ? 'Surf AI Premium — Anual' : 'Surf AI Premium — Mensal',
       description: isAnnual
-        ? 'Acesso completo ao Surf AI Floripa por 12 meses (equivale a R$ 19,90/mês)'
+        ? 'Acesso completo ao Surf AI Floripa por 12 meses (equivale a R$ 12,49/mês)'
         : 'Acesso completo ao Surf AI Floripa por 30 dias',
       quantity: 1,
       currency_id: 'BRL',
-      unit_price: isAnnual ? 238.80 : 29.90,
+      unit_price: isAnnual ? 149.90 : 16.90,
     }],
     payer: { email: userEmail },
     external_reference: `${userId}|${plan}`,

@@ -135,5 +135,8 @@ export async function createMercadoPagoCheckout(
 
 // ─── Preço ────────────────────────────────────────────────────────────────────
 
-export const PREMIUM_PRICE = 'R$ 29,90'
-export const PREMIUM_PRICE_MONTHLY = 29.90
+export const PREMIUM_PRICE = 'R$ 16,90'
+export const PREMIUM_PRICE_MONTHLY = 16.90
+export const PREMIUM_PRICE_ANNUAL = 'R$ 149,90'
+export const PREMIUM_PRICE_ANNUAL_VALUE = 149.90
+export const PREMIUM_PRICE_ANNUAL_MONTHLY_EQUIVALENT = 'R$ 12,49'

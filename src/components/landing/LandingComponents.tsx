@@ -350,7 +350,7 @@ export function FloatingCTA({ onFree, onPremium }: { onFree: () => void; onPremi
             boxShadow: '0 0 32px oklch(0.6 0.18 60 / 0.5), 0 8px 24px rgba(0,0,0,0.4)',
           }}>
           <Crown className="h-4 w-4 mr-2" />
-          Assinar Premium — R$ 29,90/mês
+          Assinar Premium — R$ 16,90/mês
         </Button>
       ) : (
         <Button size="lg" onClick={onFree}

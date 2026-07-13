@@ -159,10 +159,10 @@ export default function PremiumPage() {
               }`}
             >
               <span>Anual</span>
-              <span className={`text-xs font-bold ${selectedPlan === 'annual' ? 'text-primary-foreground' : 'text-rating-good'}`}>R$ 19,90/mês</span>
+              <span className={`text-xs font-bold ${selectedPlan === 'annual' ? 'text-primary-foreground' : 'text-rating-good'}`}>R$ 12,49/mês</span>
               {selectedPlan === 'annual' && (
                 <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-rating-good text-white border-0 text-[10px] px-1.5 py-0 whitespace-nowrap shadow-sm">
-                  Economize R$ 120
+                  Economize R$ 53
                 </Badge>
               )}
             </button>
@@ -175,7 +175,7 @@ export default function PremiumPage() {
               }`}
             >
               <span>Mensal</span>
-              <span className={`text-xs font-bold ${selectedPlan === 'monthly' ? 'text-foreground' : 'text-muted-foreground'}`}>R$ 29,90/mês</span>
+              <span className={`text-xs font-bold ${selectedPlan === 'monthly' ? 'text-foreground' : 'text-muted-foreground'}`}>R$ 16,90/mês</span>
             </button>
           </div>
         )}
@@ -201,25 +201,25 @@ export default function PremiumPage() {
                   <>
                     <div className="flex items-end justify-center gap-1">
                       <span className="text-sm text-muted-foreground mb-1">R$</span>
-                      <span className="text-5xl font-bold text-yellow-500">19</span>
-                      <span className="text-2xl font-bold text-yellow-500">,90</span>
+                      <span className="text-5xl font-bold text-yellow-500">12</span>
+                      <span className="text-2xl font-bold text-yellow-500">,49</span>
                       <span className="text-sm text-muted-foreground mb-1">/mês</span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">Cobrado anualmente — R$ 238,80/ano</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Cobrado anualmente — R$ 149,90/ano</p>
                     <div className="flex items-center justify-center gap-1.5 mt-1.5">
                       <TrendingDown className="h-3.5 w-3.5 text-rating-good" />
-                      <span className="text-xs font-semibold text-rating-good">Menos de R$ 0,66/dia · você economiza R$ 120/ano</span>
+                      <span className="text-xs font-semibold text-rating-good">Menos de R$ 0,42/dia · você economiza R$ 53/ano</span>
                     </div>
                   </>
                 ) : (
                   <>
                     <div className="flex items-end justify-center gap-1">
                       <span className="text-sm text-muted-foreground mb-1">R$</span>
-                      <span className="text-5xl font-bold text-yellow-500">29</span>
+                      <span className="text-5xl font-bold text-yellow-500">16</span>
                       <span className="text-2xl font-bold text-yellow-500">,90</span>
                       <span className="text-sm text-muted-foreground mb-1">/mês</span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">Cancele quando quiser · menos de R$ 1/dia</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Cancele quando quiser · menos de R$ 0,57/dia</p>
                   </>
                 )}
               </div>
@@ -250,8 +250,8 @@ export default function PremiumPage() {
                 {(loading || loadingAnnual)
                   ? <><Loader2 className="h-5 w-5 mr-2 animate-spin" />Redirecionando...</>
                   : selectedPlan === 'annual'
-                    ? <><Crown className="h-5 w-5 mr-2" />Assinar por R$ 238,80/ano</>
-                    : <><Crown className="h-5 w-5 mr-2" />Assinar por R$ 29,90/mês</>
+                    ? <><Crown className="h-5 w-5 mr-2" />Assinar por R$ 149,90/ano</>
+                    : <><Crown className="h-5 w-5 mr-2" />Assinar por R$ 16,90/mês</>
                 }
               </Button>
 

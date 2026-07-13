@@ -64,7 +64,7 @@ async function getUserStats(): Promise<{
     const revenueToday = Array.isArray(premiumData)
       ? premiumData
           .filter((s) => s.created_at >= todayISO)
-          .reduce((sum, s) => sum + (s.amount ?? 29.90), 0)
+          .reduce((sum, s) => sum + (s.amount ?? 16.90), 0)
       : 0
 
     // Cancelamentos (subscriptions com status cancelled, atualizadas hoje)
@@ -105,7 +105,13 @@ async function getUserStats(): Promise<{
     const newTodayRange = newTodayRes.headers.get('Content-Range') ?? ''
     const newToday = parseInt(newTodayRange.split('/')[1] ?? '0') || 0
 
-    const mrr = premiumActive * 29.90
+    // MRR real: assinatura mensal conta o valor cheio, anual é dividida por 12
+    const mrr = Array.isArray(premiumData)
+      ? premiumData.reduce((sum, s) => {
+          const amount = s.amount ?? (s.plan === 'annual' ? 149.90 : 16.90)
+          return sum + (s.plan === 'annual' ? amount / 12 : amount)
+        }, 0)
+      : 0
     const conversionRate = total > 0 ? Number(((premiumActive / total) * 100).toFixed(1)) : 0
 
     return { total, newToday, premiumActive, newPremiumToday, revenueToday, cancelledToday, mrr, conversionRate }

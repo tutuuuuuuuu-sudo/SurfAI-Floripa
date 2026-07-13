@@ -190,7 +190,7 @@ export default function Landing() {
             </div>
             <span className="hidden sm:block text-muted-foreground/40">·</span>
             <span className="text-sm text-muted-foreground">Premium com previsão 14 dias + alertas por</span>
-            <span className="text-sm font-black text-primary">R$ 29,90/mês</span>
+            <span className="text-sm font-black text-primary">R$ 16,90/mês</span>
             <button onClick={() => navigate('/login?plan=premium')}
               className="text-xs text-primary underline underline-offset-2 hover:text-primary/80 transition-colors">
               Ver plano →
@@ -528,7 +528,7 @@ export default function Landing() {
               className="font-bold px-8 h-12 text-sm"
               style={{ borderColor: 'oklch(0.65 0.18 50 / 0.4)', color: 'oklch(0.7 0.15 50)' }}>
               <Crown className="h-4 w-4 mr-2" />
-              Ver Premium — R$ 29,90/mês
+              Ver Premium — R$ 16,90/mês
             </Button>
           </Reveal>
         </div>
@@ -614,7 +614,7 @@ export default function Landing() {
                   <div className="text-sm font-bold text-primary flex items-center justify-center gap-1.5">
                     <Crown className="h-3.5 w-3.5 text-yellow-400" />Premium
                   </div>
-                  <div className="text-xs text-yellow-400 font-semibold">R$ 29,90/mês</div>
+                  <div className="text-xs text-yellow-400 font-semibold">R$ 16,90/mês</div>
                 </div>
               </div>
               {PLAN_FEATURES.map(({ label, free, premium }, i) => (

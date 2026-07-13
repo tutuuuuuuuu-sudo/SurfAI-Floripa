@@ -172,7 +172,7 @@ export default function Settings() {
               <Button variant="outline" size="sm" className="w-full border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/10"
                 onClick={() => navigate('/premium')}>
                 <Crown className="h-4 w-4 mr-2" />
-                Upgrade para Premium — R$ 29,90/mês
+                Upgrade para Premium — R$ 16,90/mês
               </Button>
             )}
           </CardContent>
