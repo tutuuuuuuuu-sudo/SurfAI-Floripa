@@ -8,7 +8,7 @@
 Domínio: `surfaifloripa.com.br` — deploy automático via Vercel conectado ao GitHub (branch `main`).
 
 ### Modelo de negócio (freemium)
-Dois planos pagos: **Mensal R$ 29,90/mês** ou **Anual R$ 238,80/ano** (equivale a R$ 19,90/mês). Escolha do plano em `src/pages/Premium.tsx` (`selectedPlan: 'monthly' | 'annual'`), preferência criada em `api/create-payment.ts`.
+Dois planos pagos: **Mensal R$ 16,90/mês** ou **Anual R$ 149,90/ano** (equivale a R$ 12,49/mês). Escolha do plano em `src/pages/Premium.tsx` (`selectedPlan: 'monthly' | 'annual'`), preferência criada em `api/create-payment.ts`.
 
 | Recurso | Free | Premium |
 |---|---|---|

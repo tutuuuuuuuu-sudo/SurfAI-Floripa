@@ -35,6 +35,7 @@ export function BestWindowWidget({ lat, lng, orientation }: Props) {
     let cancelled = false
     async function load() {
       setLoading(true)
+      setData(null)
       try {
         const { data: { session } } = await supabase.auth.getSession()
         const token = session?.access_token

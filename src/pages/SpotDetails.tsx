@@ -241,6 +241,10 @@ export default function SpotDetails() {
 
   const handleToggleFavorite = async () => {
     const newState = await toggleFavorite(spot.id, spot.name)
+    if (newState === null) {
+      toast.error('Não foi possível atualizar os favoritos. Tente novamente.')
+      return
+    }
     setFavorite(newState)
     toast.success(newState ? '❤️ Adicionado aos favoritos!' : '💔 Removido dos favoritos')
   }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -70,14 +70,18 @@ export default function ComparePage() {
   // para dificultar bypass via DevTools (apagar localStorage não limpa a sessão ativa)
   const freeQuotaKey = 'compare_used_date'
   const todayStr = new Date().toISOString().split('T')[0]
-  const usedToday = !isPremium && (() => {
-    try {
-      return (
-        localStorage.getItem(freeQuotaKey) === todayStr ||
-        sessionStorage.getItem(freeQuotaKey) === todayStr
-      )
-    } catch { return false }
-  })()
+  const usedTodayRef = useRef<boolean | null>(null)
+  if (usedTodayRef.current === null) {
+    usedTodayRef.current = !isPremium && (() => {
+      try {
+        return (
+          localStorage.getItem(freeQuotaKey) === todayStr ||
+          sessionStorage.getItem(freeQuotaKey) === todayStr
+        )
+      } catch { return false }
+    })()
+  }
+  const usedToday = usedTodayRef.current
 
   const markQuotaUsed = () => {
     if (!isPremium) {

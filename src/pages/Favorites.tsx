@@ -25,7 +25,11 @@ export default function Favorites() {
   }, [conditions, spotsLoading])
 
   const handleRemoveFavorite = async (spot: BeachCondition) => {
-    await toggleFavorite(spot.id, spot.name)
+    const newState = await toggleFavorite(spot.id, spot.name)
+    if (newState === null) {
+      toast.error('Não foi possível remover dos favoritos. Tente novamente.')
+      return
+    }
     setFavorites(prev => prev.filter(s => s.id !== spot.id))
     toast.success(`${spot.name} removido dos favoritos`)
   }

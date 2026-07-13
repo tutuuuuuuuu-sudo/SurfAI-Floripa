@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -18,7 +18,7 @@ export default function HistoryPage() {
   const { id } = useParams<{ id?: string }>()
   const { isPremium } = usePremium()
   const { conditions, loading } = useSurfData()
-  const spots = [...conditions].sort((a, b) => b.score - a.score)
+  const spots = useMemo(() => [...conditions].sort((a, b) => b.score - a.score), [conditions])
   const [selectedSpot, setSelectedSpot] = useState<string>(id ?? '')
   const [forecast, setForecast] = useState<WeatherForecast[]>([])
   const [loadingForecast, setLoadingForecast] = useState(false)

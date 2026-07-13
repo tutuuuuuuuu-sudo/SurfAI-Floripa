@@ -456,24 +456,19 @@ export default async function handler(req: Request) {
   const url = new URL(req.url)
   const secret = req.headers.get('x-agent-secret') ?? url.searchParams.get('secret')
 
-  // Vercel injeta Authorization: Bearer <CRON_SECRET> automaticamente nos crons
-  const cronSecret = process.env.CRON_SECRET
-  const authHeader = req.headers.get('Authorization')
-  const isVercelCron = req.method === 'GET' && cronSecret && authHeader === `Bearer ${cronSecret}`
-  if (!isVercelCron) {
-    if (!AGENT_SECRET) {
-      console.error('[daily-report] AGENT_SECRET não configurado')
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
-    if (secret !== AGENT_SECRET) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
+  // Cron roda via GitHub Actions (ver .github/workflows/daily-report.yml), autenticado por secret
+  if (!AGENT_SECRET) {
+    console.error('[daily-report] AGENT_SECRET não configurado')
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+  if (secret !== AGENT_SECRET) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    })
   }
 
   const hourBRT = (new Date().getUTCHours() - 3 + 24) % 24

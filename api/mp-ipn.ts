@@ -90,6 +90,21 @@ export default async function handler(req: Request) {
     if (payment.status === 'approved' && payment.external_reference) {
       const [userId, plan] = (payment.external_reference ?? '').split('|')
       const durationDays = plan === 'annual' ? 365 : 30
+
+      // Idempotência: o webhook principal (mp-webhook.ts) pode já ter processado
+      // este mesmo pagamento — MP costuma notificar por webhook e IPN legado juntos.
+      const existingRes = await fetch(
+        `${supabaseUrl}/rest/v1/payments?mp_payment_id=eq.${payment.id}&select=id`,
+        { headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` } }
+      )
+      if (existingRes.ok) {
+        const existing = await existingRes.json() as unknown[]
+        if (existing.length > 0) {
+          console.log('[mp-ipn] Pagamento já processado, ignorando:', payment.id)
+          return new Response('{"ok":true}', { status: 200, headers })
+        }
+      }
+
       const rpcRes = await fetch(`${supabaseUrl}/rest/v1/rpc/activate_premium`, {
         method: 'POST',
         headers: {

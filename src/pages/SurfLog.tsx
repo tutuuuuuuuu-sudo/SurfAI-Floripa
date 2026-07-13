@@ -125,9 +125,10 @@ export default function SurfLog() {
     setSaving(true)
 
     const duration = hours * 60 + mins
+    const spot = conditions.find(s => s.name === beach)
     const { error } = await supabase.from('surf_sessions').insert({
       user_id: user.id,
-      beach_id: beach.toLowerCase().replace(/\s+/g, '-'),
+      beach_id: spot?.id ?? beach.toLowerCase().replace(/\s+/g, '-'),
       beach_name: beach,
       date,
       duration_minutes: duration || null,

@@ -31,7 +31,9 @@ import {
 } from 'lucide-react'
 
 export default function Home() {
-  const [activeRegion, setActiveRegion] = useState<string>('all')
+  const [activeRegion, setActiveRegion] = useState<string>(() => {
+    try { return (JSON.parse(localStorage.getItem('pref_region') ?? 'null') as string) ?? 'all' } catch { return 'all' }
+  })
   const [topSpot, setTopSpot] = useState<BeachCondition | null>(null)
   const [favorites, setFavorites] = useState<string[]>([])
   const [visible, setVisible] = useState(false)

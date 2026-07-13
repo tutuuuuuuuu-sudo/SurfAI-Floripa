@@ -5,6 +5,7 @@ import { getRealTide } from '@/lib/weatherData'
 const generateTideData = (realLevels?: number[]) => {
   const now = new Date()
   const points: { hour: number, height: number }[] = []
+  let phaseOffset = 0
   if (realLevels && realLevels.length >= 24) {
     for (let h = 0; h <= 24; h += 0.25) {
       const i = Math.min(23, Math.floor(h)), frac = h - Math.floor(h)
@@ -14,7 +15,7 @@ const generateTideData = (realLevels?: number[]) => {
   } else {
     const amplitude=0.20,midLevel=0.5,period=12.4
     const dayOfYear=Math.floor((now.getTime()-new Date(now.getFullYear(),0,0).getTime())/86400000)
-    const phaseOffset=(dayOfYear*0.8)%period
+    phaseOffset=(dayOfYear*0.8)%period
     for (let h=0;h<=24;h+=0.25) points.push({ hour:h, height:Number((midLevel+amplitude*Math.cos((2*Math.PI*(h+phaseOffset))/period)).toFixed(2)) })
   }
   const allH=points.map(p=>p.height), midLevel=(Math.max(...allH)+Math.min(...allH))/2, amplitude=(Math.max(...allH)-Math.min(...allH))/2
@@ -28,7 +29,7 @@ const generateTideData = (realLevels?: number[]) => {
   const currentHeight=realLevels&&realLevels.length>=24
     ?Number(((realLevels[ci]??0)+((realLevels[Math.min(23,ci+1)]??0)-(realLevels[ci]??0))*frac).toFixed(2))
     :points.find(p=>Math.abs(p.hour-currentHour)<0.13)?.height??midLevel
-  return { points, amplitude, midLevel, phaseOffset:0, period:12.4, tideEvents, currentHeight:Number(currentHeight.toFixed(2)) }
+  return { points, amplitude, midLevel, phaseOffset, period:12.4, tideEvents, currentHeight:Number(currentHeight.toFixed(2)) }
 }
 
 type TooltipState = { x: number; y: number; hour: number; height: number } | null
@@ -38,10 +39,15 @@ import { Separator } from '@/components/ui/separator'
 const TideChartSVG = memo(({ tide, expanded=false, realLevels }: { tide:string, expanded?:boolean, realLevels?:number[] }) => {
   const svgRef = useRef<SVGSVGElement>(null)
   const [tooltip, setTooltip] = useState<TooltipState>(null)
+  const [now, setNow] = useState(() => new Date())
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60_000)
+    return () => clearInterval(id)
+  }, [])
 
   const chart = useMemo(() => {
     const { points, midLevel, amplitude, phaseOffset, period, tideEvents, currentHeight } = generateTideData(realLevels)
-    const now = new Date()
     const currentHour = now.getHours() + now.getMinutes() / 60
     const viewWidth = expanded ? 560 : 340
     const viewHeight = expanded ? 220 : 160
@@ -60,7 +66,7 @@ const TideChartSVG = memo(({ tide, expanded=false, realLevels }: { tide:string, 
       xScale, yScale, pathData, areaData,
       currentX: xScale(currentHour), currentY: yScale(currentHeight),
     }
-  }, [realLevels, expanded])
+  }, [realLevels, expanded, now])
 
   const formatHour = useCallback((h: number) =>
     `${Math.floor(h).toString().padStart(2,'0')}:${Math.round((h - Math.floor(h)) * 60).toString().padStart(2,'0')}`, [])

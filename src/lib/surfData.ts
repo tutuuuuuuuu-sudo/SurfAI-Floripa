@@ -1,6 +1,7 @@
 import { getWindyForecast } from './weatherApi'
 import { getRealWaterTemp } from './weatherData'
 import { calculateSurfScore, WIND_DEG as _WIND_DEG } from '../../api/_scoreEngine'
+import { getRatingInfo } from './rating'
 
 export interface SubRegion {
   id: string
@@ -406,12 +407,14 @@ export function getSpotById(id: string): BeachCondition | undefined { return get
 
 export function analyzeConditions(spot: BeachCondition): string {
   const orientation = spot._beachOrientation ?? 90
-  let analysis = ''
-  if (spot.score >= 8.5) analysis = 'Condições ÉPICAS! '
-  else if (spot.score >= 7) analysis = 'Condições EXCELENTES! '
-  else if (spot.score >= 5.5) analysis = 'Boas condições para surfar. '
-  else if (spot.score >= 4) analysis = 'Condições medianas. '
-  else analysis = 'Condições fracas. '
+  const ratingLabelToAnalysis: Record<string, string> = {
+    'ÉPICO': 'Condições ÉPICAS! ',
+    'EXCELENTE': 'Condições EXCELENTES! ',
+    'BOM': 'Boas condições para surfar. ',
+    'REGULAR': 'Condições medianas. ',
+    'RUIM': 'Condições fracas. ',
+  }
+  let analysis = ratingLabelToAnalysis[getRatingInfo(spot.score).label]
 
   analysis += getWindAnalysis(spot.windDirection, spot.windSpeed, orientation)
 

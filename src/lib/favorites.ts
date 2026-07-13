@@ -39,9 +39,14 @@ export async function isFavorite(spotId: string): Promise<boolean> {
   return favorites.includes(spotId)
 }
 
-export async function toggleFavorite(spotId: string, spotName: string): Promise<boolean> {
+/**
+ * Alterna o estado de favorito. Retorna o novo estado (true = favoritado, false = não
+ * favoritado) em caso de sucesso, ou `null` se a operação falhar — não confundir com
+ * `false`, que significa "removido/não favoritado com sucesso".
+ */
+export async function toggleFavorite(spotId: string, spotName: string): Promise<boolean | null> {
   const userId = await getCurrentUserId()
-  if (!userId) return false
+  if (!userId) return null
 
   const cached = favoritesCache.get(userId)
   const isCurrentlyFavorite = cached?.ids.includes(spotId) ?? (await isFavorite(spotId))
@@ -53,7 +58,7 @@ export async function toggleFavorite(spotId: string, spotName: string): Promise<
       .eq('user_id', userId)
       .eq('beach_id', spotId)
 
-    if (error) return false
+    if (error) return null
 
     if (cached) {
       cached.ids = cached.ids.filter(id => id !== spotId)
@@ -65,7 +70,7 @@ export async function toggleFavorite(spotId: string, spotName: string): Promise<
       .from('favorites')
       .insert({ user_id: userId, beach_id: spotId, beach_name: spotName })
 
-    if (error) return false
+    if (error) return null
 
     if (cached) {
       cached.ids = [...cached.ids, spotId]

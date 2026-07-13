@@ -190,15 +190,10 @@ const WIND_DIR_MAP: Record<string, number> = {
 }
 
 export default async function handler(req: Request) {
-  const cronSecret = process.env.CRON_SECRET
-  const authHeader = req.headers.get('Authorization')
-  // Vercel injeta Authorization: Bearer <CRON_SECRET> automaticamente quando CRON_SECRET está configurado
-  const isVercelCron = req.method === 'GET' && cronSecret && authHeader === `Bearer ${cronSecret}`
-  if (!isVercelCron) {
-    const secret = process.env.PUSH_NOTIFY_SECRET
-    const provided = new URL(req.url).searchParams.get('secret')
-    if (!secret || provided !== secret) return json({ error: 'Unauthorized' }, 401)
-  }
+  // Cron roda via GitHub Actions (ver .github/workflows/push-notify.yml), autenticado por secret em query param
+  const secret = process.env.PUSH_NOTIFY_SECRET
+  const provided = new URL(req.url).searchParams.get('secret')
+  if (!secret || provided !== secret) return json({ error: 'Unauthorized' }, 401)
 
   if (!SUPABASE_URL || !SUPABASE_KEY || !VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
     return json({ error: 'Configuração incompleta' }, 500)

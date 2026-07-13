@@ -193,45 +193,39 @@ function checkContentRateLimit(ip: string): boolean {
 }
 
 export default async function handler(req: Request) {
-  // Crons internos do Vercel chegam como GET com header x-vercel-signature
-  // Chamadas externas com AGENT_SECRET via x-agent-secret
-  // Usuários premium via Bearer token JWT
+  // Cron roda via GitHub Actions (ver .github/workflows/content-agent.yml) com AGENT_SECRET via x-agent-secret
+  // Usuários premium autenticam via Bearer token JWT
   const agentSecret = req.headers.get('x-agent-secret')
   const authHeader = req.headers.get('Authorization')
-  const cronSecret = process.env.CRON_SECRET
-  // Vercel injeta Authorization: Bearer <CRON_SECRET> automaticamente nos crons quando CRON_SECRET está configurado
-  const isVercelCron = req.method === 'GET' && cronSecret && authHeader === `Bearer ${cronSecret}`
 
-  if (!isVercelCron) {
-    if (agentSecret) {
-      if (!AGENT_SECRET || agentSecret !== AGENT_SECRET) {
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-          status: 401,
-          headers: { 'Content-Type': 'application/json' },
-        })
-      }
-    } else if (authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.slice(7)
-      const isPremium = await verifyPremiumToken(token)
-      if (!isPremium) {
-        return new Response(JSON.stringify({ error: 'Premium required' }), {
-          status: 403,
-          headers: { 'Content-Type': 'application/json' },
-        })
-      }
-      const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown'
-      if (!checkContentRateLimit(ip)) {
-        return new Response(JSON.stringify({ error: 'Too Many Requests' }), {
-          status: 429,
-          headers: { 'Content-Type': 'application/json', 'Retry-After': '3600' },
-        })
-      }
-    } else {
+  if (agentSecret) {
+    if (!AGENT_SECRET || agentSecret !== AGENT_SECRET) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
       })
     }
+  } else if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.slice(7)
+    const isPremium = await verifyPremiumToken(token)
+    if (!isPremium) {
+      return new Response(JSON.stringify({ error: 'Premium required' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown'
+    if (!checkContentRateLimit(ip)) {
+      return new Response(JSON.stringify({ error: 'Too Many Requests' }), {
+        status: 429,
+        headers: { 'Content-Type': 'application/json', 'Retry-After': '3600' },
+      })
+    }
+  } else {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    })
   }
 
   if (!ANTHROPIC_KEY) {

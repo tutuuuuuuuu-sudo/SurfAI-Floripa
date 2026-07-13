@@ -701,7 +701,7 @@ export default function Landing() {
                   <div className="text-center md:text-right">
                     <div className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Apenas</div>
                     <div className="flex items-end justify-center md:justify-end gap-1">
-                      <span className="text-6xl font-black text-yellow-400 leading-none">29</span>
+                      <span className="text-6xl font-black text-yellow-400 leading-none">16</span>
                       <div className="mb-1.5">
                         <div className="text-2xl font-black text-yellow-400">,90</div>
                         <div className="text-xs text-muted-foreground">R$/mês</div>

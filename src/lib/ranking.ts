@@ -14,9 +14,12 @@ export interface SpotRanking {
 }
 
 function startOfMonthSP(): string {
-  const now = new Date()
-  const spNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }))
-  return new Date(spNow.getFullYear(), spNow.getMonth(), 1).toISOString().split('T')[0]
+  // en-CA formata como YYYY-MM-DD — extrai ano/mês diretamente no fuso de SP,
+  // sem passar por new Date(y, m, 1) (que usaria o fuso do runtime, não o de SP).
+  const [year, month] = new Date()
+    .toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+    .split('-')
+  return `${year}-${month}-01`
 }
 
 function monthLabelSP(): string {

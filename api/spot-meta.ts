@@ -5,7 +5,7 @@ export const config = { runtime: 'edge' }
 // normalmente é uma rota client-side e sempre mostraria o título genérico do app.
 // Usuários reais continuam recebendo a SPA normalmente (ver rewrite condicional no vercel.json).
 
-import { calculateSurfScore } from './_scoreEngine'
+import { calculateSurfScore } from './_scoreEngine.js'
 
 const APP_URL = 'https://www.surfaifloripa.com.br'
 

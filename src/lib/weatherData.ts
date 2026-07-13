@@ -1,6 +1,7 @@
 // Reexporta de weatherApi para manter compatibilidade com imports existentes
 export { getRealTide, getRealWaterTemp } from './weatherApi'
 import { calculateSurfScore } from '../../api/_scoreEngine'
+import { getRatingInfo } from './rating'
 
 export interface WeatherForecast {
   date: string
@@ -18,9 +19,10 @@ export interface WeatherForecast {
 
 
 function getConditionFromScore(score: number): 'Excelente' | 'Bom' | 'Regular' | 'Ruim' {
-  if (score >= 8) return 'Excelente'
-  if (score >= 6.5) return 'Bom'
-  if (score >= 5) return 'Regular'
+  const label = getRatingInfo(score).label
+  if (label === 'ÉPICO' || label === 'EXCELENTE') return 'Excelente'
+  if (label === 'BOM') return 'Bom'
+  if (label === 'REGULAR') return 'Regular'
   return 'Ruim'
 }
 

@@ -45,8 +45,8 @@ export function OnboardingModal({ onDone }: Props) {
         if (timeSlot && timeSlot !== 'qualquer') localStorage.setItem('pref_time_slot', timeSlot)
         if (favoriteSpotId) await toggleFavorite(favoriteSpotId, chosenSpot?.name ?? favoriteSpotId)
       }
-      localStorage.setItem('onboarding_done', '1')
-    } catch { /* modo privado */ }
+    } catch { /* favorito falhou ou modo privado — segue para gravar onboarding_done mesmo assim */ }
+    try { localStorage.setItem('onboarding_done', '1') } catch { /* modo privado */ }
     onDone()
   }
 
@@ -217,7 +217,7 @@ export function OnboardingModal({ onDone }: Props) {
                 Começar a surfar
               </Button>
               <button
-                onClick={() => { handleDone(true); navigate('/premium') }}
+                onClick={() => { handleDone(false); navigate('/premium') }}
                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-rating-fair/5 border border-rating-fair/20 hover:bg-rating-fair/10 transition-colors text-sm text-rating-fair font-medium"
               >
                 <Crown className="h-4 w-4" />Ver o que é Premium

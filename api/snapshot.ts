@@ -41,16 +41,11 @@ async function fetchSurf(lat: number, lng: number, orientation: number) {
 }
 
 export default async function handler(req: Request) {
-  const cronSecret = process.env.CRON_SECRET
-  const authHeader = req.headers.get('Authorization')
-  // Vercel injeta Authorization: Bearer <CRON_SECRET> automaticamente quando CRON_SECRET está configurado
-  const isVercelCron = req.method === 'GET' && cronSecret && authHeader === `Bearer ${cronSecret}`
-  if (!isVercelCron) {
-    const secret = process.env.SNAPSHOT_SECRET
-    const provided = new URL(req.url).searchParams.get('secret')
-    if (!secret || provided !== secret) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
-    }
+  // Cron roda via GitHub Actions (ver .github/workflows/snapshot.yml), autenticado por secret em query param
+  const secret = process.env.SNAPSHOT_SECRET
+  const provided = new URL(req.url).searchParams.get('secret')
+  if (!secret || provided !== secret) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
   }
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {

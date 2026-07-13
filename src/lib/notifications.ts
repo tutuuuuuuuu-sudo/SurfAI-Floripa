@@ -115,13 +115,14 @@ export function saveNotificationSettings(settings: {
   lsSetJson('notification_settings', settings)
 }
 
+/** Retorna o número de notificações efetivamente disparadas. */
 export async function checkAndNotifyGoodConditions(
   spots: { id: string, name: string, score: number, tide?: string, bestTimeWindow?: string }[],
   favorites: string[],
   minScore: number,
   favoriteOnly: boolean
-) {
-  if (Notification.permission !== 'granted') return
+): Promise<number> {
+  if (Notification.permission !== 'granted') return 0
 
   const now = Date.now()
   const notifiedKey = 'notified_spots_v2'
@@ -141,7 +142,7 @@ export async function checkAndNotifyGoodConditions(
     return true
   }).sort((a, b) => b.score - a.score)
 
-  if (goodSpots.length === 0) return
+  if (goodSpots.length === 0) return 0
 
   // Notifica no máximo 2 praias por vez para não spammar
   const toNotify = goodSpots.slice(0, 2)
@@ -161,4 +162,5 @@ export async function checkAndNotifyGoodConditions(
   }
 
   lsSetJson(notifiedKey, cleaned)
+  return toNotify.length
 }
