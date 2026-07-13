@@ -16,6 +16,7 @@ import { analyzeConditions, BeachCondition, CENTRO_SPOT_IDS } from '@/lib/surfDa
 import { useSurfData } from '@/contexts/SurfDataContext'
 import { getFavorites } from '@/lib/favorites'
 import { getLatestCommentsForSpots, LatestComment } from '@/lib/comments'
+import { getValidationSummaries, ValidationSummary } from '@/lib/validations'
 import { useAuth } from '@/contexts/AuthContext'
 import { getUserDisplayName } from '@/lib/supabase'
 import { usePremium } from '@/lib/premium'
@@ -41,6 +42,7 @@ export default function Home() {
     try { return !localStorage.getItem('onboarding_done') } catch { return true }
   })
   const [latestComments, setLatestComments] = useState<Record<string, LatestComment>>({})
+  const [validations, setValidations] = useState<Record<string, ValidationSummary>>({})
   const aiReportFetchedRef = useRef(false)
   const premiumResolvedRef = useRef(false)
   const navigate = useNavigate()
@@ -62,7 +64,7 @@ export default function Home() {
     const sortedAll = [...allSpots].sort((a, b) => b.score - a.score)
     setTopSpot(sortedAll[0] ?? null)
     const t = setTimeout(() => setVisible(true), 100)
-    return () => clearTimeout(t)
+
     getFavorites().catch(() => [] as string[]).then(favs => {
       setFavorites(favs)
       const notifSettings = getSavedNotificationSettings()
@@ -73,6 +75,9 @@ export default function Home() {
     // Busca o relato mais recente de cada praia em um único request
     const ids = allSpots.map(s => s.id)
     getLatestCommentsForSpots(ids).then(setLatestComments).catch(() => {})
+    getValidationSummaries(ids).then(setValidations).catch(() => {})
+
+    return () => clearTimeout(t)
   }, [allSpots])
 
   // Busca o relatório AI uma única vez — aguarda status premium ser resolvido
@@ -323,7 +328,11 @@ export default function Home() {
               </div>
             ) : (
               <div key={(item as BeachCondition).id} style={{ animation: `slideUp 0.4s ${idx * 0.05}s ease-out both` }}>
-                <SpotCard spot={item as BeachCondition} latestComment={latestComments[(item as BeachCondition).id]} />
+                <SpotCard
+                  spot={item as BeachCondition}
+                  latestComment={latestComments[(item as BeachCondition).id]}
+                  validation={validations[(item as BeachCondition).id]}
+                />
               </div>
             )
           )}

@@ -4,12 +4,14 @@ import { BeachCondition } from '@/lib/surfData'
 import { getRatingInfo } from '@/lib/rating'
 import { getTainhaInfo } from '@/lib/tainha'
 import { LatestComment, formatCommentTime } from '@/lib/comments'
+import { ValidationSummary } from '@/lib/validations'
 import { Waves, Wind, Clock, Thermometer, ThumbsUp, Fish, MessageCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 interface SpotCardProps {
   spot: BeachCondition
   latestComment?: LatestComment
+  validation?: ValidationSummary
 }
 
 function getUserLevel(): string | null {
@@ -25,7 +27,7 @@ function getPersonalizedBadge(spot: BeachCondition, level: string | null): strin
   return null
 }
 
-export function SpotCard({ spot, latestComment }: SpotCardProps) {
+export function SpotCard({ spot, latestComment, validation }: SpotCardProps) {
   const navigate = useNavigate()
   const rating = getRatingInfo(spot.score)
   const personalBadge = getPersonalizedBadge(spot, getUserLevel())
@@ -125,6 +127,12 @@ export function SpotCard({ spot, latestComment }: SpotCardProps) {
           {tainha.status === 'fechada' && (
             <Badge className="bg-destructive/15 text-destructive border-destructive/30" variant="outline">
               <Fish className="h-3 w-3 mr-1" />Fechada — tainha
+            </Badge>
+          )}
+          {validation && validation.total > 0 && (
+            <Badge className="bg-rating-good/15 text-rating-good border-rating-good/30" variant="outline">
+              <ThumbsUp className="h-3 w-3 mr-1" />
+              {validation.matched}/{validation.total} confirmaram
             </Badge>
           )}
         </div>

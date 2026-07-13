@@ -9,6 +9,8 @@ import { useSurfData } from '@/contexts/SurfDataContext'
 import { getWeatherForecast, WeatherForecast, FREE_DAYS } from '@/lib/weatherData'
 import { isFavorite, toggleFavorite } from '@/lib/favorites'
 import { usePremium } from '@/lib/premium'
+import { useAuth } from '@/contexts/AuthContext'
+import { PUBLIC_SPOT_IDS } from '@/lib/surfData'
 import {
   ArrowLeft, Waves, Wind, Navigation,
   TrendingUp, Compass, AlertCircle, Thermometer,
@@ -25,6 +27,7 @@ import { CommentsSection } from '@/components/spot/CommentsSection'
 import { ScoreExplainer } from '@/components/spot/ScoreExplainer'
 import { PicosSection } from '@/components/spot/PicosSection'
 import { BestWindowWidget } from '@/components/spot/BestWindowWidget'
+import { SpotValidation } from '@/components/spot/SpotValidation'
 
 const FIXED_DOMAIN = typeof window !== 'undefined' ? window.location.origin : ''
 const metersToFeet = (m: number): string => `${(m * 3.281).toFixed(1)}ft`
@@ -143,6 +146,9 @@ export default function SpotDetails() {
   const navigate = useNavigate()
   const { conditions, loading: conditionsLoading } = useSurfData()
   const { isPremium } = usePremium()
+  const { user, loading: authLoading } = useAuth()
+  const isPublicSpot = id ? (PUBLIC_SPOT_IDS as readonly string[]).includes(id) : false
+  const homePath = user ? '/' : '/landing'
 
   const [spot, setSpot] = useState<BeachCondition|null>(null)
   const [loadingSpot, setLoadingSpot] = useState(true)
@@ -198,7 +204,7 @@ export default function SpotDetails() {
       .catch(() => {})
   }, [id, isPremium, conditions, conditionsLoading])
 
-  if (loadingSpot) return (
+  if (loadingSpot || authLoading) return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="text-center">
         <Waves className="h-12 w-12 mx-auto mb-4 text-primary animate-bounce"/>
@@ -207,11 +213,28 @@ export default function SpotDetails() {
     </div>
   )
 
+  if (!user && !isPublicSpot) return (
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <Card className="max-w-md w-full">
+        <CardHeader>
+          <CardTitle>Crie sua conta grátis para ver este pico</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Joaquina e Praia Mole você vê sem cadastro. Para os demais picos de Floripa, é só criar uma conta gratuita — leva menos de um minuto.
+          </p>
+          <Button className="w-full" onClick={() => navigate('/login')}>Criar conta grátis</Button>
+          <Button variant="outline" className="w-full" onClick={() => navigate('/landing')}>Voltar</Button>
+        </CardContent>
+      </Card>
+    </div>
+  )
+
   if (!spot) return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <Card className="max-w-md">
         <CardHeader><CardTitle>Praia não encontrada</CardTitle></CardHeader>
-        <CardContent><Button onClick={() => navigate('/')}>Voltar para Home</Button></CardContent>
+        <CardContent><Button onClick={() => navigate(homePath)}>Voltar para Home</Button></CardContent>
       </Card>
     </div>
   )
@@ -233,7 +256,7 @@ export default function SpotDetails() {
       <header className="sticky top-0 z-40 bg-card/90 backdrop-blur-md border-b border-border/40">
         <div className="container mx-auto px-4 py-2.5 max-w-4xl">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="flex-shrink-0 h-8 px-2">
+            <Button variant="ghost" size="sm" onClick={() => navigate(homePath)} className="flex-shrink-0 h-8 px-2">
               <ArrowLeft className="h-4 w-4 mr-1"/>Voltar
             </Button>
             <div className="flex-1 min-w-0 px-1">
@@ -321,6 +344,8 @@ export default function SpotDetails() {
             </div>
           </div>
         </div>
+
+        <SpotValidation spot={spot} />
 
         {/* Widget: contexto histórico do score */}
         {scoreHistory && scoreHistory.avg30 !== null && (() => {
@@ -617,7 +642,7 @@ export default function SpotDetails() {
                   >
                     <Crown className="h-5 w-5 text-rating-fair mx-auto mb-1"/>
                     <div className="text-sm font-semibold text-rating-fair">Ver previsão completa de 14 dias</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">Assine o Premium por R$ 29,90/mês</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">Assine o Premium por R$ 16,90/mês</div>
                   </button>
                 )}
               </>
@@ -625,8 +650,8 @@ export default function SpotDetails() {
           </div>
         )}
 
-        <Button size="lg" variant="outline" className="w-full" onClick={() => navigate('/')}>
-          Ver Todas as Praias
+        <Button size="lg" variant="outline" className="w-full" onClick={() => navigate(homePath)}>
+          {user ? 'Ver Todas as Praias' : 'Criar conta grátis e ver todas as praias'}
         </Button>
       </main>
     </div>

@@ -68,7 +68,7 @@ function AppRoutes() {
         <Route path="/landing" element={<Landing />} />
         <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
         <Route path="/" element={user ? <ProtectedRoute><Home /></ProtectedRoute> : <Navigate to="/landing" replace />} />
-        <Route path="/spot/:id" element={<ProtectedRoute><SpotDetails /></ProtectedRoute>} />
+        <Route path="/spot/:id" element={<SpotDetails />} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
