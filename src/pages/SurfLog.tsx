@@ -197,7 +197,7 @@ export default function SurfLog() {
               <div className="flex items-start gap-3">
                 <FileText className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
                 <div>
-                  <div className="text-sm font-semibold">Log de sessões temporariamente indisponível</div>
+                  <div className="text-sm font-semibold">Sessões temporariamente indisponíveis</div>
                   <div className="text-xs text-muted-foreground mt-1">
                     Não foi possível acessar seus registros. Tente novamente em breve.
                   </div>

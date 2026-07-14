@@ -18,6 +18,33 @@ import {
 import { toast } from 'sonner'
 import { getRatingInfo } from '@/lib/rating'
 
+const MAX_AVATAR_DIMENSION = 1280
+const AVATAR_JPEG_QUALITY = 0.82
+
+/** Redimensiona (lado maior <= 1280px) e reexporta como JPEG antes do upload. */
+async function compressImage(file: File): Promise<Blob> {
+  const bitmap = await createImageBitmap(file).catch(() => {
+    throw new Error('unreadable_image')
+  })
+  const scale = Math.min(1, MAX_AVATAR_DIMENSION / Math.max(bitmap.width, bitmap.height))
+  const width = Math.round(bitmap.width * scale)
+  const height = Math.round(bitmap.height * scale)
+
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('unreadable_image')
+  ctx.drawImage(bitmap, 0, 0, width, height)
+  bitmap.close()
+
+  const blob = await new Promise<Blob | null>(resolve =>
+    canvas.toBlob(resolve, 'image/jpeg', AVATAR_JPEG_QUALITY)
+  )
+  if (!blob) throw new Error('unreadable_image')
+  return blob
+}
+
 export default function ProfilePage() {
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -132,15 +159,15 @@ export default function ProfilePage() {
 
   const handlePhotoUpload = async (file: File) => {
     if (!user || !file) return
-    if (file.size > 5 * 1024 * 1024) { toast.error('Foto muito grande. Máximo 5MB.'); return }
+    if (file.size > 30 * 1024 * 1024) { toast.error('Arquivo muito grande. Escolha uma foto menor.'); return }
     setUploadingPhoto(true)
     setShowPhotoOptions(false)
     try {
-      const ext = file.name.split('.').pop()
-      const path = `avatars/${user.id}.${ext}`
+      const compressed = await compressImage(file)
+      const path = `avatars/${user.id}.jpg`
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(path, file, { upsert: true, contentType: file.type })
+        .upload(path, compressed, { upsert: true, contentType: 'image/jpeg' })
       if (uploadError) throw uploadError
       const { data } = supabase.storage.from('avatars').getPublicUrl(path)
       const publicUrl = data.publicUrl + `?t=${Date.now()}`
@@ -148,8 +175,12 @@ export default function ProfilePage() {
       await supabase.auth.updateUser({ data: { avatar_url: publicUrl } })
       setAvatarUrl(publicUrl)
       toast.success('Foto de perfil atualizada! 📸')
-    } catch {
-      toast.error('Erro ao fazer upload da foto.')
+    } catch (err) {
+      if (err instanceof Error && err.message === 'unreadable_image') {
+        toast.error('Não conseguimos ler essa imagem. Tente outra foto (JPG ou PNG).')
+      } else {
+        toast.error('Erro ao fazer upload da foto.')
+      }
     }
     setUploadingPhoto(false)
   }

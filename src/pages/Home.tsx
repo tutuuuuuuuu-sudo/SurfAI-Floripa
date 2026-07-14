@@ -220,7 +220,7 @@ export default function Home() {
                 </div>
               ) : aiReport ? (
                 <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground leading-relaxed">{aiReport}</p>
+                  <p className="text-sm text-foreground leading-relaxed">{aiReport}</p>
                   <p className="text-xs text-muted-foreground/50">Gerado por IA com base nos dados atuais. Confirme as condições antes de entrar no mar.</p>
                 </div>
               ) : !isPremium && topSpot ? (
