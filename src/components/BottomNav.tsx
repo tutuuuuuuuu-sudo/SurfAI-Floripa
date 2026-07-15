@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Home, Heart, History, User, BookOpen } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
 
 const NAV_ITEMS = [
   { path: '/',           label: 'Início',    Icon: Home },
@@ -14,8 +15,12 @@ const HIDDEN_PATHS = ['/landing', '/login', '/reset-password']
 export function BottomNav() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { user } = useAuth()
 
   if (HIDDEN_PATHS.some(p => location.pathname.startsWith(p))) return null
+  // Visitante deslogado em /spot/:id (pico vitrine ou teaser) — menu leva a telas
+  // que exigem login, então não faz sentido mostrar pra quem ainda não tem conta.
+  if (!user && location.pathname.startsWith('/spot/')) return null
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/90 backdrop-blur-md border-t border-border/50 safe-area-pb">
