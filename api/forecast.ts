@@ -1,6 +1,6 @@
 export const config = { runtime: 'edge' }
 
-import { calculateSurfScore } from './_scoreEngine.js'
+import { fetchHourlyForecast } from './_hourlyForecast.js'
 
 const ALLOWED_ORIGIN = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 
@@ -42,12 +42,6 @@ function isValidCoord(lat: string | null, lng: string | null): boolean {
   return !isNaN(latN) && !isNaN(lngN) && latN >= -90 && latN <= 90 && lngN >= -180 && lngN <= 180
 }
 
-function degreesToDir(deg: number): string {
-  const dirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
-  return dirs[Math.round(((deg % 360) + 360) % 360 / 22.5) % 16]
-}
-
-
 export default async function handler(req: Request) {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS })
   if (req.method !== 'GET') return json({ error: 'Method not allowed' }, 405)
@@ -80,74 +74,47 @@ export default async function handler(req: Request) {
   const forecastDays = isPremium ? PREMIUM_DAYS : FREE_DAYS
 
   try {
-    const [marineRes, weatherRes] = await Promise.all([
-      fetch(
-        `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}` +
-        `&daily=wave_height_max,wave_period_max,swell_wave_height_max,swell_wave_period_max` +
-        `&length_unit=metric&timezone=America%2FSao_Paulo&forecast_days=${forecastDays}`
-      ),
-      fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
-        `&daily=wind_speed_10m_max,wind_direction_10m_dominant,temperature_2m_max` +
-        `&hourly=temperature_2m&wind_speed_unit=kmh&timezone=America%2FSao_Paulo&forecast_days=${forecastDays}`
-      ),
-    ])
-
-    if (!marineRes.ok || !weatherRes.ok) {
+    const hourly = await fetchHourlyForecast(lat!, lng!, forecastDays)
+    if (!hourly) {
       return json({ error: 'Dados meteorológicos indisponíveis' }, 503)
     }
 
-    interface MarineDaily {
-      time: string[]
-      wave_height_max?: number[]
-      wave_period_max?: number[]
-      swell_wave_height_max?: number[]
-      swell_wave_period_max?: number[]
-    }
-    interface WeatherDaily {
-      wind_speed_10m_max?: number[]
-      wind_direction_10m_dominant?: number[]
-      temperature_2m_max?: number[]
-    }
-
-    const marine = await marineRes.json() as { daily?: MarineDaily }
-    const weather = await weatherRes.json() as { daily?: WeatherDaily; hourly?: { temperature_2m: number[] } }
-
-    const days = marine.daily?.time ?? []
     const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
-    const currentHour = new Date().getHours()
-    const hourlyTemps: number[] = weather.hourly?.temperature_2m ?? []
 
-    const forecasts = days.slice(0, forecastDays).map((date, i) => {
+    // Janela de horário considerada "surfável" para escolher o melhor momento real do dia —
+    // evita cravar a nota com base numa hora de madrugada que ninguém vai encarar.
+    const DAY_START_HOUR = 5
+    const DAY_END_HOUR = 20
+
+    const daysAvailable = Math.min(forecastDays, Math.floor(hourly.times.length / 24))
+    if (daysAvailable === 0) {
+      return json({ error: 'Dados meteorológicos indisponíveis' }, 503)
+    }
+
+    const forecasts = Array.from({ length: daysAvailable }, (_, i) => {
+      const date = hourly.times[i * 24].slice(0, 10)
       const dateObj = new Date(date + 'T12:00:00')
       const dayName = i === 0 ? 'Hoje' : i === 1 ? 'Amanhã' : dayNames[dateObj.getDay()]
 
-      const waveHeight = Number(
-        (marine.daily?.swell_wave_height_max?.[i] ?? marine.daily?.wave_height_max?.[i] ?? 1.0).toFixed(1)
-      )
-      const swellPeriod = Math.round(
-        marine.daily?.swell_wave_period_max?.[i] ?? marine.daily?.wave_period_max?.[i] ?? 10
-      )
-      const windSpeed = Math.round(weather.daily?.wind_speed_10m_max?.[i] ?? 12)
-      const windDeg = weather.daily?.wind_direction_10m_dominant?.[i] ?? 0
-      const windDirection = degreesToDir(windDeg)
-
-      const hourIdx = i === 0 ? currentHour : i * 24 + 12
-      const temperature = hourlyTemps[hourIdx] != null
-        ? Math.round(hourlyTemps[hourIdx])
-        : Math.round(weather.daily?.temperature_2m_max?.[i] ?? 24)
-
-      const score = calculateSurfScore(waveHeight, windSpeed, swellPeriod, windDirection, orientation)
+      // Escolhe a hora real com melhor nota dentro da janela surfável do dia — onda, vento
+      // e período sempre vêm do mesmo horário, nunca de picos independentes que talvez
+      // nunca aconteçam juntos de verdade.
+      // Non-null: daysAvailable garante i*24+DAY_START_HOUR sempre dentro de hourly.times.
+      let best = hourly.readHour(i * 24 + DAY_START_HOUR, orientation)!
+      for (let h = DAY_START_HOUR + 1; h <= DAY_END_HOUR; h++) {
+        const reading = hourly.readHour(i * 24 + h, orientation)
+        if (reading && reading.score > best.score) best = reading
+      }
 
       return {
         date,
         dayName,
-        waveHeight,
-        windSpeed,
-        windDirection,
-        swellPeriod,
-        temperature,
-        score: Number(score.toFixed(1)),
+        waveHeight: best.waveHeight,
+        windSpeed: best.windSpeed,
+        windDirection: best.windDirection,
+        swellPeriod: best.swellPeriod,
+        temperature: best.temperature,
+        score: Number(best.score.toFixed(1)),
         locked: false, // nunca retorna locked=true — dados bloqueados simplesmente não chegam
       }
     })

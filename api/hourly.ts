@@ -1,6 +1,6 @@
 export const config = { runtime: 'edge' }
 
-import { calculateSurfScore } from './_scoreEngine.js'
+import { fetchHourlyForecast } from './_hourlyForecast.js'
 
 const ALLOWED_ORIGIN = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 const CORS = {
@@ -14,11 +14,6 @@ function json(data: unknown, status = 200) {
     status,
     headers: { 'Content-Type': 'application/json', ...CORS },
   })
-}
-
-function degreesToDir(deg: number): string {
-  const dirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
-  return dirs[Math.round(((deg % 360) + 360) % 360 / 22.5) % 16]
 }
 
 function isValidCoord(lat: string | null, lng: string | null): boolean {
@@ -75,61 +70,27 @@ export default async function handler(req: Request) {
   if (!isPremium) return json({ error: 'Premium required' }, 403)
 
   try {
-    const [marineRes, weatherRes] = await Promise.all([
-      fetch(
-        `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}` +
-        `&hourly=wave_height,wave_period,swell_wave_height,swell_wave_period,swell_wave_direction` +
-        `&length_unit=metric&timezone=America%2FSao_Paulo&forecast_days=2`
-      ),
-      fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
-        `&hourly=wind_speed_10m,wind_direction_10m` +
-        `&wind_speed_unit=kmh&timezone=America%2FSao_Paulo&forecast_days=2`
-      ),
-    ])
+    const hourly = await fetchHourlyForecast(lat!, lng!, 2)
+    if (!hourly) return json({ error: 'Dados indisponíveis' }, 503)
 
-    if (!marineRes.ok || !weatherRes.ok) return json({ error: 'Dados indisponíveis' }, 503)
-
-    interface MarineHourly {
-      time: string[]
-      wave_height?: number[]
-      wave_period?: number[]
-      swell_wave_height?: number[]
-      swell_wave_period?: number[]
-      swell_wave_direction?: number[]
-    }
-    interface WeatherHourly {
-      time: string[]
-      wind_speed_10m?: number[]
-      wind_direction_10m?: number[]
-    }
-
-    const marine = await marineRes.json() as { hourly?: MarineHourly }
-    const weather = await weatherRes.json() as { hourly?: WeatherHourly }
-
-    const times = marine.hourly?.time ?? []
     const nowHour = new Date().getHours()
     const today = new Date().toISOString().slice(0, 10)
 
     // Filtra apenas as horas de hoje, a partir da hora atual
     const slots: HourlySlot[] = []
-    times.forEach((t, i) => {
+    hourly.times.forEach((t, i) => {
       const date = t.slice(0, 10)
       const hour = parseInt(t.slice(11, 13), 10)
       if (date !== today) return
 
-      const waveHeight = Number(
-        (marine.hourly?.swell_wave_height?.[i] ?? marine.hourly?.wave_height?.[i] ?? 1.0).toFixed(1)
-      )
-      const swellPeriod = Math.round(
-        marine.hourly?.swell_wave_period?.[i] ?? marine.hourly?.wave_period?.[i] ?? 10
-      )
-      const windSpeed = Math.round(weather.hourly?.wind_speed_10m?.[i] ?? 12)
-      const windDeg = weather.hourly?.wind_direction_10m?.[i] ?? 0
-      const windDirection = degreesToDir(windDeg)
-      const score = Number(calculateSurfScore(waveHeight, windSpeed, swellPeriod, windDirection, orientation).toFixed(1))
+      const reading = hourly.readHour(i, orientation)
+      if (!reading) return
 
-      slots.push({ hour, label: `${String(hour).padStart(2, '0')}h`, score, waveHeight, windSpeed, windDirection, swellPeriod, isPeak: false })
+      slots.push({
+        hour, label: `${String(hour).padStart(2, '0')}h`, score: reading.score,
+        waveHeight: reading.waveHeight, windSpeed: reading.windSpeed,
+        windDirection: reading.windDirection, swellPeriod: reading.swellPeriod, isPeak: false,
+      })
     })
 
     if (slots.length === 0) return json({ error: 'Sem dados horários' }, 503)
