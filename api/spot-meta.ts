@@ -9,11 +9,18 @@ import { calculateSurfScore } from './_scoreEngine.js'
 
 const APP_URL = 'https://www.surfaifloripa.com.br'
 
-// Picos vitrine liberados sem login — mesma lista de PUBLIC_SPOT_IDS em src/lib/surfData.ts.
-// Coordenadas e orientação replicadas do array BEACHES (não alterar sem confirmação do usuário).
+// Picos com página pública (vitrine total ou teaser) — união de PUBLIC_SPOT_IDS e
+// TEASER_SPOT_IDS em src/lib/surfData.ts. Bots recebem o mesmo tratamento nos dois
+// casos (meta tags com score real); a diferença vitrine/teaser só existe pro humano,
+// dentro de SpotDetails.tsx. Coordenadas e orientação replicadas do array BEACHES
+// (não alterar sem confirmação do usuário).
 const SPOTS: Record<string, { name: string; region: string; lat: number; lng: number; orientation: number }> = {
   joaquina: { name: 'Joaquina', region: 'Leste', lat: -27.6293577, lng: -48.4490173, orientation: 90 },
   mole: { name: 'Praia Mole', region: 'Leste', lat: -27.6022459, lng: -48.4326839, orientation: 85 },
+  campeche: { name: 'Campeche', region: 'Sul', lat: -27.697703, lng: -48.4898603, orientation: 90 },
+  'novo-campeche': { name: 'Novo Campeche', region: 'Sul', lat: -27.6661001, lng: -48.4755307, orientation: 90 },
+  matadeiro: { name: 'Matadeiro', region: 'Sul', lat: -27.7548429, lng: -48.4985647, orientation: 110 },
+  santinho: { name: 'Santinho', region: 'Norte', lat: -27.4618653, lng: -48.3761513, orientation: 70 },
 }
 
 function escapeHtml(s: string): string {

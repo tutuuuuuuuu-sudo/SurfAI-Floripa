@@ -10,7 +10,8 @@ import { getWeatherForecast, WeatherForecast, FREE_DAYS } from '@/lib/weatherDat
 import { isFavorite, toggleFavorite } from '@/lib/favorites'
 import { usePremium } from '@/lib/premium'
 import { useAuth } from '@/contexts/AuthContext'
-import { PUBLIC_SPOT_IDS } from '@/lib/surfData'
+import { PUBLIC_SPOT_IDS, TEASER_SPOT_IDS } from '@/lib/surfData'
+import { SpotTeaser } from '@/components/spot/SpotTeaser'
 import {
   ArrowLeft, Waves, Wind, Navigation,
   TrendingUp, Compass, AlertCircle, Thermometer,
@@ -148,6 +149,7 @@ export default function SpotDetails() {
   const { isPremium } = usePremium()
   const { user, loading: authLoading } = useAuth()
   const isPublicSpot = id ? (PUBLIC_SPOT_IDS as readonly string[]).includes(id) : false
+  const isTeaserSpot = id ? (TEASER_SPOT_IDS as readonly string[]).includes(id) : false
   const homePath = user ? '/' : '/landing'
 
   const [spot, setSpot] = useState<BeachCondition|null>(null)
@@ -213,22 +215,27 @@ export default function SpotDetails() {
     </div>
   )
 
-  if (!user && !isPublicSpot) return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
-      <Card className="max-w-md w-full">
-        <CardHeader>
-          <CardTitle>Crie sua conta grátis para ver este pico</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Joaquina e Praia Mole você vê sem cadastro. Para os demais picos de Floripa, é só criar uma conta gratuita — leva menos de um minuto.
-          </p>
-          <Button className="w-full" onClick={() => navigate('/login')}>Criar conta grátis</Button>
-          <Button variant="outline" className="w-full" onClick={() => navigate('/landing')}>Voltar</Button>
-        </CardContent>
-      </Card>
-    </div>
-  )
+  if (!user && !isPublicSpot) {
+    if (isTeaserSpot && spot) {
+      return <SpotTeaser spot={spot} onBack={() => navigate('/landing')} onLogin={() => navigate('/login')} />
+    }
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <Card className="max-w-md w-full">
+          <CardHeader>
+            <CardTitle>Crie sua conta grátis para ver este pico</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Joaquina, Praia Mole, Campeche, Novo Campeche, Matadeiro e Santinho você vê sem cadastro. Para os demais picos de Floripa, é só criar uma conta gratuita — leva menos de um minuto.
+            </p>
+            <Button className="w-full" onClick={() => navigate('/login')}>Criar conta grátis</Button>
+            <Button variant="outline" className="w-full" onClick={() => navigate('/landing')}>Voltar</Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   if (!spot) return (
     <div className="min-h-screen bg-background flex items-center justify-center">
