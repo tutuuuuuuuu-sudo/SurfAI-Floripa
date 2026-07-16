@@ -99,3 +99,12 @@ export function clearAIReportCache() {
   try { localStorage.removeItem(CACHE_KEY) } catch { /* ignore */ }
   try { sessionStorage.removeItem(CACHE_KEY) } catch { /* ignore */ }
 }
+
+/** Separa a primeira frase do resto, para destacá-la visualmente no card do relatório.
+ *  Se o texto não tiver mais de uma frase, `rest` fica vazio e `first` é o texto todo —
+ *  quem renderiza deve decidir se ainda faz sentido destacar nesse caso. */
+export function splitFirstSentence(report: string): { first: string; rest: string } {
+  const sentences = report.split(/(?<=[.!?])\s+/)
+  const [first, ...rest] = sentences
+  return { first, rest: rest.join(' ') }
+}

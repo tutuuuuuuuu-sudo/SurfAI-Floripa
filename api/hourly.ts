@@ -18,6 +18,7 @@ function json(data: unknown, status = 200) {
 
 import { verifyPremiumToken } from './_auth.js'
 import { isValidCoord, createRateLimiter } from './_httpUtils.js'
+import { todaySP, nowHourSP } from '../src/lib/timeSP.js'
 
 // Rate limit por IP: 60 req/min
 const checkHourlyRateLimit = createRateLimiter(60)
@@ -57,8 +58,10 @@ export default async function handler(req: Request) {
     const hourly = await fetchHourlyForecast(lat!, lng!, 2)
     if (!hourly) return json({ error: 'Dados indisponíveis' }, 503)
 
-    const nowHour = new Date().getHours()
-    const today = new Date().toISOString().slice(0, 10)
+    // _hourlyForecast.ts busca os horários com timezone=America/Sao_Paulo explícito;
+    // usar o fuso do runtime (UTC no edge) aqui causaria filtro/comparação errados.
+    const today = todaySP()
+    const nowHour = nowHourSP()
 
     // Filtra apenas as horas de hoje, a partir da hora atual
     const slots: HourlySlot[] = []

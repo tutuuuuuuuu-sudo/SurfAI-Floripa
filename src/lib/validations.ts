@@ -1,14 +1,11 @@
 import { supabase, getUserDisplayName } from './supabase'
+import { todaySP } from './timeSP'
 
 export interface ValidationSummary {
   matched: number
   total: number
   /** Voto do usuário atual hoje, se já votou */
   userVote: boolean | null
-}
-
-function todaySP(): string {
-  return new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' })
 }
 
 export async function submitValidation(beachId: string, beachName: string, matched: boolean): Promise<boolean> {

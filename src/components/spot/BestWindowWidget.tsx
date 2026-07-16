@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Clock, Crown, Waves, Wind, Zap } from 'lucide-react'
 import { getRatingInfo } from '@/lib/rating'
 import { supabase } from '@/lib/supabase'
+import { nowHourSP } from '@/lib/timeSP'
 
 interface HourlySlot {
   hour: number
@@ -68,7 +69,9 @@ export function BestWindowWidget({ lat, lng, orientation }: Props) {
 
   const { slots, bestWindow } = data
   const best = getRatingInfo(bestWindow.score)
-  const nowHour = new Date().getHours()
+  // Os slots vêm calculados no fuso de Floripa (api/hourly.ts) — usar o fuso do
+  // dispositivo aqui divergiria para quem acessa de fora de America/Sao_Paulo.
+  const nowHour = nowHourSP()
   const isBestNow = bestWindow.hour === nowHour
 
   return (

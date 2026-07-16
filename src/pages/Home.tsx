@@ -20,11 +20,12 @@ import { getValidationSummaries, ValidationSummary } from '@/lib/validations'
 import { useAuth } from '@/contexts/AuthContext'
 import { getUserDisplayName } from '@/lib/supabase'
 import { usePremium } from '@/lib/premium'
-import { fetchAIReport } from '@/lib/aiReport'
+import { fetchAIReport, splitFirstSentence } from '@/lib/aiReport'
 import { track } from '@/lib/monitoring'
 import { getScoreColor, getThemeGradient } from '@/lib/rating'
 import { getSavedNotificationSettings, checkAndNotifyGoodConditions } from '@/lib/notifications'
 import { isTainhaSeasonActive } from '@/lib/tainha'
+import { isOnboardingDone } from '@/lib/onboarding'
 import {
   Waves, TrendingUp, MapPin, Info, Heart, Settings,
   Navigation, Crown, Sparkles, Flame, Fish
@@ -40,9 +41,7 @@ export default function Home() {
   const [fetchError, setFetchError] = useState(false)
   const [aiReport, setAiReport] = useState<string | null>(null)
   const [aiLoading, setAiLoading] = useState(false)
-  const [showOnboarding, setShowOnboarding] = useState(() => {
-    try { return !localStorage.getItem('onboarding_done') } catch { return true }
-  })
+  const [showOnboarding, setShowOnboarding] = useState(() => !isOnboardingDone())
   const [latestComments, setLatestComments] = useState<Record<string, LatestComment>>({})
   const [validations, setValidations] = useState<Record<string, ValidationSummary>>({})
   const aiReportFetchedRef = useRef(false)
@@ -220,7 +219,13 @@ export default function Home() {
                 </div>
               ) : aiReport ? (
                 <div className="space-y-2">
-                  <p className="text-sm text-foreground leading-relaxed">{aiReport}</p>
+                  <p className="text-sm text-foreground leading-relaxed">
+                    {(() => {
+                      const { first, rest } = splitFirstSentence(aiReport)
+                      if (!rest) return aiReport
+                      return <><span className="font-semibold">{first}</span> {rest}</>
+                    })()}
+                  </p>
                   <p className="text-xs text-muted-foreground/50">Gerado por IA com base nos dados atuais. Confirme as condições antes de entrar no mar.</p>
                 </div>
               ) : !isPremium && topSpot ? (
@@ -228,13 +233,13 @@ export default function Home() {
                 <div className="space-y-3">
                   <div className="relative">
                     <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
-                      As condições em {topSpot.name} estão {topSpot.score >= 7 ? 'excelentes' : topSpot.score >= 5.5 ? 'boas' : 'moderadas'} com ondas de {topSpot.waveHeight.toFixed(1)}m e período de {Math.round(topSpot.swellPeriod)}s. A análise completa indica a melhor janela do dia...
+                      {topSpot.name} está com a melhor nota agora, mas outro pico pode compensar mais dependendo do horário que você for. A análise completa cruza as praias e mostra a janela ideal do dia...
                     </p>
                     <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-card/90 to-transparent pointer-events-none" />
                   </div>
                   <div className="relative overflow-hidden rounded-lg">
                     <p className="text-sm text-muted-foreground leading-relaxed blur-sm select-none" aria-hidden>
-                      O vento {topSpot.windDirection} favorece as ondas neste momento, com maré em condição ideal para surfistas de nível intermediário. Recomendamos chegar antes das 9h para aproveitar o melhor do swell.
+                      Pelo swell de hoje, a tendência é o mar abrir uma janela mais curta que o normal — quem chegar cedo aproveita melhor. Se estiver muito cheio, considere ir para a opção alternativa mais próxima.
                     </p>
                   </div>
                   <button
