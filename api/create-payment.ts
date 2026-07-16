@@ -85,6 +85,7 @@ export default async function handler(req: Request) {
       'Authorization': `Bearer ${accessToken}`,
     },
     body: JSON.stringify(preference),
+    signal: AbortSignal.timeout(10000),
   })
 
   if (!mpRes.ok) {

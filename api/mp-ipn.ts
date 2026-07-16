@@ -78,6 +78,7 @@ export default async function handler(req: Request) {
   try {
     const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${id}`, {
       headers: { 'Authorization': `Bearer ${accessToken}` },
+      signal: AbortSignal.timeout(10000),
     })
 
     if (!mpRes.ok) return new Response('{"ok":true}', { status: 200, headers })
@@ -95,7 +96,7 @@ export default async function handler(req: Request) {
       // este mesmo pagamento — MP costuma notificar por webhook e IPN legado juntos.
       const existingRes = await fetch(
         `${supabaseUrl}/rest/v1/payments?mp_payment_id=eq.${payment.id}&select=id`,
-        { headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` } }
+        { headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` }, signal: AbortSignal.timeout(10000) }
       )
       if (existingRes.ok) {
         const existing = await existingRes.json() as unknown[]
@@ -121,6 +122,7 @@ export default async function handler(req: Request) {
           p_duration_days: durationDays,
           p_plan: plan === 'annual' ? 'annual' : 'monthly',
         }),
+        signal: AbortSignal.timeout(10000),
       })
       if (!rpcRes.ok) {
         console.error('[mp-ipn] activate_premium falhou:', await rpcRes.text())

@@ -272,13 +272,14 @@ export function AnimatedNumber({ value, suffix }: { value: number; suffix: strin
   const ref = useRef<HTMLDivElement>(null)
   const started = useRef(false)
   useEffect(() => {
+    let timer: ReturnType<typeof setInterval> | undefined
     const observer = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting && !started.current) {
         started.current = true
         const steps = 40
         const increment = value / steps
         let current = 0
-        const timer = setInterval(() => {
+        timer = setInterval(() => {
           current += increment
           if (current >= value) { setCount(value); clearInterval(timer) }
           else setCount(Math.floor(current))
@@ -286,7 +287,7 @@ export function AnimatedNumber({ value, suffix }: { value: number; suffix: strin
       }
     }, { threshold: 0.5 })
     if (ref.current) observer.observe(ref.current)
-    return () => observer.disconnect()
+    return () => { observer.disconnect(); if (timer) clearInterval(timer) }
   }, [value])
   return <div ref={ref} className="text-4xl md:text-5xl font-black text-primary">{count}{suffix}</div>
 }

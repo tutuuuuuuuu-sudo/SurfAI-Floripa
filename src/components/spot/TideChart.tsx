@@ -100,6 +100,9 @@ const TideChartSVG = memo(({ tide, expanded=false, realLevels }: { tide:string, 
         <div><div className="text-xs text-muted-foreground">Estado Atual</div><div className="text-xl font-bold">{tide}</div></div>
         <Separator orientation="vertical" className="h-10"/>
         <div><div className="text-xs text-muted-foreground">Nível Agora</div><div className="text-xl font-bold text-primary">~{currentHeight}m</div></div>
+        {!realLevels && (
+          <span className="ml-auto text-[10px] text-muted-foreground/70 italic">estimativa</span>
+        )}
       </div>
       <div className="relative rounded-xl overflow-hidden bg-muted/10 border border-border/30 p-1">
         <svg ref={svgRef} width="100%" viewBox={`0 0 ${viewWidth} ${viewHeight}`} className="overflow-visible cursor-crosshair" onMouseMove={handleMouseMove} onMouseLeave={() => setTooltip(null)}>

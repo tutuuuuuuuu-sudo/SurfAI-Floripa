@@ -142,6 +142,7 @@ Responda APENAS em JSON:
         max_tokens: 2048,
         messages: [{ role: 'user', content: prompt }],
       }),
+      signal: AbortSignal.timeout(15000),
     })
 
     if (!res.ok) return null

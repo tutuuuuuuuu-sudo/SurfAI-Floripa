@@ -69,7 +69,9 @@ export default function ComparePage() {
   // O estado é mantido em memória de sessão (sessionStorage) além do localStorage
   // para dificultar bypass via DevTools (apagar localStorage não limpa a sessão ativa)
   const freeQuotaKey = 'compare_used_date'
-  const todayStr = new Date().toISOString().split('T')[0]
+  // Usa o horário de Floripa (UTC-3, sem horário de verão) em vez de UTC,
+  // senão a cota reseta às 21h locais em vez da meia-noite.
+  const todayStr = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().split('T')[0]
   const usedTodayRef = useRef<boolean | null>(null)
   if (usedTodayRef.current === null) {
     usedTodayRef.current = !isPremium && (() => {

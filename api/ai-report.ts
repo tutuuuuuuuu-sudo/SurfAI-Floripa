@@ -167,6 +167,7 @@ Não inclua emojis. Responda APENAS o texto do relatório, sem títulos ou forma
         max_tokens: 300,
         messages: [{ role: 'user', content: prompt }],
       }),
+      signal: AbortSignal.timeout(15000),
     })
 
     if (!response.ok) {

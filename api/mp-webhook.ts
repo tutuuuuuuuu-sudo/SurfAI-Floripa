@@ -109,6 +109,7 @@ export default async function handler(req: Request) {
   // Busca detalhes do pagamento no MP
   const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${body.data.id}`, {
     headers: { 'Authorization': `Bearer ${accessToken}` },
+    signal: AbortSignal.timeout(10000),
   })
 
   if (!mpRes.ok) {
@@ -139,7 +140,7 @@ export default async function handler(req: Request) {
   // mesmo pagamento). Se este mp_payment_id já foi registrado, não ativa de novo.
   const existingRes = await fetch(
     `${supabaseUrl}/rest/v1/payments?mp_payment_id=eq.${payment.id}&select=id`,
-    { headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` } }
+    { headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` }, signal: AbortSignal.timeout(10000) }
   )
   if (existingRes.ok) {
     const existing = await existingRes.json() as unknown[]
@@ -166,6 +167,7 @@ export default async function handler(req: Request) {
       p_duration_days: durationDays,
       p_plan: plan === 'annual' ? 'annual' : 'monthly',
     }),
+    signal: AbortSignal.timeout(10000),
   })
 
   if (!rpcRes.ok) {

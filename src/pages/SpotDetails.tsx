@@ -146,7 +146,7 @@ export default function SpotDetails() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { conditions, loading: conditionsLoading } = useSurfData()
-  const { isPremium } = usePremium()
+  const { isPremium, loading: premiumLoading } = usePremium()
   const { user, loading: authLoading } = useAuth()
   const isPublicSpot = id ? (PUBLIC_SPOT_IDS as readonly string[]).includes(id) : false
   const isTeaserSpot = id ? (TEASER_SPOT_IDS as readonly string[]).includes(id) : false
@@ -168,7 +168,6 @@ export default function SpotDetails() {
 
   useEffect(() => {
     if (!id) return
-    setForecast([])
     setVisible(false)
     if (conditionsLoading) return
 
@@ -176,15 +175,6 @@ export default function SpotDetails() {
     setSpot(found)
     setLoadingSpot(false)
     setTimeout(() => setVisible(true), 50)
-
-    if (found) {
-      getWeatherForecast(
-        found.id,
-        { waveHeight: found.waveHeight, windSpeed: found.windSpeed, swellPeriod: found.swellPeriod, windDirection: found.windDirection, waterTemperature: found.waterConditions.temperature, score: found.score },
-        isPremium,
-        found.orientation
-      ).then(setForecast)
-    }
 
     isFavorite(id).then(val => { setFavorite(val); setLoadingFav(false) })
 
@@ -204,7 +194,20 @@ export default function SpotDetails() {
         setScoreHistory({ avg30: avg, isMonthBest: !!found && currentScore >= maxScore - 0.3 })
       })
       .catch(() => {})
-  }, [id, isPremium, conditions, conditionsLoading])
+  }, [id, conditions, conditionsLoading])
+
+  useEffect(() => {
+    // Espera o status premium resolver antes de buscar a previsão — evita buscar a versão
+    // free (3 dias) e logo em seguida refazer a busca com a versão premium (14 dias).
+    if (!spot || premiumLoading) return
+    setForecast([])
+    getWeatherForecast(
+      spot.id,
+      { waveHeight: spot.waveHeight, windSpeed: spot.windSpeed, swellPeriod: spot.swellPeriod, windDirection: spot.windDirection, waterTemperature: spot.waterConditions.temperature, score: spot.score },
+      isPremium,
+      spot.orientation
+    ).then(setForecast)
+  }, [spot, isPremium, premiumLoading])
 
   if (loadingSpot || authLoading) return (
     <div className="min-h-screen bg-background flex items-center justify-center">
@@ -426,7 +429,7 @@ export default function SpotDetails() {
             }`}
           >
             <Calendar className="h-4 w-4"/>Previsão
-            {!isPremium && <Crown className="h-3 w-3 text-rating-fair"/>}
+            {!isPremium && !premiumLoading && <Crown className="h-3 w-3 text-rating-fair"/>}
           </button>
         </div>
 
@@ -564,10 +567,10 @@ export default function SpotDetails() {
               <div>
                 <h2 className="font-semibold">Próximos dias</h2>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {isPremium ? '14 dias completos' : `${FREE_DAYS} dias gratuitos · Premium = 14 dias`}
+                  {premiumLoading ? 'Carregando...' : isPremium ? '14 dias completos' : `${FREE_DAYS} dias gratuitos · Premium = 14 dias`}
                 </p>
               </div>
-              {!isPremium && (
+              {!isPremium && !premiumLoading && (
                 <button
                   onClick={() => navigate('/premium')}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rating-fair/40 bg-rating-fair/10 text-rating-fair text-xs font-semibold hover:bg-rating-fair/15 transition-colors"
@@ -607,7 +610,7 @@ export default function SpotDetails() {
                     />
                   ))}
                 </div>
-                {!isPremium && (
+                {!isPremium && !premiumLoading && (
                   <button
                     onClick={() => navigate('/premium')}
                     className="w-full py-4 rounded-2xl border border-dashed border-rating-fair/40 bg-rating-fair/5 hover:bg-rating-fair/10 transition-colors text-center"

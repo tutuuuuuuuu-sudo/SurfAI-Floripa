@@ -58,6 +58,7 @@ async function sendWelcomeEmail(name: string, email: string) {
       subject: `Fala, ${firstName}! Bem-vindo ao Surf AI Floripa 🤙`,
       html,
     }),
+    signal: AbortSignal.timeout(10000),
   })
 
   if (!res.ok) {

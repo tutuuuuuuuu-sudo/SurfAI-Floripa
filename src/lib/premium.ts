@@ -67,6 +67,14 @@ export function usePremium() {
 
     fetchSubscription()
 
+    // Realtime pode perder eventos durante uma desconexão (app em background, troca de rede).
+    // Revalida ao voltar o foco/visibilidade para não ficar preso a um status desatualizado.
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') fetchSubscription()
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    window.addEventListener('focus', handleVisibility)
+
     const channel = supabase
       .channel(`subscription:${user.id}`)
       .on(
@@ -90,6 +98,8 @@ export function usePremium() {
       .subscribe()
 
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibility)
+      window.removeEventListener('focus', handleVisibility)
       supabase.removeChannel(channel)
     }
   }, [user])

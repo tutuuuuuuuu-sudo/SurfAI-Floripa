@@ -228,6 +228,7 @@ Escreva 3-4 frases de análise: o que foi bom, o que precisa de atenção, e uma
         max_tokens: 300,
         messages: [{ role: 'user', content: prompt }],
       }),
+      signal: AbortSignal.timeout(15000),
     })
     if (!res.ok) return ''
     const d = await res.json() as { content?: { text?: string }[] }
@@ -443,6 +444,7 @@ async function sendReportEmail(data: {
         subject,
         html,
       }),
+      signal: AbortSignal.timeout(10000),
     })
     return res.ok
   } catch {

@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { identifyUser, resetUser } from '../lib/monitoring'
+import { clearAIReportCache } from '../lib/aiReport'
 
 interface AuthContextType {
   user: User | null
@@ -35,6 +36,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (isRecoveryUrl) {
+      try { sessionStorage.setItem('pw_recovery_pending', '1') } catch { /* ignore */ }
+    }
+
+    // Marcador que sobrevive mesmo se o Supabase já tiver consumido e limpo o hash
+    // da URL antes deste efeito rodar (corrida de timing do navegador) — só é relevante
+    // na própria tela de reset, então não afeta nenhuma outra rota do app.
+    const isResetRoute = window.location.pathname === '/reset-password'
+    const recoveryPending = isResetRoute && (isRecoveryUrl || (() => {
+      try { return sessionStorage.getItem('pw_recovery_pending') === '1' } catch { return false }
+    })())
+
+    if (recoveryPending) {
       setIsPasswordRecovery(true)
       setLoading(false)
     }
@@ -50,13 +63,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // SIGNED_IN logo após PASSWORD_RECOVERY = Supabase autenticou com token de recovery
       // Nesse caso manter isPasswordRecovery = true até o usuário salvar a nova senha
-      if (event === 'SIGNED_IN' && isRecoveryUrl) {
+      if (event === 'SIGNED_IN' && recoveryPending) {
         setIsPasswordRecovery(true)
         setUser(session?.user ?? null)
         setSession(session)
         setLoading(false)
         return
       }
+
+      try { sessionStorage.removeItem('pw_recovery_pending') } catch { /* ignore */ }
 
       setIsPasswordRecovery(false)
       setSession(session)
@@ -96,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signOut = async () => {
+    clearAIReportCache()
     await supabase.auth.signOut()
   }
 

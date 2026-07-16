@@ -124,7 +124,7 @@ export default function Home() {
     </div>
   )
 
-  const spotsWithAds: (BeachCondition | 'ad')[] = isPremium
+  const spotsWithAds: (BeachCondition | 'ad')[] = (isPremium || premiumLoading)
     ? spots
     : spots.reduce<(BeachCondition | 'ad')[]>((acc, spot, idx) => {
         acc.push(spot)
@@ -151,7 +151,7 @@ export default function Home() {
                 <Navigation className="h-4 w-4 text-muted-foreground" />
               </button>
 
-              {!isPremium && (
+              {!isPremium && !premiumLoading && (
                 <>
                   <Button variant="outline" size="sm" onClick={() => navigate('/premium')} className="hidden sm:flex border-rating-fair/50 text-rating-fair hover:bg-rating-fair/10">
                     <Crown className="h-4 w-4 mr-1.5" />Premium
@@ -288,7 +288,7 @@ export default function Home() {
           </Card>
         )}
 
-        {!isPremium && (
+        {!isPremium && !premiumLoading && (
           <div className="anim-slide" style={{ animationDelay: '0.25s' }}>
             <AdBanner />
           </div>
