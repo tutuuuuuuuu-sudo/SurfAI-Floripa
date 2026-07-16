@@ -6,6 +6,7 @@ import { Anchor, Zap, TrendingUp, Sun, Moon, Crown, MapPin } from 'lucide-react'
 import { toggleFavorite } from '@/lib/favorites'
 import { useSurfData } from '@/contexts/SurfDataContext'
 import { getScoreColor } from '@/lib/rating'
+import { captureError } from '@/lib/monitoring'
 
 type SkillLevel = 'Iniciante' | 'Intermediário' | 'Avançado'
 type TimeSlot = 'manha' | 'tarde' | 'qualquer'
@@ -34,8 +35,8 @@ export function OnboardingModal({ onDone }: Props) {
   const [favoriteSpotId, setFavoriteSpotId] = useState<string | null>(null)
   const [timeSlot, setTimeSlot] = useState<TimeSlot | null>(null)
 
-  // Ordena por score para mostrar as melhores primeiro
-  const topSpots = [...conditions].sort((a, b) => b.score - a.score).slice(0, 8)
+  // Ordena por score, mas mostra todas — é uma escolha pessoal, não um ranking a filtrar
+  const topSpots = [...conditions].sort((a, b) => b.score - a.score)
   const chosenSpot = conditions.find(s => s.id === favoriteSpotId)
 
   const handleDone = async (skip = false) => {
@@ -46,7 +47,16 @@ export function OnboardingModal({ onDone }: Props) {
         if (favoriteSpotId) await toggleFavorite(favoriteSpotId, chosenSpot?.name ?? favoriteSpotId)
       }
     } catch { /* favorito falhou ou modo privado — segue para gravar onboarding_done mesmo assim */ }
-    try { localStorage.setItem('onboarding_done', '1') } catch { /* modo privado */ }
+    try {
+      localStorage.setItem('onboarding_done', '1')
+      // Alguns navegadores (Safari em certos modos) aceitam o setItem sem lançar erro,
+      // mas não persistem de verdade — confirma lendo de volta antes de seguir em frente.
+      if (localStorage.getItem('onboarding_done') !== '1') {
+        captureError(new Error('onboarding_done não persistiu após setItem'), { context: 'OnboardingModal.handleDone' })
+      }
+    } catch (err) {
+      captureError(err, { context: 'OnboardingModal.handleDone localStorage.setItem falhou' })
+    }
     onDone()
   }
 
