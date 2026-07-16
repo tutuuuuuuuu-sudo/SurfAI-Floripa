@@ -16,27 +16,11 @@ function json(data: unknown, status = 200) {
   })
 }
 
-function isValidCoord(lat: string | null, lng: string | null): boolean {
-  if (!lat || !lng) return false
-  const latN = parseFloat(lat), lngN = parseFloat(lng)
-  return !isNaN(latN) && !isNaN(lngN) && latN >= -90 && latN <= 90 && lngN >= -180 && lngN <= 180
-}
-
 import { verifyPremiumToken } from './_auth.js'
+import { isValidCoord, createRateLimiter } from './_httpUtils.js'
 
 // Rate limit por IP: 60 req/min
-const hourlyRateLimit = new Map<string, { count: number; reset: number }>()
-function checkHourlyRateLimit(ip: string): boolean {
-  const now = Date.now()
-  const entry = hourlyRateLimit.get(ip)
-  if (!entry || now > entry.reset) {
-    hourlyRateLimit.set(ip, { count: 1, reset: now + 60_000 })
-    return true
-  }
-  if (entry.count >= 60) return false
-  entry.count++
-  return true
-}
+const checkHourlyRateLimit = createRateLimiter(60)
 
 export interface HourlySlot {
   hour: number        // 0-23

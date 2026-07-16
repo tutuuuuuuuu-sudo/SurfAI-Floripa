@@ -12,6 +12,7 @@ import {
   CalendarDays, MapPin, FileText
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { captureError } from '@/lib/monitoring'
 
 interface SurfSession {
   id: string
@@ -110,8 +111,12 @@ export default function SurfLog() {
       .limit(50)
 
     if (error) {
-      if (error.code === '42P01') setTableError(true) // table does not exist
-      else setTableError(true)
+      if (error.code !== '42P01') {
+        // Erro inesperado (rede, RLS, etc.) — registra pra investigação,
+        // já que a mensagem exibida ao usuário é a mesma em qualquer caso.
+        captureError(error, { context: 'SurfLog.loadSessions', code: error.code })
+      }
+      setTableError(true)
     } else {
       setSessions(data ?? [])
     }

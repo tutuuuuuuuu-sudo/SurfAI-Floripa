@@ -19,28 +19,12 @@ function json(data: unknown, status = 200) {
 
 import { verifyToken, isPremiumUser } from './_auth.js'
 import { FREE_DAYS } from '../src/lib/weatherData.js'
+import { isValidCoord, createRateLimiter } from './_httpUtils.js'
 
 // Rate limit por IP: 60 req/min
-const forecastRateLimit = new Map<string, { count: number; reset: number }>()
-function checkForecastRateLimit(ip: string): boolean {
-  const now = Date.now()
-  const entry = forecastRateLimit.get(ip)
-  if (!entry || now > entry.reset) {
-    forecastRateLimit.set(ip, { count: 1, reset: now + 60_000 })
-    return true
-  }
-  if (entry.count >= 60) return false
-  entry.count++
-  return true
-}
+const checkForecastRateLimit = createRateLimiter(60)
 
 const PREMIUM_DAYS = 14
-
-function isValidCoord(lat: string | null, lng: string | null): boolean {
-  if (!lat || !lng) return false
-  const latN = parseFloat(lat), lngN = parseFloat(lng)
-  return !isNaN(latN) && !isNaN(lngN) && latN >= -90 && latN <= 90 && lngN >= -180 && lngN <= 180
-}
 
 export default async function handler(req: Request) {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS })

@@ -155,12 +155,16 @@ async function sendPush(endpoint: string, p256dh: string, auth: string, payload:
         TTL: '86400',
       },
       body,
+      signal: AbortSignal.timeout(10000),
     })
-    // 201, 200 = entregue; 410 = subscription expirou
-    if (res.status === 410) return false // sinaliza para remover
+    // 201, 200 = entregue; 404/410 = subscription não existe mais / expirou
+    if (res.status === 410 || res.status === 404) return false // sinaliza para remover
     return res.ok || res.status === 201
-  } catch {
-    return true // erro de rede — não remove a subscription
+  } catch (err) {
+    // Endpoint malformado (não é uma URL válida) nunca vai funcionar — remove.
+    // Qualquer outro erro (timeout, DNS instável, etc.) é tratado como transiente.
+    if (err instanceof TypeError && /invalid url/i.test(err.message)) return false
+    return true
   }
 }
 

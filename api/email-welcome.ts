@@ -4,7 +4,7 @@ export const config = { runtime: 'edge' }
 // Configurar em: Supabase → Database → Webhooks → auth.users → INSERT
 
 const RESEND_KEY = process.env.RESEND_API_KEY
-const APP_URL = process.env.APP_URL ?? 'https://surf-ai-floripa.vercel.app'
+const APP_URL = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 
 async function sendWelcomeEmail(name: string, email: string) {
   const firstName = name?.split(' ')[0] || 'Surfista'
@@ -103,7 +103,7 @@ export default async function handler(req: Request) {
     })
   } catch (err) {
     console.error('[email-welcome] erro:', err)
-    return new Response(JSON.stringify({ sent: false, error: String(err) }), {
+    return new Response(JSON.stringify({ sent: false, error: 'Erro interno' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     })

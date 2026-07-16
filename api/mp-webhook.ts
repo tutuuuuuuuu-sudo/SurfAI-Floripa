@@ -136,20 +136,9 @@ export default async function handler(req: Request) {
   // Duração: 12 meses para anual, 30 dias para mensal
   const durationDays = plan === 'annual' ? 365 : 30
 
-  // Idempotência: MP reenvia notificações (webhook + IPN legado podem chegar para o
-  // mesmo pagamento). Se este mp_payment_id já foi registrado, não ativa de novo.
-  const existingRes = await fetch(
-    `${supabaseUrl}/rest/v1/payments?mp_payment_id=eq.${payment.id}&select=id`,
-    { headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` }, signal: AbortSignal.timeout(10000) }
-  )
-  if (existingRes.ok) {
-    const existing = await existingRes.json() as unknown[]
-    if (existing.length > 0) {
-      console.log('[mp-webhook] Pagamento já processado, ignorando:', payment.id)
-      return ok()
-    }
-  }
-
+  // Idempotência garantida atomicamente pelo banco (activate_premium só ativa se
+  // mp_payment_id ainda não existir em payments) — o IPN legado (mp-ipn.ts) pode
+  // processar este mesmo pagamento em paralelo, mas só um dos dois vence.
   // Chama a função activate_premium via Supabase REST
   const rpcRes = await fetch(`${supabaseUrl}/rest/v1/rpc/activate_premium`, {
     method: 'POST',
@@ -176,6 +165,7 @@ export default async function handler(req: Request) {
     return new Response('DB error', { status: 500 })
   }
 
-  console.log('[mp-webhook] ✅ Premium ativado para userId:', userId)
+  const activated = await rpcRes.json() as boolean
+  console.log(activated ? '[mp-webhook] ✅ Premium ativado para userId:' : '[mp-webhook] Pagamento já processado, ignorando. userId:', userId)
   return ok()
 }
