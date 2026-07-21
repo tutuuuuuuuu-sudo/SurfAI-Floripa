@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calculateSurfScore } from './_scoreEngine'
+import { calculateSurfScore, applyDirectionalExposure } from './_scoreEngine'
 
 describe('calculateSurfScore', () => {
   // ── Limites absolutos ────────────────────────────────────────────────────────
@@ -87,5 +87,38 @@ describe('calculateSurfScore', () => {
     const asOffshore = calculateSurfScore(1.0, 15, 10, 'E', 270)
     const asOnshore  = calculateSurfScore(1.0, 15, 10, 'E', 90)
     expect(asOffshore).toBeGreaterThan(asOnshore)
+  })
+})
+
+describe('applyDirectionalExposure', () => {
+  it('swell alinhado com a praia não reduz a altura', () => {
+    // Praia orientação 90° (leste), swell vindo de E (90°) — bate de frente
+    const result = applyDirectionalExposure(1.0, 'E', 90)
+    expect(result).toBe(1.0)
+  })
+
+  it('swell perpendicular à praia reduz bastante a altura', () => {
+    // Praia orientação 90° (leste), swell vindo de N (0°) — bate de lado
+    const result = applyDirectionalExposure(1.0, 'N', 90)
+    expect(result).toBeLessThan(1.0)
+  })
+
+  it('nunca reduz abaixo do piso de 55%', () => {
+    // Swell vindo de trás da praia (180° de diferença) — pior caso possível
+    const result = applyDirectionalExposure(1.0, 'W', 90)
+    expect(result).toBeGreaterThanOrEqual(0.55)
+  })
+
+  it('quanto maior o desalinhamento, maior a redução', () => {
+    const aligned  = applyDirectionalExposure(1.0, 'E', 90)
+    const oblique  = applyDirectionalExposure(1.0, 'SE', 90)
+    const sideways = applyDirectionalExposure(1.0, 'N', 90)
+    expect(aligned).toBeGreaterThan(oblique)
+    expect(oblique).toBeGreaterThan(sideways)
+  })
+
+  it('direção de swell desconhecida retorna a altura original', () => {
+    const result = applyDirectionalExposure(1.0, 'DESCONHECIDO', 90)
+    expect(result).toBe(1.0)
   })
 })

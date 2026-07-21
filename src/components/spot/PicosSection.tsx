@@ -1,34 +1,18 @@
 import { useState } from 'react'
 import { MapPin, Star, Navigation, ChevronRight } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { BeachCondition } from '@/lib/surfData'
-
-const swellDirOrder = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW']
+import { BeachCondition, getSubRegionMatch } from '@/lib/surfData'
 
 export const PicosSection = ({ spot }: { spot: BeachCondition }) => {
   const [selectedId, setSelectedId] = useState<string|null>(null)
 
   if (!spot.subRegions || spot.subRegions.length === 0) return null
 
-  const currentSwellIdx = swellDirOrder.indexOf(spot.swellDirection)
-
   const enrichedPicos = spot.subRegions.map(sub => {
     const idealDirs: string[] = sub.swellDirections ?? []
-    let minDiff = 8
-    idealDirs.forEach(dir => {
-      const idx = swellDirOrder.indexOf(dir)
-      if (idx >= 0 && currentSwellIdx >= 0) {
-        let diff = Math.abs(currentSwellIdx - idx)
-        if (diff > 8) diff = 16 - diff
-        if (diff < minDiff) minDiff = diff
-      }
-    })
-    const mult = minDiff===0?1.05:minDiff===1?1.00:minDiff===2?0.95:minDiff<=4?0.88:0.80
-    const waveEst = spot.waveHeight * mult
-    const waveMin = (waveEst * 0.95).toFixed(1)
-    const waveMax = (waveEst * 1.05).toFixed(1)
-    const match = minDiff===0?'Swell perfeito':minDiff<=2?'Swell bom':minDiff<=4?'Swell parcial':'Swell ruim'
-    const matchCls = minDiff===0?'text-rating-good':minDiff<=2?'text-rating-excellent':minDiff<=4?'text-rating-fair':'text-rating-poor'
+    const { waveMin, waveMax, match, matchCls, minDiff } = getSubRegionMatch(
+      sub.swellDirections, spot.swellDirection, spot.waveHeight, sub.tolerance
+    )
     return { ...sub, waveMin, waveMax, match, matchCls, idealDirs, minDiff }
   })
 

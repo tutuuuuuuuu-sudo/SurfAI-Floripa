@@ -1,5 +1,7 @@
 export const config = { runtime: 'edge' }
 
+import { applyDirectionalExposure } from './_scoreEngine.js'
+
 // ── Utilitários ───────────────────────────────────────────────────────────────
 
 const DIRS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
@@ -292,8 +294,10 @@ export default async function handler(req: Request) {
       }
     }
 
+    const exposedWaveHeight = applyDirectionalExposure(result.waveHeight, result.swellDirection, orientation)
+
     return new Response(JSON.stringify({
-      waveHeight: result.waveHeight,
+      waveHeight: exposedWaveHeight,
       swellPeriod: result.swellPeriod,
       swellDirection: result.swellDirection,
       windSpeed: result.windSpeed,

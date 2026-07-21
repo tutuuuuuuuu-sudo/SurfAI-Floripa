@@ -57,3 +57,22 @@ export function calculateSurfScore(
 
   return Math.min(10, Math.max(1, Number((waveBase + windPenalty + periodAdjust).toFixed(1))))
 }
+
+// Corrige a altura de onda "crua" do modelo de oceano aberto pela exposição direcional
+// da praia: swell alinhado com a praia (mesma direção de `beachOrientation`) chega quase
+// sem perda; swell de lado perde energia por refração/difração que o modelo pontual não
+// capta. Não substitui calibração local (camada 3) — só corrige o desalinhamento angular.
+export function applyDirectionalExposure(
+  waveHeight: number,
+  swellDir: string,
+  beachOrientation: number
+): number {
+  const swellDeg = WIND_DEG[swellDir]
+  if (swellDeg === undefined) return waveHeight
+
+  let angleDiff = Math.abs(swellDeg - beachOrientation)
+  if (angleDiff > 180) angleDiff = 360 - angleDiff
+
+  const exposureFactor = Math.max(0.55, Math.cos((angleDiff * Math.PI) / 180))
+  return Number((waveHeight * exposureFactor).toFixed(1))
+}

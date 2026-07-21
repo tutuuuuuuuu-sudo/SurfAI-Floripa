@@ -11,6 +11,7 @@ export interface SubRegion {
   lng: number
   bestNow?: boolean
   swellDirections?: string[]
+  tolerance?: 'estreita' | 'ampla'
 }
 
 export interface WaterConditions {
@@ -134,11 +135,67 @@ const getBoardSuggestion = (waveHeight: number): string => {
   return 'Longboard 8\'0"+'
 }
 
+// Ordem de bússola usada para medir "distância angular" entre a direção atual do swell
+// e a(s) direção(ões) ideal(is) de um sub-pico — fonte única, usada no servidor e na tela.
+const SWELL_DIR_ORDER = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW']
+
+const swellAngularDiff = (idealDirs: string[], swellDirection: string): number => {
+  const currentIdx = SWELL_DIR_ORDER.indexOf(swellDirection)
+  let minDiff = 8
+  idealDirs.forEach(dir => {
+    const idx = SWELL_DIR_ORDER.indexOf(dir)
+    if (idx >= 0 && currentIdx >= 0) {
+      let diff = Math.abs(currentIdx - idx)
+      if (diff > 8) diff = 16 - diff
+      if (diff < minDiff) minDiff = diff
+    }
+  })
+  return minDiff
+}
+
+export interface SubRegionMatch {
+  minDiff: number
+  waveMin: string
+  waveMax: string
+  match: string
+  matchCls: string
+}
+
+// Estima altura e qualidade de um sub-pico específico a partir da altura geral da praia.
+// Picos de `tolerance: 'estreita'` (ex: Principal do Campeche) só funcionam de verdade
+// perto da sua direção ideal — fora dela, a altura cai bem mais do que num pico "ampla"
+// (Lomba do Sabão, Palanque), que aceita uma faixa maior de direções sem perder tanto.
+export function getSubRegionMatch(
+  swellDirections: string[] | undefined,
+  swellDirection: string,
+  waveHeight: number,
+  tolerance?: 'estreita' | 'ampla'
+): SubRegionMatch {
+  const minDiff = swellAngularDiff(swellDirections ?? [], swellDirection)
+  const narrow = tolerance === 'estreita'
+
+  const mult = narrow
+    ? (minDiff === 0 ? 1.0 : minDiff === 1 ? 0.55 : minDiff === 2 ? 0.4 : 0.3)
+    : (minDiff === 0 ? 1.05 : minDiff === 1 ? 1.00 : minDiff === 2 ? 0.95 : minDiff <= 4 ? 0.88 : 0.80)
+
+  const waveEst = waveHeight * mult
+  const waveMin = (waveEst * 0.95).toFixed(1)
+  const waveMax = (waveEst * 1.05).toFixed(1)
+
+  const match = narrow
+    ? (minDiff === 0 ? 'Swell perfeito' : minDiff === 1 ? 'Swell bom' : 'Swell ruim')
+    : (minDiff === 0 ? 'Swell perfeito' : minDiff <= 2 ? 'Swell bom' : minDiff <= 4 ? 'Swell parcial' : 'Swell ruim')
+  const matchCls = narrow
+    ? (minDiff === 0 ? 'text-rating-good' : minDiff === 1 ? 'text-rating-excellent' : 'text-rating-poor')
+    : (minDiff === 0 ? 'text-rating-good' : minDiff <= 2 ? 'text-rating-excellent' : minDiff <= 4 ? 'text-rating-fair' : 'text-rating-poor')
+
+  return { minDiff, waveMin, waveMax, match, matchCls }
+}
+
 const getBestSubRegion = (subRegions: { id: string, swellDirections?: string[] }[], swellDirection: string): string => {
-  const best = subRegions.map(sub => ({
-    id: sub.id,
-    score: sub.swellDirections?.includes(swellDirection) ? 3 : 0
-  })).reduce((a, b) => a.score >= b.score ? a : b)
+  const best = subRegions
+    .map(sub => ({ id: sub.id, minDiff: swellAngularDiff(sub.swellDirections ?? [], swellDirection) }))
+    .reduce((a, b) => (b.minDiff < a.minDiff ? b : a))
   return best.id
 }
 
@@ -160,7 +217,7 @@ interface BeachDefinition {
   lng: number
   orientation: number
   bestTimeWindow: string
-  subRegions?: { id: string; name: string; lat: number; lng: number; swellDirections?: string[] }[]
+  subRegions?: { id: string; name: string; lat: number; lng: number; swellDirections?: string[]; tolerance?: 'estreita' | 'ampla' }[]
 }
 
 const BEACHES: BeachDefinition[] = [
@@ -171,13 +228,13 @@ const BEACHES: BeachDefinition[] = [
     subRegions: [
       { id: 'lomba-sabao', name: 'Lomba do Sabão', lat: -27.6974, lng: -48.4899, swellDirections: ['E', 'SE'] },
       { id: 'palanque', name: 'Palanque', lat: -27.6929, lng: -48.4870, swellDirections: ['SE', 'S', 'SSE'] },
-      { id: 'principal', name: 'Principal', lat: -27.6893, lng: -48.4825, swellDirections: ['E', 'NE', 'ENE'] },
+      { id: 'principal', name: 'Principal', lat: -27.6893, lng: -48.4825, swellDirections: ['SE', 'SSE'], tolerance: 'estreita' },
     ], bestTimeWindow: '06h - 09h' },
   { id: 'novo-campeche', name: 'Novo Campeche', region: 'Sul' as const,
     lat: -27.6661001, lng: -48.4755307, // Praia do Novo Campeche — bem na areia
     orientation: 90,
     subRegions: [
-      { id: 'riozinho', name: 'Riozinho', lat: -27.686650, lng: -48.481560, swellDirections: ['NE', 'E', 'ENE'] },
+      { id: 'riozinho', name: 'Riozinho', lat: -27.686650, lng: -48.481560, swellDirections: ['SE', 'ESE'] },
       { id: 'centro', name: 'Centro', lat: -27.6648, lng: -48.4784, swellDirections: ['E', 'SE'] },
       { id: 'pico-da-cruz', name: 'Pico da Cruz', lat: -27.6498, lng: -48.4739, swellDirections: ['SE', 'S', 'SSE'] },
     ], bestTimeWindow: '06h - 09h' },
@@ -208,7 +265,7 @@ const BEACHES: BeachDefinition[] = [
   { id: 'armacao', name: 'Armação', region: 'Sul' as const,
     lat: -27.7504078, lng: -48.5017637, orientation: 115,
     subRegions: [
-      { id: 'caldeirao', name: 'Caldeirão', lat: -27.7520, lng: -48.5048, swellDirections: ['SE', 'S', 'SSE'] },
+      { id: 'caldeirao', name: 'Caldeirão', lat: -27.7520, lng: -48.5048, swellDirections: ['E', 'SE'] },
       { id: 'centro', name: 'Centro', lat: -27.7500, lng: -48.5045, swellDirections: ['SE', 'E'] },
       { id: 'matadouro', name: 'Matadouro', lat: -27.7550, lng: -48.5078, swellDirections: ['S', 'SW', 'SSW'] },
     ], bestTimeWindow: '06h - 09h e 16h - 18h' },
@@ -228,20 +285,20 @@ const BEACHES: BeachDefinition[] = [
     subRegions: [
       { id: 'canto-sul', name: 'Canto Sul (Gruta)', lat: -27.6035, lng: -48.4340, swellDirections: ['SE', 'E', 'ESE'] },
       { id: 'meio', name: 'Meio da Praia', lat: -27.6022, lng: -48.4327, swellDirections: ['E', 'NE'] },
-      { id: 'canto-norte', name: 'Canto Norte', lat: -27.5990, lng: -48.4310, swellDirections: ['NE', 'ENE'] },
+      { id: 'canto-norte', name: 'Canto Norte', lat: -27.5990, lng: -48.4310, swellDirections: ['E', 'NE', 'ENE'] },
     ], bestTimeWindow: '07h - 10h' },
   { id: 'mocambique', name: 'Moçambique', region: 'Leste' as const,
     lat: -27.4937746, lng: -48.3955175, // Moçambique — bem na areia
     orientation: 80,
     subRegions: [
       { id: 'norte', name: 'Norte', lat: -27.4695, lng: -48.3852, swellDirections: ['NE', 'E', 'ENE'] },
-      { id: 'meio', name: 'Meio da Praia', lat: -27.4938, lng: -48.3912, swellDirections: ['E', 'NE'] },
+      { id: 'meio', name: 'Meio da Praia', lat: -27.4938, lng: -48.3912, swellDirections: ['SE', 'E'] },
     ], bestTimeWindow: '08h - 11h' },
   { id: 'barra-lagoa', name: 'Barra da Lagoa', region: 'Leste' as const,
     lat: -27.5734502, lng: -48.424939, orientation: 75,
     subRegions: [
       { id: 'canal', name: 'Canal da Barra', lat: -27.5765, lng: -48.4185, swellDirections: ['NE', 'E', 'ENE'] },
-      { id: 'norte-da-barra', name: 'Norte da Barra', lat: -27.5688, lng: -48.4252, swellDirections: ['NE', 'ENE'] },
+      { id: 'norte-da-barra', name: 'Norte da Barra', lat: -27.5688, lng: -48.4252, swellDirections: ['E', 'SE'] },
     ], bestTimeWindow: 'Melhor na maré enchente' },
   { id: 'santinho', name: 'Santinho', region: 'Norte' as const,
     lat: -27.4618653, lng: -48.3761513, // Praia do Santinho — bem na areia
@@ -342,6 +399,7 @@ async function _doFetchConditions(): Promise<BeachCondition[]> {
           subRegions = beachSubs.map(sub => ({
             id: sub.id, name: sub.name, lat: sub.lat, lng: sub.lng,
             swellDirections: sub.swellDirections ?? [],
+            tolerance: sub.tolerance,
             description: sub.id === bestSubId
               ? `Melhor com swell de ${swellDirection}`
               : `Funciona melhor com swell de ${sub.swellDirections?.join(', ') ?? 'E'}`,
