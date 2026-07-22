@@ -185,7 +185,6 @@ const BEACHES = [
   { id: 'mocambique',     lat: -27.4938, lng: -48.3955, orientation: 80  },
   { id: 'barra-lagoa',    lat: -27.5735, lng: -48.4249, orientation: 75  },
   { id: 'santinho',       lat: -27.4619, lng: -48.3762, orientation: 70  },
-  { id: 'ponta-aranhas',  lat: -27.4802, lng: -48.3770, orientation: 65  },
 ]
 
 const WIND_DIR_MAP: Record<string, number> = {

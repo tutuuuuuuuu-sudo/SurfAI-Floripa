@@ -29,7 +29,7 @@ const FALLBACK_BEACHES = [
   'Campeche', 'Novo Campeche', 'Morro das Pedras', 'Matadeiro',
   'Lagoinha do Leste', 'Açores', 'Solidão', 'Armação', 'Naufragados',
   'Joaquina', 'Praia Mole', 'Moçambique', 'Barra da Lagoa',
-  'Santinho', 'Ponta das Aranhas',
+  'Santinho',
 ]
 
 function getBeachesList(conditions: { name: string }[]): string[] {

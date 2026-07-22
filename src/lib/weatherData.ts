@@ -43,7 +43,6 @@ const BEACH_COORDS: Record<string, { lat: number, lng: number }> = {
   'mocambique': { lat: -27.5647, lng: -48.4208 },
   'barra-lagoa': { lat: -27.5767, lng: -48.4194 },
   'santinho': { lat: -27.4433, lng: -48.3917 },
-  'ponta-aranhas': { lat: -27.4256, lng: -48.3889 },
 }
 
 const forecastCache: Record<string, { data: WeatherForecast[], time: number }> = {}

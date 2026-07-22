@@ -7,7 +7,7 @@ export const TESTIMONIALS = [
 
 export const PLAN_FEATURES = [
   { label: 'Score de IA em tempo real', free: true, premium: true },
-  { label: '15 praias monitoradas', free: true, premium: true },
+  { label: '14 praias monitoradas', free: true, premium: true },
   { label: 'Praias favoritas', free: true, premium: true },
   { label: 'Comparação de praias', free: false, premium: true },
   { label: 'Log de sessões', free: true, premium: true },
@@ -20,7 +20,7 @@ export const PLAN_FEATURES = [
 ]
 
 export const FAQS = [
-  { q: 'O app funciona para todas as praias de Florianópolis?', a: 'Sim! Monitoramos 15 praias distribuídas pelas 4 regiões da ilha: Norte, Leste, Centro e Sul. Cobrimos desde o Santinho até o Morro das Pedras, passando por Praia Mole, Joaquina, Campeche e muito mais.' },
+  { q: 'O app funciona para todas as praias de Florianópolis?', a: 'Sim! Monitoramos 14 praias distribuídas pelas 4 regiões da ilha: Norte, Leste, Centro e Sul. Cobrimos desde o Santinho até o Morro das Pedras, passando por Praia Mole, Joaquina, Campeche e muito mais.' },
   { q: 'Os dados são atualizados com que frequência?', a: 'Os dados de ondas, vento e maré são atualizados a cada 15 minutos, 24 horas por dia, 7 dias por semana. O score de IA é recalculado automaticamente a cada nova atualização.' },
   { q: 'O plano gratuito tem alguma limitação?', a: 'No plano gratuito você tem acesso ao score de IA em tempo real, previsão para os próximos 3 dias, favoritos, log de sessões e navegação até a praia. Para previsão de 14 dias, alertas push, histórico completo e comparação de praias, é necessário o Premium.' },
   { q: 'Como funciona o score de IA?', a: 'Nossa IA analisa múltiplas variáveis em conjunto: altura e período das ondas, direção e intensidade do vento, fase da maré e swell predominante. O resultado é uma nota de 0 a 10 que representa a qualidade real das condições.' },
@@ -29,7 +29,7 @@ export const FAQS = [
 ]
 
 export const STATS = [
-  { value: 15, suffix: '', label: 'Praias monitoradas' },
+  { value: 14, suffix: '', label: 'Praias monitoradas' },
   { value: 24, suffix: '/7', label: 'Atualização contínua' },
   { value: 14, suffix: ' dias', label: 'Previsão Premium' },
   { value: 4, suffix: '', label: 'Regiões da ilha' },
@@ -45,7 +45,7 @@ export const MOCK_SPOTS = [
 export const PAIN_POINTS = [
   { emoji: '😤', problem: 'Chegou na praia e o mar estava péssimo', solution: 'Score em tempo real antes de sair de casa' },
   { emoji: '⏰', problem: 'Perdeu o horário de pico porque não sabia', solution: 'Alertas quando seu spot atingir o score ideal' },
-  { emoji: '📍', problem: 'Sempre vai na mesma praia sem saber se tem melhor opção', solution: 'Compare 15 praias lado a lado em segundos' },
+  { emoji: '📍', problem: 'Sempre vai na mesma praia sem saber se tem melhor opção', solution: 'Compare 14 praias lado a lado em segundos' },
 ]
 
 export const PREMIUM_SCROLL_THRESHOLD = 2200

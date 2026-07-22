@@ -16,7 +16,7 @@ const getLocationDesc = (id: string): string => {
     'matadeiro': 'Sul da Ilha', 'lagoinha-leste': 'Extremo Sul', 'acores': 'Extremo Sul',
     'solidao': 'Extremo Sul', 'armacao': 'Sul da Ilha', 'naufragados': 'Extremo Sul',
     'joaquina': 'Centro', 'mole': 'Centro', 'mocambique': 'Leste da Ilha',
-    'barra-lagoa': 'Centro', 'novo-campeche': 'Centro', 'santinho': 'Norte da Ilha', 'ponta-aranhas': 'Norte da Ilha',
+    'barra-lagoa': 'Centro', 'novo-campeche': 'Centro', 'santinho': 'Norte da Ilha',
   }
   return map[id] ?? 'Florianópolis'
 }
@@ -38,7 +38,6 @@ const BEACH_DESTINATIONS: Record<string, { lat: number, lng: number, name: strin
   'mocambique':     { lat: -27.4937746, lng: -48.3955175, name: 'Praia do Moçambique' },
   'barra-lagoa':    { lat: -27.5734502, lng: -48.4249390, name: 'Praia da Barra da Lagoa' },
   'santinho':       { lat: -27.4618653, lng: -48.3761513, name: 'Praia do Santinho' },
-  'ponta-aranhas':  { lat: -27.4802204, lng: -48.3769892, name: 'Ponta das Aranhas' },
 }
 
 // Sub-picos do Campeche com coordenadas bem na areia

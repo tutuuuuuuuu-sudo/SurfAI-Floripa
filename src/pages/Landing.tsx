@@ -111,7 +111,7 @@ export default function Landing() {
                 </h1>
                 <p className="text-lg text-muted-foreground max-w-lg leading-relaxed"
                   style={{ animation: 'fadeIn 0.7s ease 0.4s both' }}>
-                  Score de IA para 15 praias. Previsão de ondas, alertas e histórico —
+                  Score de IA para 14 praias. Previsão de ondas, alertas e histórico —
                   tudo que você precisa para não perder a melhor sessão da semana.
                 </p>
               </div>
@@ -382,7 +382,7 @@ export default function Landing() {
                       }} />
                   ))}
                 </div>
-                <h3 className="font-bold text-base mb-1.5">15 praias monitoradas</h3>
+                <h3 className="font-bold text-base mb-1.5">14 praias monitoradas</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   Cobertura completa de Florianópolis — Norte ao Sul da ilha.
                 </p>
@@ -840,7 +840,7 @@ export default function Landing() {
                 <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-6 text-xs font-semibold"
                   style={{ background: 'oklch(0.6 0.2 210 / 0.12)', border: '1px solid oklch(0.6 0.2 210 / 0.3)', color: 'oklch(0.75 0.15 200)' }}>
                   <div className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
-                  15 praias monitoradas agora
+                  14 praias monitoradas agora
                 </div>
                 <h2 className="text-3xl md:text-5xl font-black mb-4 leading-tight">
                   Sua próxima sessão épica<br />
@@ -852,7 +852,7 @@ export default function Landing() {
                   </span>
                 </h2>
                 <p className="text-muted-foreground mb-10 leading-relaxed text-base max-w-md mx-auto">
-                  Dados reais de 15 praias, score de IA e alertas personalizados.
+                  Dados reais de 14 praias, score de IA e alertas personalizados.
                   Crie sua conta grátis em menos de 1 minuto.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center mb-8">

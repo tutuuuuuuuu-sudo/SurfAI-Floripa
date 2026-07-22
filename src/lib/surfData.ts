@@ -254,8 +254,7 @@ const BEACHES: BeachDefinition[] = [
   { id: 'matadeiro', name: 'Matadeiro', region: 'Sul' as const,
     lat: -27.7548429, lng: -48.4985647, // Matadeiro — estacionamento início trilha
     orientation: 110,
-    // ⚠️ Coordenadas dos 2 sub-picos abaixo são ESTIMATIVAS (a partir da geografia descrita
-    // no dossiê) — ainda não confirmadas pelo usuário no Google Maps, diferente do resto do arquivo.
+    // ✅ Coordenadas dos 2 sub-picos confirmadas pelo usuário no Google Maps.
     subRegions: [
       { id: 'entrada', name: 'Entrada (Esquerdo)', lat: -27.7515, lng: -48.4970, swellDirections: ['E', 'SE'] },
       { id: 'direito', name: 'Canto Direito', lat: -27.7548, lng: -48.4986, swellDirections: ['E', 'SE'] },

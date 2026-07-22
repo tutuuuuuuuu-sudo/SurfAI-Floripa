@@ -23,7 +23,7 @@ async function sendWelcomeEmail(name: string, email: string) {
         <div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:24px;margin:24px 0">
           <p style="margin:0 0 12px;font-weight:700;font-size:15px">O que você tem agora:</p>
           <div style="display:flex;flex-direction:column;gap:10px">
-            <div style="color:#ccc;font-size:14px">🌊 Score de condições para 15 praias em tempo real</div>
+            <div style="color:#ccc;font-size:14px">🌊 Score de condições para 14 praias em tempo real</div>
             <div style="color:#ccc;font-size:14px">🤖 Relatório diário gerado por IA toda manhã</div>
             <div style="color:#ccc;font-size:14px">🔔 Alertas quando o mar estiver bom</div>
             <div style="color:#ccc;font-size:14px">🗺️ Navegação direta até o pico</div>
