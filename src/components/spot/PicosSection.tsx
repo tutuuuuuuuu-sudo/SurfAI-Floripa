@@ -11,7 +11,7 @@ export const PicosSection = ({ spot }: { spot: BeachCondition }) => {
   const enrichedPicos = spot.subRegions.map(sub => {
     const idealDirs: string[] = sub.swellDirections ?? []
     const { waveMin, waveMax, match, matchCls, minDiff } = getSubRegionMatch(
-      sub.swellDirections, spot.swellDirection, spot.waveHeight, sub.tolerance
+      sub.swellDirections, spot.swellDirection, spot.waveHeight, sub.tolerance, sub.exposicao
     )
     return { ...sub, waveMin, waveMax, match, matchCls, idealDirs, minDiff }
   })

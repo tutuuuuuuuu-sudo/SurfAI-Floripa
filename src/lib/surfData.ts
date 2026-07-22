@@ -12,6 +12,7 @@ export interface SubRegion {
   bestNow?: boolean
   swellDirections?: string[]
   tolerance?: 'estreita' | 'ampla'
+  exposicao?: number
 }
 
 export interface WaterConditions {
@@ -165,18 +166,22 @@ export interface SubRegionMatch {
 // Picos de `tolerance: 'estreita'` (ex: Principal do Campeche) só funcionam de verdade
 // perto da sua direção ideal — fora dela, a altura cai bem mais do que num pico "ampla"
 // (Lomba do Sabão, Palanque), que aceita uma faixa maior de direções sem perder tanto.
+// `exposicao` é um fator independente da direção: sub-picos abrigados por uma ponta/morro
+// (ex: Ponta Esquerda dos Açores, perto do costão que protege o Pântano do Sul) têm um teto
+// de tamanho mais baixo que o resto da praia mesmo quando o swell bate na direção ideal.
 export function getSubRegionMatch(
   swellDirections: string[] | undefined,
   swellDirection: string,
   waveHeight: number,
-  tolerance?: 'estreita' | 'ampla'
+  tolerance?: 'estreita' | 'ampla',
+  exposicao: number = 1.0
 ): SubRegionMatch {
   const minDiff = swellAngularDiff(swellDirections ?? [], swellDirection)
   const narrow = tolerance === 'estreita'
 
-  const mult = narrow
+  const mult = (narrow
     ? (minDiff === 0 ? 1.0 : minDiff === 1 ? 0.55 : minDiff === 2 ? 0.4 : 0.3)
-    : (minDiff === 0 ? 1.05 : minDiff === 1 ? 1.00 : minDiff === 2 ? 0.95 : minDiff <= 4 ? 0.88 : 0.80)
+    : (minDiff === 0 ? 1.05 : minDiff === 1 ? 1.00 : minDiff === 2 ? 0.95 : minDiff <= 4 ? 0.88 : 0.80)) * exposicao
 
   const waveEst = waveHeight * mult
   const waveMin = (waveEst * 0.95).toFixed(1)
@@ -217,7 +222,7 @@ interface BeachDefinition {
   lng: number
   orientation: number
   bestTimeWindow: string
-  subRegions?: { id: string; name: string; lat: number; lng: number; swellDirections?: string[]; tolerance?: 'estreita' | 'ampla' }[]
+  subRegions?: { id: string; name: string; lat: number; lng: number; swellDirections?: string[]; tolerance?: 'estreita' | 'ampla'; exposicao?: number }[]
 }
 
 const BEACHES: BeachDefinition[] = [
@@ -227,14 +232,14 @@ const BEACHES: BeachDefinition[] = [
     orientation: 90,
     subRegions: [
       { id: 'lomba-sabao', name: 'Lomba do Sabão', lat: -27.6974, lng: -48.4899, swellDirections: ['E', 'SE'] },
-      { id: 'palanque', name: 'Palanque', lat: -27.6929, lng: -48.4870, swellDirections: ['SE', 'S', 'SSE'] },
+      { id: 'palanque', name: 'Palanque', lat: -27.6929, lng: -48.4870, swellDirections: ['S', 'SSE', 'SE', 'E'] },
       { id: 'principal', name: 'Principal', lat: -27.6893, lng: -48.4825, swellDirections: ['SE', 'SSE'], tolerance: 'estreita' },
     ], bestTimeWindow: '06h - 09h' },
   { id: 'novo-campeche', name: 'Novo Campeche', region: 'Sul' as const,
     lat: -27.6661001, lng: -48.4755307, // Praia do Novo Campeche — bem na areia
     orientation: 90,
     subRegions: [
-      { id: 'riozinho', name: 'Riozinho', lat: -27.686650, lng: -48.481560, swellDirections: ['SE', 'ESE'] },
+      { id: 'riozinho', name: 'Riozinho', lat: -27.686650, lng: -48.481560, swellDirections: ['SE', 'ESE'], tolerance: 'estreita' },
       { id: 'centro', name: 'Centro', lat: -27.6648, lng: -48.4784, swellDirections: ['E', 'SE'] },
       { id: 'pico-da-cruz', name: 'Pico da Cruz', lat: -27.6498, lng: -48.4739, swellDirections: ['SE', 'S', 'SSE'] },
     ], bestTimeWindow: '06h - 09h' },
@@ -242,13 +247,19 @@ const BEACHES: BeachDefinition[] = [
     lat: -27.7170897, lng: -48.503436, // Av. Campeche, s/n — Lagoa Pequena
     orientation: 100,
     subRegions: [
-      { id: 'canto-norte', name: 'Canto Norte', lat: -27.7108, lng: -48.5002, swellDirections: ['E', 'SE', 'ESE'] },
-      { id: 'meio', name: 'Meio da Praia', lat: -27.7152, lng: -48.5022, swellDirections: ['SE', 'E'] },
+      { id: 'areias', name: 'Areias', lat: -27.7108, lng: -48.5002, swellDirections: ['S', 'SE', 'E'] },
+      { id: 'meio', name: 'Meio da Praia', lat: -27.7152, lng: -48.5022, swellDirections: ['S', 'SE', 'E'] },
       { id: 'costao', name: 'Costão', lat: -27.7192, lng: -48.5045, swellDirections: ['SE', 'S', 'SSE'] },
     ], bestTimeWindow: '07h - 10h' },
   { id: 'matadeiro', name: 'Matadeiro', region: 'Sul' as const,
     lat: -27.7548429, lng: -48.4985647, // Matadeiro — estacionamento início trilha
-    orientation: 110, bestTimeWindow: '06h - 09h' },
+    orientation: 110,
+    // ⚠️ Coordenadas dos 2 sub-picos abaixo são ESTIMATIVAS (a partir da geografia descrita
+    // no dossiê) — ainda não confirmadas pelo usuário no Google Maps, diferente do resto do arquivo.
+    subRegions: [
+      { id: 'entrada', name: 'Entrada (Esquerdo)', lat: -27.7515, lng: -48.4970, swellDirections: ['E', 'SE'] },
+      { id: 'direito', name: 'Canto Direito', lat: -27.7548, lng: -48.4986, swellDirections: ['E', 'SE'] },
+    ], bestTimeWindow: '06h - 09h' },
   { id: 'lagoinha-leste', name: 'Lagoinha do Leste', region: 'Sul' as const,
     lat: -27.7732103, lng: -48.4863806, // Lagoinha do Leste — início da trilha (Praia das Pacas)
     orientation: 180, bestTimeWindow: 'Dia todo (acesso por trilha)' },
@@ -256,7 +267,7 @@ const BEACHES: BeachDefinition[] = [
     lat: -27.7837144, lng: -48.5236746, // Praia dos Açores — bem na areia
     orientation: 120,
     subRegions: [
-      { id: 'ponta-esquerda', name: 'Ponta Esquerda', lat: -27.7825, lng: -48.5195, swellDirections: ['SE', 'S', 'SSE'] },
+      { id: 'ponta-esquerda', name: 'Ponta Esquerda', lat: -27.7825, lng: -48.5195, swellDirections: ['SE', 'S', 'SSE'], exposicao: 0.8 },
       { id: 'meio', name: 'Meio', lat: -27.7848, lng: -48.5212, swellDirections: ['SE', 'E', 'ESE'] },
     ], bestTimeWindow: '07h - 11h' },
   { id: 'solidao', name: 'Solidão', region: 'Sul' as const,
@@ -266,8 +277,7 @@ const BEACHES: BeachDefinition[] = [
     lat: -27.7504078, lng: -48.5017637, orientation: 115,
     subRegions: [
       { id: 'caldeirao', name: 'Caldeirão', lat: -27.7520, lng: -48.5048, swellDirections: ['E', 'SE'] },
-      { id: 'centro', name: 'Centro', lat: -27.7500, lng: -48.5045, swellDirections: ['SE', 'E'] },
-      { id: 'matadouro', name: 'Matadouro', lat: -27.7550, lng: -48.5078, swellDirections: ['S', 'SW', 'SSW'] },
+      { id: 'meio', name: 'Meio da Praia', lat: -27.7500, lng: -48.5045, swellDirections: ['NE', 'E'] },
     ], bestTimeWindow: '06h - 09h e 16h - 18h' },
   { id: 'naufragados', name: 'Naufragados', region: 'Sul' as const,
     lat: -27.8335587, lng: -48.5641537, // Naufragados — início da Trilha Caminho dos Naufragados
@@ -291,25 +301,23 @@ const BEACHES: BeachDefinition[] = [
     lat: -27.4937746, lng: -48.3955175, // Moçambique — bem na areia
     orientation: 80,
     subRegions: [
-      { id: 'norte', name: 'Norte', lat: -27.4695, lng: -48.3852, swellDirections: ['NE', 'E', 'ENE'] },
+      { id: 'norte', name: 'Canto das Aranhas', lat: -27.4695, lng: -48.3852, swellDirections: ['NE', 'E', 'ENE'], tolerance: 'estreita', exposicao: 0.9 },
       { id: 'meio', name: 'Meio da Praia', lat: -27.4938, lng: -48.3912, swellDirections: ['SE', 'E'] },
     ], bestTimeWindow: '08h - 11h' },
   { id: 'barra-lagoa', name: 'Barra da Lagoa', region: 'Leste' as const,
     lat: -27.5734502, lng: -48.424939, orientation: 75,
     subRegions: [
-      { id: 'canal', name: 'Canal da Barra', lat: -27.5765, lng: -48.4185, swellDirections: ['NE', 'E', 'ENE'] },
+      { id: 'canal', name: 'Canal da Barra', lat: -27.5765, lng: -48.4185, swellDirections: ['E', 'SE'], exposicao: 0.65 },
       { id: 'norte-da-barra', name: 'Norte da Barra', lat: -27.5688, lng: -48.4252, swellDirections: ['E', 'SE'] },
     ], bestTimeWindow: 'Melhor na maré enchente' },
   { id: 'santinho', name: 'Santinho', region: 'Norte' as const,
     lat: -27.4618653, lng: -48.3761513, // Praia do Santinho — bem na areia
     orientation: 70,
     subRegions: [
-      { id: 'costao', name: 'Costão Norte', lat: -27.4575, lng: -48.3735, swellDirections: ['NE', 'E', 'ENE'] },
-      { id: 'centro', name: 'Centro', lat: -27.4619, lng: -48.3762, swellDirections: ['E', 'NE'] },
+      { id: 'costao', name: 'Costão Norte', lat: -27.4575, lng: -48.3735, swellDirections: ['SE', 'E', 'NE'] },
+      { id: 'centro', name: 'Centro', lat: -27.4619, lng: -48.3762, swellDirections: ['SE', 'E'] },
       { id: 'canto-sul', name: 'Canto Sul', lat: -27.4658, lng: -48.3788, swellDirections: ['E', 'SE'] },
     ], bestTimeWindow: '15h - 17h' },
-  { id: 'ponta-aranhas', name: 'Ponta das Aranhas', region: 'Norte' as const,
-    lat: -27.4802204, lng: -48.3769892, orientation: 65, bestTimeWindow: '09h - 12h' },
 ]
 
 interface WindyData {
@@ -400,6 +408,7 @@ async function _doFetchConditions(): Promise<BeachCondition[]> {
             id: sub.id, name: sub.name, lat: sub.lat, lng: sub.lng,
             swellDirections: sub.swellDirections ?? [],
             tolerance: sub.tolerance,
+            exposicao: sub.exposicao,
             description: sub.id === bestSubId
               ? `Melhor com swell de ${swellDirection}`
               : `Funciona melhor com swell de ${sub.swellDirections?.join(', ') ?? 'E'}`,
