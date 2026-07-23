@@ -19,6 +19,10 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:3000',
         changeOrigin: true,
+        // Arquivos com "_" (ex: _scoreEngine.ts) nunca são endpoints HTTP — são importados
+        // direto pelo client (ver src/lib/surfData.ts). Sem isso, o proxy intercepta essas
+        // importações e tenta mandar pro servidor local de API, quebrando `npm run dev`.
+        bypass: (req) => { if (req.url?.includes('/api/_')) return req.url },
       }
     }
   },

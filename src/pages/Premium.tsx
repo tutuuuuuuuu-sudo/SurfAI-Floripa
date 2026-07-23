@@ -38,8 +38,7 @@ export default function PremiumPage() {
     // A função SQL deve ter SECURITY DEFINER e retornar apenas um número agregado
     supabase
       .rpc('count_recent_premium', { since_days: 7 })
-      .then(({ data }) => { if (typeof data === 'number' && data >= 3) setRecentSignups(data) })
-      .catch(() => {})
+      .then(({ data }) => { if (typeof data === 'number' && data >= 3) setRecentSignups(data) }, () => {})
   }, [])
 
   const paymentStatus = searchParams.get('status') as 'success' | 'failure' | 'pending' | null
@@ -85,7 +84,7 @@ export default function PremiumPage() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 max-w-lg space-y-6">
+      <main className="container mx-auto px-4 py-8 pb-24 max-w-lg space-y-6">
 
         {/* Hero */}
         <div className="text-center space-y-3" style={{ animation: 'fadeIn 0.5s ease-out' }}>

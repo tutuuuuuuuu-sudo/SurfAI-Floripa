@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Toaster } from '@/components/ui/sonner'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { SurfDataProvider } from './contexts/SurfDataContext'
@@ -30,6 +30,14 @@ function registerServiceWorker() {
       navigator.serviceWorker.register('/sw.js').catch(() => {})
     })
   }
+}
+
+// Reseta o scroll pro topo a cada troca de rota — sem isso, a posição de scroll da
+// página anterior "gruda" na página nova (comportamento padrão do navegador em SPAs).
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  useEffect(() => { window.scrollTo(0, 0) }, [pathname])
+  return null
 }
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {

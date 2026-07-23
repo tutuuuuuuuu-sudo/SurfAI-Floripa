@@ -56,7 +56,7 @@ export function PWAInstallBanner() {
   if (!show || dismissed) return null
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-50" style={{ animation: 'slideUp 0.4s ease-out' }}>
+    <div className="fixed bottom-24 left-4 right-4 z-50" style={{ animation: 'slideUp 0.4s ease-out' }}>
       <div className="flex items-center gap-3 p-3 rounded-2xl border border-primary/30 bg-card/95 backdrop-blur-md shadow-2xl">
         <div className="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center bg-card border border-primary/30">
           <svg width="28" height="28" viewBox="0 0 28 28" fill="none">

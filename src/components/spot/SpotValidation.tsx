@@ -6,6 +6,15 @@ import { useAuth } from '@/contexts/AuthContext'
 import { BeachCondition } from '@/lib/surfData'
 import { RankingModal } from './RankingModal'
 
+// Artigo/preposição correta por praia (contração de "em" + "o/a/os/as") — só existe
+// jeito de acertar isso com uma tabela fixa, já que são 14 nomes conhecidos, não uma regra genérica.
+const BEACH_PREPOSITION: Record<string, string> = {
+  'campeche': 'no', 'novo-campeche': 'no', 'morro-pedras': 'no', 'matadeiro': 'no',
+  'lagoinha-leste': 'na', 'acores': 'nos', 'solidao': 'na', 'armacao': 'na',
+  'naufragados': 'nos', 'joaquina': 'na', 'mole': 'na', 'mocambique': 'no',
+  'barra-lagoa': 'na', 'santinho': 'no',
+}
+
 export const SpotValidation = ({ spot }: { spot: BeachCondition }) => {
   const { user } = useAuth()
   const [summary, setSummary] = useState<ValidationSummary>({ matched: 0, total: 0, userVote: null })
@@ -45,7 +54,7 @@ export const SpotValidation = ({ spot }: { spot: BeachCondition }) => {
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Waves className="h-4 w-4 text-primary flex-shrink-0" />
-          <span className="text-sm font-semibold">Bateu hoje em {spot.name}?</span>
+          <span className="text-sm font-semibold">Bateu o mar hoje {BEACH_PREPOSITION[spot.id] ?? 'em'} {spot.name}?</span>
         </div>
         {!loading && summary.total > 0 && (
           <span className="text-xs text-muted-foreground whitespace-nowrap">
