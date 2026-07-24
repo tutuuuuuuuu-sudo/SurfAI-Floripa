@@ -10,6 +10,7 @@ import { useSurfData } from '@/contexts/SurfDataContext'
 import { getWeatherForecast, WeatherForecast } from '@/lib/weatherData'
 import { ArrowLeft, Waves, Wind, Calendar, Crown, TrendingUp, Thermometer } from 'lucide-react'
 import { getScoreColor, getRatingInfo } from '@/lib/rating'
+import { PremiumUpsellBanner } from '@/components/PremiumUpsellBanner'
 
 const getScoreLabel = (score: number) => getRatingInfo(score).label.charAt(0) + getRatingInfo(score).label.slice(1).toLowerCase()
 
@@ -68,18 +69,12 @@ export default function HistoryPage() {
 
         {/* Banner de upgrade para free */}
         {!isPremium && (
-          <Card className="border-primary/20 bg-primary/5" style={{ animation: 'slideUp 0.4s ease-out' }}>
-            <CardContent className="py-4 flex items-center gap-3">
-              <Crown className="h-5 w-5 text-primary flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold">Previsão gratuita: 3 dias</p>
-                <p className="text-xs text-muted-foreground">Premium libera 14 dias para qualquer praia</p>
-              </div>
-              <Button size="sm" onClick={() => navigate('/premium')}>
-                Premium
-              </Button>
-            </CardContent>
-          </Card>
+          <div style={{ animation: 'slideUp 0.4s ease-out' }}>
+            <PremiumUpsellBanner
+              title="Previsão gratuita: 3 dias"
+              subtitle="Premium libera 14 dias para qualquer praia"
+            />
+          </div>
         )}
 
         {/* Seletor de praia */}

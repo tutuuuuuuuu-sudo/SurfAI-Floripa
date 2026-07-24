@@ -12,6 +12,7 @@ import {
   Sliders, ChevronRight, Shield, Waves, Trash2, Sun, Moon
 } from 'lucide-react'
 import { AppLogo } from '@/components/AppLogo'
+import { PremiumUpsellBanner } from '@/components/PremiumUpsellBanner'
 import { toast } from 'sonner'
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
@@ -164,12 +165,12 @@ export default function Settings() {
             )}
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Plano</span>
-              <span className={`text-sm font-bold ${isPremium ? 'text-yellow-500' : 'text-muted-foreground'}`}>
+              <span className={`text-sm font-bold ${isPremium ? 'text-rating-fair' : 'text-muted-foreground'}`}>
                 {isPremium ? 'Premium' : 'Gratuito'}
               </span>
             </div>
             {!isPremium && (
-              <Button variant="outline" size="sm" className="w-full border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/10"
+              <Button variant="outline" size="sm" className="w-full border-rating-fair/50 text-rating-fair hover:bg-rating-fair/10"
                 onClick={() => navigate('/premium')}>
                 <Crown className="h-4 w-4 mr-2" />
                 Upgrade para Premium — R$ 16,90/mês
@@ -341,21 +342,10 @@ export default function Settings() {
 
         {/* Premium */}
         {!isPremium && (
-          <Card className="border-yellow-500/30 bg-yellow-500/5 cursor-pointer hover:bg-yellow-500/10 transition-colors"
-            onClick={() => navigate('/premium')}>
-            <CardContent className="py-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-xl bg-yellow-500/20 flex items-center justify-center">
-                  <Crown className="h-5 w-5 text-yellow-500" />
-                </div>
-                <div>
-                  <div className="text-sm font-semibold text-yellow-500">Assinar Premium</div>
-                  <div className="text-xs text-muted-foreground">Previsão 14 dias, sem anúncios e mais</div>
-                </div>
-              </div>
-              <ChevronRight className="h-4 w-4 text-yellow-500" />
-            </CardContent>
-          </Card>
+          <PremiumUpsellBanner
+            title="Assinar Premium"
+            subtitle="Previsão 14 dias, sem anúncios e mais"
+          />
         )}
 
         {/* Conta */}

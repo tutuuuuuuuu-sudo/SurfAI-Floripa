@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { getRatingInfo } from '@/lib/rating'
+import { PremiumUpsellBanner } from '@/components/PremiumUpsellBanner'
 
 const MAX_AVATAR_DIMENSION = 1280
 const AVATAR_JPEG_QUALITY = 0.82
@@ -246,7 +247,7 @@ export default function ProfilePage() {
                   <Camera className="h-3 w-3 text-white" />
                 </label>
                 {isPremium && (
-                  <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-yellow-500 flex items-center justify-center border-2 border-background">
+                  <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-rating-fair flex items-center justify-center border-2 border-background">
                     <Crown className="h-3 w-3 text-white" />
                   </div>
                 )}
@@ -260,7 +261,7 @@ export default function ProfilePage() {
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-bold">{userName}</h2>
                 {isPremium && (
-                  <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/30 text-xs">
+                  <Badge className="bg-rating-fair/10 text-rating-fair border-rating-fair/30 text-xs">
                     <Crown className="h-3 w-3 mr-1" />Premium
                   </Badge>
                 )}
@@ -305,23 +306,20 @@ export default function ProfilePage() {
             </div>
 
             {isPremium && subscription?.expires_at && (
-              <div className="mt-3 p-3 rounded-xl bg-yellow-500/5 border border-yellow-500/20 text-xs text-yellow-600 dark:text-yellow-400">
+              <div className="mt-3 p-3 rounded-xl bg-rating-fair/10 border border-rating-fair/30 text-xs text-rating-fair">
                 ✨ Premium ativo até {new Date(subscription.expires_at).toLocaleDateString('pt-BR')}
               </div>
             )}
 
             {/* ✅ Texto corrigido: 14 dias, sem câmeras */}
             {!isPremium && (
-              <button onClick={() => navigate('/premium')}
-                className="mt-3 w-full p-3 rounded-xl bg-yellow-500/5 border border-yellow-500/20 hover:bg-yellow-500/10 transition-colors text-left">
-                <div className="flex items-center gap-2">
-                  <Crown className="h-4 w-4 text-yellow-500" />
-                  <div>
-                    <div className="text-xs font-semibold text-yellow-500">Upgrade para Premium</div>
-                    <div className="text-xs text-muted-foreground">Previsão 14 dias, sem anúncios</div>
-                  </div>
-                </div>
-              </button>
+              <div className="mt-3">
+                <PremiumUpsellBanner
+                  title="Upgrade para Premium"
+                  subtitle="Previsão 14 dias, sem anúncios"
+                />
+              </div>
+            )}
             )}
           </CardContent>
         </Card>
@@ -440,7 +438,7 @@ export default function ProfilePage() {
           <Card className="anim-slide" style={{ animationDelay: '0.2s' }}>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <Heart className="h-5 w-5 text-red-500 fill-red-500" />Suas Praias Favoritas
+                <Heart className="h-5 w-5 text-destructive fill-destructive" />Suas Praias Favoritas
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -499,7 +497,7 @@ export default function ProfilePage() {
                       <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{Math.round(best.swellPeriod)}s</span>
                     </div>
                   </div>
-                  <Star className="h-5 w-5 text-yellow-500 fill-yellow-500 flex-shrink-0" />
+                  <Star className="h-5 w-5 text-rating-fair fill-rating-fair flex-shrink-0" />
                 </button>
               </CardContent>
             </Card>

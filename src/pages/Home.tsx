@@ -28,7 +28,7 @@ import { isTainhaSeasonActive } from '@/lib/tainha'
 import { isOnboardingDone } from '@/lib/onboarding'
 import {
   Waves, TrendingUp, MapPin, Info, Heart, Settings,
-  Navigation, Crown, Sparkles, Flame, Fish
+  Crown, Sparkles, Flame, Fish
 } from 'lucide-react'
 
 export default function Home() {
@@ -143,11 +143,21 @@ export default function Home() {
               <AppLogo size={40} variant="full" />
             </div>
             <div className="flex items-center gap-2" style={{ animation: 'slideInRight 0.4s ease-out' }}>
-              <Button variant="outline" size="sm" onClick={() => navigate('/navigation')} className="hidden sm:flex">
-                <Navigation className="h-4 w-4 mr-1.5" />Me Leva ao Pico
+              <Button variant={favorites.length > 0 ? 'default' : 'outline'} size="sm" onClick={() => navigate('/favorites')} className="hidden sm:flex">
+                <Heart className={`h-4 w-4 mr-1.5 ${favorites.length > 0 ? 'fill-current' : ''}`} />
+                {favorites.length > 0 ? `Favoritas (${favorites.length})` : 'Favoritas'}
               </Button>
-              <button onClick={() => navigate('/navigation')} className="sm:hidden p-2 rounded-xl border border-border hover:border-primary/40 hover:bg-primary/5 transition-colors" title="Me Leva ao Pico">
-                <Navigation className="h-4 w-4 text-muted-foreground" />
+              <button
+                onClick={() => navigate('/favorites')}
+                className="sm:hidden relative p-2 rounded-xl border border-border hover:bg-muted/50 transition-colors"
+                title="Favoritas"
+              >
+                <Heart className={`h-4 w-4 ${favorites.length > 0 ? 'fill-destructive text-destructive' : ''}`} />
+                {favorites.length > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[9px] font-bold text-primary-foreground flex items-center justify-center">
+                    {favorites.length}
+                  </span>
+                )}
               </button>
 
               {!isPremium && !premiumLoading && (
@@ -203,10 +213,22 @@ export default function Home() {
         )}
 
         {(aiReport || aiLoading || (!premiumLoading && !isPremium && topSpot)) && (
-          <Card className="border-primary/30 bg-primary/5 anim-slide" style={{ animationDelay: '0.15s' }}>
+          <div className="relative anim-slide" style={{ animationDelay: '0.15s' }}>
+            <div className="absolute -inset-1 rounded-2xl bg-primary/25 blur-md animate-pulse pointer-events-none" />
+            <Card className="relative border-primary/50 bg-primary/8 shadow-lg shadow-primary/15">
             <CardHeader className="pb-2 pt-4 px-4">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary" />Relatório do dia — IA
+              <CardTitle className="text-base flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-lg bg-primary/15 flex items-center justify-center flex-shrink-0">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                  </div>
+                  <span className="font-bold">Relatório do dia — IA</span>
+                </div>
+                {!premiumLoading && !isPremium && (
+                  <Badge className="bg-rating-fair/15 text-rating-fair border border-rating-fair/30 text-[10px] px-1.5 py-0 gap-1">
+                    <Crown className="h-3 w-3" />Premium
+                  </Badge>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-4">
@@ -232,7 +254,7 @@ export default function Home() {
                 // Prévia com blur para usuários free
                 <div className="space-y-3">
                   <div className="relative">
-                    <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
+                    <p className="text-sm text-foreground leading-relaxed line-clamp-2">
                       {topSpot.name} está com a melhor nota agora, mas outro pico pode compensar mais dependendo do horário que você for. A análise completa cruza as praias e mostra a janela ideal do dia...
                     </p>
                     <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-card/90 to-transparent pointer-events-none" />
@@ -244,14 +266,15 @@ export default function Home() {
                   </div>
                   <button
                     onClick={() => navigate('/premium')}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary/10 border border-primary/30 hover:bg-primary/20 transition-colors text-sm font-semibold text-primary"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-rating-fair/15 border border-rating-fair/40 hover:bg-rating-fair/25 transition-colors text-sm font-bold text-rating-fair"
                   >
                     <Crown className="h-4 w-4" />Ver relatório completo — Premium
                   </button>
                 </div>
               ) : null}
             </CardContent>
-          </Card>
+            </Card>
+          </div>
         )}
 
         {topSpot && (

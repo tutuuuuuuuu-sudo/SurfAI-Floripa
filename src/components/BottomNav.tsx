@@ -1,13 +1,13 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Home, Heart, History, User, BookOpen } from 'lucide-react'
+import { Home, Navigation, History, User, BookOpen } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
 const NAV_ITEMS = [
-  { path: '/',           label: 'Início',    Icon: Home },
-  { path: '/favorites',  label: 'Favoritas', Icon: Heart },
-  { path: '/surf-log',   label: 'Sessões',   Icon: BookOpen },
-  { path: '/forecast',   label: 'Previsão',  Icon: History },
-  { path: '/profile',    label: 'Perfil',    Icon: User },
+  { path: '/',           label: 'Início',      Icon: Home },
+  { path: '/navigation', label: 'Me Leva',     Icon: Navigation },
+  { path: '/surf-log',   label: 'Sessões',     Icon: BookOpen },
+  { path: '/forecast',   label: 'Previsão',    Icon: History },
+  { path: '/profile',    label: 'Perfil',      Icon: User },
 ]
 
 const HIDDEN_PATHS = ['/landing', '/login', '/reset-password']

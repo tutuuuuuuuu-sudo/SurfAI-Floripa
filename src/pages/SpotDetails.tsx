@@ -389,6 +389,59 @@ export default function SpotDetails() {
               <AlertDescription className="text-foreground text-sm">{analyzeConditions(spot)}</AlertDescription>
             </Alert>
 
+            <SpotValidation spot={spot} />
+
+            {/* Widget: contexto histórico do score */}
+            {scoreHistory && scoreHistory.avg30 !== null && (() => {
+              const diff = spot.score - scoreHistory.avg30
+              const pct = Math.round(Math.abs(diff / scoreHistory.avg30) * 100)
+              if (pct < 5 && !scoreHistory.isMonthBest) return null
+              return (
+                <div
+                  className={`flex items-center gap-3 px-4 py-3 rounded-2xl border ${
+                    scoreHistory.isMonthBest
+                      ? 'bg-rating-epic/10 border-rating-epic/30'
+                      : diff > 0
+                        ? 'bg-rating-good/10 border-rating-good/30'
+                        : 'bg-muted/20 border-border/50'
+                  }`}
+                  style={{ animation: 'slideUp 0.3s ease-out' }}
+                >
+                  <TrendingUp className={`h-5 w-5 flex-shrink-0 ${scoreHistory.isMonthBest ? 'text-rating-epic' : diff > 0 ? 'text-rating-good' : 'text-muted-foreground'}`} />
+                  <p className="text-sm font-medium">
+                    {scoreHistory.isMonthBest
+                      ? <><span className={`font-bold ${diff > 0 ? 'text-rating-epic' : 'text-foreground'}`}>Melhor condição do mês</span> <span className="text-muted-foreground">neste pico.</span></>
+                      : diff > 0
+                        ? <><span className={`font-bold text-rating-good`}>{pct}% acima</span> <span className="text-muted-foreground">da média dos últimos 30 dias.</span></>
+                        : <><span className="text-muted-foreground">{pct}% abaixo da média dos últimos 30 dias.</span></>
+                    }
+                  </p>
+                </div>
+              )
+            })()}
+
+            {/* Relatos */}
+            <button
+              onClick={() => setCommentsOpen(o => !o)}
+              className="w-full flex items-center justify-between px-4 py-3 rounded-2xl border border-border/50 bg-card hover:border-primary/30 hover:bg-primary/5 transition-all"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <MessageCircle className="h-4 w-4 text-primary"/>
+                </div>
+                <div className="text-left">
+                  <div className="text-sm font-semibold">O que dizem quem foi hoje?</div>
+                  <div className="text-xs text-muted-foreground">Relatos ao vivo de quem está na praia</div>
+                </div>
+              </div>
+              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${commentsOpen ? 'rotate-180' : ''}`}/>
+            </button>
+            {commentsOpen && (
+              <div className="rounded-2xl border border-border/50 bg-card p-4" style={{animation:'slideUp 0.2s ease-out'}}>
+                <CommentsSection spot={spot}/>
+              </div>
+            )}
+
             <PicosSection spot={spot}/>
 
             <div className="grid grid-cols-2 gap-3">
@@ -569,59 +622,6 @@ export default function SpotDetails() {
                 )}
               </>
             )}
-          </div>
-        )}
-
-        <SpotValidation spot={spot} />
-
-        {/* Widget: contexto histórico do score */}
-        {scoreHistory && scoreHistory.avg30 !== null && (() => {
-          const diff = spot.score - scoreHistory.avg30
-          const pct = Math.round(Math.abs(diff / scoreHistory.avg30) * 100)
-          if (pct < 5 && !scoreHistory.isMonthBest) return null
-          return (
-            <div
-              className={`flex items-center gap-3 px-4 py-3 rounded-2xl border ${
-                scoreHistory.isMonthBest
-                  ? 'bg-rating-epic/10 border-rating-epic/30'
-                  : diff > 0
-                    ? 'bg-rating-good/10 border-rating-good/30'
-                    : 'bg-muted/20 border-border/50'
-              }`}
-              style={{ animation: 'slideUp 0.3s ease-out' }}
-            >
-              <TrendingUp className={`h-5 w-5 flex-shrink-0 ${scoreHistory.isMonthBest ? 'text-rating-epic' : diff > 0 ? 'text-rating-good' : 'text-muted-foreground'}`} />
-              <p className="text-sm font-medium">
-                {scoreHistory.isMonthBest
-                  ? <><span className={`font-bold ${diff > 0 ? 'text-rating-epic' : 'text-foreground'}`}>Melhor condição do mês</span> <span className="text-muted-foreground">neste pico.</span></>
-                  : diff > 0
-                    ? <><span className={`font-bold text-rating-good`}>{pct}% acima</span> <span className="text-muted-foreground">da média dos últimos 30 dias.</span></>
-                    : <><span className="text-muted-foreground">{pct}% abaixo da média dos últimos 30 dias.</span></>
-                }
-              </p>
-            </div>
-          )
-        })()}
-
-        {/* Relatos */}
-        <button
-          onClick={() => setCommentsOpen(o => !o)}
-          className="w-full flex items-center justify-between px-4 py-3 rounded-2xl border border-border/50 bg-card hover:border-primary/30 hover:bg-primary/5 transition-all"
-        >
-          <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
-              <MessageCircle className="h-4 w-4 text-primary"/>
-            </div>
-            <div className="text-left">
-              <div className="text-sm font-semibold">O que dizem quem foi hoje?</div>
-              <div className="text-xs text-muted-foreground">Relatos ao vivo de quem está na praia</div>
-            </div>
-          </div>
-          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${commentsOpen ? 'rotate-180' : ''}`}/>
-        </button>
-        {commentsOpen && (
-          <div className="rounded-2xl border border-border/50 bg-card p-4" style={{animation:'slideUp 0.2s ease-out'}}>
-            <CommentsSection spot={spot}/>
           </div>
         )}
 

@@ -10,6 +10,9 @@ import {
 import { createMercadoPagoCheckout, usePremium } from '@/lib/premium'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
+import { TESTIMONIALS } from '@/components/landing/landingData'
+
+const FEATURED_TESTIMONIAL = TESTIMONIALS[3]
 
 const PREMIUM_BENEFITS = [
   { icon: Sparkles, title: 'Relatório de IA personalizado', desc: 'IA analisa as condições e escreve um relatório diário pro seu nível de surf.' },
@@ -77,7 +80,7 @@ export default function PremiumPage() {
             <ArrowLeft className="h-4 w-4 mr-2" />Voltar
           </Button>
           <div className="flex items-center gap-2">
-            <Crown className="h-5 w-5 text-yellow-500" />
+            <Crown className="h-5 w-5 text-rating-fair" />
             <span className="font-bold text-base">Surf AI Premium</span>
           </div>
           <div className="w-16" />
@@ -88,8 +91,11 @@ export default function PremiumPage() {
 
         {/* Hero */}
         <div className="text-center space-y-3" style={{ animation: 'fadeIn 0.5s ease-out' }}>
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-2 bg-primary/20 ring-4 ring-primary/30">
-            <Crown className="h-10 w-10 text-primary" />
+          <div className="relative inline-flex items-center justify-center w-20 h-20 mb-2">
+            <div className="absolute inset-0 rounded-full bg-rating-fair/20 animate-pulse" />
+            <div className="relative flex items-center justify-center w-20 h-20 rounded-full bg-primary/20 ring-4 ring-primary/30 shadow-lg shadow-primary/30">
+              <Crown className="h-10 w-10 text-rating-fair" />
+            </div>
           </div>
           <h1 className="text-3xl font-bold">Surf AI Premium</h1>
           <p className="text-muted-foreground text-sm leading-relaxed">
@@ -97,21 +103,28 @@ export default function PremiumPage() {
           </p>
         </div>
 
+        {!isPremium && (
+          <div className="rounded-2xl border border-border bg-muted/20 p-4" style={{ animation: 'fadeIn 0.5s 0.1s ease-out both' }}>
+            <p className="text-sm text-foreground leading-relaxed">"{FEATURED_TESTIMONIAL.text}"</p>
+            <p className="text-xs text-muted-foreground mt-2">— {FEATURED_TESTIMONIAL.name}, {FEATURED_TESTIMONIAL.role}</p>
+          </div>
+        )}
+
         {/* Retorno do pagamento */}
         {paymentStatus === 'success' && !isPremium && (
-          <div className="flex items-start gap-3 p-4 rounded-2xl border border-green-500/30 bg-green-500/5">
-            <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+          <div className="flex items-start gap-3 p-4 rounded-2xl border border-rating-good/30 bg-rating-good/5">
+            <CheckCircle2 className="h-5 w-5 text-rating-good flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold text-sm text-green-500">Pagamento confirmado!</p>
+              <p className="font-semibold text-sm text-rating-good">Pagamento confirmado!</p>
               <p className="text-xs text-muted-foreground mt-0.5">Seu acesso Premium está sendo ativado. Pode levar alguns segundos.</p>
             </div>
           </div>
         )}
         {paymentStatus === 'pending' && (
-          <div className="flex items-start gap-3 p-4 rounded-2xl border border-yellow-500/30 bg-yellow-500/5">
-            <Clock className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+          <div className="flex items-start gap-3 p-4 rounded-2xl border border-rating-fair/30 bg-rating-fair/5">
+            <Clock className="h-5 w-5 text-rating-fair flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold text-sm text-yellow-500">Pagamento em análise</p>
+              <p className="font-semibold text-sm text-rating-fair">Pagamento em análise</p>
               <p className="text-xs text-muted-foreground mt-0.5">Boleto ou PIX pode levar até 1 dia útil para confirmar.</p>
             </div>
           </div>
@@ -128,9 +141,9 @@ export default function PremiumPage() {
 
         {/* Já é premium */}
         {!loadingStatus && isPremium && (
-          <Card className="border-yellow-500/40 bg-yellow-500/5" style={{ animation: 'slideUp 0.4s ease-out' }}>
+          <Card className="border-rating-fair/40 bg-rating-fair/5" style={{ animation: 'slideUp 0.4s ease-out' }}>
             <CardContent className="py-6 text-center space-y-2">
-              <Crown className="h-8 w-8 text-yellow-500 mx-auto" />
+              <Crown className="h-8 w-8 text-rating-fair mx-auto" />
               <p className="font-bold text-lg">Você já é Premium! 🤙</p>
               <p className="text-sm text-muted-foreground">Aproveite todos os benefícios exclusivos.</p>
               <Button className="mt-2" onClick={() => navigate('/')}>Ir para o app</Button>
@@ -200,8 +213,8 @@ export default function PremiumPage() {
                   <>
                     <div className="flex items-end justify-center gap-1">
                       <span className="text-sm text-muted-foreground mb-1">R$</span>
-                      <span className="text-5xl font-bold text-yellow-500">12</span>
-                      <span className="text-2xl font-bold text-yellow-500">,49</span>
+                      <span className="text-5xl font-bold text-rating-fair">12</span>
+                      <span className="text-2xl font-bold text-rating-fair">,49</span>
                       <span className="text-sm text-muted-foreground mb-1">/mês</span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">Cobrado anualmente — R$ 149,90/ano</p>
@@ -214,8 +227,8 @@ export default function PremiumPage() {
                   <>
                     <div className="flex items-end justify-center gap-1">
                       <span className="text-sm text-muted-foreground mb-1">R$</span>
-                      <span className="text-5xl font-bold text-yellow-500">16</span>
-                      <span className="text-2xl font-bold text-yellow-500">,90</span>
+                      <span className="text-5xl font-bold text-rating-fair">16</span>
+                      <span className="text-2xl font-bold text-rating-fair">,90</span>
                       <span className="text-sm text-muted-foreground mb-1">/mês</span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">Cancele quando quiser · menos de R$ 0,57/dia</p>
@@ -228,14 +241,14 @@ export default function PremiumPage() {
                 {PREMIUM_BENEFITS.map((benefit, idx) => (
                   <div key={idx} className="flex items-start gap-3"
                     style={{ animation: `slideUp 0.3s ${0.15 + idx * 0.05}s ease-out both` }}>
-                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center">
-                      <benefit.icon className="h-4 w-4 text-yellow-500" />
+                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-rating-fair/10 flex items-center justify-center">
+                      <benefit.icon className="h-4 w-4 text-rating-fair" />
                     </div>
                     <div className="flex-1">
                       <div className="text-sm font-semibold">{benefit.title}</div>
                       <div className="text-xs text-muted-foreground">{benefit.desc}</div>
                     </div>
-                    <Check className="h-4 w-4 text-yellow-500 flex-shrink-0 mt-0.5" />
+                    <Check className="h-4 w-4 text-rating-fair flex-shrink-0 mt-0.5" />
                   </div>
                 ))}
               </div>
@@ -292,12 +305,12 @@ export default function PremiumPage() {
                     <div className="flex gap-8">
                       <span className="w-10 text-center">
                         {row.free
-                          ? <Check className="h-3.5 w-3.5 text-green-500 mx-auto" />
+                          ? <Check className="h-3.5 w-3.5 text-rating-good mx-auto" />
                           : <span className="text-muted-foreground/30 text-base leading-none">—</span>
                         }
                       </span>
                       <span className="w-10 text-center">
-                        <Check className="h-3.5 w-3.5 text-yellow-500 mx-auto" />
+                        <Check className="h-3.5 w-3.5 text-rating-fair mx-auto" />
                       </span>
                     </div>
                   </div>
@@ -306,7 +319,7 @@ export default function PremiumPage() {
                   <span className="flex-1" />
                   <div className="flex gap-8">
                     <span className="w-10 text-center text-xs text-muted-foreground font-medium">Free</span>
-                    <span className="w-10 text-center text-xs text-yellow-500 font-bold">Premium</span>
+                    <span className="w-10 text-center text-xs text-rating-fair font-bold">Premium</span>
                   </div>
                 </div>
               </div>
