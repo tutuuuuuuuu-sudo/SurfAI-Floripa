@@ -95,4 +95,12 @@ coverage/
 # Lasy internal config (sensitive data)
 .lasy/
 
+# Chaves/secrets gerados localmente (nunca commitar)
+vapid-keys.txt
+*-keys.txt
 
+
+
+# Lasy internal
+.claude
+.lasy

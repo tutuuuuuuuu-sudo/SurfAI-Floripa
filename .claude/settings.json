@@ -1,16 +1,45 @@
 {
+  "alwaysThinkingEnabled": false,
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [{"type": "command", "command": "bash /workspace/.claude/hooks/ask-user-question.sh", "timeout": 600000}]
+      },
+      {
+        "matcher": "ExitPlanMode",
+        "hooks": [{"type": "command", "command": "bash /workspace/.claude/hooks/approve-plan.sh", "timeout": 600000}]
+      }
+    ],
     "Stop": [
       {
         "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash /workspace/.claude/hooks/backup.sh",
-            "timeout": 120000
-          }
-        ]
+        "hooks": [{"type": "command", "command": "bash /workspace/.claude/hooks/backup.sh", "timeout": 120000}]
       }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc --noEmit)",
+      "Bash(npx tsc *)",
+      "Bash(npm test)",
+      "Bash(npm run test)",
+      "Bash(npm run *)",
+      "Bash(npx vitest *)",
+      "Bash(grep -n *)",
+      "Bash(grep -rn *)",
+      "Bash(grep -r *)",
+      "Bash(find /workspaces/SurfAI-Floripa *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git status)",
+      "mcp__claude_ai_Vercel__get_runtime_logs",
+      "mcp__claude_ai_Vercel__list_teams",
+      "mcp__claude_ai_Vercel__list_projects",
+      "mcp__claude_ai_Vercel__list_deployments",
+      "mcp__claude_ai_Vercel__get_deployment_build_logs",
+      "mcp__claude_ai_Supabase__list_projects",
+      "mcp__claude_ai_Supabase__get_project"
     ]
   }
 }
