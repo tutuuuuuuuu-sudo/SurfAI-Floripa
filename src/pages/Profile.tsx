@@ -320,7 +320,6 @@ export default function ProfilePage() {
                 />
               </div>
             )}
-            )}
           </CardContent>
         </Card>
 
