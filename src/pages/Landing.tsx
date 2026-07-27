@@ -207,6 +207,21 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* MANIFESTO — frase de impacto isolada, logo após as especificações do app */}
+      <section className="py-14 border-t border-border/30">
+        <div className="container mx-auto px-5 max-w-3xl text-center">
+          <Reveal>
+            <p className="text-2xl md:text-4xl font-black leading-tight">
+              Feito por surfistas,{' '}
+              <span className="text-transparent bg-clip-text"
+                style={{ backgroundImage: 'linear-gradient(135deg, oklch(0.75 0.16 200), oklch(0.55 0.22 260))' }}>
+                para surfistas.
+              </span>
+            </p>
+          </Reveal>
+        </div>
+      </section>
+
       {/* COMO FUNCIONA */}
       <section className="py-20 border-t border-border/30 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none select-none opacity-[0.025]"
@@ -487,21 +502,6 @@ export default function Landing() {
               <Crown className="h-4 w-4 mr-2" />
               Ver Premium — R$ 16,90/mês
             </Button>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* MANIFESTO — frase de impacto isolada, logo após apresentar as funcionalidades */}
-      <section className="py-14 border-t border-border/30">
-        <div className="container mx-auto px-5 max-w-3xl text-center">
-          <Reveal>
-            <p className="text-2xl md:text-4xl font-black leading-tight">
-              Feito por surfistas,{' '}
-              <span className="text-transparent bg-clip-text"
-                style={{ backgroundImage: 'linear-gradient(135deg, oklch(0.75 0.16 200), oklch(0.55 0.22 260))' }}>
-                para surfistas.
-              </span>
-            </p>
           </Reveal>
         </div>
       </section>
