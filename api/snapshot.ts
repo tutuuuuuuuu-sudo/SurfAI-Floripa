@@ -3,7 +3,7 @@ export const config = { runtime: 'edge' }
 import { calculateSurfScore } from './_scoreEngine.js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? ''
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY ?? ''
 const APP_URL = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 
 const BEACHES = [
