@@ -285,16 +285,16 @@ const BEACHES: BeachDefinition[] = [
     lat: -27.6293577, lng: -48.4490173, // Joaquina — bem na areia
     orientation: 90,
     subRegions: [
-      { id: 'pedra-do-sami', name: 'Pedra do Sami', lat: -27.6340, lng: -48.4520, swellDirections: ['SE', 'S', 'SSE'] },
+      { id: 'pedra-do-sami', name: 'Pedra do Sami', lat: -27.6340, lng: -48.4520, swellDirections: ['E', 'SE', 'S', 'SSE'] },
       { id: 'meio', name: 'Meio da Praia', lat: -27.6294, lng: -48.4490, swellDirections: ['E', 'SE'] },
       { id: 'canto-direito', name: 'Canto Direito', lat: -27.6250, lng: -48.4460, swellDirections: ['NE', 'E', 'ENE'] },
     ], bestTimeWindow: 'Agora até 11h' },
   { id: 'mole', name: 'Praia Mole', region: 'Leste' as const,
     lat: -27.6022459, lng: -48.4326839, orientation: 85,
     subRegions: [
-      { id: 'canto-sul', name: 'Canto Sul (Gruta)', lat: -27.6035, lng: -48.4340, swellDirections: ['SE', 'E', 'ESE'] },
-      { id: 'meio', name: 'Meio da Praia', lat: -27.6022, lng: -48.4327, swellDirections: ['E', 'NE'] },
-      { id: 'canto-norte', name: 'Canto Norte', lat: -27.5990, lng: -48.4310, swellDirections: ['E', 'NE', 'ENE'] },
+      { id: 'canto-sul', name: 'Canto Sul (Gravatá)', lat: -27.6035, lng: -48.4340, swellDirections: ['S', 'SE', 'E'] },
+      { id: 'meio', name: 'Meio da Praia', lat: -27.6022, lng: -48.4327, swellDirections: ['E', 'SE', 'NE'] },
+      { id: 'canto-norte', name: 'Canto Norte (Galheta)', lat: -27.5990, lng: -48.4310, swellDirections: ['E', 'NE', 'ENE'] },
     ], bestTimeWindow: '07h - 10h' },
   { id: 'mocambique', name: 'Moçambique', region: 'Leste' as const,
     lat: -27.4937746, lng: -48.3955175, // Moçambique — bem na areia
