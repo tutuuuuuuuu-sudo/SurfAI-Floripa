@@ -1,17 +1,19 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
   Waves, Zap, Bell, BarChart3, Clock, Shield,
   ArrowRight, CheckCircle2, TrendingUp,
   MapPin, Crown, ChevronRight, Star, Quote, Droplets, Lock,
-  Smartphone,
+  Smartphone, Navigation,
 } from 'lucide-react'
 import { AppLogo } from '@/components/AppLogo'
 import {
-  OceanWaves, AppMockup3D, AnimatedNumber,
+  OceanWaves, AnimatedNumber,
   FAQItem, Reveal, FloatingCTA,
 } from '@/components/landing/LandingComponents'
+import { OceanScanHero } from '@/components/landing/OceanScanHero'
+import ProductShowcaseSection from '@/components/landing/ProductShowcaseSection'
 import {
   TESTIMONIALS, FAQS, STATS,
 } from '@/components/landing/landingData'
@@ -43,15 +45,17 @@ export default function Landing() {
             </Badge>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/login')}
+            <Button variant="ghost" size="sm" asChild
               className="text-sm text-muted-foreground hover:text-foreground">
-              Entrar
+              <Link to="/login">Entrar</Link>
             </Button>
-            <Button size="sm" onClick={() => navigate('/login')}
+            <Button size="sm" asChild
               className="text-sm font-bold px-4 bg-primary hover:bg-primary/90"
               style={{ boxShadow: '0 0 16px oklch(0.6 0.16 200 / 0.25)' }}>
-              Começar grátis
-              <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+              <Link to="/login">
+                Começar grátis
+                <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+              </Link>
             </Button>
           </div>
         </div>
@@ -109,29 +113,33 @@ export default function Landing() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3" style={{ animation: 'slideUp 0.6s ease 0.5s both' }}>
-                <Button size="lg" onClick={() => navigate('/login')}
+                <Button size="lg" asChild
                   className="text-base font-bold px-8 h-12 flex-1 sm:flex-none relative overflow-hidden group"
                   style={{
                     background: 'oklch(0.6 0.2 210)',
                     boxShadow: '0 0 40px oklch(0.6 0.2 210 / 0.5), 0 0 80px oklch(0.6 0.2 210 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.15)',
                     animation: 'pulse-glow 3s ease-in-out infinite',
                   }}>
-                  <span className="relative z-10 flex items-center gap-2">
-                    Criar conta grátis
-                    <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                  </span>
-                  <span className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                    style={{ background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.12) 50%, transparent 60%)' }} />
+                  <Link to="/login">
+                    <span className="relative z-10 flex items-center gap-2">
+                      Criar conta grátis
+                      <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    </span>
+                    <span className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                      style={{ background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.12) 50%, transparent 60%)' }} />
+                  </Link>
                 </Button>
-                <Button size="lg" variant="outline" onClick={() => navigate('/login?plan=premium')}
+                <Button size="lg" variant="outline" asChild
                   className="text-base font-bold px-8 h-12 flex-1 sm:flex-none"
                   style={{
                     background: 'oklch(0.65 0.18 50 / 0.06)',
                     borderColor: 'oklch(0.65 0.18 50 / 0.35)',
                     backdropFilter: 'blur(12px)',
                   }}>
-                  <Crown className="h-4 w-4 mr-2 text-rating-fair" />
-                  Ver Premium
+                  <Link to="/login?plan=premium">
+                    <Crown className="h-4 w-4 mr-2 text-rating-fair" />
+                    Ver Premium
+                  </Link>
                 </Button>
               </div>
 
@@ -161,16 +169,27 @@ export default function Landing() {
               </div>
             </div>
 
-            {/* Mockup 3D */}
+            {/* Foto do mar com efeito de varredura (WebGL) */}
             <div className="flex flex-col items-center gap-2">
-              <AppMockup3D />
+              <div className="relative w-full max-w-md aspect-[4/3] rounded-3xl overflow-hidden"
+                style={{
+                  border: '1px solid oklch(0.6 0.2 210 / 0.25)',
+                  boxShadow: '0 8px 48px oklch(0 0 0 / 0.35), 0 0 80px oklch(0.6 0.2 210 / 0.1), inset 0 1px 0 oklch(1 0 0 / 0.08)',
+                }}>
+                <OceanScanHero className="absolute inset-0" />
+                <div className="absolute inset-0 pointer-events-none"
+                  style={{ background: 'linear-gradient(180deg, transparent 60%, oklch(0.1 0.02 240 / 0.5) 100%)' }} />
+              </div>
               <span className="text-sm text-foreground/70 font-medium bg-card/60 px-3 py-1 rounded-full border border-border/40">
-                Dados ilustrativos
+                Florianópolis, SC
               </span>
             </div>
           </div>
         </div>
       </section>
+
+      {/* PRODUTO DE VERDADE — screenshot real com scroll 3D */}
+      <ProductShowcaseSection />
 
       {/* PREÇO ANTECIPADO */}
       <section className="py-6 relative z-10"
@@ -183,11 +202,11 @@ export default function Landing() {
             </div>
             <span className="hidden sm:block text-muted-foreground/40">·</span>
             <span className="text-sm text-muted-foreground">Premium com previsão 14 dias + alertas por</span>
-            <span className="text-sm font-black text-primary">R$ 16,90/mês</span>
-            <button onClick={() => navigate('/login?plan=premium')}
+            <span className="text-sm font-black text-primary">R$&nbsp;16,90/mês</span>
+            <Link to="/login?plan=premium"
               className="text-xs text-primary underline underline-offset-2 hover:text-primary/80 transition-colors">
               Ver plano →
-            </button>
+            </Link>
           </div>
         </div>
       </section>
@@ -294,7 +313,7 @@ export default function Landing() {
           <div className="grid grid-cols-1 md:grid-cols-6 gap-4 auto-rows-auto">
 
             <Reveal className="md:col-span-4">
-              <div className="group rounded-2xl p-7 transition-all duration-300 cursor-default relative overflow-hidden hover:-translate-y-1"
+              <div className="group rounded-2xl p-7 transition-transform duration-300 cursor-default relative overflow-hidden hover:-translate-y-1"
                 style={{
                   background: 'oklch(0.6 0.2 210 / 0.07)',
                   border: '1px solid oklch(0.6 0.2 210 / 0.25)',
@@ -335,7 +354,7 @@ export default function Landing() {
             </Reveal>
 
             <Reveal className="md:col-span-2" delay={0.1}>
-              <div className="group rounded-2xl p-7 h-full transition-all duration-300 cursor-default relative overflow-hidden hover:-translate-y-1"
+              <div className="group rounded-2xl p-7 h-full transition-transform duration-300 cursor-default relative overflow-hidden hover:-translate-y-1"
                 style={{
                   background: 'oklch(0.6 0.16 200 / 0.06)',
                   border: '1px solid oklch(0.6 0.16 200 / 0.22)',
@@ -363,7 +382,7 @@ export default function Landing() {
             </Reveal>
 
             <Reveal className="md:col-span-2" delay={0.05}>
-              <div className="group rounded-2xl p-7 h-full transition-all duration-300 cursor-default relative overflow-hidden hover:-translate-y-1"
+              <div className="group rounded-2xl p-7 h-full transition-transform duration-300 cursor-default relative overflow-hidden hover:-translate-y-1"
                 style={{
                   background: 'oklch(0.55 0.18 290 / 0.07)',
                   border: '1px solid oklch(0.55 0.18 290 / 0.25)',
@@ -372,7 +391,7 @@ export default function Landing() {
                 }}>
                 <div className="h-11 w-11 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300"
                   style={{ background: 'oklch(0.55 0.18 290 / 0.15)', border: '1px solid oklch(0.55 0.18 290 / 0.35)' }}>
-                  <BarChart3 className="h-5 w-5 text-violet-400" />
+                  <BarChart3 className="h-5 w-5 text-rating-epic" />
                 </div>
                 <div className="mb-5 flex items-end gap-1 h-12 rounded-xl p-2"
                   style={{ background: 'oklch(0.55 0.18 290 / 0.06)', border: '1px solid oklch(0.55 0.18 290 / 0.12)' }}>
@@ -392,7 +411,7 @@ export default function Landing() {
             </Reveal>
 
             <Reveal className="md:col-span-2" delay={0.1}>
-              <div className="group rounded-2xl p-7 h-full transition-all duration-300 cursor-default relative overflow-hidden hover:-translate-y-1"
+              <div className="group rounded-2xl p-7 h-full transition-transform duration-300 cursor-default relative overflow-hidden hover:-translate-y-1"
                 style={{
                   background: 'oklch(0.55 0.18 145 / 0.07)',
                   border: '1px solid oklch(0.55 0.18 145 / 0.25)',
@@ -423,7 +442,7 @@ export default function Landing() {
             </Reveal>
 
             <Reveal className="md:col-span-2" delay={0.15}>
-              <div className="group rounded-2xl p-7 h-full transition-all duration-300 cursor-default relative overflow-hidden hover:-translate-y-1"
+              <div className="group rounded-2xl p-7 h-full transition-transform duration-300 cursor-default relative overflow-hidden hover:-translate-y-1"
                 style={{
                   background: 'oklch(0.65 0.18 50 / 0.06)',
                   border: '1px solid oklch(0.65 0.18 50 / 0.22)',
@@ -432,7 +451,7 @@ export default function Landing() {
                 }}>
                 <div className="h-11 w-11 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300"
                   style={{ background: 'oklch(0.65 0.18 50 / 0.15)', border: '1px solid oklch(0.65 0.18 50 / 0.35)' }}>
-                  <Clock className="h-5 w-5 text-orange-400" />
+                  <Clock className="h-5 w-5 text-rating-fair" />
                 </div>
                 <div className="mb-5 rounded-xl overflow-hidden p-3"
                   style={{ background: 'oklch(0.65 0.18 50 / 0.06)', border: '1px solid oklch(0.65 0.18 50 / 0.15)' }}>
@@ -455,7 +474,7 @@ export default function Landing() {
             </Reveal>
 
             <Reveal className="md:col-span-2" delay={0.2}>
-              <div className="group rounded-2xl p-7 h-full transition-all duration-300 cursor-default relative overflow-hidden hover:-translate-y-1"
+              <div className="group rounded-2xl p-7 h-full transition-transform duration-300 cursor-default relative overflow-hidden hover:-translate-y-1"
                 style={{
                   background: 'oklch(0.6 0.18 195 / 0.06)',
                   border: '1px solid oklch(0.6 0.18 195 / 0.22)',
@@ -464,7 +483,7 @@ export default function Landing() {
                 }}>
                 <div className="h-11 w-11 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300"
                   style={{ background: 'oklch(0.6 0.18 195 / 0.15)', border: '1px solid oklch(0.6 0.18 195 / 0.35)' }}>
-                  <Waves className="h-5 w-5 text-cyan-400" />
+                  <Waves className="h-5 w-5 text-primary" />
                 </div>
                 <div className="mb-5 space-y-2">
                   {[
@@ -490,19 +509,89 @@ export default function Landing() {
           </div>
 
           <Reveal className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button size="lg" onClick={() => navigate('/login')}
+            <Button size="lg" asChild
               className="font-bold px-8 h-12 text-sm bg-primary hover:bg-primary/90"
               style={{ boxShadow: '0 0 32px oklch(0.6 0.16 200 / 0.4)' }}>
-              Criar conta grátis
-              <ArrowRight className="h-4 w-4 ml-2" />
+              <Link to="/login">
+                Criar conta grátis
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Link>
             </Button>
-            <Button size="lg" variant="outline" onClick={() => navigate('/login?plan=premium')}
+            <Button size="lg" variant="outline" asChild
               className="font-bold px-8 h-12 text-sm"
               style={{ borderColor: 'oklch(0.65 0.18 50 / 0.4)', color: 'oklch(0.7 0.15 50)' }}>
-              <Crown className="h-4 w-4 mr-2" />
-              Ver Premium — R$ 16,90/mês
+              <Link to="/login?plan=premium">
+                <Crown className="h-4 w-4 mr-2" />
+                Ver Premium — R$&nbsp;16,90/mês
+              </Link>
             </Button>
           </Reveal>
+        </div>
+      </section>
+
+      {/* ME LEVA AO PICO — recurso importante que não aparecia na landing */}
+      <section className="py-20 border-t border-border/30">
+        <div className="container mx-auto px-5 max-w-4xl">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <Reveal className="space-y-6">
+              <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 px-4 py-1">
+                <Navigation className="h-3 w-3 mr-1.5" />
+                Me leva ao pico
+              </Badge>
+              <h2 className="text-3xl md:text-4xl font-black">
+                Sabe que tá bom.<br />
+                <span className="text-primary">Falta só chegar lá.</span>
+              </h2>
+              <p className="text-foreground/70 leading-relaxed">
+                Um toque e o app já abre o caminho — Google Maps ou Waze, direto pro pico com a melhor
+                condição agora. Sem procurar endereço, sem adivinhar qual acesso pegar.
+              </p>
+              <div className="space-y-3">
+                {[
+                  { icon: MapPin, text: 'Rota calculada pra qualquer uma das 14 praias' },
+                  { icon: Navigation, text: 'Escolhe Google Maps ou Waze, sem sair do app' },
+                  { icon: Zap, text: 'Sempre te leva pro pico com o score mais alto agora' },
+                ].map(({ icon: Icon, text }) => (
+                  <div key={text} className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
+                      <Icon className="h-4 w-4 text-primary" />
+                    </div>
+                    <span className="text-sm text-foreground/70">{text}</span>
+                  </div>
+                ))}
+              </div>
+              <Button asChild className="font-bold bg-primary hover:bg-primary/90"
+                style={{ boxShadow: '0 0 20px oklch(0.6 0.16 200 / 0.3)' }}>
+                <Link to="/login">
+                  Testar agora
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Link>
+              </Button>
+            </Reveal>
+
+            <Reveal delay={0.1}>
+              <div className="rounded-2xl p-5 space-y-4"
+                style={{ background: 'oklch(1 0 0 / 0.025)', border: '1px solid oklch(1 0 0 / 0.08)', backdropFilter: 'blur(16px)', boxShadow: '0 4px 24px oklch(0 0 0 / 0.15)' }}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-bold">Praia Mole</div>
+                    <div className="text-xs text-muted-foreground">Sul da Ilha · Score 9.1</div>
+                  </div>
+                  <div className="h-9 w-9 rounded-full bg-primary/15 flex items-center justify-center">
+                    <Navigation className="h-4 w-4 text-primary" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center justify-center gap-2 h-11 rounded-xl font-semibold text-sm text-white bg-primary">
+                    <Navigation className="h-4 w-4" />Google Maps
+                  </div>
+                  <div className="flex items-center justify-center gap-2 h-11 rounded-xl font-semibold text-sm border border-border">
+                    <Navigation className="h-4 w-4" />Waze
+                  </div>
+                </div>
+              </div>
+            </Reveal>
+          </div>
         </div>
       </section>
 
@@ -536,10 +625,12 @@ export default function Landing() {
                   </div>
                 ))}
               </div>
-              <Button onClick={() => navigate('/login')} className="font-bold bg-primary hover:bg-primary/90"
+              <Button asChild className="font-bold bg-primary hover:bg-primary/90"
                 style={{ boxShadow: '0 0 20px oklch(0.6 0.16 200 / 0.3)' }}>
-                Acessar agora
-                <ArrowRight className="h-4 w-4 ml-2" />
+                <Link to="/login">
+                  Acessar agora
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Link>
               </Button>
             </Reveal>
 
@@ -550,7 +641,7 @@ export default function Landing() {
                 { step: '3', title: 'Pronto, é isso!', desc: 'Ícone na tela inicial, notificações ativas', icon: CheckCircle2 },
               ].map(({ step, title, desc, icon: Icon }, i) => (
                 <Reveal key={step} delay={i * 0.12}>
-                  <div className="flex items-center gap-4 rounded-xl p-4 transition-all duration-200 hover:scale-[1.01]"
+                  <div className="flex items-center gap-4 rounded-xl p-4 transition-transform duration-200 hover:scale-[1.01]"
                     style={{
                       background: 'oklch(1 0 0 / 0.025)',
                       border: '1px solid oklch(1 0 0 / 0.08)',
@@ -615,20 +706,24 @@ export default function Landing() {
                   Crie sua conta grátis em menos de 1 minuto.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
-                  <Button size="lg" onClick={() => navigate('/login')}
+                  <Button size="lg" asChild
                     className="font-bold px-10 h-12 text-base relative overflow-hidden group"
                     style={{
                       background: 'oklch(0.6 0.2 210)',
                       boxShadow: '0 0 40px oklch(0.6 0.2 210 / 0.6), 0 0 80px oklch(0.6 0.2 210 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.15)',
                     }}>
-                    Criar conta gratuita
-                    <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                    <Link to="/login">
+                      Criar conta gratuita
+                      <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                    </Link>
                   </Button>
-                  <Button size="lg" variant="outline" onClick={() => navigate('/login?plan=premium')}
+                  <Button size="lg" variant="outline" asChild
                     className="font-bold px-8 h-12"
                     style={{ borderColor: 'oklch(0.65 0.18 50 / 0.4)', color: 'oklch(0.7 0.15 50)' }}>
-                    <Crown className="h-4 w-4 mr-2" />
-                    Ver plano Premium
+                    <Link to="/login?plan=premium">
+                      <Crown className="h-4 w-4 mr-2" />
+                      Ver plano Premium
+                    </Link>
                   </Button>
                 </div>
                 <div className="flex flex-wrap items-center justify-center gap-6">
@@ -663,7 +758,7 @@ export default function Landing() {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
             {TESTIMONIALS.map(({ name, role, avatar, handle, stars, text }, i) => (
               <Reveal key={name} delay={i * 0.1}>
-                <div className="rounded-2xl p-6 flex flex-col gap-4 h-full transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1"
+                <div className="rounded-2xl p-6 flex flex-col gap-4 h-full transition-transform duration-300 hover:scale-[1.02] hover:-translate-y-1"
                   style={{
                     background: 'oklch(1 0 0 / 0.025)',
                     border: '1px solid oklch(1 0 0 / 0.08)',
@@ -756,15 +851,17 @@ export default function Landing() {
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">Cancele quando quiser</div>
                   </div>
-                  <Button size="lg" onClick={() => navigate('/login?plan=premium')}
+                  <Button size="lg" asChild
                     className="w-full md:w-auto font-bold px-10 h-12 text-base group"
                     style={{
                       background: 'linear-gradient(135deg, oklch(0.7 0.18 60), oklch(0.6 0.22 50))',
                       color: 'oklch(0.1 0.02 240)',
                       boxShadow: '0 0 32px oklch(0.6 0.18 60 / 0.4)',
                     }}>
-                    <Crown className="h-4 w-4 mr-2" />
-                    Assinar Premium
+                    <Link to="/login?plan=premium">
+                      <Crown className="h-4 w-4 mr-2" />
+                      Assinar Premium
+                    </Link>
                   </Button>
                   <div className="flex flex-wrap items-center justify-center md:justify-end gap-3">
                     {['Pagamento seguro', 'Sem fidelidade', 'Cancele quando quiser'].map(t => (
@@ -803,15 +900,15 @@ export default function Landing() {
             Florianópolis, SC · Dados atualizados a cada 15 minutos · Feito com 🤙 para surfistas
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/privacy')} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+            <Link to="/privacy" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
               Privacidade
-            </button>
-            <button onClick={() => navigate('/login')} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+            </Link>
+            <Link to="/login" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
               Entrar
-            </button>
-            <Button size="sm" variant="outline" onClick={() => navigate('/login')}
+            </Link>
+            <Button size="sm" variant="outline" asChild
               className="text-xs border-primary/30 hover:bg-primary/5 hover:border-primary/50">
-              Começar grátis
+              <Link to="/login">Começar grátis</Link>
             </Button>
           </div>
         </div>

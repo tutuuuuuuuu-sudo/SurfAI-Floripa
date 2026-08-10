@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense, type ReactNode } from 'react'
 import { ChevronDown, Check, X, Crown, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AppLogo } from '@/components/AppLogo'
@@ -33,6 +33,17 @@ export function Reveal({ children, delay = 0, className = '' }: { children: Reac
         transition: `opacity 0.7s ease ${delay}s, transform 0.7s ease ${delay}s`,
       }}>
       {children}
+    </div>
+  )
+}
+
+// ── Monta conteúdo pesado (lazy) só quando entra na viewport ────────────────
+
+export function LazyMount({ children, fallback }: { children: ReactNode; fallback: ReactNode }) {
+  const { ref, visible } = useReveal(0.1)
+  return (
+    <div ref={ref}>
+      {visible ? <Suspense fallback={fallback}>{children}</Suspense> : fallback}
     </div>
   )
 }
