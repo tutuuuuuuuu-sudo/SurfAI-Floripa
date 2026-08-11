@@ -104,3 +104,6 @@ vapid-keys.txt
 # Lasy internal
 .claude
 .lasy
+
+# Rascunhos de conteúdo/marketing (imagens geradas, fontes baixadas) — não versionar
+.content-drafts/
