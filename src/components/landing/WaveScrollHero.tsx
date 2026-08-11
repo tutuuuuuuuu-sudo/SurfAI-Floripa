@@ -1,17 +1,19 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import waveVideo from '@/assets/landing/wave-break.mp4'
 import wavePoster from '@/assets/landing/wave-break-poster.jpg'
+import aerialBg from '@/assets/landing/aerial-floripa.jpg'
 
 const START_W_VW = 56
 const START_H_VH = 24
 const START_BOTTOM_VH = 6
 const START_RADIUS_PX = 28
 
-// Vídeo real (Pexels, licença livre para uso comercial, crédito: Ravi Kant) tocando em loop
-// normal — nada de scrubbing de currentTime (isso travava o scroll, buscar frame a frame num
-// mp4 comprimido é caro). O scroll só controla o TAMANHO da janela onde o vídeo aparece: começa
-// pequena e arredondada (lembra o anel de score do app) e se abre até virar tela cheia — a onda
-// "explode" no momento em que o resto da landing é revelado.
+// Duas camadas, geradas com Gemini (Nano Banana Pro + Veo 3.1): uma foto aérea da ilha em
+// tela cheia atrás (foge conforme rola) e um vídeo de onda quebrando tocando em loop normal
+// dentro da caixinha que cresce — nada de scrubbing de currentTime (isso travava o scroll,
+// buscar frame a frame num mp4 comprimido é caro). O scroll só controla o TAMANHO da caixa:
+// começa pequena e arredondada (lembra o anel de score do app) e se abre até virar tela
+// cheia — a onda "explode" no momento em que o resto da landing é revelado.
 export function WaveScrollHero({ children }: { children: ReactNode }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [progress, setProgress] = useState(0)
@@ -64,30 +66,37 @@ export function WaveScrollHero({ children }: { children: ReactNode }) {
         {reducedMotion ? (
           <img src={wavePoster} alt="Onda quebrando em Florianópolis" className="absolute inset-0 h-full w-full object-cover" />
         ) : (
-          <div className="absolute left-1/2 z-0"
-            style={{
-              width: boxWidth,
-              height: boxHeight,
-              bottom: boxBottom,
-              transform: 'translateX(-50%)',
-              borderRadius: boxRadius,
-              overflow: 'hidden',
-              boxShadow: progress < 0.95 ? '0 30px 80px oklch(0 0 0 / 0.5), 0 0 0 1px oklch(1 0 0 / 0.08)' : 'none',
-              transition: 'box-shadow 0.3s ease',
-            }}>
-            <video
-              src={waveVideo}
-              poster={wavePoster}
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="auto"
-              className="h-full w-full object-cover"
-            />
-            <div className="absolute inset-0 pointer-events-none"
-              style={{ background: 'linear-gradient(180deg, oklch(0.1 0.02 240 / 0.5) 0%, transparent 40%, oklch(0.08 0.02 240 / 0.65) 100%)' }} />
-          </div>
+          <>
+            <div className="absolute inset-0" style={{ opacity: 1 - progress }}>
+              <img src={aerialBg} alt="Vista aérea da ilha de Florianópolis" className="h-full w-full object-cover" />
+              <div className="absolute inset-0"
+                style={{ background: 'linear-gradient(180deg, oklch(0.08 0.02 240 / 0.55) 0%, oklch(0.08 0.02 240 / 0.15) 45%, oklch(0.08 0.02 240 / 0.7) 100%)' }} />
+            </div>
+            <div className="absolute left-1/2 z-0"
+              style={{
+                width: boxWidth,
+                height: boxHeight,
+                bottom: boxBottom,
+                transform: 'translateX(-50%)',
+                borderRadius: boxRadius,
+                overflow: 'hidden',
+                boxShadow: progress < 0.95 ? '0 30px 80px oklch(0 0 0 / 0.5), 0 0 0 1px oklch(1 0 0 / 0.08)' : 'none',
+                transition: 'box-shadow 0.3s ease',
+              }}>
+              <video
+                src={waveVideo}
+                poster={wavePoster}
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="auto"
+                className="h-full w-full object-cover"
+              />
+              <div className="absolute inset-0 pointer-events-none"
+                style={{ background: 'linear-gradient(180deg, oklch(0.1 0.02 240 / 0.5) 0%, transparent 40%, oklch(0.08 0.02 240 / 0.65) 100%)' }} />
+            </div>
+          </>
         )}
 
         <div className="absolute inset-x-0 top-0 z-10 flex flex-col items-center px-5 pt-20 text-center sm:pt-24"
