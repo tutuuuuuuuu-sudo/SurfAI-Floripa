@@ -5,7 +5,7 @@ import {
   Waves, Zap, Bell, BarChart3, Clock, Shield,
   ArrowRight, CheckCircle2, TrendingUp,
   MapPin, Crown, ChevronRight, Droplets, Lock,
-  Smartphone, Navigation,
+  Smartphone,
 } from 'lucide-react'
 import { AppLogo } from '@/components/AppLogo'
 import {
@@ -217,35 +217,36 @@ export default function Landing() {
 
           <div className="grid md:grid-cols-3 gap-6 relative">
             {[
-              { step: '01', icon: Droplets, title: 'Dados em tempo real', desc: 'Coletamos dados de ondas, vento e maré de múltiplas fontes meteorológicas a cada 15 minutos, 24/7.' },
-              { step: '02', icon: Zap, title: 'IA calcula o score', desc: 'Nossa IA analisa todos os parâmetros e gera uma nota de 0 a 10 considerando o seu nível de surf.' },
-              { step: '03', icon: TrendingUp, title: 'Você decide em segundos', desc: 'Veja o score, compare praias e tome a melhor decisão — sem desperdício de tempo ou gasolina.' },
-            ].map(({ step, icon: Icon, title, desc }, i) => (
+              { step: '01', icon: Droplets, title: 'Dados em tempo real', desc: 'Coletamos dados de ondas, vento e maré de múltiplas fontes meteorológicas a cada 15 minutos, 24/7.', hue: 220 },
+              { step: '02', icon: Zap, title: 'IA calcula o score', desc: 'Nossa IA analisa todos os parâmetros e gera uma nota de 0 a 10 considerando o seu nível de surf.', hue: 195 },
+              { step: '03', icon: TrendingUp, title: 'Você decide em segundos', desc: 'Veja o score, compare praias e tome a melhor decisão — sem desperdício de tempo ou gasolina.', hue: 155 },
+            ].map(({ step, icon: Icon, title, desc, hue }, i) => (
               <Reveal key={step} delay={i * 0.15}>
-                <div className="relative flex flex-col items-center text-center h-full rounded-2xl p-6"
+                <div className="relative flex flex-col h-full rounded-2xl p-6 overflow-hidden"
                   style={{
-                    background: 'oklch(0.6 0.2 210 / 0.06)',
-                    border: '1px solid oklch(0.6 0.2 210 / 0.2)',
+                    background: `oklch(0.6 0.18 ${hue} / 0.07)`,
+                    border: `1px solid oklch(0.6 0.18 ${hue} / 0.25)`,
                     backdropFilter: 'blur(16px)',
                     boxShadow: '0 4px 24px oklch(0 0 0 / 0.15), inset 0 1px 0 oklch(1 0 0 / 0.06)',
                   }}>
-                  <div className="relative mb-5">
-                    <div className="h-16 w-16 rounded-2xl flex items-center justify-center relative z-10"
-                      style={{
-                        background: 'oklch(0.6 0.2 210 / 0.12)',
-                        border: '1px solid oklch(0.6 0.2 210 / 0.4)',
-                        boxShadow: '0 0 32px oklch(0.6 0.2 210 / 0.25), inset 0 1px 0 oklch(1 0 0 / 0.1)',
-                      }}>
-                      <Icon className="h-7 w-7 text-primary" />
-                    </div>
-                    <div className="absolute -top-2 -right-2 h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-black"
-                      style={{ background: 'oklch(0.6 0.2 210)', color: 'white', boxShadow: '0 0 12px oklch(0.6 0.2 210 / 0.5)' }}>
-                      {i + 1}
-                    </div>
+                  <span className="pointer-events-none select-none absolute -top-3 -right-1 font-black leading-none"
+                    style={{ fontSize: '6.5rem', color: `oklch(0.6 0.18 ${hue} / 0.12)` }}>
+                    {step}
+                  </span>
+                  <div className="relative z-10 h-14 w-14 rounded-2xl flex items-center justify-center mb-5"
+                    style={{
+                      background: `oklch(0.6 0.18 ${hue} / 0.15)`,
+                      border: `1px solid oklch(0.6 0.18 ${hue} / 0.45)`,
+                      boxShadow: `0 0 28px oklch(0.6 0.18 ${hue} / 0.3)`,
+                    }}>
+                    <Icon className="h-6 w-6" style={{ color: `oklch(0.6 0.18 ${hue})` }} />
                   </div>
-                  {i < 2 && <ChevronRight className="md:hidden absolute right-0 top-6 h-5 w-5 text-primary/30" />}
-                  <h3 className="font-bold text-base mb-2">{title}</h3>
-                  <p className="text-sm text-foreground/70 leading-relaxed">{desc}</p>
+                  <h3 className="relative z-10 font-bold text-lg mb-2">{title}</h3>
+                  <p className="relative z-10 text-sm text-foreground/70 leading-relaxed">{desc}</p>
+                  {i < 2 && (
+                    <ChevronRight className="hidden md:block absolute -right-3 top-1/2 -translate-y-1/2 z-10 h-6 w-6"
+                      style={{ color: `oklch(0.6 0.18 ${hue} / 0.5)` }} />
+                  )}
                 </div>
               </Reveal>
             ))}
@@ -253,7 +254,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* MAIS RECURSOS — grade simples, sem glow (score/previsão/alertas já foram mostrados de verdade lá em cima) */}
+      {/* MAIS RECURSOS — cada card usa uma cor do próprio sistema de rating do app */}
       <section className="py-20 border-t border-border/30">
         <div className="container mx-auto px-5 max-w-5xl">
           <Reveal className="text-center mb-14">
@@ -266,20 +267,64 @@ export default function Landing() {
             </p>
           </Reveal>
 
-          <div className="grid sm:grid-cols-3 gap-x-8 gap-y-10">
-            {[
-              { icon: MapPin, title: '14 praias monitoradas', desc: 'Cobertura completa de Florianópolis, do Santinho ao Morro das Pedras.' },
-              { icon: Clock, title: 'Histórico e tendências', desc: 'Veja as condições dos últimos dias e reconheça os padrões de swell.' },
-              { icon: Waves, title: 'Log de sessões', desc: 'Registre suas sessões, notas e memórias — seu diário de surf pessoal.' },
-            ].map(({ icon: Icon, title, desc }, i) => (
-              <Reveal key={title} delay={i * 0.1}>
-                <div className="flex flex-col gap-3 pt-6 border-t border-border/40">
-                  <Icon className="h-5 w-5 text-primary" />
-                  <h3 className="font-bold text-base">{title}</h3>
-                  <p className="text-sm text-foreground/60 leading-relaxed">{desc}</p>
+          <div className="grid sm:grid-cols-3 gap-6">
+            <Reveal delay={0}>
+              <div className="group relative flex h-full flex-col gap-4 overflow-hidden rounded-2xl p-6 bg-rating-excellent/[0.06] border border-rating-excellent/25 transition-transform duration-300 hover:-translate-y-1"
+                style={{ boxShadow: '0 4px 24px oklch(0 0 0 / 0.12)' }}>
+                <div className="flex items-start justify-between">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-rating-excellent/15 border border-rating-excellent/30">
+                    <MapPin className="h-6 w-6 text-rating-excellent" />
+                  </div>
+                  <div className="text-right leading-none">
+                    <div className="text-3xl font-black text-rating-excellent">14</div>
+                    <div className="text-[10px] uppercase tracking-wider text-foreground/40">praias</div>
+                  </div>
                 </div>
-              </Reveal>
-            ))}
+                <div>
+                  <h3 className="font-bold text-base mb-1.5">14 praias monitoradas</h3>
+                  <p className="text-sm text-foreground/60 leading-relaxed">Cobertura completa de Florianópolis, do Santinho ao Morro das Pedras.</p>
+                </div>
+                <div className="absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-rating-excellent/10 blur-2xl pointer-events-none" />
+              </div>
+            </Reveal>
+            <Reveal delay={0.1}>
+              <div className="group relative flex h-full flex-col gap-4 overflow-hidden rounded-2xl p-6 bg-rating-fair/[0.06] border border-rating-fair/25 transition-transform duration-300 hover:-translate-y-1"
+                style={{ boxShadow: '0 4px 24px oklch(0 0 0 / 0.12)' }}>
+                <div className="flex items-start justify-between">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-rating-fair/15 border border-rating-fair/30">
+                    <Clock className="h-6 w-6 text-rating-fair" />
+                  </div>
+                  <div className="text-right leading-none">
+                    <div className="text-3xl font-black text-rating-fair">30</div>
+                    <div className="text-[10px] uppercase tracking-wider text-foreground/40">dias</div>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-bold text-base mb-1.5">Histórico e tendências</h3>
+                  <p className="text-sm text-foreground/60 leading-relaxed">Veja as condições dos últimos dias e reconheça os padrões de swell.</p>
+                </div>
+                <div className="absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-rating-fair/10 blur-2xl pointer-events-none" />
+              </div>
+            </Reveal>
+            <Reveal delay={0.2}>
+              <div className="group relative flex h-full flex-col gap-4 overflow-hidden rounded-2xl p-6 bg-rating-epic/[0.06] border border-rating-epic/25 transition-transform duration-300 hover:-translate-y-1"
+                style={{ boxShadow: '0 4px 24px oklch(0 0 0 / 0.12)' }}>
+                <div className="flex items-start justify-between">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-rating-epic/15 border border-rating-epic/30">
+                    <Waves className="h-6 w-6 text-rating-epic" />
+                  </div>
+                  <div className="text-right leading-none">
+                    <div className="text-3xl font-black text-rating-epic">∞</div>
+                    <div className="text-[10px] uppercase tracking-wider text-foreground/40">memórias</div>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-bold text-base mb-1.5">Log de sessões</h3>
+                  <p className="text-sm text-foreground/60 leading-relaxed">Registre suas sessões, notas e memórias — seu diário de surf pessoal.</p>
+                </div>
+                <div className="absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-rating-epic/10 blur-2xl pointer-events-none" />
+              </div>
+            </Reveal>
           </div>
 
           <Reveal className="mt-14 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -300,72 +345,6 @@ export default function Landing() {
               </Link>
             </Button>
           </Reveal>
-        </div>
-      </section>
-
-      {/* ME LEVA AO PICO — recurso importante que não aparecia na landing */}
-      <section className="py-20 border-t border-border/30">
-        <div className="container mx-auto px-5 max-w-4xl">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <Reveal className="space-y-6">
-              <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 px-4 py-1">
-                <Navigation className="h-3 w-3 mr-1.5" />
-                Me leva ao pico
-              </Badge>
-              <h2 className="text-3xl md:text-4xl font-black">
-                Sabe que tá bom.<br />
-                <span className="text-primary">Falta só chegar lá.</span>
-              </h2>
-              <p className="text-foreground/70 leading-relaxed">
-                Um toque e o app já abre o caminho — Google Maps ou Waze, direto pro pico com a melhor
-                condição agora. Sem procurar endereço, sem adivinhar qual acesso pegar.
-              </p>
-              <div className="space-y-3">
-                {[
-                  { icon: MapPin, text: 'Rota calculada pra qualquer uma das 14 praias' },
-                  { icon: Navigation, text: 'Escolhe Google Maps ou Waze, sem sair do app' },
-                  { icon: Zap, text: 'Sempre te leva pro pico com o score mais alto agora' },
-                ].map(({ icon: Icon, text }) => (
-                  <div key={text} className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
-                      <Icon className="h-4 w-4 text-primary" />
-                    </div>
-                    <span className="text-sm text-foreground/70">{text}</span>
-                  </div>
-                ))}
-              </div>
-              <Button asChild className="font-bold bg-primary hover:bg-primary/90"
-                style={{ boxShadow: '0 0 20px oklch(0.6 0.16 200 / 0.3)' }}>
-                <Link to="/login">
-                  Testar agora
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </Link>
-              </Button>
-            </Reveal>
-
-            <Reveal delay={0.1}>
-              <div className="rounded-2xl p-5 space-y-4"
-                style={{ background: 'oklch(1 0 0 / 0.025)', border: '1px solid oklch(1 0 0 / 0.08)', backdropFilter: 'blur(16px)', boxShadow: '0 4px 24px oklch(0 0 0 / 0.15)' }}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-bold">Praia Mole</div>
-                    <div className="text-xs text-muted-foreground">Sul da Ilha · Score 9.1</div>
-                  </div>
-                  <div className="h-9 w-9 rounded-full bg-primary/15 flex items-center justify-center">
-                    <Navigation className="h-4 w-4 text-primary" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="flex items-center justify-center gap-2 h-11 rounded-xl font-semibold text-sm text-white bg-primary">
-                    <Navigation className="h-4 w-4" />Google Maps
-                  </div>
-                  <div className="flex items-center justify-center gap-2 h-11 rounded-xl font-semibold text-sm border border-border">
-                    <Navigation className="h-4 w-4" />Waze
-                  </div>
-                </div>
-              </div>
-            </Reveal>
-          </div>
         </div>
       </section>
 
