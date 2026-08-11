@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { Waves, CalendarDays, GitCompareArrows, BellRing } from 'lucide-react'
+import { Waves, CalendarDays, GitCompareArrows, BellRing, Navigation } from 'lucide-react'
 import scoreImg from '@/assets/landing/app-screens/score.png'
 import forecastImg from '@/assets/landing/app-screens/forecast.png'
 import compareImg from '@/assets/landing/app-screens/compare.png'
 import alertsImg from '@/assets/landing/app-screens/alerts.png'
+import navigateImg from '@/assets/landing/app-screens/navigate.png'
 
 const STEPS = [
   {
@@ -29,6 +30,12 @@ const STEPS = [
     icon: BellRing,
     title: 'Alertas na hora certa',
     desc: 'Defina o score mínimo que você aceita e receba um aviso assim que sua praia favorita ficar boa.',
+  },
+  {
+    image: navigateImg,
+    icon: Navigation,
+    title: 'Me leva ao pico',
+    desc: 'Um toque e o app já abre o caminho — Google Maps ou Waze, direto pro pico com a melhor condição agora.',
   },
 ]
 
@@ -61,17 +68,31 @@ export function AppScrollShowcase() {
         </div>
       </div>
 
-      <div className="flex flex-col">
+      <div className="relative flex flex-col pl-6">
+        <div className="absolute left-0 top-0 h-full w-px bg-white/8" />
+        <div className="absolute left-0 w-px transition-all duration-500 ease-out"
+          style={{
+            top: `${(active / STEPS.length) * 100}%`,
+            height: `${(1 / STEPS.length) * 100}%`,
+            background: 'oklch(0.6 0.16 200)',
+            boxShadow: '0 0 12px oklch(0.6 0.16 200 / 0.6)',
+          }} />
         {STEPS.map((step, i) => (
           <div
             key={step.title}
             ref={(el) => { refs.current[i] = el }}
-            className="flex min-h-[45vh] flex-col justify-center gap-3 py-8 md:min-h-[55vh]"
+            className="relative flex min-h-[45vh] flex-col justify-center gap-3 rounded-2xl py-8 pl-5 pr-4 transition-all duration-300 md:min-h-[55vh]"
+            style={{
+              background: active === i ? 'oklch(0.6 0.16 200 / 0.06)' : 'transparent',
+              transform: active === i ? 'translateX(4px)' : 'translateX(0)',
+            }}
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl transition-colors duration-300"
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300"
               style={{
                 background: active === i ? 'oklch(0.6 0.16 200 / 0.15)' : 'oklch(1 0 0 / 0.04)',
                 border: `1px solid ${active === i ? 'oklch(0.6 0.16 200 / 0.4)' : 'oklch(1 0 0 / 0.08)'}`,
+                boxShadow: active === i ? '0 0 20px oklch(0.6 0.16 200 / 0.35)' : 'none',
+                transform: active === i ? 'scale(1.08)' : 'scale(1)',
               }}>
               <step.icon className="h-4.5 w-4.5 transition-colors duration-300" style={{ color: active === i ? 'oklch(0.6 0.16 200)' : 'oklch(0.7 0.02 240)' }} />
             </div>
