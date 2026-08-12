@@ -4,8 +4,8 @@ import wavePoster from '@/assets/landing/wave-break-poster.jpg'
 import aerialBg from '@/assets/landing/aerial-floripa.jpg'
 
 const START_W_VW = 56
-const START_H_VH = 24
-const START_BOTTOM_VH = 6
+const START_H_VH = 16
+const START_BOTTOM_VH = 4
 const START_RADIUS_PX = 28
 
 // Duas camadas, geradas com Gemini (Nano Banana Pro + Veo 3.1): uma foto aérea da ilha em
@@ -99,7 +99,7 @@ export function WaveScrollHero({ children }: { children: ReactNode }) {
           </>
         )}
 
-        <div className="absolute inset-x-0 top-0 z-10 flex flex-col items-center px-5 pt-20 text-center sm:pt-24"
+        <div className="absolute inset-x-0 top-0 z-10 flex flex-col items-center px-5 pt-10 text-center sm:pt-14"
           style={{ opacity: reducedMotion ? 1 : textOpacity, transition: reducedMotion ? undefined : 'opacity 0.05s linear' }}>
           {children}
         </div>

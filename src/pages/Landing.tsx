@@ -63,7 +63,7 @@ export default function Landing() {
 
       {/* HERO — vídeo real de onda quebrando, scroll controla o avanço */}
       <WaveScrollHero>
-        <div className="mx-auto flex max-w-2xl flex-col items-center gap-6">
+        <div className="mx-auto flex max-w-2xl flex-col items-center gap-3 sm:gap-4">
           <div className="flex flex-wrap justify-center gap-2" style={{ animation: 'fadeIn 0.6s ease both' }}>
             <Badge variant="outline" className="border-primary/40 text-primary bg-black/30 px-3 py-1 text-xs font-semibold backdrop-blur-md">
               <Zap className="h-3 w-3 mr-1.5 fill-current" />
@@ -98,16 +98,16 @@ export default function Landing() {
             tudo que você precisa para não perder a melhor sessão da semana.
           </p>
 
-          <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-bold text-white backdrop-blur-md"
+          <div className="inline-flex items-center gap-2 rounded-full px-6 py-2.5 text-base sm:text-lg font-black text-white backdrop-blur-md"
             style={{
               animation: 'fadeIn 0.7s ease 0.45s both',
-              background: 'oklch(0.6 0.16 200 / 0.2)',
-              border: '1px solid oklch(0.6 0.16 200 / 0.5)',
-              boxShadow: '0 0 20px oklch(0.6 0.16 200 / 0.25)',
+              background: 'oklch(0.6 0.16 200 / 0.28)',
+              border: '1.5px solid oklch(0.7 0.16 200 / 0.7)',
+              boxShadow: '0 0 32px oklch(0.6 0.16 200 / 0.4), inset 0 1px 0 oklch(1 0 0 / 0.15)',
             }}>
             Feito por surfistas,{' '}
             <span className="text-transparent bg-clip-text"
-              style={{ backgroundImage: 'linear-gradient(135deg, oklch(0.8 0.16 200), oklch(0.85 0.14 160))' }}>
+              style={{ backgroundImage: 'linear-gradient(135deg, oklch(0.85 0.16 200), oklch(0.9 0.14 160))' }}>
               para surfistas.
             </span>
           </div>
