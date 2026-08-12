@@ -65,12 +65,12 @@ export default function Landing() {
       <WaveScrollHero>
         <div className="mx-auto flex max-w-2xl flex-col items-center gap-6">
           <div className="flex flex-wrap justify-center gap-2" style={{ animation: 'fadeIn 0.6s ease both' }}>
-            <Badge variant="outline" className="border-primary/40 text-primary bg-primary/5 px-3 py-1 text-xs font-semibold backdrop-blur-sm">
+            <Badge variant="outline" className="border-primary/40 text-primary bg-black/30 px-3 py-1 text-xs font-semibold backdrop-blur-md">
               <Zap className="h-3 w-3 mr-1.5 fill-current" />
               Inteligência Artificial
             </Badge>
-            <Badge variant="outline" className="border-rating-good/40 text-rating-good bg-rating-good/5 px-3 py-1 text-xs font-semibold backdrop-blur-sm">
-              <div className="h-1.5 w-1.5 rounded-full bg-rating-good mr-1.5 animate-pulse" />
+            <Badge variant="outline" className="border-rating-good/40 text-rating-good bg-black/30 px-3 py-1 text-xs font-semibold backdrop-blur-md">
+              <Waves className="h-3 w-3 mr-1.5" />
               Dados em tempo real
             </Badge>
           </div>
@@ -92,11 +92,25 @@ export default function Landing() {
               na palma da mão.
             </span>
           </h1>
-          <p className="text-lg text-white/80 max-w-lg leading-relaxed"
-            style={{ animation: 'fadeIn 0.7s ease 0.4s both', textShadow: '0 1px 12px oklch(0 0 0 / 0.4)' }}>
+          <p className="text-lg text-white/90 max-w-lg leading-relaxed"
+            style={{ animation: 'fadeIn 0.7s ease 0.4s both', textShadow: '0 2px 10px oklch(0 0 0 / 0.85), 0 1px 3px oklch(0 0 0 / 0.9)' }}>
             Score de IA para 14 praias. Previsão de ondas, alertas e histórico —
             tudo que você precisa para não perder a melhor sessão da semana.
           </p>
+
+          <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-bold text-white backdrop-blur-md"
+            style={{
+              animation: 'fadeIn 0.7s ease 0.45s both',
+              background: 'oklch(0.6 0.16 200 / 0.2)',
+              border: '1px solid oklch(0.6 0.16 200 / 0.5)',
+              boxShadow: '0 0 20px oklch(0.6 0.16 200 / 0.25)',
+            }}>
+            Feito por surfistas,{' '}
+            <span className="text-transparent bg-clip-text"
+              style={{ backgroundImage: 'linear-gradient(135deg, oklch(0.8 0.16 200), oklch(0.85 0.14 160))' }}>
+              para surfistas.
+            </span>
+          </div>
 
           <div className="flex flex-col sm:flex-row gap-3" style={{ animation: 'slideUp 0.6s ease 0.5s both' }}>
             <Button size="lg" asChild
@@ -122,9 +136,9 @@ export default function Landing() {
             </Button>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-4" style={{ animation: 'fadeIn 0.6s ease 0.65s both' }}>
+          <div className="flex flex-wrap justify-center gap-2" style={{ animation: 'fadeIn 0.6s ease 0.65s both' }}>
             {['Grátis para começar', 'Sem cartão de crédito', 'Instala em 1 minuto'].map(t => (
-              <span key={t} className="flex items-center gap-1.5 text-xs text-white/70">
+              <span key={t} className="flex items-center gap-1.5 text-xs font-medium text-white/90 bg-black/30 backdrop-blur-md rounded-full px-2.5 py-1 border border-white/10">
                 <CheckCircle2 className="h-3.5 w-3.5 text-rating-good flex-shrink-0" />{t}
               </span>
             ))}
@@ -179,21 +193,6 @@ export default function Landing() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* MANIFESTO — frase de impacto isolada, logo após as especificações do app */}
-      <section className="py-14 border-t border-border/30">
-        <div className="container mx-auto px-5 max-w-3xl text-center">
-          <Reveal>
-            <p className="text-2xl md:text-4xl font-black leading-tight">
-              Feito por surfistas,{' '}
-              <span className="text-transparent bg-clip-text"
-                style={{ backgroundImage: 'linear-gradient(135deg, oklch(0.75 0.16 200), oklch(0.55 0.22 260))' }}>
-                para surfistas.
-              </span>
-            </p>
-          </Reveal>
         </div>
       </section>
 
@@ -362,7 +361,7 @@ export default function Landing() {
                 <span className="text-primary">Vai direto pra tela inicial.</span>
               </h2>
               <p className="text-foreground/70 leading-relaxed">
-                O Surf AI é um PWA — funciona igual a um app, sem ocupar espaço da loja. Acesse pelo Safari ou Chrome e adicione à tela inicial em segundos.
+                O Surf AI funciona igual a um app de verdade, sem ocupar espaço da loja. Acesse pelo Safari ou Chrome e adicione à tela inicial em segundos.
               </p>
               <div className="space-y-3">
                 {[
@@ -389,9 +388,9 @@ export default function Landing() {
 
             <div className="flex flex-col gap-4">
               {[
-                { step: '1', title: 'Abra no seu navegador', desc: 'Safari (iOS) ou Chrome (Android)', icon: Waves },
-                { step: '2', title: 'Toque em "Adicionar à Tela Inicial"', desc: 'No menu de compartilhamento ou nos 3 pontinhos', icon: Smartphone },
-                { step: '3', title: 'Pronto, é isso!', desc: 'Ícone na tela inicial, notificações ativas', icon: CheckCircle2 },
+                { step: '1', title: 'Abra no seu navegador', desc: 'Safari no iPhone ou Chrome no Android', icon: Waves },
+                { step: '2', title: 'Toque em "Adicionar à Tela de Início"', desc: 'No iPhone: ícone de compartilhar (□↑) embaixo. No Android: os 3 pontinhos (⋮) no topo', icon: Smartphone },
+                { step: '3', title: 'Pronto, é isso!', desc: 'Ícone na tela inicial, abre igual a um app', icon: CheckCircle2 },
               ].map(({ step, title, desc, icon: Icon }, i) => (
                 <Reveal key={step} delay={i * 0.12}>
                   <div className="flex items-center gap-4 rounded-xl p-4 transition-transform duration-200 hover:scale-[1.01]"

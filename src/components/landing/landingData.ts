@@ -20,12 +20,12 @@ export const PLAN_FEATURES = [
 ]
 
 export const FAQS = [
-  { q: 'O app funciona para todas as praias de Florianópolis?', a: 'Sim! Monitoramos 14 praias distribuídas pelas 4 regiões da ilha: Norte, Leste, Centro e Sul. Cobrimos desde o Santinho até o Morro das Pedras, passando por Praia Mole, Joaquina, Campeche e muito mais.' },
+  { q: 'O app funciona para todas as praias de Florianópolis?', a: 'Sim! Monitoramos 14 praias distribuídas pelas 4 regiões da ilha: Norte, Leste, Centro e Sul. Cobrimos desde o Santinho até o Naufragados, de ponta a ponta da ilha, passando por Praia Mole, Joaquina, Campeche e muito mais.' },
   { q: 'Os dados são atualizados com que frequência?', a: 'Os dados de ondas, vento e maré são atualizados a cada 15 minutos, 24 horas por dia, 7 dias por semana. O score de IA é recalculado automaticamente a cada nova atualização.' },
   { q: 'O plano gratuito tem alguma limitação?', a: 'No plano gratuito você tem acesso ao score de IA em tempo real, previsão para os próximos 3 dias, favoritos, log de sessões e navegação até a praia. Para previsão de 14 dias, alertas push, histórico completo e comparação de praias, é necessário o Premium.' },
   { q: 'Como funciona o score de IA?', a: 'Nossa IA analisa múltiplas variáveis em conjunto: altura e período das ondas, direção e intensidade do vento, fase da maré e swell predominante. O resultado é uma nota de 0 a 10 que representa a qualidade real das condições.' },
   { q: 'Posso cancelar o Premium quando quiser?', a: 'Sim, sem multa e sem burocracia. Você pode cancelar a qualquer momento pelo próprio app. O acesso Premium continua até o fim do período pago.' },
-  { q: 'O app funciona no iPhone e no Android?', a: 'Sim! O Surf AI é um Progressive Web App (PWA) — funciona diretamente no navegador do seu celular, sem precisar baixar nada na loja. Adicione à tela inicial e use como um app nativo.' },
+  { q: 'O app funciona no iPhone e no Android?', a: 'Sim! O Surf AI funciona direto no navegador do seu celular, sem precisar baixar nada na loja. Adicione à tela inicial e use exatamente como um app nativo.' },
 ]
 
 export const STATS = [

@@ -70,7 +70,7 @@ export function WaveScrollHero({ children }: { children: ReactNode }) {
             <div className="absolute inset-0" style={{ opacity: 1 - progress }}>
               <img src={aerialBg} alt="Vista aérea da ilha de Florianópolis" className="h-full w-full object-cover" />
               <div className="absolute inset-0"
-                style={{ background: 'linear-gradient(180deg, oklch(0.08 0.02 240 / 0.55) 0%, oklch(0.08 0.02 240 / 0.15) 45%, oklch(0.08 0.02 240 / 0.7) 100%)' }} />
+                style={{ background: 'linear-gradient(180deg, oklch(0.08 0.02 240 / 0.8) 0%, oklch(0.08 0.02 240 / 0.4) 55%, oklch(0.08 0.02 240 / 0.75) 100%)' }} />
             </div>
             <div className="absolute left-1/2 z-0"
               style={{
