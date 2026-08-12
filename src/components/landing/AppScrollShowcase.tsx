@@ -68,8 +68,8 @@ export function AppScrollShowcase() {
                 boxShadow: '0 24px 60px oklch(0 0 0 / 0.45), 0 0 0 1px oklch(1 0 0 / 0.06), 0 0 60px oklch(0.6 0.16 200 / 0.1)',
               }}>
               <div className="absolute left-1/2 top-2 z-20 h-4 w-14 -translate-x-1/2 rounded-full bg-black" />
-              <div className="relative h-full w-full overflow-hidden rounded-[30px] bg-muted">
-                <img src={step.image} alt={step.title} className="h-full w-full object-cover" />
+              <div className="relative h-full w-full overflow-hidden rounded-[30px]" style={{ background: '#0d0d0d' }}>
+                <img src={step.image} alt={step.title} className="absolute left-0 w-full object-cover" style={{ top: '4%', height: '106%' }} />
               </div>
             </div>
             <div className="flex h-11 w-11 items-center justify-center rounded-xl"
@@ -145,14 +145,14 @@ function PhoneFrame({ active }: { active: number }) {
         boxShadow: '0 24px 60px oklch(0 0 0 / 0.45), 0 0 0 1px oklch(1 0 0 / 0.06), 0 0 80px oklch(0.6 0.16 200 / 0.08)',
       }}>
       <div className="absolute left-1/2 top-1.5 z-20 h-3 w-10 -translate-x-1/2 rounded-full bg-black sm:top-2 sm:h-4 sm:w-14 md:top-2.5 md:h-5 md:w-20" />
-      <div className="relative h-full w-full overflow-hidden rounded-[22px] bg-muted sm:rounded-[30px] md:rounded-[36px]">
+      <div className="relative h-full w-full overflow-hidden rounded-[22px] sm:rounded-[30px] md:rounded-[36px]" style={{ background: '#0d0d0d' }}>
         {STEPS.map((step, i) => (
           <img
             key={step.title}
             src={step.image}
             alt={step.title}
-            className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
-            style={{ opacity: active === i ? 1 : 0 }}
+            className="absolute left-0 w-full object-cover transition-opacity duration-500"
+            style={{ opacity: active === i ? 1 : 0, top: '4%', height: '106%' }}
           />
         ))}
       </div>

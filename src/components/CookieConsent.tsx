@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Shield } from 'lucide-react'
 
@@ -7,6 +7,7 @@ const CONSENT_KEY = 'analytics_consent'
 
 export function CookieConsent() {
   const [visible, setVisible] = useState(false)
+  const location = useLocation()
 
   useEffect(() => {
     try {
@@ -16,6 +17,10 @@ export function CookieConsent() {
       // modo privado — não exibe o banner
     }
   }, [])
+
+  // Landing é página de vendas pré-cadastro — pedir consentimento de analytics
+  // antes do usuário nem saber o que é o app só polui visualmente.
+  if (location.pathname.startsWith('/landing')) return null
 
   const handleAccept = () => {
     try { localStorage.setItem(CONSENT_KEY, 'accepted') } catch { /* */ }

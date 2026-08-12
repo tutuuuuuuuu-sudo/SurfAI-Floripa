@@ -1,5 +1,6 @@
 // PWAInstallBanner.tsx — Banner "Instalar App" com design do Surf AI
 import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { X } from 'lucide-react'
 
 interface BeforeInstallPromptEvent extends Event {
@@ -12,6 +13,7 @@ export function PWAInstallBanner() {
   const [show, setShow] = useState(false)
   const [isIOS, setIsIOS] = useState(false)
   const [dismissed, setDismissed] = useState(false)
+  const location = useLocation()
 
   useEffect(() => {
     const wasDismissed = (() => { try { return localStorage.getItem('pwa-banner-dismissed') === 'true' } catch { return false } })()
@@ -53,6 +55,9 @@ export function PWAInstallBanner() {
     try { localStorage.setItem('pwa-banner-dismissed', 'true') } catch { /* ignore */ }
   }
 
+  // Landing é página de vendas pré-cadastro — sugerir instalar o app antes do
+  // usuário ter conta pra usar não faz sentido e só polui visualmente.
+  if (location.pathname.startsWith('/landing')) return null
   if (!show || dismissed) return null
 
   return (

@@ -281,7 +281,7 @@ export default function Landing() {
                 </div>
                 <div>
                   <h3 className="font-bold text-base mb-1.5">14 praias monitoradas</h3>
-                  <p className="text-sm text-foreground/60 leading-relaxed">Cobertura completa de Florianópolis, do Santinho ao Morro das Pedras.</p>
+                  <p className="text-sm text-foreground/60 leading-relaxed">Cobertura completa de Florianópolis, do Santinho ao Naufragados.</p>
                 </div>
                 <div className="absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-rating-excellent/10 blur-2xl pointer-events-none" />
               </div>
@@ -388,9 +388,9 @@ export default function Landing() {
 
             <div className="flex flex-col gap-4">
               {[
-                { step: '1', title: 'Abra no seu navegador', desc: 'Safari no iPhone ou Chrome no Android', icon: Waves },
-                { step: '2', title: 'Toque em "Adicionar à Tela de Início"', desc: 'No iPhone: ícone de compartilhar (□↑) embaixo. No Android: os 3 pontinhos (⋮) no topo', icon: Smartphone },
-                { step: '3', title: 'Pronto, é isso!', desc: 'Ícone na tela inicial, abre igual a um app', icon: CheckCircle2 },
+                { step: '1', title: 'Abra no seu navegador', desc: 'Digite surfaifloripa.com.br no Safari (iPhone) ou Chrome (Android)', icon: Waves },
+                { step: '2', title: 'Toque em "Adicionar à Tela de Início"', desc: 'iPhone: toque no ícone de compartilhar ⬆️ na barra debaixo do Safari, role e toque em "Adicionar à Tela de Início". Android: toque nos 3 pontinhos ⋮ no canto superior do Chrome e toque em "Adicionar à tela inicial"', icon: Smartphone },
+                { step: '3', title: 'Pronto, é isso!', desc: 'O ícone aparece na tela inicial e abre em tela cheia, sem barra de endereço', icon: CheckCircle2 },
               ].map(({ step, title, desc, icon: Icon }, i) => (
                 <Reveal key={step} delay={i * 0.12}>
                   <div className="flex items-center gap-4 rounded-xl p-4 transition-transform duration-200 hover:scale-[1.01]"
