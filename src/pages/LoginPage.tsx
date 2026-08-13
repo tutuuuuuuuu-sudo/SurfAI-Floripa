@@ -77,7 +77,7 @@ export default function LoginPage() {
           </p>
         </div>
         <div className="flex gap-8">
-          {[['15', 'praias'], ['4', 'regiões'], ['24/7', 'ao vivo']].map(([val, label]) => (
+          {[['14', 'praias'], ['4', 'regiões'], ['24/7', 'ao vivo']].map(([val, label]) => (
             <div key={label}>
               <p className="text-primary text-2xl font-bold">{val}</p>
               <p className="text-muted-foreground text-xs">{label}</p>

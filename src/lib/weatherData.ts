@@ -67,10 +67,17 @@ export async function getWeatherForecast(
   orientation = 90
 ): Promise<WeatherForecast[]> {
   const now = Date.now()
+  // A chave inclui isPremium: o servidor só manda os dias extras pra quem é
+  // premium de verdade (ver comentário mais abaixo), então um cache guardado
+  // como free não tem como virar premium só reaplicando applyPremiumLock — os
+  // dias 4-14 nunca chegaram a existir nesse cache. Sem isso, quem vira premium
+  // via Pix/boleto e revisita uma praia já vista há menos de 15min continuava
+  // preso na versão de 3 dias.
+  const cacheKey = `${spotId}:${isPremium}`
 
   // Cache hit: retorna dados em memória sem bater na rede
-  if (forecastCache[spotId] && (now - forecastCache[spotId].time) < CACHE_DURATION) {
-    const cached = [...forecastCache[spotId].data]
+  if (forecastCache[cacheKey] && (now - forecastCache[cacheKey].time) < CACHE_DURATION) {
+    const cached = [...forecastCache[cacheKey].data]
     // Substitui o dia 0 pelos dados reais já carregados na tela
     if (currentConditions && cached.length > 0) {
       cached[0] = {
@@ -135,7 +142,7 @@ export async function getWeatherForecast(
       }
     }
 
-    forecastCache[spotId] = { data: forecasts, time: now }
+    forecastCache[cacheKey] = { data: forecasts, time: now }
     // O servidor já filtrou os dias — applyPremiumLock garante UX consistente no cliente
     return applyPremiumLock(forecasts, isPremium)
   } catch {

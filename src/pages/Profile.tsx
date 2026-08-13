@@ -48,7 +48,7 @@ async function compressImage(file: File): Promise<Blob> {
 
 export default function ProfilePage() {
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
   const { isPremium, subscription } = usePremium()
   const { conditions } = useSurfData()
   const [favorites, setFavorites] = useState<string[]>([])
@@ -141,7 +141,7 @@ export default function ProfilePage() {
   }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
+    await signOut()
     toast.success('Até logo! 🤙')
     navigate('/')
   }

@@ -9,15 +9,22 @@ interface CachedReport {
   fetchedAt: number
 }
 
-function getCached(): CachedReport | null {
+// A chave inclui o userId — sem isso, se a pessoa A sair sem passar pelo signOut()
+// que limpa o cache (ex: fecha a aba) e a pessoa B entrar no mesmo aparelho dentro
+// da janela de 30min, B via o relatório que era de A.
+function cacheKey(userId: string): string {
+  return `${CACHE_KEY}_${userId}`
+}
+
+function getCached(userId: string): CachedReport | null {
   try {
-    // Tenta localStorage primeiro (persiste entre sessões dentro do mesmo dia)
+    const key = cacheKey(userId)
     for (const storage of [localStorage, sessionStorage]) {
-      const raw = storage.getItem(CACHE_KEY)
+      const raw = storage.getItem(key)
       if (!raw) continue
       const parsed = JSON.parse(raw) as CachedReport
       if (Date.now() - parsed.fetchedAt > CACHE_DURATION) {
-        storage.removeItem(CACHE_KEY)
+        storage.removeItem(key)
         continue
       }
       return parsed
@@ -28,19 +35,21 @@ function getCached(): CachedReport | null {
   }
 }
 
-function setCached(report: string) {
+function setCached(userId: string, report: string) {
   const payload = JSON.stringify({ report, fetchedAt: Date.now() })
-  try { localStorage.setItem(CACHE_KEY, payload) } catch {
-    try { sessionStorage.setItem(CACHE_KEY, payload) } catch { /* quota exceeded */ }
+  try { localStorage.setItem(cacheKey(userId), payload) } catch {
+    try { sessionStorage.setItem(cacheKey(userId), payload) } catch { /* quota exceeded */ }
   }
 }
 
 export async function fetchAIReport(
   spots: BeachCondition[],
   topSpot: BeachCondition,
-  userLevel?: string
+  userLevel?: string,
+  userId?: string
 ): Promise<string | null> {
-  const cached = getCached()
+  if (!userId) return null
+  const cached = getCached(userId)
   if (cached) return cached.report
 
   try {
@@ -79,14 +88,14 @@ export async function fetchAIReport(
       // Se ainda for 403 após refresh, o usuário não tem premium
       if (!retryRes.ok) return null
       const retryData = await retryRes.json()
-      if (retryData.report) { setCached(retryData.report); return retryData.report }
+      if (retryData.report) { setCached(userId, retryData.report); return retryData.report }
       return null
     }
 
     if (!res.ok) return null
     const data = await res.json()
     if (data.report) {
-      setCached(data.report)
+      setCached(userId, data.report)
       return data.report
     }
     return null
@@ -95,9 +104,17 @@ export async function fetchAIReport(
   }
 }
 
+// Limpa qualquer cache de relatório guardado (de qualquer usuário) — chamado no
+// signOut() do AuthContext, prefixo em vez de chave exata porque a chave agora
+// inclui o userId.
 export function clearAIReportCache() {
-  try { localStorage.removeItem(CACHE_KEY) } catch { /* ignore */ }
-  try { sessionStorage.removeItem(CACHE_KEY) } catch { /* ignore */ }
+  try {
+    for (const storage of [localStorage, sessionStorage]) {
+      for (const key of Object.keys(storage)) {
+        if (key.startsWith(CACHE_KEY)) storage.removeItem(key)
+      }
+    }
+  } catch { /* ignore */ }
 }
 
 /** Separa a primeira frase do resto, para destacá-la visualmente no card do relatório.

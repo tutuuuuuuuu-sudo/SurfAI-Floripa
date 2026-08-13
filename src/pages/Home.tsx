@@ -38,7 +38,6 @@ export default function Home() {
   const [topSpot, setTopSpot] = useState<BeachCondition | null>(null)
   const [favorites, setFavorites] = useState<string[]>([])
   const [visible, setVisible] = useState(false)
-  const [fetchError, setFetchError] = useState(false)
   const [aiReport, setAiReport] = useState<string | null>(null)
   const [aiLoading, setAiLoading] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(() => !isOnboardingDone())
@@ -46,10 +45,11 @@ export default function Home() {
   const [validations, setValidations] = useState<Record<string, ValidationSummary>>({})
   const aiReportFetchedRef = useRef(false)
   const premiumResolvedRef = useRef(false)
+  const prevPremiumRef = useRef(false)
   const navigate = useNavigate()
   const { user } = useAuth()
   const { isPremium, loading: premiumLoading } = usePremium()
-  const { conditions: allSpots, loading, lastUpdated, refresh } = useSurfData()
+  const { conditions: allSpots, loading, error: fetchError, lastUpdated, refresh } = useSurfData()
 
   const spots = useMemo(() => {
     let filtered = [...allSpots]
@@ -61,7 +61,6 @@ export default function Home() {
   // Atualiza top spot, favoritos e notificações sempre que os dados mudam
   useEffect(() => {
     if (allSpots.length === 0) return
-    setFetchError(false)
     const sortedAll = [...allSpots].sort((a, b) => b.score - a.score)
     setTopSpot(sortedAll[0] ?? null)
     const t = setTimeout(() => setVisible(true), 100)
@@ -97,14 +96,23 @@ export default function Home() {
     if (!top) return
     setAiLoading(true)
     const userLevel = (() => { try { return localStorage.getItem('pref_skill') ?? undefined } catch { return undefined } })()
-    fetchAIReport(sortedAll.slice(0, 6), top, userLevel)
+    fetchAIReport(sortedAll.slice(0, 6), top, userLevel, user?.id)
       .then(report => {
         setAiReport(report)
         if (report) track('ai_report_loaded', { top_spot: top.name, score: top.score })
       })
       .catch(() => {})
       .finally(() => setAiLoading(false))
-  }, [allSpots, premiumLoading])
+  }, [allSpots, premiumLoading, user])
+
+  // Se o usuário vira premium via realtime (ex: pagou por Pix/boleto e o webhook
+  // atualiza a assinatura enquanto ele já está na Home), o relatório precisa ser
+  // buscado de novo com o token premium — sem isso, o card de IA fica ausente até
+  // a pessoa recarregar a página manualmente.
+  useEffect(() => {
+    if (isPremium && !prevPremiumRef.current) aiReportFetchedRef.current = false
+    prevPremiumRef.current = isPremium
+  }, [isPremium])
 
   const userName = user ? getUserDisplayName(user) : 'Surfista'
   const userInitial = userName.charAt(0).toUpperCase()
@@ -374,7 +382,7 @@ export default function Home() {
                   <p className="font-medium">Erro ao carregar as condições.</p>
                   <p className="text-sm mt-1">Verifique sua conexão e tente novamente.</p>
                   <button
-                    onClick={() => { setFetchError(false); refresh() }}
+                    onClick={refresh}
                     className="mt-4 text-sm text-primary border border-primary/30 px-4 py-2 rounded-xl hover:bg-primary/10 transition-colors"
                   >
                     Tentar novamente

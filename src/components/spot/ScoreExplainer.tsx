@@ -1,4 +1,4 @@
-import { X } from 'lucide-react'
+import { X, Waves, Clock, Wind } from 'lucide-react'
 import { BeachCondition } from '@/lib/surfData'
 import { getRatingInfo } from '@/lib/rating'
 
@@ -16,27 +16,27 @@ export const ScoreExplainer = ({ spot, onClose }: { spot: BeachCondition, onClos
         <div className="space-y-4">
           {[
             {
-              label:'Ondulação', max:10, icon:'🌊',
+              label:'Ondulação', max:10, icon:Waves,
               desc:`${spot.waveHeight.toFixed(1)}m`,
               value: spot.waveHeight>=2.5?10:spot.waveHeight>=2.0?9.5:spot.waveHeight>=1.5?9.0:
                      spot.waveHeight>=1.2?8.5:spot.waveHeight>=1.0?8.0:spot.waveHeight>=0.8?7.5:
                      spot.waveHeight>=0.6?7.0:spot.waveHeight>=0.5?6.5:spot.waveHeight>=0.4?5.5:4.0,
             },
             {
-              label:'Período', max:10, icon:'⏱️',
+              label:'Período', max:10, icon:Clock,
               desc:`${Math.round(spot.swellPeriod)}s entre ondas`,
               // Ajuste normalizado para escala visual (não é o ajuste absoluto do engine)
               value: spot.swellPeriod>=16?10:spot.swellPeriod>=14?9:spot.swellPeriod>=12?8:
                      spot.swellPeriod>=10?7:spot.swellPeriod>=8?6:spot.swellPeriod>=7?5:4,
             },
             {
-              label:'Vento', max:10, icon:'💨',
+              label:'Vento', max:10, icon:Wind,
               desc:`${Math.round(spot.windSpeed)}km/h ${spot.windDirection}`,
               value: spot.windSpeed<=10?9:spot.windSpeed<=15?7.5:spot.windSpeed<=20?6:4,
             },
           ].map(item => (
             <div key={item.label} className="flex items-center gap-3">
-              <span className="text-xl">{item.icon}</span>
+              <item.icon className="h-5 w-5 text-primary flex-shrink-0" />
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-sm font-semibold">{item.label}</span>
