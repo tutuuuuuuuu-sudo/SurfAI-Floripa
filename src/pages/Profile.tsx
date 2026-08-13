@@ -13,7 +13,7 @@ import { getTopContribution, TopContribution } from '@/lib/ranking'
 import {
   ArrowLeft, Crown, Heart, MessageCircle, Waves, Settings,
   LogOut, User, TrendingUp, MapPin, Star, Calendar, Award,
-  Camera, Edit2, Check, X, Wind, Clock, Flame, Trophy
+  Camera, Edit2, Check, X, Wind, Clock, Flame, Trophy, GitCompareArrows
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { getRatingInfo } from '@/lib/rating'
@@ -507,6 +507,7 @@ export default function ProfilePage() {
               { icon: Heart, label: 'Praias Favoritas', path: '/favorites', cls: 'text-destructive' },
               { icon: Waves, label: 'Todas as Praias', path: '/', cls: 'text-primary' },
               { icon: MapPin, label: 'Me Leva ao Pico', path: '/navigation', cls: 'text-rating-good' },
+              { icon: GitCompareArrows, label: 'Comparar Praias', path: '/compare', cls: 'text-rating-fair' },
               { icon: Settings, label: 'Configurações', path: '/settings', cls: 'text-muted-foreground' },
             ].map(item => (
               <button key={item.path} onClick={() => navigate(item.path)}
