@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Shield } from 'lucide-react'
+import posthog from 'posthog-js'
 
 const CONSENT_KEY = 'analytics_consent'
 
@@ -30,11 +31,11 @@ export function CookieConsent() {
   const handleDecline = () => {
     try { localStorage.setItem(CONSENT_KEY, 'declined') } catch { /* */ }
     setVisible(false)
-    // Desabilita PostHog se o usuário recusar
-    if (typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).posthog) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ;(window as any).posthog?.opt_out_capturing()
-    }
+    // window.posthog nunca existe de verdade (posthog-js é importado como módulo,
+    // nunca anexado em window) — o optional chaining fazia no-op silencioso e o
+    // rastreamento continuava rodando mesmo depois de recusado. Usa o singleton
+    // real do módulo, o mesmo que monitoring.ts inicializa.
+    posthog.opt_out_capturing()
   }
 
   if (!visible) return null
