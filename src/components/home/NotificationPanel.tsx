@@ -12,6 +12,8 @@ import {
   checkAndNotifyGoodConditions,
 } from '@/lib/notifications'
 import type { BeachCondition } from '@/lib/surfData'
+import { usePremium } from '@/lib/premium'
+import { PremiumUpsellBanner } from '@/components/PremiumUpsellBanner'
 
 interface Props {
   spots: BeachCondition[]
@@ -19,6 +21,7 @@ interface Props {
 }
 
 export function NotificationPanel({ spots, favorites }: Props) {
+  const { isPremium } = usePremium()
   const [permission, setPermission] = useState(getNotificationPermission())
   const [settings, setSettings] = useState(getSavedNotificationSettings())
   const [loading, setLoading] = useState(false)
@@ -26,6 +29,7 @@ export function NotificationPanel({ spots, favorites }: Props) {
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
 
   const handleEnable = async () => {
+    if (!isPremium) return
     setLoading(true)
     const success = await subscribeToNotifications(settings.minScore, settings.favoriteOnly)
     if (success) {
@@ -71,20 +75,26 @@ export function NotificationPanel({ spots, favorites }: Props) {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {isIOS && (
+        {!isPremium && (
+          <PremiumUpsellBanner
+            title="Alertas de swell são Premium"
+            subtitle="Receba um push quando o mar bater bom nas suas praias"
+          />
+        )}
+        {isPremium && isIOS && (
           <div className="text-xs bg-muted/30 border border-border rounded-lg p-3 text-muted-foreground">
             😤 <strong>iPhone/iPad:</strong> O Safari no iOS não suporta notificações push em aplicações web.
           </div>
         )}
-        {!isIOS && permission === 'unsupported' && (
+        {isPremium && !isIOS && permission === 'unsupported' && (
           <p className="text-xs text-muted-foreground">Seu navegador não suporta notificações. Tente pelo Chrome.</p>
         )}
-        {!isIOS && permission === 'denied' && (
+        {isPremium && !isIOS && permission === 'denied' && (
           <div className="text-xs text-destructive bg-destructive/10 rounded-lg p-3">
             Notificações bloqueadas. Clique no cadeado na barra de endereços e permita.
           </div>
         )}
-        {!isIOS && (permission === 'default' || permission === 'granted') && (
+        {isPremium && !isIOS && (permission === 'default' || permission === 'granted') && (
           <>
             <div className="flex items-center justify-between">
               <div>

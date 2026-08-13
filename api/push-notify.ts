@@ -213,8 +213,28 @@ export default async function handler(req: Request) {
     p256dh: string; auth: string
     min_score: number; favorite_only: boolean
   }
-  const subs = await subRes.json() as PushSub[]
-  if (subs.length === 0) return json({ ok: true, sent: 0 })
+  const allSubs = await subRes.json() as PushSub[]
+  if (allSubs.length === 0) return json({ ok: true, sent: 0 })
+
+  // 1b. "Alertas de swell (push)" é benefício Premium (ver tabela de planos no CLAUDE.md) —
+  // antes disso, qualquer usuário logado que ativasse push recebia alerta de graça,
+  // porque nem o cadastro (NotificationPanel.tsx) nem o envio checavam assinatura.
+  const allUserIds = [...new Set(allSubs.map(s => s.user_id))]
+  const [subsRes, adminsRes] = await Promise.all([
+    fetch(
+      `${SUPABASE_URL}/rest/v1/subscriptions?user_id=in.(${allUserIds.join(',')})&status=eq.premium&expires_at=gte.${new Date().toISOString()}&select=user_id`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+    ),
+    fetch(
+      `${SUPABASE_URL}/rest/v1/admins?user_id=in.(${allUserIds.join(',')})&select=user_id`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+    ),
+  ])
+  const premiumRows = subsRes.ok ? await subsRes.json() as { user_id: string }[] : []
+  const adminRows = adminsRes.ok ? await adminsRes.json() as { user_id: string }[] : []
+  const eligibleUserIds = new Set([...premiumRows, ...adminRows].map(r => r.user_id))
+  const subs = allSubs.filter(s => eligibleUserIds.has(s.user_id))
+  if (subs.length === 0) return json({ ok: true, sent: 0, skippedNonPremium: allSubs.length })
 
   // 2. Busca favoritos de cada usuário (batch)
   const userIds = [...new Set(subs.map(s => s.user_id))]
