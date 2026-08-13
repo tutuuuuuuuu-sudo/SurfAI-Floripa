@@ -44,7 +44,7 @@ const BEACH_DESTINATIONS: Record<string, { lat: number, lng: number, name: strin
 const CAMPECHE_SUBSPOTS = [
   { id: 'lomba-sabao', name: 'Lomba do Sabão', lat: -27.697703,  lng: -48.4898603 },
   { id: 'palanque',    name: 'Palanque',        lat: -27.6820,   lng: -48.4830 },
-  { id: 'principal',   name: 'Principal',       lat: -27.6622150, lng: -48.4734326 },
+  { id: 'principal',   name: 'Principal',       lat: -27.6893,   lng: -48.4825 },
 ]
 
 // ✅ NUNCA passa origem na URL — Maps/Waze/Apple sempre detectam a posição atual do dispositivo
