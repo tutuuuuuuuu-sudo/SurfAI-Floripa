@@ -31,16 +31,13 @@ export default async function handler(req: Request) {
 
   const headers = { 'Content-Type': 'application/json', apikey: serviceKey, Authorization: `Bearer ${serviceKey}` }
 
-  // Remove dados do usuário em todas as tabelas
-  await Promise.all([
-    fetch(`${supabaseUrl}/rest/v1/favorites?user_id=eq.${userId}`, { method: 'DELETE', headers }),
-    fetch(`${supabaseUrl}/rest/v1/surf_sessions?user_id=eq.${userId}`, { method: 'DELETE', headers }),
-    fetch(`${supabaseUrl}/rest/v1/comments?user_id=eq.${userId}`, { method: 'DELETE', headers }),
-    fetch(`${supabaseUrl}/rest/v1/subscriptions?user_id=eq.${userId}`, { method: 'DELETE', headers }),
-    fetch(`${supabaseUrl}/rest/v1/push_subscriptions?user_id=eq.${userId}`, { method: 'DELETE', headers }),
-    fetch(`${supabaseUrl}/rest/v1/user_preferences?user_id=eq.${userId}`, { method: 'DELETE', headers }),
-    fetch(`${supabaseUrl}/rest/v1/score_snapshots?user_id=eq.${userId}`, { method: 'DELETE', headers }),
-  ])
+  // Todas as FKs de tabelas de usuário pra auth.users já têm ON DELETE CASCADE
+  // (confirmado via pg_constraint) — apagar a conta abaixo já limpa favorites,
+  // surf_sessions, comments, subscriptions, push_subscriptions, user_preferences,
+  // payments, profiles, surf_log, admins e spot_validations sozinho. Os deletes
+  // manuais que existiam aqui antes eram redundantes; o de score_snapshots era
+  // pior — essa tabela não tem coluna user_id, então a chamada sempre falhava
+  // silenciosamente (o Promise.all não checava .ok) sem fazer nada.
 
   // Remove a conta de autenticação
   const deleteRes = await fetch(`${supabaseUrl}/auth/v1/admin/users/${userId}`, {
