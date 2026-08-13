@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { usePremium } from '@/lib/premium'
-import { BeachCondition } from '@/lib/surfData'
 import { useSurfData } from '@/contexts/SurfDataContext'
 import { getWeatherForecast, WeatherForecast } from '@/lib/weatherData'
 import { ArrowLeft, Waves, Wind, Calendar, Crown, TrendingUp, Thermometer } from 'lucide-react'
@@ -42,7 +41,7 @@ export default function HistoryPage() {
       windDirection: spot.windDirection,
       waterTemperature: spot.waterConditions.temperature,
       score: spot.score,
-    }, isPremium, spot.orientation).then(data => {
+    }, isPremium, spot._beachOrientation ?? 90).then(data => {
       if (!cancelled) { setForecast(data); setLoadingForecast(false) }
     })
     return () => { cancelled = true }

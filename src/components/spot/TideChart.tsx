@@ -91,7 +91,7 @@ const TideChartSVG = memo(({ tide, expanded=false, realLevels }: { tide:string, 
   const tooltipX = tooltip ? Math.min(Math.max(tooltip.x - tooltipBoxW/2, chart.padding.left), chart.viewWidth - chart.padding.right - tooltipBoxW) : 0
   const tooltipY = tooltip ? Math.max(chart.padding.top + 2, tooltip.y - tooltipBoxH - 10) : 0
 
-  const { viewWidth, viewHeight, padding, chartWidth, chartHeight, xScale, yScale,
+  const { viewWidth, viewHeight, padding, chartHeight, xScale, yScale,
           tideEvents, currentHeight, currentX, currentY, currentHour: _ch } = chart
 
   return (

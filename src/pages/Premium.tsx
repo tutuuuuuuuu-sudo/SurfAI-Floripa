@@ -58,7 +58,7 @@ export default function PremiumPage() {
     if (plan === 'annual') setLoadingAnnual(true); else setLoading(true)
     setError(null)
     try {
-      const result = await createMercadoPagoCheckout(user.id, user.email ?? '', plan)
+      const result = await createMercadoPagoCheckout(user.email ?? '', plan)
       if (result.url) {
         window.location.href = result.url
       } else {

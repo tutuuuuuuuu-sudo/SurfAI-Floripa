@@ -1,7 +1,7 @@
 import path from "path"
 import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
-import { defineConfig } from "vite"
+import { defineConfig } from "vitest/config"
 import { readFileSync } from "fs"
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8'))
@@ -32,10 +32,7 @@ export default defineConfig({
     },
   },
   test: {
-    environmentMatchGlobs: [
-      ['src/**/*.test.ts', 'jsdom'],
-      ['api/**/*.test.ts', 'node'],
-    ],
+    environment: 'jsdom',
     include: ['src/**/*.test.ts', 'api/**/*.test.ts'],
   },
 })

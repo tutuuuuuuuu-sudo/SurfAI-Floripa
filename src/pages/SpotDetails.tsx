@@ -192,8 +192,7 @@ export default function SpotDetails() {
         const maxScore = Math.max(...scores)
         const currentScore = found?.score ?? 0
         setScoreHistory({ avg30: avg, isMonthBest: !!found && currentScore >= maxScore - 0.3 })
-      })
-      .catch(() => {})
+      }, () => {})
   }, [id, conditions, conditionsLoading])
 
   useEffect(() => {
@@ -205,7 +204,7 @@ export default function SpotDetails() {
       spot.id,
       { waveHeight: spot.waveHeight, windSpeed: spot.windSpeed, swellPeriod: spot.swellPeriod, windDirection: spot.windDirection, waterTemperature: spot.waterConditions.temperature, score: spot.score },
       isPremium,
-      spot.orientation
+      spot._beachOrientation ?? 90
     ).then(setForecast)
   }, [spot, isPremium, premiumLoading])
 

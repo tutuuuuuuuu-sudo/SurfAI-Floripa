@@ -1,4 +1,4 @@
-import React, { Component, type ErrorInfo, type ReactNode } from "react"
+import { Component, type ErrorInfo, type ReactNode } from "react"
 import { AlertTriangle, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card"
@@ -36,7 +36,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    captureError(error, { componentStack: errorInfo.componentStack ?? undefined })
+    captureError(error, errorInfo.componentStack ? { componentStack: errorInfo.componentStack } : undefined)
   }
 
   handleReset = () => {

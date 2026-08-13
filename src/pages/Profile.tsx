@@ -65,7 +65,6 @@ export default function ProfilePage() {
   const [topContribution, setTopContribution] = useState<TopContribution | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [showPhotoOptions, setShowPhotoOptions] = useState(false)
 
   const userName = user ? getUserDisplayName(user) : 'Surfista'
   const userInitial = userName.charAt(0).toUpperCase()
@@ -162,7 +161,6 @@ export default function ProfilePage() {
     if (!user || !file) return
     if (file.size > 30 * 1024 * 1024) { toast.error('Arquivo muito grande. Escolha uma foto menor.'); return }
     setUploadingPhoto(true)
-    setShowPhotoOptions(false)
     try {
       const compressed = await compressImage(file)
       const path = `avatars/${user.id}.jpg`

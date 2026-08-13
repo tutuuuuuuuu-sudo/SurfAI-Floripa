@@ -53,6 +53,14 @@ export default function ResetPassword() {
     setTimeout(() => navigate('/'), 2500)
   }
 
+  if (!ready) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-primary text-sm">Carregando...</div>
+      </div>
+    )
+  }
+
   if (success) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">

@@ -72,6 +72,7 @@ function AppRoutes() {
 
   return (
     <>
+      <ScrollToTop />
       <Routes>
         <Route path="/landing" element={<Landing />} />
         <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />

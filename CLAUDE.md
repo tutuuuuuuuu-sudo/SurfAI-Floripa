@@ -341,7 +341,7 @@ O CLAUDE.md anterior desta plataforma tinha regras gerais de UX — mantidas aqu
 ## ✅ CHECKLIST ANTES DE FINALIZAR QUALQUER MUDANÇA
 
 - [ ] `npm test` → 70/70 passando (se mudou surfData/rating/_scoreEngine)
-- [ ] `npx tsc --noEmit` → 0 erros TypeScript
+- [ ] `npm run type-check` (`tsc -b --noEmit`) → 0 erros TypeScript. **Nunca rodar `npx tsc --noEmit` sozinho** — o `tsconfig.json` raiz usa project references (`files: []` + `references`), então sem `-b` o comando não segue as referências e sempre retorna "0 erros" mesmo com erros reais (bug descoberto em auditoria de 13/ago/2026).
 - [ ] Não duplicou lógica de score (fonte: `api/_scoreEngine.ts`)
 - [ ] Não criou nova classe de cor sem usar variável CSS do tema
 - [ ] Não adicionou `require()` no código do browser

@@ -115,7 +115,6 @@ export function usePremium() {
 // ─── Checkout Mercado Pago ────────────────────────────────────────────────────
 
 export async function createMercadoPagoCheckout(
-  userId: string,
   userEmail: string,
   plan: 'monthly' | 'annual' = 'monthly'
 ): Promise<{ url: string | null; error?: string }> {
