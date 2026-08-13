@@ -56,13 +56,14 @@ export default function Settings() {
   const [defaultRegion, setDefaultRegion] = useState<Region>(loadPref('pref_region', 'all'))
   const [notifMinScore, setNotifMinScore] = useState<number>(loadPref('notif_minScore', 7))
   const [notifFavOnly, setNotifFavOnly] = useState<boolean>(loadPref('notif_favOnly', false))
+  const [emailAlertsEnabled, setEmailAlertsEnabled] = useState<boolean>(loadPref('emailAlertsEnabled', true))
 
   // Carrega preferências do Supabase ao montar (override do localStorage se existir)
   useEffect(() => {
     if (!user) return
     supabase
       .from('user_preferences')
-      .select('pref_skill, pref_region, notif_min_score, notif_fav_only')
+      .select('pref_skill, pref_region, notif_min_score, notif_fav_only, email_alerts_enabled')
       .eq('user_id', user.id)
       .maybeSingle()
       .then(({ data }) => {
@@ -71,6 +72,7 @@ export default function Settings() {
         if (data.pref_region != null) { setDefaultRegion(data.pref_region as Region); savePref('pref_region', data.pref_region) }
         if (data.notif_min_score != null) { setNotifMinScore(data.notif_min_score); savePref('notif_minScore', data.notif_min_score) }
         if (data.notif_fav_only != null) { setNotifFavOnly(data.notif_fav_only); savePref('notif_favOnly', data.notif_fav_only) }
+        if (data.email_alerts_enabled != null) { setEmailAlertsEnabled(data.email_alerts_enabled); savePref('emailAlertsEnabled', data.email_alerts_enabled) }
       })
   }, [user])
 
@@ -112,6 +114,7 @@ export default function Settings() {
         pref_region: 'pref_region',
         notif_minScore: 'notif_min_score',
         notif_favOnly: 'notif_fav_only',
+        emailAlertsEnabled: 'email_alerts_enabled',
       }
       const col = colMap[key]
       if (col) {
@@ -321,6 +324,23 @@ export default function Settings() {
                 <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${notifFavOnly ? 'left-6' : 'left-1'}`} />
               </button>
             </div>
+            {isPremium && (
+              <>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-semibold">Alerta de mar bom por email</div>
+                    <div className="text-xs text-muted-foreground">Benefício Premium — email quando alguma praia bater bom</div>
+                  </div>
+                  <button
+                    onClick={() => { const v = !emailAlertsEnabled; setEmailAlertsEnabled(v); save('emailAlertsEnabled', v, 'Alerta por email') }}
+                    className={`relative w-11 h-6 rounded-full transition-colors ${emailAlertsEnabled ? 'bg-primary' : 'bg-muted'}`}
+                  >
+                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${emailAlertsEnabled ? 'left-6' : 'left-1'}`} />
+                  </button>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
