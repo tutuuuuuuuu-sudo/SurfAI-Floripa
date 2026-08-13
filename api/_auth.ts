@@ -57,3 +57,26 @@ export async function verifyPremiumToken(token: string): Promise<boolean> {
   if (!valid || !userId) return false
   return isPremiumUser(userId)
 }
+
+export async function isAdminUser(userId: string): Promise<boolean> {
+  const supabaseUrl = process.env.SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
+  if (!supabaseUrl || !serviceKey) return false
+  try {
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/admins?user_id=eq.${userId}&select=user_id&limit=1`,
+      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
+    )
+    if (!res.ok) return false
+    const rows = await res.json() as { user_id: string }[]
+    return Array.isArray(rows) && rows.length > 0
+  } catch {
+    return false
+  }
+}
+
+export async function verifyAdminToken(token: string): Promise<boolean> {
+  const { valid, userId } = await verifyToken(token)
+  if (!valid || !userId) return false
+  return isAdminUser(userId)
+}

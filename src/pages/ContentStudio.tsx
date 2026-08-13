@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import {
   ArrowLeft, Copy, Check, RefreshCw, Instagram, Sparkles, Zap,
-  Hash, Crown, Lock, MessageCircle, Twitter, Clock, ChevronDown, ChevronUp
+  Hash, Lock, MessageCircle, Twitter, Clock, ChevronDown, ChevronUp
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,7 +12,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
 import { track } from '@/lib/monitoring'
 import { getRatingInfo } from '@/lib/rating'
-import { usePremium } from '@/lib/premium'
 
 interface ContentResult {
   instagram: { caption: string; hashtags: string; fullPost: string }
@@ -232,27 +231,44 @@ function HistoryItem({ item, onRestore }: { item: ContentResult; onRestore: (c: 
 
 export default function ContentStudio() {
   const navigate = useNavigate()
-  const { isPremium, loading: premiumLoading } = usePremium()
+  // Ferramenta de uso interno (gera post pras redes sociais do próprio Surf AI) —
+  // não é benefício de assinante, trava por admin real (tabela `admins`), não por premium.
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
   const [content, setContent] = useState<ContentResult | null>(null)
   const [history, setHistory] = useState<ContentResult[]>([])
   const [loading, setLoading] = useState(false)
   const [activePlatform, setActivePlatform] = useState<Platform>('instagram')
   const [selectedTone, setSelectedTone] = useState<Tone>('animado')
 
-  if (!premiumLoading && !isPremium) {
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.access_token) { setIsAdmin(false); return }
+      fetch('/api/is-admin', { headers: { Authorization: `Bearer ${session.access_token}` } })
+        .then(res => res.json())
+        .then((data: { isAdmin?: boolean }) => setIsAdmin(!!data.isAdmin))
+        .catch(() => setIsAdmin(false))
+    })
+  }, [])
+
+  if (isAdmin === null) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-primary text-sm">Carregando...</div>
+      </div>
+    )
+  }
+
+  if (!isAdmin) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8 text-center">
-        <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-4">
-          <Lock className="h-8 w-8 text-primary" />
+        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+          <Lock className="h-8 w-8 text-muted-foreground" />
         </div>
-        <h2 className="text-xl font-bold mb-2">Content Studio é Premium</h2>
+        <h2 className="text-xl font-bold mb-2">Página não disponível</h2>
         <p className="text-muted-foreground text-sm mb-6 max-w-xs">
-          Gere legendas virais para Instagram, TikTok, WhatsApp e Twitter com as condições reais do mar.
+          Essa ferramenta é de uso interno.
         </p>
-        <Button onClick={() => navigate('/premium')} className="gap-2">
-          <Crown className="h-4 w-4" />Assinar Premium
-        </Button>
-        <Button variant="ghost" onClick={() => navigate('/')} className="mt-2">Voltar ao início</Button>
+        <Button variant="ghost" onClick={() => navigate('/')}>Voltar ao início</Button>
       </div>
     )
   }

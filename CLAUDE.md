@@ -20,12 +20,16 @@ Dois planos pagos: **Mensal R$ 16,90/mês** ou **Anual R$ 149,90/ano** (equivale
 | Histórico 30 dias | ❌ | ✅ |
 | Melhor janela horária do dia | ❌ | ✅ |
 | Comparação de picos | ❌ | ✅ |
-| ContentStudio (posts para redes) | ❌ | ✅ |
 | Sem anúncios | ❌ | ✅ |
 | Badge Premium no perfil | ❌ | ✅ |
 
 Pagamento via **Mercado Pago**. Lógica de acesso em `src/lib/premium.ts` (hook `usePremium()`).
 Webhook em `api/mp-webhook.ts` e IPN em `api/mp-ipn.ts` atualizam a tabela `subscriptions` no Supabase.
+
+**ContentStudio não é benefício de assinante** — é ferramenta de uso interno (`/content-studio`),
+exclusiva pra quem está na tabela `admins`, pra gerar posts das redes sociais do próprio Surf AI.
+Nunca foi anunciada no app pra clientes. Trava real via `api/is-admin.ts` + `verifyAdminToken`
+(`api/_auth.ts`), não por `usePremium()`.
 
 ---
 
@@ -46,7 +50,7 @@ src/
 │   ├── Compare.tsx            # Comparação lado a lado de picos (premium)
 │   ├── History.tsx            # Histórico de condições (premium)
 │   ├── SurfLog.tsx            # Diário de sessões do usuário
-│   ├── ContentStudio.tsx      # Gerador de posts para redes sociais (premium)
+│   ├── ContentStudio.tsx      # Gerador de posts pras redes sociais do Surf AI (uso interno, só admin)
 │   ├── Premium.tsx            # Página de upgrade/assinatura
 │   ├── Profile.tsx            # Perfil e nível do surfista
 │   ├── Settings.tsx           # Configurações (notificações, preferências)
@@ -114,8 +118,10 @@ api/
 ├── mp-webhook.ts       # Webhook do MP → atualiza subscriptions no Supabase
 ├── mp-ipn.ts           # IPN (notificação instantânea) do MP
 ├── delete-account.ts   # Exclusão de conta do usuário (LGPD)
-├── daily-report.ts     # Envia relatório diário por email (Resend) para usuários premium
-├── content-agent.ts    # Gera sugestões de conteúdo para ContentStudio
+├── daily-report.ts     # Envia relatório diário por email (Resend) — só pro founder (REPORT_EMAIL), uso interno
+├── email-alert.ts      # Alerta de "mar bom" por email (Resend) — só assinantes premium, opt-out em Configurações
+├── content-agent.ts    # Gera sugestões de conteúdo para ContentStudio (só admin, ver api/_auth.ts)
+├── is-admin.ts         # Checa se o usuário logado está na tabela `admins` (a tabela em si não é lida pelo client, RLS bloqueia)
 ├── email-welcome.ts    # Email de boas-vindas (Resend)
 ├── push-subscribe.ts   # Registra subscription de push notification do usuário
 ├── push-notify.ts      # Envia push notifications (alertas de swell)

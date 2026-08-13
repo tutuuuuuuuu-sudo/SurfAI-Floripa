@@ -177,7 +177,7 @@ Responda APENAS em JSON:
   }
 }
 
-import { verifyPremiumToken } from './_auth.js'
+import { verifyAdminToken } from './_auth.js'
 
 // Rate limit por IP para chamadas de usuário: 20 req/hora
 const contentRateLimit = new Map<string, { count: number; reset: number }>()
@@ -195,7 +195,7 @@ function checkContentRateLimit(ip: string): boolean {
 
 export default async function handler(req: Request) {
   // Cron roda via GitHub Actions (ver .github/workflows/content-agent.yml) com AGENT_SECRET via x-agent-secret
-  // Usuários premium autenticam via Bearer token JWT
+  // Ferramenta de uso interno (não é benefício de assinante) — só admin autentica via Bearer token JWT
   const agentSecret = req.headers.get('x-agent-secret')
   const authHeader = req.headers.get('Authorization')
 
@@ -208,9 +208,9 @@ export default async function handler(req: Request) {
     }
   } else if (authHeader?.startsWith('Bearer ')) {
     const token = authHeader.slice(7)
-    const isPremium = await verifyPremiumToken(token)
-    if (!isPremium) {
-      return new Response(JSON.stringify({ error: 'Premium required' }), {
+    const isAdmin = await verifyAdminToken(token)
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ error: 'Admin required' }), {
         status: 403,
         headers: { 'Content-Type': 'application/json' },
       })
