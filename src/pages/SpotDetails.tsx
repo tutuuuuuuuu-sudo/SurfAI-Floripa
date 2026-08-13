@@ -346,7 +346,7 @@ export default function SpotDetails() {
               <div className="text-xs text-muted-foreground text-center">km/h {windInfo.code}</div>
             </div>
             <div className="flex flex-col items-center gap-1 bg-muted/20 rounded-xl p-2.5">
-              <Droplets className="h-4 w-4 text-cyan-500"/>
+              <Droplets className="h-4 w-4 text-primary"/>
               <div className="text-base font-bold">{spot.waterConditions.temperature}°</div>
               <div className="text-xs text-muted-foreground text-center">Água</div>
             </div>
@@ -488,7 +488,7 @@ export default function SpotDetails() {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Droplets className="h-4 w-4 text-cyan-500"/>Como vai estar o mar hoje?
+                  <Droplets className="h-4 w-4 text-primary"/>Como vai estar o mar hoje?
                 </CardTitle>
               </CardHeader>
               <CardContent><TideChart tide={spot.tide}/></CardContent>

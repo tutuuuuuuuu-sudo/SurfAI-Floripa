@@ -107,7 +107,7 @@ export function AppLogo({ size = 40, className = '', variant = 'icon' }: AppLogo
             fontSize: size * 0.38,
             fontWeight: 900,
             letterSpacing: '-0.02em',
-            background: 'linear-gradient(120deg, #06b6d4 0%, #818cf8 100%)',
+            background: 'linear-gradient(120deg, var(--logo-gradient-start) 0%, var(--logo-gradient-end) 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',

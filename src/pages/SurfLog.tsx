@@ -54,7 +54,7 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
         >
           <Star
             className={`h-7 w-7 transition-colors ${
-              i <= (hover || value) ? 'text-yellow-400 fill-yellow-400' : 'text-muted'
+              i <= (hover || value) ? 'text-rating-fair fill-rating-fair' : 'text-muted'
             }`}
           />
         </button>
@@ -197,7 +197,7 @@ export default function SurfLog() {
 
         {/* Aviso de tabela não criada */}
         {tableError && (
-          <Card className="border-yellow-500/30 bg-yellow-500/5">
+          <Card className="border-rating-fair/30 bg-rating-fair/5">
             <CardContent className="py-4 space-y-3">
               <div className="flex items-start gap-3">
                 <FileText className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
@@ -305,7 +305,7 @@ export default function SurfLog() {
             </Card>
             <Card>
               <CardContent className="py-3 text-center">
-                <div className="text-2xl font-bold text-yellow-400">
+                <div className="text-2xl font-bold text-rating-fair">
                   {avgRating > 0 ? avgRating.toFixed(1) : '—'}
                 </div>
                 <div className="text-xs text-muted-foreground">Média</div>
@@ -355,7 +355,7 @@ export default function SurfLog() {
                         {session.rating && (
                           <div className="flex gap-0.5">
                             {[1,2,3,4,5].map(i => (
-                              <Star key={i} className={`h-3.5 w-3.5 ${i <= (session.rating ?? 0) ? 'text-yellow-400 fill-yellow-400' : 'text-muted'}`} />
+                              <Star key={i} className={`h-3.5 w-3.5 ${i <= (session.rating ?? 0) ? 'text-rating-fair fill-rating-fair' : 'text-muted'}`} />
                             ))}
                           </div>
                         )}

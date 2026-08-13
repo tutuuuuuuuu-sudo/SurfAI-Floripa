@@ -60,7 +60,7 @@ export function SpotTeaser({ spot, onBack, onLogin }: Props) {
               <div className="text-xs text-muted-foreground text-center">km/h</div>
             </div>
             <div className="flex flex-col items-center gap-1 bg-muted/20 rounded-xl p-2.5">
-              <Droplets className="h-4 w-4 text-cyan-500" />
+              <Droplets className="h-4 w-4 text-primary" />
               <div className="text-base font-bold">{spot.waterConditions.temperature}°</div>
               <div className="text-xs text-muted-foreground text-center">Água</div>
             </div>

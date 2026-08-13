@@ -65,7 +65,7 @@ export default function ResetPassword() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="w-full max-w-sm text-center space-y-5">
-          <CheckCircle2 className="h-14 w-14 text-green-500 mx-auto" />
+          <CheckCircle2 className="h-14 w-14 text-rating-good mx-auto" />
           <div>
             <h1 className="text-xl font-bold mb-2">Senha redefinida!</h1>
             <p className="text-sm text-muted-foreground">

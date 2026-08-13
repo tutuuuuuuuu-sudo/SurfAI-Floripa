@@ -289,14 +289,18 @@ export default function Home() {
           <Card
             className="border-primary/20 card-hover cursor-pointer overflow-hidden"
             onClick={() => { track('spot_opened', { spot: topSpot.name, score: topSpot.score, source: 'top_spot' }); navigate(`/spot/${topSpot.id}`) }}
-            style={{ animation: visible ? 'slideUp 0.5s 0.1s ease-out both' : 'none', background: `linear-gradient(135deg, hsl(var(--card)) 0%, ${getScoreColor(topSpot.score)}15 100%)`, borderColor: `${getScoreColor(topSpot.score)}40` }}
+            style={{
+              animation: visible ? 'slideUp 0.5s 0.1s ease-out both' : 'none',
+              background: `linear-gradient(135deg, var(--card) 0%, color-mix(in oklch, ${getScoreColor(topSpot.score)} 15%, var(--card)) 100%)`,
+              borderColor: `color-mix(in oklch, ${getScoreColor(topSpot.score)} 40%, transparent)`,
+            }}
           >
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5 text-primary" />
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <Flame className="h-5 w-5 text-orange-400" />Melhor Pico Agora
+                    <Flame className="h-5 w-5 text-rating-fair" />Melhor Pico Agora
                   </CardTitle>
                 </div>
                 <TrendBadge spot={topSpot} size="lg" />

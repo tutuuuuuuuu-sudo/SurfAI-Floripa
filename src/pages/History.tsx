@@ -137,7 +137,7 @@ export default function HistoryPage() {
               <TrendingUp className="h-5 w-5 text-primary" />
               Previsão dos Próximos {isPremium ? '14' : '3'} Dias
               {isPremium && (
-                <Badge className="ml-auto bg-yellow-500/10 text-yellow-500 border-yellow-500/30 text-xs">
+                <Badge className="ml-auto bg-rating-fair/10 text-rating-fair border-rating-fair/30 text-xs">
                   <Crown className="h-3 w-3 mr-1" />Premium
                 </Badge>
               )}

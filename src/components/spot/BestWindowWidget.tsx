@@ -80,7 +80,7 @@ export function BestWindowWidget({ lat, lng, orientation }: Props) {
         <CardTitle className="text-base flex items-center gap-2">
           <Clock className="h-4 w-4 text-primary" />
           Melhor Janela do Dia
-          <Badge className="ml-auto bg-yellow-500/10 text-yellow-500 border-yellow-500/30 text-xs">
+          <Badge className="ml-auto bg-rating-fair/10 text-rating-fair border-rating-fair/30 text-xs">
             <Crown className="h-3 w-3 mr-1" />Premium
           </Badge>
         </CardTitle>

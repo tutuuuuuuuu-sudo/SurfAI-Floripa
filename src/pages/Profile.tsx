@@ -364,12 +364,12 @@ export default function ProfilePage() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Flame className="h-5 w-5 text-orange-400" />Suas Sessões
+                    <Flame className="h-5 w-5 text-rating-fair" />Suas Sessões
                   </div>
                   {streak > 0 && (
-                    <div className="flex items-center gap-1.5 bg-orange-500/10 px-3 py-1 rounded-full">
-                      <Flame className="h-3.5 w-3.5 text-orange-400" />
-                      <span className="text-xs font-bold text-orange-400">{streak} dias seguidos</span>
+                    <div className="flex items-center gap-1.5 bg-rating-fair/10 px-3 py-1 rounded-full">
+                      <Flame className="h-3.5 w-3.5 text-rating-fair" />
+                      <span className="text-xs font-bold text-rating-fair">{streak} dias seguidos</span>
                     </div>
                   )}
                 </CardTitle>

@@ -55,6 +55,15 @@
     --rating-good:      oklch(0.55 0.18 145);
     --rating-fair:      oklch(0.65 0.18 70);
     --rating-poor:      oklch(0.58 0.22 27);
+
+    /* Medalhas de ranking (ouro/prata/bronze — não são "rating", constantes nos dois temas) */
+    --medal-gold:   oklch(0.795 0.184 86);
+    --medal-silver: oklch(0.705 0.015 286);
+    --medal-bronze: oklch(0.555 0.163 48);
+
+    /* Gradiente de marca do wordmark (AppLogo) — constante nos dois temas */
+    --logo-gradient-start: oklch(0.72 0.13 215);
+    --logo-gradient-end:   oklch(0.67 0.16 279);
 }
 
 .dark {
@@ -136,6 +145,9 @@
     --color-rating-good:      var(--rating-good);
     --color-rating-fair:      var(--rating-fair);
     --color-rating-poor:      var(--rating-poor);
+    --color-medal-gold:   var(--medal-gold);
+    --color-medal-silver: var(--medal-silver);
+    --color-medal-bronze: var(--medal-bronze);
     --radius-sm: calc(var(--radius) - 4px);
     --radius-md: calc(var(--radius) - 2px);
     --radius-lg: var(--radius);

@@ -3,7 +3,7 @@ import { X, Trophy, Medal } from 'lucide-react'
 import { getSpotRanking, SpotRanking } from '@/lib/ranking'
 import { useAuth } from '@/contexts/AuthContext'
 
-const MEDAL_COLOR = ['text-yellow-500', 'text-zinc-400', 'text-amber-700']
+const MEDAL_COLOR = ['text-medal-gold', 'text-medal-silver', 'text-medal-bronze']
 
 export const RankingModal = ({ spotName, beachId, onClose }: { spotName: string; beachId: string; onClose: () => void }) => {
   const { user } = useAuth()

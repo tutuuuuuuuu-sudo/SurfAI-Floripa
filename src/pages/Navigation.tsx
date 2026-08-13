@@ -111,7 +111,7 @@ const NavModal = ({
 
           {/* O Maps/Waze detecta automaticamente a posição do dispositivo */}
           <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
-            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+            <div className="h-2 w-2 rounded-full bg-rating-good animate-pulse" />
             <span>Rota a partir da sua posição atual</span>
           </div>
         </div>
@@ -140,7 +140,7 @@ const NavModal = ({
 
         {/* Trilha warning */}
         {dest.hasTrilha && (
-          <div className="mx-5 mt-4 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-xs text-yellow-600 dark:text-yellow-400">
+          <div className="mx-5 mt-4 p-3 rounded-xl bg-rating-fair/10 border border-rating-fair/30 text-xs text-rating-fair">
             Acesso por trilha — o GPS leva até o ponto de partida da trilha, não à areia.
           </div>
         )}
@@ -149,44 +149,44 @@ const NavModal = ({
         <div className="p-5 space-y-3">
           <button
             onClick={() => openNavigation(activeLat, activeLng, 'google')}
-            className="w-full flex items-center gap-4 p-4 rounded-xl border border-border hover:border-blue-500/50 hover:bg-blue-500/5 transition-all group"
+            className="w-full flex items-center gap-4 p-4 rounded-xl border border-border hover:border-primary/50 hover:bg-primary/5 transition-all group"
           >
-            <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-              <Map className="h-5 w-5 text-blue-500" />
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Map className="h-5 w-5 text-primary" />
             </div>
             <div className="text-left flex-1">
-              <div className="font-semibold text-sm group-hover:text-blue-500 transition-colors">Google Maps</div>
+              <div className="font-semibold text-sm group-hover:text-primary transition-colors">Google Maps</div>
               <div className="text-xs text-muted-foreground">Abre com rota a partir de você</div>
             </div>
-            <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-blue-500 transition-colors" />
+            <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
           </button>
 
           <button
             onClick={() => openNavigation(activeLat, activeLng, 'waze')}
-            className="w-full flex items-center gap-4 p-4 rounded-xl border border-border hover:border-cyan-500/50 hover:bg-cyan-500/5 transition-all group"
+            className="w-full flex items-center gap-4 p-4 rounded-xl border border-border hover:border-secondary/50 hover:bg-secondary/5 transition-all group"
           >
-            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center flex-shrink-0">
-              <Car className="h-5 w-5 text-cyan-500" />
+            <div className="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center flex-shrink-0">
+              <Car className="h-5 w-5 text-secondary" />
             </div>
             <div className="text-left flex-1">
-              <div className="font-semibold text-sm group-hover:text-cyan-500 transition-colors">Waze</div>
+              <div className="font-semibold text-sm group-hover:text-secondary transition-colors">Waze</div>
               <div className="text-xs text-muted-foreground">Melhor para trânsito em tempo real</div>
             </div>
-            <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-cyan-500 transition-colors" />
+            <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-secondary transition-colors" />
           </button>
 
           <button
             onClick={() => openNavigation(activeLat, activeLng, 'apple')}
-            className="w-full flex items-center gap-4 p-4 rounded-xl border border-border hover:border-gray-400/50 hover:bg-gray-400/5 transition-all group"
+            className="w-full flex items-center gap-4 p-4 rounded-xl border border-border hover:border-foreground/30 hover:bg-muted/40 transition-all group"
           >
-            <div className="w-10 h-10 rounded-xl bg-gray-400/10 flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
               <Apple className="h-5 w-5 text-muted-foreground" />
             </div>
             <div className="text-left flex-1">
-              <div className="font-semibold text-sm group-hover:text-gray-300 transition-colors">Apple Maps</div>
+              <div className="font-semibold text-sm group-hover:text-foreground transition-colors">Apple Maps</div>
               <div className="text-xs text-muted-foreground">Para usuários iPhone/iPad</div>
             </div>
-            <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-gray-300 transition-colors" />
+            <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
           </button>
         </div>
 
@@ -284,7 +284,7 @@ export default function NavigationPage() {
                         <div className="font-semibold">{spot.name}</div>
                         <div className="text-xs text-muted-foreground flex items-center gap-1">
                           {getLocationDesc(spot.id)}
-                          {dest?.hasTrilha && <span className="text-yellow-500">· via trilha</span>}
+                          {dest?.hasTrilha && <span className="text-rating-fair">· via trilha</span>}
                         </div>
                         <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1"><Waves className="h-3 w-3" />{spot.waveHeight.toFixed(1)}m</span>
