@@ -125,7 +125,7 @@ export async function getWeatherForecast(
 
     if (!apiData.forecasts?.length) return applyPremiumLock(getFallbackForecast(), isPremium)
 
-    let forecasts = apiData.forecasts
+    const forecasts = apiData.forecasts
 
     // Sobrescreve o dia 0 com as condições atuais (mais precisas) se disponíveis
     if (currentConditions && forecasts.length > 0) {

@@ -98,8 +98,6 @@ export default function SurfLog() {
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => { loadSessions() }, [user])
-
   async function loadSessions() {
     if (!user) return
     setLoading(true)
@@ -122,6 +120,8 @@ export default function SurfLog() {
     }
     setLoading(false)
   }
+
+  useEffect(() => { loadSessions() }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSave() {
     if (!user) return

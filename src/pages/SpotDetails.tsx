@@ -66,7 +66,10 @@ const ShareButton = ({ spot }: { spot: BeachCondition }) => {
     const rating = getRatingInfo(spot.score)
     const spotUrl = `${FIXED_DOMAIN}/spot/${spot.id}`
     const text = `🏄 ${spot.name} está ${rating.label} agora!\n\nScore: ${spot.score.toFixed(1)}/10\nOndas: ${spot.waveHeight.toFixed(1)}m · Período: ${Math.round(spot.swellPeriod)}s\nVento: ${Math.round(spot.windSpeed)}km/h · Água: ${spot.waterConditions.temperature}°C\n\nVeja mais: ${spotUrl}`
-    if (navigator.share) { try { await navigator.share({ title: `Surf AI — ${spot.name}`, text, url: spotUrl }); return } catch (_) {} }
+    if (navigator.share) {
+      try { await navigator.share({ title: `Surf AI — ${spot.name}`, text, url: spotUrl }); return }
+      catch { /* usuário cancelou o share nativo — cai pro clipboard abaixo */ }
+    }
     await navigator.clipboard.writeText(text)
     toast.success('Condições copiadas! Cole no WhatsApp 📋')
   }
