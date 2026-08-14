@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -65,48 +65,20 @@ export default function ComparePage() {
     return allSame ? '' : best.id
   }
 
-  // Controle de cota diária para free: 1 comparação por dia
-  // O estado é mantido em memória de sessão (sessionStorage) além do localStorage
-  // para dificultar bypass via DevTools (apagar localStorage não limpa a sessão ativa)
-  const freeQuotaKey = 'compare_used_date'
-  // Usa o horário de Floripa (UTC-3, sem horário de verão) em vez de UTC,
-  // senão a cota reseta às 21h locais em vez da meia-noite.
-  const todayStr = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().split('T')[0]
-  const usedTodayRef = useRef<boolean | null>(null)
-  if (usedTodayRef.current === null) {
-    usedTodayRef.current = !isPremium && (() => {
-      try {
-        return (
-          localStorage.getItem(freeQuotaKey) === todayStr ||
-          sessionStorage.getItem(freeQuotaKey) === todayStr
-        )
-      } catch { return false }
-    })()
-  }
-  const usedToday = usedTodayRef.current
-
-  const markQuotaUsed = () => {
-    if (!isPremium) {
-      try { localStorage.setItem(freeQuotaKey, todayStr) } catch { /* */ }
-      try { sessionStorage.setItem(freeQuotaKey, todayStr) } catch { /* */ }
-    }
-  }
-
-  // Intercepta addSpot para marcar cota
-  const addSpotWithQuota = (spot: BeachCondition) => {
-    markQuotaUsed()
-    addSpot(spot)
-  }
-
-  if (status !== 'loading' && !isPremium && usedToday) {
+  // "Comparação de picos" é benefício Premium (tabela de planos no CLAUDE.md) — antes
+  // disso, o gate real era uma cota de "1 comparação grátis/dia" que não protegia nada
+  // de verdade (o score de cada praia já é público pra conta free, praia por praia) e
+  // era trivial de burlar limpando 2 chaves do navegador. Trocado por bloqueio direto:
+  // free não compara, premium compara à vontade.
+  if (status !== 'loading' && !isPremium) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8 text-center">
         <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-4">
           <Lock className="h-8 w-8 text-primary" />
         </div>
-        <h2 className="text-xl font-bold mb-2">Comparação gratuita usada hoje</h2>
+        <h2 className="text-xl font-bold mb-2">Comparar Praias é Premium</h2>
         <p className="text-muted-foreground text-sm mb-6 max-w-xs">
-          Você já usou sua comparação gratuita de hoje. Com o Premium, compare praias à vontade — sem limite.
+          Compare score, ondas e vento de até 3 praias ao mesmo tempo, sem limite.
         </p>
         <Button onClick={() => navigate('/premium')} className="gap-2">
           <Crown className="h-4 w-4" />Assinar Premium
@@ -131,16 +103,6 @@ export default function ComparePage() {
       </header>
 
       <main className="container mx-auto px-4 py-6 max-w-3xl space-y-5">
-
-        {/* Banner de cota free */}
-        {!isPremium && !usedToday && (
-          <div className="flex items-center justify-between gap-3 bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 text-sm">
-            <span className="text-muted-foreground">Você tem <span className="font-semibold text-foreground">1 comparação gratuita</span> disponível hoje.</span>
-            <button onClick={() => navigate('/premium')} className="text-xs text-primary font-semibold whitespace-nowrap hover:underline">
-              Premium = ilimitado →
-            </button>
-          </div>
-        )}
 
         {/* Praias selecionadas */}
         <div className={`grid gap-3 ${selected.length === 3 ? 'grid-cols-3' : selected.length === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
@@ -198,7 +160,7 @@ export default function ComparePage() {
                   return (
                     <button
                       key={spot.id}
-                      onClick={() => addSpotWithQuota(spot)}
+                      onClick={() => addSpot(spot)}
                       className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted/30 transition-colors text-left"
                     >
                       <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style={{ backgroundColor: color }}>
