@@ -205,7 +205,7 @@ export default function Home() {
             <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
             <span>Atualizado às {(lastUpdated ?? new Date()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
           </div>
-          <NotificationPanel spots={allSpots} favorites={favorites} />
+          <NotificationPanel spots={allSpots} favorites={favorites} isPremium={isPremium} />
         </div>
 
         <SwellAlert spots={allSpots} />

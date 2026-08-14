@@ -12,16 +12,20 @@ import {
   checkAndNotifyGoodConditions,
 } from '@/lib/notifications'
 import type { BeachCondition } from '@/lib/surfData'
-import { usePremium } from '@/lib/premium'
 import { PremiumUpsellBanner } from '@/components/PremiumUpsellBanner'
 
 interface Props {
   spots: BeachCondition[]
   favorites: string[]
+  isPremium: boolean
 }
 
-export function NotificationPanel({ spots, favorites }: Props) {
-  const { isPremium } = usePremium()
+// isPremium vem por prop (não usePremium() de novo aqui) — Home.tsx já chama o
+// hook, e duas instâncias simultâneas tentavam se inscrever no mesmo canal
+// realtime do Supabase (subscription:${user.id}) ao mesmo tempo, o que quebrava
+// a Home inteira com "cannot add postgres_changes callbacks... after subscribe()"
+// (bug real encontrado testando em produção, não pego por type-check/testes).
+export function NotificationPanel({ spots, favorites, isPremium }: Props) {
   const [permission, setPermission] = useState(getNotificationPermission())
   const [settings, setSettings] = useState(getSavedNotificationSettings())
   const [loading, setLoading] = useState(false)
