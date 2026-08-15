@@ -174,12 +174,21 @@ export default function SpotDetails() {
     setVisible(false)
     if (conditionsLoading) return
 
+    // Navegação rápida entre picos (ex: voltar da lista e abrir outro card antes da
+    // resposta anterior chegar) podia deixar favorito/histórico do pico errado na tela —
+    // a resposta mais lenta do pico anterior sobrescrevia a do pico atual. `cancelled`
+    // descarta qualquer resposta que chegue depois que `id` já mudou de novo.
+    let cancelled = false
+
     const found = conditions.find(s => s.id === id) ?? null
     setSpot(found)
     setLoadingSpot(false)
-    setTimeout(() => setVisible(true), 50)
+    const showTimer = setTimeout(() => { if (!cancelled) setVisible(true) }, 50)
 
-    isFavorite(id).then(val => { setFavorite(val); setLoadingFav(false) })
+    isFavorite(id).then(val => {
+      if (cancelled) return
+      setFavorite(val); setLoadingFav(false)
+    })
 
     // Busca média histórica dos últimos 30 dias para contexto comparativo
     const since30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
@@ -189,6 +198,7 @@ export default function SpotDetails() {
       .eq('beach_id', id)
       .gte('captured_at', since30)
       .then(({ data }) => {
+        if (cancelled) return
         if (!data || data.length < 5) { setScoreHistory(null); return }
         const scores = data.map(r => Number(r.score))
         const avg = scores.reduce((a, b) => a + b, 0) / scores.length
@@ -196,6 +206,8 @@ export default function SpotDetails() {
         const currentScore = found?.score ?? 0
         setScoreHistory({ avg30: avg, isMonthBest: !!found && currentScore >= maxScore - 0.3 })
       }, () => {})
+
+    return () => { cancelled = true; clearTimeout(showTimer) }
   }, [id, conditions, conditionsLoading])
 
   useEffect(() => {
@@ -203,12 +215,14 @@ export default function SpotDetails() {
     // free (3 dias) e logo em seguida refazer a busca com a versão premium (14 dias).
     if (!spot || premiumLoading) return
     setForecast([])
+    let cancelled = false
     getWeatherForecast(
       spot.id,
       { waveHeight: spot.waveHeight, windSpeed: spot.windSpeed, swellPeriod: spot.swellPeriod, windDirection: spot.windDirection, waterTemperature: spot.waterConditions.temperature, score: spot.score },
       isPremium,
       spot._beachOrientation ?? 90
-    ).then(setForecast)
+    ).then(data => { if (!cancelled) setForecast(data) })
+    return () => { cancelled = true }
   }, [spot, isPremium, premiumLoading])
 
   if (loadingSpot || authLoading) return (

@@ -98,7 +98,7 @@ export default function SurfLog() {
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
 
-  async function loadSessions() {
+  async function loadSessions(ignore?: () => boolean) {
     if (!user) return
     setLoading(true)
     const { data, error } = await supabase
@@ -107,6 +107,10 @@ export default function SurfLog() {
       .eq('user_id', user.id)
       .order('date', { ascending: false })
       .limit(50)
+
+    // Se o usuário mudou (logout/login rápido) entre o disparo e a resposta, uma chamada
+    // mais nova já está em andamento — não sobrescreve o estado dela com dado antigo.
+    if (ignore?.()) return
 
     if (error) {
       if (error.code !== '42P01') {
@@ -121,7 +125,11 @@ export default function SurfLog() {
     setLoading(false)
   }
 
-  useEffect(() => { loadSessions() }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    let cancelled = false
+    loadSessions(() => cancelled)
+    return () => { cancelled = true }
+  }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSave() {
     if (!user) return
