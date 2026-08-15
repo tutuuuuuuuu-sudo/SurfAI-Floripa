@@ -13,7 +13,7 @@ import { PremiumUpsellBanner } from '@/components/PremiumUpsellBanner'
 
 const getScoreLabel = (score: number) => getRatingInfo(score).label.charAt(0) + getRatingInfo(score).label.slice(1).toLowerCase()
 
-export default function HistoryPage() {
+export default function ForecastPage() {
   const navigate = useNavigate()
   const { id } = useParams<{ id?: string }>()
   const { isPremium } = usePremium()

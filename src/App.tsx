@@ -23,7 +23,7 @@ const Favorites = lazy(() => import('./pages/Favorites'))
 const NavigationPage = lazy(() => import('./pages/Navigation'))
 const PremiumPage = lazy(() => import('./pages/Premium'))
 const ComparePage = lazy(() => import('./pages/Compare'))
-const ForecastPage = lazy(() => import('./pages/History'))
+const ForecastPage = lazy(() => import('./pages/Forecast'))
 const SurfLog = lazy(() => import('./pages/SurfLog'))
 const ContentStudio = lazy(() => import('./pages/ContentStudio'))
 
