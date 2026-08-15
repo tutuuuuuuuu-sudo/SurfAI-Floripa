@@ -1,45 +1,11 @@
 export const config = { runtime: 'edge' }
 
+import { verifyMpSignature } from './_mpAuth.js'
+
 function ok() {
   return new Response(JSON.stringify({ ok: true }), {
     headers: { 'Content-Type': 'application/json' },
   })
-}
-
-// Verifica a assinatura HMAC enviada pelo Mercado Pago no header x-signature.
-// Documentação: https://www.mercadopago.com.br/developers/pt/docs/your-integrations/notifications/webhooks
-async function verifyMpSignature(req: Request, secret: string): Promise<boolean> {
-  const xSignature = req.headers.get('x-signature')
-  const xRequestId = req.headers.get('x-request-id')
-  const url = new URL(req.url)
-  const dataId = url.searchParams.get('data.id')
-
-  if (!xSignature) return false
-
-  const parts = Object.fromEntries(xSignature.split(',').map(p => p.trim().split('=')))
-  const ts = parts['ts']
-  const hash = parts['v1']
-  if (!ts || !hash) return false
-
-  const manifest = `id:${dataId ?? ''};request-id:${xRequestId ?? ''};ts:${ts};`
-
-  const key = await crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  )
-  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(manifest))
-  const computedBytes = new Uint8Array(sig)
-  const hashBytes = new Uint8Array(hash.length / 2)
-  for (let i = 0; i < hashBytes.length; i++) {
-    hashBytes[i] = parseInt(hash.slice(i * 2, i * 2 + 2), 16)
-  }
-  if (computedBytes.length !== hashBytes.length) return false
-  let diff = 0
-  for (let i = 0; i < computedBytes.length; i++) diff |= computedBytes[i] ^ hashBytes[i]
-  return diff === 0
 }
 
 export default async function handler(req: Request) {
@@ -73,12 +39,16 @@ export default async function handler(req: Request) {
   // Testes do painel MP (live_mode === false) não têm assinatura válida, então
   // só pulamos a verificação quando o secret NÃO está configurado (ambiente de dev).
   // Em produção o secret DEVE estar configurado — sem ele, rejeitamos live_mode=true.
+  const dataId = new URL(req.url).searchParams.get('data.id')
+  const xSignature = req.headers.get('x-signature')
+  const xRequestId = req.headers.get('x-request-id')
+
   if (parsedBody.live_mode === true) {
     if (!webhookSecret) {
       console.error('[mp-webhook] MP_WEBHOOK_SECRET não configurado — rejeitando live_mode')
       return new Response('Unauthorized', { status: 401 })
     }
-    const valid = await verifyMpSignature(req, webhookSecret)
+    const valid = await verifyMpSignature(xSignature, xRequestId, dataId, webhookSecret)
     if (!valid) {
       console.error('[mp-webhook] Assinatura inválida — request rejeitado')
       return new Response('Unauthorized', { status: 401 })
@@ -87,9 +57,8 @@ export default async function handler(req: Request) {
     // live_mode === false COM secret configurado: deve ser teste do painel MP.
     // Verificamos a assinatura; se não tiver (testes do painel não enviam), aceitamos
     // mas NÃO processamos pagamentos reais (guard abaixo por live_mode + id < 1M).
-    const xSignature = req.headers.get('x-signature')
     if (xSignature) {
-      const valid = await verifyMpSignature(req, webhookSecret)
+      const valid = await verifyMpSignature(xSignature, xRequestId, dataId, webhookSecret)
       if (!valid) {
         console.error('[mp-webhook] Assinatura inválida em teste — rejeitado')
         return new Response('Unauthorized', { status: 401 })

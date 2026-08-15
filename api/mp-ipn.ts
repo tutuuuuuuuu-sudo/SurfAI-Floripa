@@ -1,39 +1,6 @@
 export const config = { runtime: 'edge' }
 
-// Reutiliza a mesma lógica de verificação HMAC do mp-webhook.ts
-async function verifyMpSignature(req: Request, secret: string): Promise<boolean> {
-  const xSignature = req.headers.get('x-signature')
-  const xRequestId = req.headers.get('x-request-id')
-  const url = new URL(req.url)
-  const dataId = url.searchParams.get('data.id') ?? url.searchParams.get('id')
-
-  if (!xSignature) return false
-
-  const parts = Object.fromEntries(xSignature.split(',').map(p => p.trim().split('=')))
-  const ts = parts['ts']
-  const hash = parts['v1']
-  if (!ts || !hash) return false
-
-  const manifest = `id:${dataId ?? ''};request-id:${xRequestId ?? ''};ts:${ts};`
-
-  const key = await crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  )
-  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(manifest))
-  const computedBytes = new Uint8Array(sig)
-  const hashBytes = new Uint8Array(hash.length / 2)
-  for (let i = 0; i < hashBytes.length; i++) {
-    hashBytes[i] = parseInt(hash.slice(i * 2, i * 2 + 2), 16)
-  }
-  if (computedBytes.length !== hashBytes.length) return false
-  let diff = 0
-  for (let i = 0; i < computedBytes.length; i++) diff |= computedBytes[i] ^ hashBytes[i]
-  return diff === 0
-}
+import { verifyMpSignature } from './_mpAuth.js'
 
 export default async function handler(req: Request) {
   const url = new URL(req.url)
@@ -59,7 +26,12 @@ export default async function handler(req: Request) {
     console.error('[mp-ipn] MP_WEBHOOK_SECRET não configurado — rejeitando request')
     return new Response('{"error":"Unauthorized"}', { status: 401, headers })
   }
-  const valid = await verifyMpSignature(req, webhookSecret)
+  const valid = await verifyMpSignature(
+    req.headers.get('x-signature'),
+    req.headers.get('x-request-id'),
+    url.searchParams.get('data.id') ?? id,
+    webhookSecret,
+  )
   if (!valid) {
     console.error('[mp-ipn] Assinatura HMAC inválida — request rejeitado')
     return new Response('{"error":"Unauthorized"}', { status: 401, headers })
