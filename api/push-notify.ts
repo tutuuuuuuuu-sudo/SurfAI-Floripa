@@ -19,12 +19,12 @@ function json(data: unknown, status = 200) {
 
 // ── VAPID JWT (assina o Authorization para o push service) ────────────────────
 
-function base64urlDecode(s: string): Uint8Array {
+export function base64urlDecode(s: string): Uint8Array {
   const pad = s.length % 4 === 0 ? '' : '='.repeat(4 - (s.length % 4))
   return Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + pad), c => c.charCodeAt(0))
 }
 
-function base64urlEncode(buf: ArrayBuffer | Uint8Array): string {
+export function base64urlEncode(buf: ArrayBuffer | Uint8Array): string {
   const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf)
   return btoa(String.fromCharCode(...bytes))
     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
@@ -48,7 +48,7 @@ async function importVapidKey(): Promise<CryptoKey> {
   )
 }
 
-async function makeVapidJwt(audience: string): Promise<string> {
+export async function makeVapidJwt(audience: string): Promise<string> {
   const header = base64urlEncode(new TextEncoder().encode(JSON.stringify({ typ: 'JWT', alg: 'ES256' })))
   const payload = base64urlEncode(new TextEncoder().encode(JSON.stringify({
     aud: audience,
@@ -64,7 +64,7 @@ async function makeVapidJwt(audience: string): Promise<string> {
 
 // ── Criptografia Web Push (RFC 8291 — AES-128-GCM) ──────────────────────────
 
-async function encryptWebPush(
+export async function encryptWebPush(
   plaintext: string,
   clientPublicKeyB64: string,
   authSecretB64: string,
