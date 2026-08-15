@@ -48,7 +48,7 @@ src/
 │   ├── SpotDetails.tsx        # Detalhe de um pico específico
 │   ├── Favorites.tsx          # Picos favoritados pelo usuário
 │   ├── Compare.tsx            # Comparação lado a lado de picos (premium)
-│   ├── History.tsx            # Histórico de condições (premium)
+│   ├── Forecast.tsx           # Previsão 14 dias (premium) — rotas /forecast, /forecast/:id. Histórico de 30 dias é feature separada, direto em SpotDetails.tsx via score_snapshots
 │   ├── SurfLog.tsx            # Diário de sessões do usuário
 │   ├── ContentStudio.tsx      # Gerador de posts pras redes sociais do Surf AI (uso interno, só admin)
 │   ├── Premium.tsx            # Página de upgrade/assinatura
@@ -75,8 +75,7 @@ src/
 │   │   ├── SwellPeriodWidget.tsx  # Widget de período de swell
 │   │   └── TrendBadge.tsx     # Badge de tendência de score
 │   ├── surf/
-│   │   ├── SpotCard.tsx       # Card de pico na listagem
-│   │   └── RegionFilter.tsx   # Filtro por região
+│   │   └── SpotCard.tsx       # Card de pico na listagem
 │   ├── AppLogo.tsx
 │   ├── BottomNav.tsx          # Navegação inferior mobile
 │   ├── OnboardingModal.tsx    # Modal de boas-vindas / nível do surfista
