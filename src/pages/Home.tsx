@@ -54,7 +54,7 @@ export default function Home() {
   const spots = useMemo(() => {
     let filtered = [...allSpots]
     if (activeRegion === 'Centro') filtered = filtered.filter(s => CENTRO_SPOT_IDS.includes(s.id as typeof CENTRO_SPOT_IDS[number]))
-    else if (activeRegion !== 'all') filtered = filtered.filter(s => s.region === activeRegion)
+    else if (activeRegion !== 'all') filtered = filtered.filter(s => s.region === activeRegion && !CENTRO_SPOT_IDS.includes(s.id as typeof CENTRO_SPOT_IDS[number]))
     return filtered.sort((a, b) => b.score - a.score)
   }, [allSpots, activeRegion])
 
