@@ -107,3 +107,5 @@ vapid-keys.txt
 
 # Rascunhos de conteúdo/marketing (imagens geradas, fontes baixadas) — não versionar
 .content-drafts/
+.vercel
+.env*

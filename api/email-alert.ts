@@ -145,7 +145,7 @@ async function sendAlertEmail(to: string, name: string, bestSpot: SpotResult, al
       method: 'POST',
       headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: 'Surf AI Floripa <onboarding@resend.dev>',
+        from: 'Surf AI Floripa <alertas@alo.surfaifloripa.com.br>',
         to: [to],
         subject: `🌊 ${bestSpot.name} está com score ${bestSpot.score} — vai lá!`,
         html: buildEmailHtml(name, bestSpot, allSpots),

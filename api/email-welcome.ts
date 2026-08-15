@@ -52,7 +52,7 @@ async function sendWelcomeEmail(name: string, email: string) {
       Authorization: `Bearer ${RESEND_KEY}`,
     },
     body: JSON.stringify({
-      from: 'Surf AI Floripa <onboarding@resend.dev>',
+      from: 'Surf AI Floripa <oi@alo.surfaifloripa.com.br>',
       reply_to: 'surfaifloripa@gmail.com',
       to: [email],
       subject: `Fala, ${firstName}! Bem-vindo ao Surf AI Floripa 🤙`,

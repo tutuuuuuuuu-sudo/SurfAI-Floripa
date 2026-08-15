@@ -439,7 +439,7 @@ async function sendReportEmail(data: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Surf AI Floripa <onboarding@resend.dev>',
+        from: 'Surf AI Floripa <relatorios@alo.surfaifloripa.com.br>',
         to: [REPORT_EMAIL],
         subject,
         html,
