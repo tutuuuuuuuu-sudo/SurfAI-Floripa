@@ -14,9 +14,13 @@ import {
 } from '@/components/landing/LandingComponents'
 import { AppScrollShowcase } from '@/components/landing/AppScrollShowcase'
 import { WaveScrollHero } from '@/components/landing/WaveScrollHero'
+import { BeachDirectory } from '@/components/landing/BeachDirectory'
 import {
   FAQS, STATS,
 } from '@/components/landing/landingData'
+import { BEACH_DIRECTORY } from '@/lib/beachDirectory'
+
+const BEACH_COUNT = BEACH_DIRECTORY.length
 
 export default function Landing() {
   const navigate = useNavigate()
@@ -94,7 +98,7 @@ export default function Landing() {
           </h1>
           <p className="text-lg text-white/90 max-w-lg leading-relaxed"
             style={{ animation: 'fadeIn 0.7s ease 0.4s both', textShadow: '0 2px 10px oklch(0 0 0 / 0.85), 0 1px 3px oklch(0 0 0 / 0.9)' }}>
-            Score de IA para 14 praias. Previsão de ondas, alertas e histórico —
+            Score de IA para {BEACH_COUNT} praias. Previsão de ondas, alertas e histórico —
             tudo que você precisa para não perder a melhor sessão da semana.
           </p>
 
@@ -161,23 +165,21 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* PREÇO ANTECIPADO */}
-      <section className="py-6 relative z-10"
-        style={{ borderTop: '1px solid oklch(1 0 0 / 0.06)', background: 'oklch(0.6 0.2 210 / 0.04)', backdropFilter: 'blur(20px)' }}>
-        <div className="container mx-auto px-5 max-w-5xl">
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 text-center sm:text-left">
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-rating-good animate-pulse" />
-              <span className="text-sm font-semibold">Plano gratuito disponível</span>
-            </div>
-            <span className="hidden sm:block text-muted-foreground/40">·</span>
-            <span className="text-sm text-muted-foreground">Premium com previsão 14 dias + alertas por</span>
-            <span className="text-sm font-black text-primary">R$&nbsp;16,90/mês</span>
-            <Link to="/login?plan=premium"
-              className="text-xs text-primary underline underline-offset-2 hover:text-primary/80 transition-colors">
-              Ver plano →
-            </Link>
-          </div>
+      {/* TODAS AS PRAIAS — prova social honesta: cobertura real, sem depoimento inventado */}
+      <section className="py-20 border-t border-border/30 relative z-10">
+        <div className="container mx-auto px-5 max-w-4xl">
+          <Reveal className="text-center mb-10">
+            <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 mb-4 px-4 py-1">
+              Cobertura real
+            </Badge>
+            <h2 className="text-3xl md:text-4xl font-black mb-4">
+              {BEACH_COUNT} praias. A ilha inteira, de verdade.
+            </h2>
+            <p className="text-foreground/70 max-w-md mx-auto">
+              Sem achismo, sem "praia genérica" — cada pico daqui é monitorado de verdade, com nome e localização reais.
+            </p>
+          </Reveal>
+          <BeachDirectory />
         </div>
       </section>
 
@@ -275,12 +277,12 @@ export default function Landing() {
                     <MapPin className="h-6 w-6 text-rating-excellent" />
                   </div>
                   <div className="text-right leading-none">
-                    <div className="text-3xl font-black text-rating-excellent">14</div>
+                    <div className="text-3xl font-black text-rating-excellent">{BEACH_COUNT}</div>
                     <div className="text-[10px] uppercase tracking-wider text-foreground/40">praias</div>
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-bold text-base mb-1.5">14 praias monitoradas</h3>
+                  <h3 className="font-bold text-base mb-1.5">{BEACH_COUNT} praias monitoradas</h3>
                   <p className="text-sm text-foreground/60 leading-relaxed">Cobertura completa de Florianópolis, do Santinho ao Naufragados.</p>
                 </div>
                 <div className="absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-rating-excellent/10 blur-2xl pointer-events-none" />
@@ -340,14 +342,14 @@ export default function Landing() {
               style={{ borderColor: 'oklch(0.65 0.18 50 / 0.4)', color: 'oklch(0.7 0.15 50)' }}>
               <Link to="/login?plan=premium">
                 <Crown className="h-4 w-4 mr-2" />
-                Ver Premium — R$&nbsp;16,90/mês
+                Ver Premium
               </Link>
             </Button>
           </Reveal>
         </div>
       </section>
 
-      {/* INSTALAÇÃO PWA — subiu de posição, é informação prática que vale saber cedo */}
+      {/* INSTALAÇÃO PWA */}
       <section className="py-20 border-t border-border/30">
         <div className="container mx-auto px-5 max-w-4xl">
           <div className="grid md:grid-cols-2 gap-12 items-center">
@@ -416,7 +418,101 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* FINAL CTA — o "quarto slogan", depois de apresentar o que o app realmente é */}
+      {/* PREÇO — mensal e anual juntos, um bloco só (antes existiam 2 desconectados) */}
+      <section id="pricing" className="py-20 relative border-t border-border/30">
+        <div className="absolute inset-0 pointer-events-none"
+          style={{ background: 'radial-gradient(ellipse 50% 40% at 50% 50%, oklch(0.55 0.18 60 / 0.04), transparent)' }} />
+        <div className="container mx-auto px-5 max-w-4xl relative">
+          <Reveal className="text-center mb-12">
+            <Badge className="bg-rating-fair/15 text-rating-fair border-rating-fair/30 mb-4">
+              <Crown className="h-3 w-3 mr-1.5" />Premium
+            </Badge>
+            <h2 className="text-3xl md:text-4xl font-black mb-3">
+              Leve seu surf ao<br />
+              <span className="text-rating-fair">próximo nível.</span>
+            </h2>
+            <p className="text-foreground/70 leading-relaxed max-w-md mx-auto">
+              Menos que o combustível de uma ida até a praia errada — e você nunca mais vai chegar quando o mar estiver ruim.
+            </p>
+          </Reveal>
+
+          <div className="grid md:grid-cols-2 gap-10 items-center mb-10">
+            <Reveal className="space-y-2.5">
+              {[
+                { icon: BarChart3, title: 'Previsão 14 dias completa' },
+                { icon: Bell, title: 'Alertas quando seu spot estiver épico' },
+                { icon: TrendingUp, title: 'Histórico completo de condições' },
+                { icon: Shield, title: 'Experiência 100% sem anúncios' },
+                { icon: Zap, title: 'Acesso antecipado a novos recursos' },
+              ].map(({ icon: Icon, title }) => (
+                <div key={title} className="flex items-center gap-3">
+                  <div className="h-6 w-6 rounded-lg bg-rating-fair/15 flex items-center justify-center flex-shrink-0">
+                    <Icon className="h-3.5 w-3.5 text-rating-fair" />
+                  </div>
+                  <span className="text-sm font-medium">{title}</span>
+                </div>
+              ))}
+            </Reveal>
+
+            {/* Dois planos lado a lado — mensal e anual, sem duplicar a mesma info em outro lugar da página */}
+            <div className="grid grid-cols-2 gap-3">
+              <Reveal delay={0.1}>
+                <div className="h-full rounded-2xl p-5 flex flex-col items-center text-center gap-1"
+                  style={{ background: 'oklch(1 0 0 / 0.03)', border: '1px solid oklch(1 0 0 / 0.1)' }}>
+                  <div className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Mensal</div>
+                  <div className="text-3xl font-black text-foreground leading-none">R$16<span className="text-lg">,90</span></div>
+                  <div className="text-xs text-muted-foreground mb-3">por mês</div>
+                  <Button asChild variant="outline" size="sm" className="w-full font-semibold">
+                    <Link to="/login?plan=premium">Assinar</Link>
+                  </Button>
+                </div>
+              </Reveal>
+              <Reveal delay={0.2}>
+                <div className="h-full rounded-2xl p-5 flex flex-col items-center text-center gap-1 relative overflow-hidden"
+                  style={{
+                    background: 'linear-gradient(135deg, oklch(0.7 0.18 60 / 0.15), oklch(0.6 0.22 50 / 0.1))',
+                    border: '1px solid oklch(0.65 0.18 50 / 0.4)',
+                    boxShadow: '0 0 24px oklch(0.6 0.18 60 / 0.2)',
+                  }}>
+                  <Badge className="absolute -top-0.5 right-2 bg-rating-fair text-[9px] px-1.5 py-0 h-4 text-background">-26%</Badge>
+                  <div className="text-xs text-rating-fair uppercase tracking-widest mb-1 font-semibold">Anual</div>
+                  <div className="text-3xl font-black text-rating-fair leading-none">R$12<span className="text-lg">,49</span></div>
+                  <div className="text-xs text-muted-foreground mb-3">por mês · R$149,90/ano</div>
+                  <Button asChild size="sm"
+                    className="w-full font-semibold"
+                    style={{ background: 'linear-gradient(135deg, oklch(0.7 0.18 60), oklch(0.6 0.22 50))', color: 'oklch(0.1 0.02 240)' }}>
+                    <Link to="/login?plan=premium">Assinar</Link>
+                  </Button>
+                </div>
+              </Reveal>
+            </div>
+          </div>
+
+          <Reveal className="flex flex-wrap items-center justify-center gap-6">
+            {['Pagamento seguro', 'Sem fidelidade', 'Cancele quando quiser'].map(t => (
+              <span key={t} className="flex items-center gap-1 text-xs text-muted-foreground">
+                <CheckCircle2 className="h-3 w-3 text-rating-good" />{t}
+              </span>
+            ))}
+          </Reveal>
+        </div>
+      </section>
+
+      {/* FAQ — objeções resolvidas logo depois do preço, antes do fechamento final */}
+      <section className="py-20 border-t border-border/30">
+        <div className="container mx-auto px-5 max-w-2xl">
+          <Reveal className="text-center mb-14">
+            <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 mb-4 px-4 py-1">FAQ</Badge>
+            <h2 className="text-3xl md:text-4xl font-black mb-4">Ainda com dúvida?<br />A gente responde.</h2>
+            <p className="text-foreground/70">Perguntas que todo surfista faz antes de baixar.</p>
+          </Reveal>
+          <div className="space-y-3">
+            {FAQS.map(faq => <FAQItem key={faq.q} q={faq.q} a={faq.a} />)}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA FINAL — agora é o último bloco de conteúdo de verdade, logo antes do footer */}
       <section className="py-20 border-t border-border/30 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full blur-[120px] opacity-20"
@@ -442,7 +538,7 @@ export default function Landing() {
                 <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-6 text-xs font-semibold"
                   style={{ background: 'oklch(0.6 0.2 210 / 0.12)', border: '1px solid oklch(0.6 0.2 210 / 0.3)', color: 'oklch(0.75 0.15 200)' }}>
                   <div className="h-1.5 w-1.5 rounded-full bg-rating-good animate-pulse" />
-                  14 praias monitoradas agora
+                  {BEACH_COUNT} praias monitoradas agora
                 </div>
                 <h2 className="text-3xl md:text-5xl font-black mb-4 leading-tight">
                   Sua próxima sessão épica<br />
@@ -454,7 +550,7 @@ export default function Landing() {
                   </span>
                 </h2>
                 <p className="text-muted-foreground mb-8 leading-relaxed text-base max-w-md mx-auto">
-                  Dados reais de 14 praias, score de IA e alertas personalizados.
+                  Dados reais de {BEACH_COUNT} praias, score de IA e alertas personalizados.
                   Crie sua conta grátis em menos de 1 minuto.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
@@ -488,107 +584,6 @@ export default function Landing() {
               </div>
             </div>
           </Reveal>
-        </div>
-      </section>
-
-
-      {/* PREMIUM SECTION */}
-      <section className="py-20 relative">
-        <div className="absolute inset-0 pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse 50% 40% at 50% 50%, oklch(0.55 0.18 60 / 0.04), transparent)' }} />
-        <div className="container mx-auto px-5 max-w-4xl relative">
-          <Reveal>
-            <div className="rounded-3xl p-8 md:p-10 relative overflow-hidden"
-              style={{
-                background: 'oklch(1 0 0 / 0.03)',
-                border: '1px solid oklch(0.65 0.18 50 / 0.2)',
-                backdropFilter: 'blur(24px)',
-                boxShadow: '0 8px 48px oklch(0 0 0 / 0.3), 0 0 80px oklch(0.65 0.18 50 / 0.06), inset 0 1px 0 oklch(1 0 0 / 0.08)',
-              }}>
-              <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full pointer-events-none"
-                style={{ background: 'radial-gradient(circle, oklch(0.6 0.16 60 / 0.1), transparent)' }} />
-              <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full pointer-events-none"
-                style={{ background: 'radial-gradient(circle, oklch(0.6 0.16 200 / 0.08), transparent)' }} />
-              <div className="relative grid md:grid-cols-2 gap-10 items-center">
-                <div className="space-y-6">
-                  <div>
-                    <Badge className="bg-rating-fair/15 text-rating-fair border-rating-fair/30 mb-4">
-                      <Crown className="h-3 w-3 mr-1.5" />Premium
-                    </Badge>
-                    <h2 className="text-3xl md:text-4xl font-black mb-3">
-                      Leve seu surf ao<br />
-                      <span className="text-rating-fair">próximo nível.</span>
-                    </h2>
-                    <p className="text-foreground/70 leading-relaxed">
-                      Menos que o combustível de uma ida até a praia errada — e você nunca mais vai chegar quando o mar estiver ruim.
-                    </p>
-                  </div>
-                  <div className="space-y-2.5">
-                    {[
-                      { icon: BarChart3, title: 'Previsão 14 dias completa' },
-                      { icon: Bell, title: 'Alertas quando seu spot estiver épico' },
-                      { icon: TrendingUp, title: 'Histórico completo de condições' },
-                      { icon: Shield, title: 'Experiência 100% sem anúncios' },
-                      { icon: Zap, title: 'Acesso antecipado a novos recursos' },
-                    ].map(({ icon: Icon, title }) => (
-                      <div key={title} className="flex items-center gap-3">
-                        <div className="h-6 w-6 rounded-lg bg-rating-fair/15 flex items-center justify-center flex-shrink-0">
-                          <Icon className="h-3.5 w-3.5 text-rating-fair" />
-                        </div>
-                        <span className="text-sm font-medium">{title}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex flex-col items-center md:items-end gap-5">
-                  <div className="text-center md:text-right">
-                    <div className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Apenas</div>
-                    <div className="flex items-end justify-center md:justify-end gap-1">
-                      <span className="text-6xl font-black text-rating-fair leading-none">16</span>
-                      <div className="mb-1.5">
-                        <div className="text-2xl font-black text-rating-fair">,90</div>
-                        <div className="text-xs text-muted-foreground">R$/mês</div>
-                      </div>
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">Cancele quando quiser</div>
-                  </div>
-                  <Button size="lg" asChild
-                    className="w-full md:w-auto font-bold px-10 h-12 text-base group"
-                    style={{
-                      background: 'linear-gradient(135deg, oklch(0.7 0.18 60), oklch(0.6 0.22 50))',
-                      color: 'oklch(0.1 0.02 240)',
-                      boxShadow: '0 0 32px oklch(0.6 0.18 60 / 0.4)',
-                    }}>
-                    <Link to="/login?plan=premium">
-                      <Crown className="h-4 w-4 mr-2" />
-                      Assinar Premium
-                    </Link>
-                  </Button>
-                  <div className="flex flex-wrap items-center justify-center md:justify-end gap-3">
-                    {['Pagamento seguro', 'Sem fidelidade', 'Cancele quando quiser'].map(t => (
-                      <span key={t} className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <CheckCircle2 className="h-3 w-3 text-rating-good" />{t}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section className="py-20 border-t border-border/30">
-        <div className="container mx-auto px-5 max-w-2xl">
-          <Reveal className="text-center mb-14">
-            <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 mb-4 px-4 py-1">FAQ</Badge>
-            <h2 className="text-3xl md:text-4xl font-black mb-4">Ainda com dúvida?<br />A gente responde.</h2>
-            <p className="text-foreground/70">Perguntas que todo surfista faz antes de baixar.</p>
-          </Reveal>
-          <div className="space-y-3">
-            {FAQS.map(faq => <FAQItem key={faq.q} q={faq.q} a={faq.a} />)}
-          </div>
         </div>
       </section>
 

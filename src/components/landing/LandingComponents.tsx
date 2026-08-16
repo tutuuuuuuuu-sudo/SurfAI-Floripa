@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { ChevronDown, Check, X, Crown, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { PREMIUM_SCROLL_THRESHOLD } from './landingData'
 
 // ── Hook: animação de entrada no scroll ─────────────────────────────────────
 
@@ -102,13 +101,26 @@ export function PlanCell({ value }: { value: boolean | string }) {
 export function FloatingCTA({ onFree, onPremium }: { onFree: () => void; onPremium: () => void }) {
   const [visible, setVisible] = useState(false)
   const [isPremiumMode, setIsPremiumMode] = useState(false)
+
   useEffect(() => {
-    const onScroll = () => {
-      setVisible(window.scrollY > 500)
-      setIsPremiumMode(window.scrollY > PREMIUM_SCROLL_THRESHOLD)
-    }
+    const onScroll = () => setVisible(window.scrollY > 500)
     window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
     return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  // Troca pra "Assinar Premium" a partir do momento que a seção de preço real (#pricing)
+  // entra na tela — antes dependia de um pixel fixo (PREMIUM_SCROLL_THRESHOLD) sem
+  // nenhum vínculo com o layout real, quebrava a cada reordenação de seção.
+  useEffect(() => {
+    const section = document.getElementById('pricing')
+    if (!section) return
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsPremiumMode(entry.boundingClientRect.top < window.innerHeight / 2),
+      { threshold: 0 }
+    )
+    observer.observe(section)
+    return () => observer.disconnect()
   }, [])
   return (
     <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8 pointer-events-none'}`}>
