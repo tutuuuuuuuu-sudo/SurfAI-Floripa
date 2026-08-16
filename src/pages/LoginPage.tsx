@@ -4,6 +4,15 @@ import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { AppLogo } from '@/components/AppLogo'
 import { Button } from '@/components/ui/button'
+import {
+  GlassCard,
+  GlassCardHeader,
+  GlassCardTitle,
+  GlassCardDescription,
+  GlassCardContent,
+  GlassCardFooter,
+} from '@/components/ui/glass-card'
+import aerialBg from '@/assets/landing/aerial-floripa.jpg'
 
 export default function LoginPage() {
   const [tab, setTab] = useState<'login' | 'signup'>('login')
@@ -62,48 +71,33 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <div
+      className="min-h-screen flex items-center justify-center p-6 bg-cover bg-center relative"
+      style={{ backgroundImage: `url(${aerialBg})` }}
+    >
+      {/* Escurece a foto pra garantir contraste do texto branco, independente do tema escolhido */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70" />
 
-      {/* Painel esquerdo — visível apenas em telas médias+ */}
-      <div className="hidden md:flex flex-col justify-between flex-1 p-12 relative overflow-hidden bg-card border-r border-border">
-        <AppLogo size={44} variant="full" />
-        <div>
-          <h2 className="text-foreground text-3xl font-bold leading-snug mb-3">
-            Onde está melhor<br />para surfar agora?
-          </h2>
-          <p className="text-muted-foreground text-sm leading-relaxed">
-            IA analisa vento, swell, maré e batimetria<br />
-            para indicar o melhor pico em tempo real.
-          </p>
-        </div>
-        <div className="flex gap-8">
-          {[['14', 'praias'], ['4', 'regiões'], ['24/7', 'ao vivo']].map(([val, label]) => (
-            <div key={label}>
-              <p className="text-primary text-2xl font-bold">{val}</p>
-              <p className="text-muted-foreground text-xs">{label}</p>
-            </div>
-          ))}
-        </div>
-        {/* Onda decorativa */}
-        <svg className="absolute bottom-0 left-0 right-0 opacity-10" viewBox="0 0 400 100" preserveAspectRatio="none">
-          <path d="M0,50 Q50,10 100,40 Q150,70 200,30 Q250,0 300,40 Q350,70 400,20 L400,100 L0,100 Z" fill="currentColor" className="text-primary" />
-        </svg>
-      </div>
+      <GlassCard className="w-full max-w-sm relative">
+        <GlassCardHeader>
+          <AppLogo size={44} variant="full" />
+          <GlassCardTitle className="mt-2">
+            {tab === 'login' ? 'Bem-vindo de volta' : 'Criar sua conta'}
+          </GlassCardTitle>
+          <GlassCardDescription>
+            {tab === 'login' ? 'Veja as condições das suas praias favoritas' : 'Grátis pra começar — premium quando quiser'}
+          </GlassCardDescription>
+        </GlassCardHeader>
 
-      {/* Painel direito — formulário */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-background">
-        <div className="w-full max-w-sm">
-
+        <GlassCardContent>
           {/* Tab selector */}
-          <div className="flex border border-border rounded-xl overflow-hidden mb-6">
+          <div className="flex border border-white/20 rounded-xl overflow-hidden mb-5">
             {(['login', 'signup'] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => { setTab(t); setError(''); setMessage('') }}
                 className={`flex-1 py-2.5 text-sm font-medium transition-all ${
-                  tab === t
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-muted/50'
+                  tab === t ? 'bg-white/25 text-white' : 'text-white/60 hover:bg-white/10'
                 }`}
               >
                 {t === 'login' ? 'Entrar' : 'Criar conta'}
@@ -111,17 +105,10 @@ export default function LoginPage() {
             ))}
           </div>
 
-          <h1 className="text-2xl font-bold text-foreground mb-1">
-            {tab === 'login' ? 'Bem-vindo de volta' : 'Criar sua conta'}
-          </h1>
-          <p className="text-primary text-sm mb-6">
-            {tab === 'login' ? 'Veja as condições das suas praias favoritas' : 'Grátis para começar — premium quando quiser'}
-          </p>
-
           {/* Google OAuth */}
           <button
             onClick={signInWithGoogle}
-            className="w-full flex items-center justify-center gap-2.5 py-2.5 border border-border rounded-xl text-sm font-medium text-foreground hover:bg-muted/50 transition mb-4"
+            className="w-full flex items-center justify-center gap-2.5 py-2.5 border border-white/20 rounded-xl text-sm font-medium text-white bg-white/10 hover:bg-white/20 transition mb-4"
           >
             <svg width="18" height="18" viewBox="0 0 18 18">
               <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
@@ -133,46 +120,46 @@ export default function LoginPage() {
           </button>
 
           <div className="flex items-center gap-3 mb-4">
-            <hr className="flex-1 border-border" />
-            <span className="text-xs text-muted-foreground">ou</span>
-            <hr className="flex-1 border-border" />
+            <hr className="flex-1 border-white/20" />
+            <span className="text-xs text-white/60">ou</span>
+            <hr className="flex-1 border-white/20" />
           </div>
 
           {/* Nome (só no signup) */}
           {tab === 'signup' && (
             <div className="mb-3">
-              <label className="block text-xs font-medium text-muted-foreground mb-1.5">Nome</label>
+              <label className="block text-xs font-medium text-white/70 mb-1.5">Nome</label>
               <input
                 type="text"
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder="Seu nome"
-                className="w-full px-3.5 py-2.5 border border-input rounded-xl text-sm bg-background text-foreground outline-none focus:border-primary transition"
+                className="w-full px-3.5 py-2.5 border border-white/20 rounded-xl text-sm bg-white/10 text-white placeholder:text-white/40 outline-none focus:border-white/50 transition"
               />
             </div>
           )}
 
           {/* Email */}
           <div className="mb-3">
-            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Email</label>
+            <label className="block text-xs font-medium text-white/70 mb-1.5">Email</label>
             <input
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder="seu@email.com"
-              className="w-full px-3.5 py-2.5 border border-input rounded-xl text-sm bg-background text-foreground outline-none focus:border-primary transition"
+              className="w-full px-3.5 py-2.5 border border-white/20 rounded-xl text-sm bg-white/10 text-white placeholder:text-white/40 outline-none focus:border-white/50 transition"
             />
           </div>
 
           {/* Senha */}
-          <div className="mb-4">
+          <div className="mb-1">
             <div className="flex justify-between items-center mb-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Senha</label>
+              <label className="text-xs font-medium text-white/70">Senha</label>
               {tab === 'login' && (
                 <button
                   onClick={handleForgotPassword}
                   disabled={loading}
-                  className="text-xs text-primary hover:underline disabled:opacity-50"
+                  className="text-xs text-white/80 hover:underline disabled:opacity-50"
                 >
                   Esqueci a senha
                 </button>
@@ -184,61 +171,62 @@ export default function LoginPage() {
               onChange={e => setPassword(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSubmit()}
               placeholder={tab === 'signup' ? 'Mínimo 8 caracteres' : '••••••••'}
-              className="w-full px-3.5 py-2.5 border border-input rounded-xl text-sm bg-background text-foreground outline-none focus:border-primary transition"
+              className="w-full px-3.5 py-2.5 border border-white/20 rounded-xl text-sm bg-white/10 text-white placeholder:text-white/40 outline-none focus:border-white/50 transition"
             />
           </div>
 
           {/* Feedback */}
           {error && (
-            <div className="mb-3 px-3.5 py-2.5 bg-destructive/10 border border-destructive/30 rounded-xl text-xs text-destructive">
+            <div className="mt-3 px-3.5 py-2.5 bg-red-500/15 border border-red-400/40 rounded-xl text-xs text-red-100">
               {error}
             </div>
           )}
           {message && (
-            <div className="mb-3 px-3.5 py-2.5 bg-primary/10 border border-primary/30 rounded-xl text-xs text-primary">
+            <div className="mt-3 px-3.5 py-2.5 bg-white/15 border border-white/30 rounded-xl text-xs text-white">
               {message}
             </div>
           )}
 
           {/* Aceite dos termos — só no signup */}
           {tab === 'signup' && (
-            <label className="flex items-start gap-2.5 mb-4 cursor-pointer">
+            <label className="flex items-start gap-2.5 mt-4 cursor-pointer">
               <input
                 type="checkbox"
                 checked={acceptedTerms}
                 onChange={e => setAcceptedTerms(e.target.checked)}
-                className="mt-0.5 w-4 h-4 accent-primary flex-shrink-0"
+                className="mt-0.5 w-4 h-4 accent-white flex-shrink-0"
               />
-              <span className="text-xs text-muted-foreground leading-relaxed">
+              <span className="text-xs text-white/70 leading-relaxed">
                 Li e aceito a{' '}
-                <Link to="/privacy" target="_blank" className="text-primary underline underline-offset-2">
+                <Link to="/privacy" target="_blank" className="text-white underline underline-offset-2">
                   Política de Privacidade
                 </Link>
                 {' '}e concordo com o tratamento dos meus dados conforme a LGPD.
               </span>
             </label>
           )}
+        </GlassCardContent>
 
-          {/* Submit */}
+        <GlassCardFooter>
           <Button
-            className="w-full h-11"
+            className="w-full h-11 bg-white text-slate-900 hover:bg-white/90"
             onClick={handleSubmit}
             disabled={loading || (tab === 'signup' && !acceptedTerms)}
           >
             {loading ? 'Aguarde...' : tab === 'login' ? 'Entrar' : 'Criar conta grátis'}
           </Button>
 
-          <p className="text-center text-xs text-muted-foreground mt-4">
+          <p className="text-center text-xs text-white/70">
             {tab === 'login' ? 'Não tem conta? ' : 'Já tem conta? '}
             <button
               onClick={() => { setTab(tab === 'login' ? 'signup' : 'login'); setError(''); setMessage('') }}
-              className="text-primary font-medium hover:underline"
+              className="text-white font-medium hover:underline"
             >
               {tab === 'login' ? 'Criar agora' : 'Entrar'}
             </button>
           </p>
-        </div>
-      </div>
+        </GlassCardFooter>
+      </GlassCard>
     </div>
   )
 }
