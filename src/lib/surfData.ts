@@ -496,9 +496,9 @@ export function analyzeConditions(spot: BeachCondition): string {
   return analysis
 }
 
-// IDs das praias que pertencem à região "Centro" no contexto do filtro de regiões.
-// Centralizado aqui para evitar duplicação em Home, Navigation e demais páginas.
-export const CENTRO_SPOT_IDS = ['novo-campeche', 'joaquina', 'mole', 'barra-lagoa'] as const
+// Fonte real fica em beachDirectory.ts (módulo leve, sem os imports pesados deste
+// arquivo) — reexportado aqui porque Home.tsx/Navigation.tsx já importam daqui.
+export { CENTRO_SPOT_IDS } from './beachDirectory'
 
 // Picos vitrine: acessíveis em /spot/:id sem login, para reduzir a fricção de entrada
 // de quem chega por link direto, busca ou anúncio — vê o produto real antes de criar conta.
