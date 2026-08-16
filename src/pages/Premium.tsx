@@ -10,10 +10,6 @@ import {
 import { createMercadoPagoCheckout, usePremium } from '@/lib/premium'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
-import { TESTIMONIALS } from '@/components/landing/landingData'
-
-const FEATURED_TESTIMONIAL = TESTIMONIALS[3]
-
 const PREMIUM_BENEFITS = [
   { icon: Sparkles, title: 'Relatório de IA personalizado', desc: 'IA analisa as condições e escreve um relatório diário pro seu nível de surf.' },
   { icon: Calendar, title: 'Previsão 14 dias', desc: 'Planeje suas sessões com antecedência. Free tem apenas 3 dias.' },
@@ -102,13 +98,6 @@ export default function PremiumPage() {
             Tudo que um surfista de Floripa precisa para não perder nenhuma boa sessão.
           </p>
         </div>
-
-        {!isPremium && (
-          <div className="rounded-2xl border border-border bg-muted/20 p-4" style={{ animation: 'fadeIn 0.5s 0.1s ease-out both' }}>
-            <p className="text-sm text-foreground leading-relaxed">"{FEATURED_TESTIMONIAL.text}"</p>
-            <p className="text-xs text-muted-foreground mt-2">— {FEATURED_TESTIMONIAL.name}, {FEATURED_TESTIMONIAL.role}</p>
-          </div>
-        )}
 
         {/* Retorno do pagamento */}
         {paymentStatus === 'success' && !isPremium && (
