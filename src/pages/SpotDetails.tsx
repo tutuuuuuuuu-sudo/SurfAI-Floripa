@@ -41,11 +41,11 @@ const AnimatedProgress = ({ value }: { value: number }) => {
 const SwellPeriodBadge = ({ period }: { period: number }) => {
   const [open, setOpen] = useState(false)
   const getInfo = (p: number) => {
-    if (p >= 14) return { label: 'Épico',    color: 'var(--color-rating-epic)',      desc: 'Swell de longo período — ondas perfeitas e muito potentes.' }
-    if (p >= 12) return { label: 'Muito Bom', color: 'var(--color-rating-excellent)', desc: 'Excelente ondulação — ondas longas, limpas e com energia.' }
-    if (p >= 10) return { label: 'Bom',       color: 'var(--color-rating-good)',      desc: 'Boa ondulação — ondas bem formadas e surfáveis.' }
-    if (p >= 8)  return { label: 'Regular',   color: 'var(--color-rating-fair)',      desc: 'Ondulação moderada — surfável mas sem muita qualidade.' }
-    return       { label: 'Fraco',    color: 'var(--color-rating-poor)',      desc: 'Vento local — ondas curtas e bagunçadas.' }
+    if (p >= 14) return { label: 'Épico',    color: 'var(--color-rating-epic)',      desc: 'Swell de longo período: ondas perfeitas e muito potentes.' }
+    if (p >= 12) return { label: 'Muito Bom', color: 'var(--color-rating-excellent)', desc: 'Excelente ondulação: ondas longas, limpas e com energia.' }
+    if (p >= 10) return { label: 'Bom',       color: 'var(--color-rating-good)',      desc: 'Boa ondulação: ondas bem formadas e surfáveis.' }
+    if (p >= 8)  return { label: 'Regular',   color: 'var(--color-rating-fair)',      desc: 'Ondulação moderada: surfável, mas sem muita qualidade.' }
+    return       { label: 'Fraco',    color: 'var(--color-rating-poor)',      desc: 'Vento local: ondas curtas e bagunçadas.' }
   }
   const info = getInfo(period)
   return (
@@ -66,7 +66,7 @@ const ShareButton = ({ spot }: { spot: BeachCondition }) => {
     const spotUrl = `${FIXED_DOMAIN}/spot/${spot.id}`
     const text = `🏄 ${spot.name} está ${rating.label} agora!\n\nScore: ${spot.score.toFixed(1)}/10\nOndas: ${spot.waveHeight.toFixed(1)}m · Período: ${Math.round(spot.swellPeriod)}s\nVento: ${Math.round(spot.windSpeed)}km/h · Água: ${spot.waterConditions.temperature}°C\n\nVeja mais: ${spotUrl}`
     if (navigator.share) {
-      try { await navigator.share({ title: `Surf AI — ${spot.name}`, text, url: spotUrl }); return }
+      try { await navigator.share({ title: `Surf AI · ${spot.name}`, text, url: spotUrl }); return }
       catch { /* usuário cancelou o share nativo — cai pro clipboard abaixo */ }
     }
     await navigator.clipboard.writeText(text)
@@ -245,7 +245,7 @@ export default function SpotDetails() {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Joaquina, Praia Mole, Campeche, Novo Campeche, Matadeiro e Santinho você vê sem cadastro. Para os demais picos de Floripa, é só criar uma conta gratuita — leva menos de um minuto.
+              Joaquina, Praia Mole, Campeche, Novo Campeche, Matadeiro e Santinho você vê sem cadastro. Para os demais picos de Floripa, é só criar uma conta gratuita, leva menos de um minuto.
             </p>
             <Button className="w-full" onClick={() => navigate('/login')}>Criar conta grátis</Button>
             <Button variant="outline" className="w-full" onClick={() => navigate('/landing')}>Voltar</Button>
@@ -407,12 +407,6 @@ export default function SpotDetails() {
         {/* Aba Agora */}
         {activeTab === 'agora' && (
           <div className="space-y-5">
-            <Alert className="bg-primary/5 border-primary/20">
-              <TrendingUp className="h-4 w-4 text-primary"/>
-              <AlertTitle className="text-primary text-sm">Análise Inteligente</AlertTitle>
-              <AlertDescription className="text-foreground text-sm">{analyzeConditions(spot)}</AlertDescription>
-            </Alert>
-
             {/* Widget: contexto histórico do score */}
             {scoreHistory && scoreHistory.avg30 !== null && (() => {
               const diff = spot.score - scoreHistory.avg30
@@ -507,6 +501,12 @@ export default function SpotDetails() {
                 </CardContent>
               </Card>
             </div>
+
+            <Alert className="bg-primary/5 border-primary/20">
+              <TrendingUp className="h-4 w-4 text-primary"/>
+              <AlertTitle className="text-primary text-sm">Análise Inteligente</AlertTitle>
+              <AlertDescription className="text-foreground text-sm">{analyzeConditions(spot)}</AlertDescription>
+            </Alert>
 
             <Card>
               <CardHeader className="pb-2">
@@ -616,7 +616,7 @@ export default function SpotDetails() {
                 {forecast[0]?.isFallback && (
                   <div className="flex items-center gap-2 text-xs text-rating-fair bg-rating-fair/10 border border-rating-fair/20 rounded-xl px-3 py-2">
                     <AlertCircle className="h-3.5 w-3.5 flex-shrink-0"/>
-                    Previsão estimada — dados da API indisponíveis no momento.
+                    Previsão estimada: dados da API indisponíveis no momento.
                   </div>
                 )}
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
