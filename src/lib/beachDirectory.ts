@@ -9,7 +9,7 @@
 // Coordenadas, orientação e sub-regiões ficam só em surfData.ts — aqui é só o essencial
 // pra listagem/contagem.
 
-export type BeachRegion = 'Norte' | 'Leste' | 'Sul'
+export type BeachRegion = 'Norte' | 'Centro' | 'Sul'
 
 export interface BeachDirectoryEntry {
   id: string
@@ -19,7 +19,7 @@ export interface BeachDirectoryEntry {
 
 export const BEACH_DIRECTORY: BeachDirectoryEntry[] = [
   { id: 'campeche', name: 'Campeche', region: 'Sul' },
-  { id: 'novo-campeche', name: 'Novo Campeche', region: 'Sul' },
+  { id: 'novo-campeche', name: 'Novo Campeche', region: 'Centro' },
   { id: 'morro-pedras', name: 'Morro das Pedras', region: 'Sul' },
   { id: 'matadeiro', name: 'Matadeiro', region: 'Sul' },
   { id: 'lagoinha-leste', name: 'Lagoinha do Leste', region: 'Sul' },
@@ -27,15 +27,11 @@ export const BEACH_DIRECTORY: BeachDirectoryEntry[] = [
   { id: 'solidao', name: 'Solidão', region: 'Sul' },
   { id: 'armacao', name: 'Armação', region: 'Sul' },
   { id: 'naufragados', name: 'Naufragados', region: 'Sul' },
-  { id: 'joaquina', name: 'Joaquina', region: 'Leste' },
-  { id: 'mole', name: 'Praia Mole', region: 'Leste' },
-  { id: 'mocambique', name: 'Moçambique', region: 'Leste' },
-  { id: 'barra-lagoa', name: 'Barra da Lagoa', region: 'Leste' },
+  { id: 'joaquina', name: 'Joaquina', region: 'Centro' },
+  { id: 'mole', name: 'Praia Mole', region: 'Centro' },
+  { id: 'mocambique', name: 'Moçambique', region: 'Norte' },
+  { id: 'barra-lagoa', name: 'Barra da Lagoa', region: 'Centro' },
   { id: 'santinho', name: 'Santinho', region: 'Norte' },
 ]
 
-// Sub-conjunto de praias tratado como região "Centro" no filtro do app (ver Home.tsx,
-// Navigation.tsx) — não é um valor de `region`, é uma categoria adicional pra UI.
-export const CENTRO_SPOT_IDS = ['novo-campeche', 'joaquina', 'mole', 'barra-lagoa'] as const
-
-export const REGION_COUNT = 4 // Norte, Leste, Sul, Centro (Centro é sobreposto, ver acima)
+export const REGION_COUNT = 3 // Norte, Centro, Sul

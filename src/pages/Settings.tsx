@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/alert-dialog'
 
 type SkillLevel = 'Iniciante' | 'Intermediário' | 'Avançado' | ''
-type Region = 'all' | 'Sul' | 'Centro' | 'Leste' | 'Norte'
+type Region = 'all' | 'Sul' | 'Centro' | 'Norte'
 
 
 const SKILL_LEVELS: { value: SkillLevel; label: string; desc: string }[] = [
@@ -34,9 +34,9 @@ const REGIONS: { value: Region; label: string }[] = [
   { value: 'all', label: 'Todas as regiões' },
   { value: 'Sul', label: 'Sul da Ilha' },
   { value: 'Centro', label: 'Centro (Mole, Joaquina)' },
-  { value: 'Leste', label: 'Leste da Ilha' },
   { value: 'Norte', label: 'Norte da Ilha' },
 ]
+const REGION_VALUES: string[] = REGIONS.map(r => r.value)
 
 function loadPref<T>(key: string, fallback: T): T {
   try { return (JSON.parse(localStorage.getItem(key) ?? 'null') as T) ?? fallback }
@@ -53,7 +53,10 @@ export default function Settings() {
   const navigate = useNavigate()
 
   const [skillLevel, setSkillLevel] = useState<SkillLevel>(loadPref('pref_skill', ''))
-  const [defaultRegion, setDefaultRegion] = useState<Region>(loadPref('pref_region', 'all'))
+  const [defaultRegion, setDefaultRegion] = useState<Region>(() => {
+    const saved = loadPref<Region>('pref_region', 'all')
+    return REGION_VALUES.includes(saved) ? saved : 'all'
+  })
   const [notifMinScore, setNotifMinScore] = useState<number>(loadPref('notif_minScore', 7))
   const [notifFavOnly, setNotifFavOnly] = useState<boolean>(loadPref('notif_favOnly', false))
   const [emailAlertsEnabled, setEmailAlertsEnabled] = useState<boolean>(loadPref('emailAlertsEnabled', true))
@@ -69,7 +72,10 @@ export default function Settings() {
       .then(({ data }) => {
         if (!data) return
         if (data.pref_skill != null) { setSkillLevel(data.pref_skill as SkillLevel); savePref('pref_skill', data.pref_skill) }
-        if (data.pref_region != null) { setDefaultRegion(data.pref_region as Region); savePref('pref_region', data.pref_region) }
+        if (data.pref_region != null) {
+          const region = REGION_VALUES.includes(data.pref_region) ? data.pref_region as Region : 'all'
+          setDefaultRegion(region); savePref('pref_region', region)
+        }
         if (data.notif_min_score != null) { setNotifMinScore(data.notif_min_score); savePref('notif_minScore', data.notif_min_score) }
         if (data.notif_fav_only != null) { setNotifFavOnly(data.notif_fav_only); savePref('notif_favOnly', data.notif_fav_only) }
         if (data.email_alerts_enabled != null) { setEmailAlertsEnabled(data.email_alerts_enabled); savePref('emailAlertsEnabled', data.email_alerts_enabled) }
@@ -176,7 +182,7 @@ export default function Settings() {
               <Button variant="outline" size="sm" className="w-full border-rating-fair/50 text-rating-fair hover:bg-rating-fair/10"
                 onClick={() => navigate('/premium')}>
                 <Crown className="h-4 w-4 mr-2" />
-                Upgrade para Premium — R$ 16,90/mês
+                Upgrade para Premium · R$ 16,90/mês
               </Button>
             )}
           </CardContent>
@@ -330,7 +336,7 @@ export default function Settings() {
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-sm font-semibold">Alerta de mar bom por email</div>
-                    <div className="text-xs text-muted-foreground">Benefício Premium — email quando alguma praia bater bom</div>
+                    <div className="text-xs text-muted-foreground">Benefício Premium · email quando alguma praia bater bom</div>
                   </div>
                   <button
                     onClick={() => { const v = !emailAlertsEnabled; setEmailAlertsEnabled(v); save('emailAlertsEnabled', v, 'Alerta por email') }}

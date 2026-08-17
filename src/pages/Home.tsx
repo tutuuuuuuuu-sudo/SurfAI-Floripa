@@ -13,7 +13,7 @@ import { TrendBadge } from '@/components/home/TrendBadge'
 import { SwellAlert } from '@/components/home/SwellAlert'
 import { NotificationPanel } from '@/components/home/NotificationPanel'
 import { AIThinkingIndicator } from '@/components/home/AIThinkingIndicator'
-import { analyzeConditions, BeachCondition, CENTRO_SPOT_IDS } from '@/lib/surfData'
+import { analyzeConditions, BeachCondition } from '@/lib/surfData'
 import { useSurfData } from '@/contexts/SurfDataContext'
 import { getFavorites } from '@/lib/favorites'
 import { getLatestCommentsForSpots, LatestComment } from '@/lib/comments'
@@ -33,7 +33,11 @@ import {
 
 export default function Home() {
   const [activeRegion, setActiveRegion] = useState<string>(() => {
-    try { return (JSON.parse(localStorage.getItem('pref_region') ?? 'null') as string) ?? 'all' } catch { return 'all' }
+    const valid = ['all', 'Sul', 'Centro', 'Norte']
+    try {
+      const saved = JSON.parse(localStorage.getItem('pref_region') ?? 'null') as string
+      return valid.includes(saved) ? saved : 'all'
+    } catch { return 'all' }
   })
   const [topSpot, setTopSpot] = useState<BeachCondition | null>(null)
   const [favorites, setFavorites] = useState<string[]>([])
@@ -52,8 +56,7 @@ export default function Home() {
 
   const spots = useMemo(() => {
     let filtered = [...allSpots]
-    if (activeRegion === 'Centro') filtered = filtered.filter(s => CENTRO_SPOT_IDS.includes(s.id as typeof CENTRO_SPOT_IDS[number]))
-    else if (activeRegion !== 'all') filtered = filtered.filter(s => s.region === activeRegion && !CENTRO_SPOT_IDS.includes(s.id as typeof CENTRO_SPOT_IDS[number]))
+    if (activeRegion !== 'all') filtered = filtered.filter(s => s.region === activeRegion)
     return filtered.sort((a, b) => b.score - a.score)
   }, [allSpots, activeRegion])
 
@@ -236,7 +239,7 @@ export default function Home() {
                   <div className="h-7 w-7 rounded-lg bg-primary/15 flex items-center justify-center flex-shrink-0">
                     <Sparkles className="h-4 w-4 text-primary" />
                   </div>
-                  <span className="font-bold">Relatório do dia — IA</span>
+                  <span className="font-bold">Relatório do dia · IA</span>
                 </div>
                 {!premiumLoading && !isPremium && (
                   <Badge className="bg-rating-fair/15 text-rating-fair border border-rating-fair/30 text-[10px] px-1.5 py-0 gap-1">
@@ -270,14 +273,14 @@ export default function Home() {
                   </div>
                   <div className="relative overflow-hidden rounded-lg">
                     <p className="text-sm text-muted-foreground leading-relaxed blur-sm select-none" aria-hidden>
-                      Pelo swell de hoje, a tendência é o mar abrir uma janela mais curta que o normal — quem chegar cedo aproveita melhor. Se estiver muito cheio, considere ir para a opção alternativa mais próxima.
+                      Pelo swell de hoje, a tendência é o mar abrir uma janela mais curta que o normal: quem chegar cedo aproveita melhor. Se estiver muito cheio, considere ir para a opção alternativa mais próxima.
                     </p>
                   </div>
                   <button
                     onClick={() => navigate('/premium')}
                     className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-rating-fair/15 border border-rating-fair/40 hover:bg-rating-fair/25 transition-colors text-sm font-bold text-rating-fair"
                   >
-                    <Crown className="h-4 w-4" />Ver relatório completo — Premium
+                    <Crown className="h-4 w-4" />Ver relatório completo · Premium
                   </button>
                 </div>
               ) : null}
@@ -352,13 +355,13 @@ export default function Home() {
 
         <div className="flex gap-2 overflow-x-auto pb-1 anim-slide" style={{ animationDelay: '0.42s' }}>
           <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-1" />
-          {(['all', 'Sul', 'Centro', 'Leste', 'Norte'] as const).map(region => (
+          {(['all', 'Sul', 'Centro', 'Norte'] as const).map(region => (
             <button
               key={region}
               onClick={() => setActiveRegion(region)}
               className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all border ${activeRegion === region ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:border-primary/40'}`}
             >
-              {{ all: 'Todas', Sul: 'Sul', Centro: 'Centro', Leste: 'Leste', Norte: 'Norte' }[region]}
+              {{ all: 'Todas', Sul: 'Sul', Centro: 'Centro', Norte: 'Norte' }[region]}
             </button>
           ))}
         </div>

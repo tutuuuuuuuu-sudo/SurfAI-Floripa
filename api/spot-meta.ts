@@ -15,8 +15,8 @@ const APP_URL = 'https://www.surfaifloripa.com.br'
 // dentro de SpotDetails.tsx. Coordenadas e orientação replicadas do array BEACHES
 // (não alterar sem confirmação do usuário).
 const SPOTS: Record<string, { name: string; region: string; lat: number; lng: number; orientation: number }> = {
-  joaquina: { name: 'Joaquina', region: 'Leste', lat: -27.6293577, lng: -48.4490173, orientation: 90 },
-  mole: { name: 'Praia Mole', region: 'Leste', lat: -27.6022459, lng: -48.4326839, orientation: 85 },
+  joaquina: { name: 'Joaquina', region: 'Centro', lat: -27.6293577, lng: -48.4490173, orientation: 90 },
+  mole: { name: 'Praia Mole', region: 'Centro', lat: -27.6022459, lng: -48.4326839, orientation: 85 },
   campeche: { name: 'Campeche', region: 'Sul', lat: -27.697703, lng: -48.4898603, orientation: 90 },
   'novo-campeche': { name: 'Novo Campeche', region: 'Sul', lat: -27.6661001, lng: -48.4755307, orientation: 90 },
   matadeiro: { name: 'Matadeiro', region: 'Sul', lat: -27.7548429, lng: -48.4985647, orientation: 110 },
@@ -67,13 +67,13 @@ export default async function handler(req: Request) {
 
   if (!spot) {
     return new Response(renderHtml({
-      title: 'Surf AI Floripa — Score de IA para as praias de Floripa',
+      title: 'Surf AI Floripa | Score de IA para as praias de Floripa',
       description: 'Saiba em segundos qual praia está melhor agora em Florianópolis.',
       url: `${APP_URL}/`,
     }), { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } })
   }
 
-  let title = `${spot.name} — Surf AI Floripa`
+  let title = `${spot.name} | Surf AI Floripa`
   let description = `Confira agora as condições de surf em ${spot.name}, ${spot.region} da Ilha. Score de IA, ondas, vento e maré em tempo real.`
 
   try {
@@ -95,7 +95,7 @@ export default async function handler(req: Request) {
           spot.orientation
         )
         const label = score >= 8.5 ? 'ÉPICO' : score >= 7 ? 'EXCELENTE' : score >= 5.5 ? 'BOM' : score >= 4 ? 'REGULAR' : 'RUIM'
-        title = `${spot.name} — ${label} (${score.toFixed(1)}/10) agora | Surf AI Floripa`
+        title = `${spot.name}: ${label} (${score.toFixed(1)}/10) agora | Surf AI Floripa`
         description = `${spot.name} está ${label} agora: ondas de ${data.waveHeight.toFixed(1)}m, vento ${Math.round(data.windSpeed)}km/h. Score de IA em tempo real para ${spot.region} da Ilha.`
       }
     }

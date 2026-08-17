@@ -25,7 +25,7 @@ export interface WaterConditions {
 export interface BeachCondition {
   id: string
   name: string
-  region: 'Sul' | 'Leste' | 'Norte' | 'Centro'
+  region: 'Sul' | 'Centro' | 'Norte'
   subRegions?: SubRegion[]
   score: number
   waveHeight: number
@@ -217,7 +217,7 @@ function getWindAnalysis(windDir: string, windSpeed: number, beachOrientation: n
 interface BeachDefinition {
   id: string
   name: string
-  region: 'Sul' | 'Leste' | 'Norte' | 'Centro'
+  region: 'Sul' | 'Centro' | 'Norte'
   lat: number
   lng: number
   orientation: number
@@ -235,7 +235,7 @@ const BEACHES: BeachDefinition[] = [
       { id: 'palanque', name: 'Palanque', lat: -27.6929, lng: -48.4870, swellDirections: ['S', 'SSE', 'SE', 'E'] },
       { id: 'principal', name: 'Principal', lat: -27.6893, lng: -48.4825, swellDirections: ['SE', 'SSE'], tolerance: 'estreita' },
     ], bestTimeWindow: '06h - 09h' },
-  { id: 'novo-campeche', name: 'Novo Campeche', region: 'Sul' as const,
+  { id: 'novo-campeche', name: 'Novo Campeche', region: 'Centro' as const,
     lat: -27.6661001, lng: -48.4755307, // Praia do Novo Campeche — bem na areia
     orientation: 90,
     subRegions: [
@@ -281,7 +281,7 @@ const BEACHES: BeachDefinition[] = [
   { id: 'naufragados', name: 'Naufragados', region: 'Sul' as const,
     lat: -27.8335587, lng: -48.5641537, // Naufragados — início da Trilha Caminho dos Naufragados
     orientation: 180, bestTimeWindow: 'Depende da maré (acesso por trilha)' },
-  { id: 'joaquina', name: 'Joaquina', region: 'Leste' as const,
+  { id: 'joaquina', name: 'Joaquina', region: 'Centro' as const,
     lat: -27.6293577, lng: -48.4490173, // Joaquina — bem na areia
     orientation: 90,
     subRegions: [
@@ -289,21 +289,21 @@ const BEACHES: BeachDefinition[] = [
       { id: 'meio', name: 'Meio da Praia', lat: -27.6294, lng: -48.4490, swellDirections: ['E', 'SE'] },
       { id: 'canto-direito', name: 'Canto Direito', lat: -27.6250, lng: -48.4460, swellDirections: ['NE', 'E', 'ENE'] },
     ], bestTimeWindow: 'Agora até 11h' },
-  { id: 'mole', name: 'Praia Mole', region: 'Leste' as const,
+  { id: 'mole', name: 'Praia Mole', region: 'Centro' as const,
     lat: -27.6022459, lng: -48.4326839, orientation: 85,
     subRegions: [
       { id: 'canto-sul', name: 'Canto Sul (Gravatá)', lat: -27.6035, lng: -48.4340, swellDirections: ['S', 'SE', 'E'] },
       { id: 'meio', name: 'Meio da Praia', lat: -27.6022, lng: -48.4327, swellDirections: ['E', 'SE', 'NE'] },
       { id: 'canto-norte', name: 'Canto Norte (Galheta)', lat: -27.5990, lng: -48.4310, swellDirections: ['E', 'NE', 'ENE'] },
     ], bestTimeWindow: '07h - 10h' },
-  { id: 'mocambique', name: 'Moçambique', region: 'Leste' as const,
+  { id: 'mocambique', name: 'Moçambique', region: 'Norte' as const,
     lat: -27.4937746, lng: -48.3955175, // Moçambique — bem na areia
     orientation: 80,
     subRegions: [
       { id: 'norte', name: 'Canto das Aranhas', lat: -27.4695, lng: -48.3852, swellDirections: ['NE', 'E', 'ENE'], tolerance: 'estreita', exposicao: 0.9 },
       { id: 'meio', name: 'Meio da Praia', lat: -27.4938, lng: -48.3912, swellDirections: ['SE', 'E'] },
     ], bestTimeWindow: '08h - 11h' },
-  { id: 'barra-lagoa', name: 'Barra da Lagoa', region: 'Leste' as const,
+  { id: 'barra-lagoa', name: 'Barra da Lagoa', region: 'Centro' as const,
     lat: -27.5734502, lng: -48.424939, orientation: 75,
     subRegions: [
       { id: 'canal', name: 'Canal da Barra', lat: -27.5765, lng: -48.4185, swellDirections: ['E', 'SE'], exposicao: 0.65 },
@@ -495,10 +495,6 @@ export function analyzeConditions(spot: BeachCondition): string {
 
   return analysis
 }
-
-// Fonte real fica em beachDirectory.ts (módulo leve, sem os imports pesados deste
-// arquivo) — reexportado aqui porque Home.tsx/Navigation.tsx já importam daqui.
-export { CENTRO_SPOT_IDS } from './beachDirectory'
 
 // Picos vitrine: acessíveis em /spot/:id sem login, para reduzir a fricção de entrada
 // de quem chega por link direto, busca ou anúncio — vê o produto real antes de criar conta.

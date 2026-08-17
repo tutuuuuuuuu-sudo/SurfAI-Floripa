@@ -1,19 +1,17 @@
 import { MapPin } from 'lucide-react'
 import { Reveal } from '@/components/landing/LandingComponents'
-import { BEACH_DIRECTORY, CENTRO_SPOT_IDS, type BeachRegion } from '@/lib/beachDirectory'
+import { BEACH_DIRECTORY, type BeachRegion } from '@/lib/beachDirectory'
 
 // Prova social honesta em vez de depoimento inventado: cobertura real das praias
-// monitoradas, com nome de verdade — nada aqui é fabricado. Fotos reais por praia podem
-// ser adicionadas depois (campo `image` por id, opcional) sem mudar a estrutura.
-const REGION_ORDER: (BeachRegion | 'Centro')[] = ['Norte', 'Leste', 'Centro', 'Sul']
+// monitoradas, com nome real. Fotos reais por praia podem ser adicionadas depois
+// (campo `image` por id, opcional) sem mudar a estrutura.
+const REGION_ORDER: BeachRegion[] = ['Norte', 'Centro', 'Sul']
 
 export function BeachDirectory() {
   return (
-    <div className="grid sm:grid-cols-2 gap-4">
+    <div className="grid sm:grid-cols-3 gap-4">
       {REGION_ORDER.map((region, i) => {
-        const beaches = region === 'Centro'
-          ? BEACH_DIRECTORY.filter(b => (CENTRO_SPOT_IDS as readonly string[]).includes(b.id))
-          : BEACH_DIRECTORY.filter(b => b.region === region)
+        const beaches = BEACH_DIRECTORY.filter(b => b.region === region)
 
         return (
           <Reveal key={region} delay={i * 0.1}>

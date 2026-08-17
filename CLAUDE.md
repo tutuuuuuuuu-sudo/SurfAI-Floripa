@@ -211,9 +211,10 @@ Open-Meteo Marine API
 - Limite de concorrência: 5 praias por lote (para não exceder limites do Vercel Free)
 - Relatório IA: 30min em `localStorage`
 
-### Região "Centro" (filtro especial)
-- No filtro da Home, "Centro" = praias do centro-sul da ilha.
-- IDs: `['novo-campeche', 'joaquina', 'mole', 'barra-lagoa']` — constante `CENTRO_SPOT_IDS`.
+### Regiões da ilha
+- Três regiões reais, direto no campo `region` de cada praia (não é mais um filtro sobreposto): `Norte`, `Centro`, `Sul`.
+- Norte: Santinho, Moçambique. Centro: Novo Campeche, Joaquina, Praia Mole, Barra da Lagoa. Sul: as demais 8 praias.
+- Antigamente existia uma quarta região "Leste" e um filtro especial `CENTRO_SPOT_IDS` que sobrepunha praias de "Leste"/"Sul" como "Centro" — unificado em 17/ago/2026 (o que já era mostrado como "Centro" em quase toda a UI virou o dado real; Moçambique corrigido de "Leste" pra "Norte", também mais correto geograficamente).
 
 ---
 

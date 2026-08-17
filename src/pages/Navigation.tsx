@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { BeachCondition, CENTRO_SPOT_IDS } from '@/lib/surfData'
+import { BeachCondition } from '@/lib/surfData'
 import { useSurfData } from '@/contexts/SurfDataContext'
 import { ArrowLeft, Navigation, Waves, MapPin, ExternalLink, Wind, Timer, Thermometer, Map, Car, Apple } from 'lucide-react'
 
@@ -15,7 +15,7 @@ const getLocationDesc = (id: string): string => {
     'campeche': 'Sul da Ilha', 'morro-pedras': 'Sul da Ilha',
     'matadeiro': 'Sul da Ilha', 'lagoinha-leste': 'Extremo Sul', 'acores': 'Extremo Sul',
     'solidao': 'Extremo Sul', 'armacao': 'Sul da Ilha', 'naufragados': 'Extremo Sul',
-    'joaquina': 'Centro', 'mole': 'Centro', 'mocambique': 'Leste da Ilha',
+    'joaquina': 'Centro', 'mole': 'Centro', 'mocambique': 'Norte da Ilha',
     'barra-lagoa': 'Centro', 'novo-campeche': 'Centro', 'santinho': 'Norte da Ilha',
   }
   return map[id] ?? 'Florianópolis'
@@ -24,7 +24,7 @@ const getLocationDesc = (id: string): string => {
 // ✅ Coordenadas BEM NA AREIA de cada praia (verificadas no Google Maps)
 // Praias com trilha: Matadeiro, Lagoinha, Naufragados — levam ao estacionamento/início da trilha
 const BEACH_DESTINATIONS: Record<string, { lat: number, lng: number, name: string, hasTrilha?: boolean }> = {
-  'campeche':       { lat: -27.697703,  lng: -48.4898603, name: 'Praia do Campeche — Lomba do Sabão' },
+  'campeche':       { lat: -27.697703,  lng: -48.4898603, name: 'Praia do Campeche · Lomba do Sabão' },
   'novo-campeche':  { lat: -27.6661001, lng: -48.4755307, name: 'Praia do Novo Campeche' },
   'morro-pedras':   { lat: -27.7170897, lng: -48.5034360, name: 'Praia do Morro das Pedras' },
   'matadeiro':      { lat: -27.7548429, lng: -48.4985647, name: 'Praia do Matadeiro', hasTrilha: true },
@@ -141,7 +141,7 @@ const NavModal = ({
         {/* Trilha warning */}
         {dest.hasTrilha && (
           <div className="mx-5 mt-4 p-3 rounded-xl bg-rating-fair/10 border border-rating-fair/30 text-xs text-rating-fair">
-            Acesso por trilha — o GPS leva até o ponto de partida da trilha, não à areia.
+            Acesso por trilha: o GPS leva até o ponto de partida da trilha, não à areia.
           </div>
         )}
 
@@ -210,13 +210,11 @@ export default function NavigationPage() {
   const [selectedSpot, setSelectedSpot] = useState<BeachCondition | null>(null)
   const [activeRegion, setActiveRegion] = useState<string>('all')
 
-  const regions = ['all', 'Sul', 'Centro', 'Leste', 'Norte']
-  const regionLabels: Record<string, string> = { all: 'Todas', Sul: 'Sul', Centro: 'Centro', Leste: 'Leste', Norte: 'Norte' }
+  const regions = ['all', 'Sul', 'Centro', 'Norte']
+  const regionLabels: Record<string, string> = { all: 'Todas', Sul: 'Sul', Centro: 'Centro', Norte: 'Norte' }
   const filtered = activeRegion === 'all'
     ? spots
-    : activeRegion === 'Centro'
-      ? spots.filter(s => CENTRO_SPOT_IDS.includes(s.id as typeof CENTRO_SPOT_IDS[number]))
-      : spots.filter(s => s.region === activeRegion && !CENTRO_SPOT_IDS.includes(s.id as typeof CENTRO_SPOT_IDS[number]))
+    : spots.filter(s => s.region === activeRegion)
 
   return (
     <div className="min-h-screen bg-background">

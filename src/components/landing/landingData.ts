@@ -15,7 +15,7 @@ export const PLAN_FEATURES = [
 ]
 
 export const FAQS = [
-  { q: 'O app funciona para todas as praias de Florianópolis?', a: `Sim! Monitoramos ${BEACH_DIRECTORY.length} praias distribuídas pelas ${REGION_COUNT} regiões da ilha: Norte, Leste, Centro e Sul. Cobrimos desde o Santinho até o Naufragados, de ponta a ponta da ilha, passando por Praia Mole, Joaquina, Campeche e muito mais.` },
+  { q: 'O app funciona para todas as praias de Florianópolis?', a: `Sim! Monitoramos ${BEACH_DIRECTORY.length} praias distribuídas pelas ${REGION_COUNT} regiões da ilha: Norte, Centro e Sul. Cobrimos desde o Santinho até o Naufragados, de ponta a ponta da ilha, passando por Praia Mole, Joaquina, Campeche e muito mais.` },
   { q: 'Os dados são atualizados com que frequência?', a: 'Os dados de ondas, vento e maré são atualizados a cada 15 minutos, 24 horas por dia, 7 dias por semana. O score de IA é recalculado automaticamente a cada nova atualização.' },
   { q: 'O plano gratuito tem alguma limitação?', a: 'No plano gratuito você tem acesso ao score de IA em tempo real, previsão para os próximos 3 dias, favoritos, log de sessões e navegação até a praia. Para previsão de 14 dias, alertas push, histórico completo e comparação de praias, é necessário o Premium.' },
   { q: 'Como funciona o score de IA?', a: 'Nossa IA analisa múltiplas variáveis em conjunto: altura e período das ondas, direção e intensidade do vento, fase da maré e swell predominante. O resultado é uma nota de 0 a 10 que representa a qualidade real das condições.' },
