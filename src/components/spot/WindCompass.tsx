@@ -12,7 +12,10 @@ export const formatWindDirection = (d: string) => ({ code: getWindDirectionCode(
 export const directionToDegrees = (d: string): number => WIND_DEG[getWindDirectionCode(d)] ?? 0
 
 export const WindCompass = ({ direction, speed }: { direction: string, speed: number }) => {
-  const degrees = directionToDegrees(direction)
+  // WIND_DEG guarda a direção de onde o vento VEM (convenção meteorológica padrão —
+  // "vento de nordeste" = vem do NE). A seta deve mostrar pra ONDE o vento está indo
+  // (o fluxo), não de onde veio, então rotaciona +180° em relação ao código.
+  const degrees = (directionToDegrees(direction) + 180) % 360
   const { code, name } = formatWindDirection(direction)
   const color = speed <= 10 ? 'var(--color-rating-good)' : speed <= 20 ? 'var(--color-rating-fair)' : 'var(--color-rating-poor)'
   const allDirs = [0,22.5,45,67.5,90,112.5,135,157.5,180,202.5,225,247.5,270,292.5,315,337.5]
@@ -44,7 +47,7 @@ export const WindCompass = ({ direction, speed }: { direction: string, speed: nu
       </svg>
       <div className="text-center">
         <div className="text-base font-bold" style={{ color }}>{speed}km/h</div>
-        <div className="text-xs text-muted-foreground">{code} — {name}</div>
+        <div className="text-xs text-muted-foreground">{code} · {name}</div>
       </div>
     </div>
   )
