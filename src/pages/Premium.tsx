@@ -10,6 +10,7 @@ import {
 import { createMercadoPagoCheckout, usePremium } from '@/lib/premium'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
+
 const PREMIUM_BENEFITS = [
   { icon: Sparkles, title: 'Relatório de IA personalizado', desc: 'IA analisa as condições e escreve um relatório diário pro seu nível de surf.' },
   { icon: Calendar, title: 'Previsão 14 dias', desc: 'Planeje suas sessões com antecedência. Free tem apenas 3 dias.' },
@@ -89,6 +90,7 @@ export default function PremiumPage() {
         <div className="text-center space-y-3" style={{ animation: 'fadeIn 0.5s ease-out' }}>
           <div className="relative inline-flex items-center justify-center w-20 h-20 mb-2">
             <div className="absolute inset-0 rounded-full bg-rating-fair/20 animate-pulse" />
+            <div className="absolute -inset-1.5 rounded-full crown-ring animate-spin-slow" />
             <div className="relative flex items-center justify-center w-20 h-20 rounded-full bg-primary/20 ring-4 ring-primary/30 shadow-lg shadow-primary/30">
               <Crown className="h-10 w-10 text-rating-fair" />
             </div>
@@ -197,7 +199,8 @@ export default function PremiumPage() {
 
             <CardContent className="p-6 space-y-5">
               {/* Preço com âncora */}
-              <div className="text-center">
+              <div className="relative text-center">
+                <div className="absolute -z-10 inset-x-0 top-1/2 -translate-y-1/2 h-16 bg-rating-fair/15 blur-2xl pointer-events-none" />
                 {selectedPlan === 'annual' ? (
                   <>
                     <div className="flex items-end justify-center gap-1">
