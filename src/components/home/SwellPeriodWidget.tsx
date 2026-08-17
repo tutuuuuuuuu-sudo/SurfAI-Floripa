@@ -37,7 +37,7 @@ export function SwellPeriodWidget() {
                 </div>
                 <div>
                   <span className={`text-xs font-semibold ${p.cls}`}>{p.label}</span>
-                  <span className="text-xs text-muted-foreground ml-1">— {p.desc}</span>
+                  <span className="text-xs text-muted-foreground ml-1">· {p.desc}</span>
                 </div>
               </div>
             ))}

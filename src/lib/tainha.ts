@@ -22,7 +22,7 @@ const TAINHA_STATUS: Record<string, TainhaStatus> = {
 const TAINHA_MESSAGES: Record<TainhaStatus, string> = {
   'liberada':        'Liberada durante a temporada da tainha',
   'parcial':         'Surf permitido em área parcial',
-  'fechada':         'Fechada para surf — temporada da tainha',
+  'fechada':         'Fechada para surf · temporada da tainha',
   'fora-temporada':  '',
 }
 

@@ -144,7 +144,7 @@ export function NotificationPanel({ spots, favorites, isPremium }: Props) {
                 onClick={async () => {
                   const sent = await checkAndNotifyGoodConditions(spots, favorites, settings.minScore, settings.favoriteOnly)
                   if (sent > 0) toast.success('Notificação de teste enviada!')
-                  else toast.info('Nenhuma praia atinge o score agora — nada a notificar.')
+                  else toast.info('Nenhuma praia atinge o score agora, nada a notificar.')
                 }}
                 className="w-full text-xs py-2 border border-primary/30 rounded-lg text-primary hover:bg-primary/10 transition-colors"
               >

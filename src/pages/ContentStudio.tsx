@@ -87,7 +87,7 @@ function PlatformContent({ content, platform }: { content: ContentResult; platfo
               </div>
             </div>
             <div className={`text-xs font-bold mb-2 ${rating.color}`}>
-              Score {content.bestSpot.score} — {rating.label}
+              Score {content.bestSpot.score} · {rating.label}
             </div>
             <p className="text-sm leading-relaxed whitespace-pre-wrap">{content.instagram.caption}</p>
           </div>

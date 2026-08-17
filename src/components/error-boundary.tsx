@@ -54,7 +54,7 @@ export class ErrorBoundary extends Component<Props, State> {
             </CardHeader>
             <CardContent className="text-center px-4 py-2">
               <p className="text-sm text-muted-foreground">
-                Encontramos um erro inesperado. Já registramos o problema — tente recarregar o app.
+                Encontramos um erro inesperado. Já registramos o problema, tente recarregar o app.
               </p>
             </CardContent>
             <CardFooter className="flex justify-center p-3 border-t">

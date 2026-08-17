@@ -98,7 +98,7 @@ export default function Landing() {
           </h1>
           <p className="text-lg text-white/90 max-w-lg leading-relaxed"
             style={{ animation: 'fadeIn 0.7s ease 0.4s both', textShadow: '0 2px 10px oklch(0 0 0 / 0.85), 0 1px 3px oklch(0 0 0 / 0.9)' }}>
-            Score de IA para {BEACH_COUNT} praias. Previsão de ondas, alertas e histórico —
+            Score de IA para {BEACH_COUNT} praias. Previsão de ondas, alertas e histórico:
             tudo que você precisa para não perder a melhor sessão da semana.
           </p>
 
@@ -158,7 +158,7 @@ export default function Landing() {
               Rola pra ver
             </Badge>
             <h2 className="text-2xl md:text-4xl font-black">
-              O que você vê assim que abre o app.
+              Veja como é usar o Surf AI.
             </h2>
           </Reveal>
           <AppScrollShowcase />
@@ -173,10 +173,10 @@ export default function Landing() {
               Cobertura real
             </Badge>
             <h2 className="text-3xl md:text-4xl font-black mb-4">
-              {BEACH_COUNT} praias. A ilha inteira, de verdade.
+              {BEACH_COUNT} praias. A ilha inteira.
             </h2>
             <p className="text-foreground/70 max-w-md mx-auto">
-              Sem achismo, sem "praia genérica" — cada pico daqui é monitorado de verdade, com nome e localização reais.
+              Nada de praia genérica ou achismo. Cada pico é monitorado com nome e localização reais.
             </p>
           </Reveal>
           <BeachDirectory />
@@ -213,14 +213,14 @@ export default function Landing() {
             <h2 className="text-3xl md:text-4xl font-black mb-4">
               Enquanto você lê isso, tem gente<br />surfando na praia certa.
             </h2>
-            <p className="text-foreground/70 max-w-md mx-auto">Em menos de 1 minuto você sabe se vale sair de casa — sem chute, sem grupo de WhatsApp, sem frustração.</p>
+            <p className="text-foreground/70 max-w-md mx-auto">Em menos de 1 minuto você sabe se vale sair de casa: sem chute, sem grupo de WhatsApp, sem frustração.</p>
           </Reveal>
 
           <div className="grid md:grid-cols-3 gap-6 relative">
             {[
               { step: '01', icon: Droplets, title: 'Dados em tempo real', desc: 'Coletamos dados de ondas, vento e maré de múltiplas fontes meteorológicas a cada 15 minutos, 24/7.', hue: 220 },
               { step: '02', icon: Zap, title: 'IA calcula o score', desc: 'Nossa IA analisa todos os parâmetros e gera uma nota de 0 a 10 considerando o seu nível de surf.', hue: 195 },
-              { step: '03', icon: TrendingUp, title: 'Você decide em segundos', desc: 'Veja o score, compare praias e tome a melhor decisão — sem desperdício de tempo ou gasolina.', hue: 155 },
+              { step: '03', icon: TrendingUp, title: 'Você decide em segundos', desc: 'Veja o score, compare praias e tome a melhor decisão, sem desperdício de tempo ou gasolina.', hue: 155 },
             ].map(({ step, icon: Icon, title, desc, hue }, i) => (
               <Reveal key={step} delay={i * 0.15}>
                 <div className="relative flex flex-col h-full rounded-2xl p-6 overflow-hidden"
@@ -321,7 +321,7 @@ export default function Landing() {
                 </div>
                 <div>
                   <h3 className="font-bold text-base mb-1.5">Log de sessões</h3>
-                  <p className="text-sm text-foreground/60 leading-relaxed">Registre suas sessões, notas e memórias — seu diário de surf pessoal.</p>
+                  <p className="text-sm text-foreground/60 leading-relaxed">Registre suas sessões, notas e memórias no seu diário de surf pessoal.</p>
                 </div>
                 <div className="absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-rating-epic/10 blur-2xl pointer-events-none" />
               </div>
@@ -432,7 +432,7 @@ export default function Landing() {
               <span className="text-rating-fair">próximo nível.</span>
             </h2>
             <p className="text-foreground/70 leading-relaxed max-w-md mx-auto">
-              Menos que o combustível de uma ida até a praia errada — e você nunca mais vai chegar quando o mar estiver ruim.
+              Menos que o combustível de uma ida até a praia errada, e você nunca mais chega quando o mar está ruim.
             </p>
           </Reveal>
 

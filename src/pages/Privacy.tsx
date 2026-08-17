@@ -45,7 +45,7 @@ Nenhum dado identificável é compartilhado com anunciantes ou parceiros comerci
   },
   {
     title: '5. Seus direitos (LGPD)',
-    content: `De acordo com a Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018), você tem o direito de:
+    content: `De acordo com a Lei Geral de Proteção de Dados (LGPD, Lei nº 13.709/2018), você tem o direito de:
 
 • **Acessar** os dados que temos sobre você.
 • **Corrigir** dados incorretos ou desatualizados.

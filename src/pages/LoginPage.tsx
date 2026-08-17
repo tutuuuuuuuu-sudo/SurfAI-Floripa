@@ -85,7 +85,7 @@ export default function LoginPage() {
             {tab === 'login' ? 'Bem-vindo de volta' : 'Criar sua conta'}
           </GlassCardTitle>
           <GlassCardDescription>
-            {tab === 'login' ? 'Veja as condições das suas praias favoritas' : 'Grátis pra começar — premium quando quiser'}
+            {tab === 'login' ? 'Veja as condições das suas praias favoritas' : 'Grátis pra começar · premium quando quiser'}
           </GlassCardDescription>
         </GlassCardHeader>
 

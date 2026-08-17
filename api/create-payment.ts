@@ -56,7 +56,7 @@ export default async function handler(req: Request) {
   const userId = user.id
 
   if (!checkPaymentRateLimit(userId)) {
-    return json({ error: 'Muitas tentativas — aguarde um minuto e tente de novo' }, 429)
+    return json({ error: 'Muitas tentativas, aguarde um minuto e tente de novo' }, 429)
   }
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -68,7 +68,7 @@ export default async function handler(req: Request) {
   const preference = {
     items: [{
       id: isAnnual ? 'surf-ai-premium-anual' : 'surf-ai-premium-mensal',
-      title: isAnnual ? 'Surf AI Premium — Anual' : 'Surf AI Premium — Mensal',
+      title: isAnnual ? 'Surf AI Premium Anual' : 'Surf AI Premium Mensal',
       description: isAnnual
         ? 'Acesso completo ao Surf AI Floripa por 12 meses (equivale a R$ 12,49/mês)'
         : 'Acesso completo ao Surf AI Floripa por 30 dias',

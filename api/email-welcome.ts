@@ -18,7 +18,7 @@ async function sendWelcomeEmail(name: string, email: string) {
       <div style="padding:40px 32px">
         <h2 style="margin:0 0 16px;font-size:22px">Fala, ${firstName}! 🤙</h2>
         <p style="margin:0 0 16px;color:#ccc;line-height:1.6">
-          Bem-vindo ao Surf AI Floripa. A partir de agora você tem as condições de surf das principais praias de Floripa em tempo real — analisadas por IA.
+          Bem-vindo ao Surf AI Floripa. A partir de agora você tem as condições de surf das principais praias de Floripa em tempo real, analisadas por IA.
         </p>
         <div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:24px;margin:24px 0">
           <p style="margin:0 0 12px;font-weight:700;font-size:15px">O que você tem agora:</p>

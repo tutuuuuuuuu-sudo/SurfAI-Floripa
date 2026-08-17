@@ -152,7 +152,7 @@ Escreva um relatório de 3-4 frases em português brasileiro, informal e direto,
 3. Feche com uma dica prática e específica de segurança ou tática (não genérica) para quem vai surfar hoje
 4. Use linguagem de surfista brasileiro, seja animado se as condições estiverem boas
 
-Não inclua emojis. Não repita ondas/período/vento em números exatos (o usuário já vê isso na tela). Responda APENAS o texto do relatório, sem títulos ou formatação.`
+Não inclua emojis. Não repita ondas/período/vento em números exatos (o usuário já vê isso na tela). Não use travessão (—) em nenhuma frase — reescreva com vírgula, dois-pontos ou frases separadas. Responda APENAS o texto do relatório, sem títulos ou formatação.`
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {

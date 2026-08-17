@@ -21,7 +21,7 @@ export const PicosSection = ({ spot }: { spot: BeachCondition }) => {
       <div className="flex items-center gap-2">
         <MapPin className="h-4 w-4 text-primary"/>
         <span className="font-semibold text-sm">Picos da Praia</span>
-        <span className="text-xs text-muted-foreground">— qual está melhor agora?</span>
+        <span className="text-xs text-muted-foreground">· qual está melhor agora?</span>
       </div>
       <div className="grid grid-cols-1 gap-2">
         {enrichedPicos.map((pico, idx) => {

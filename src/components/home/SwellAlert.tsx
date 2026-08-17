@@ -13,7 +13,7 @@ export function SwellAlert({ spots }: { spots: BeachCondition[] }) {
       <div className="flex-1">
         <div className="font-bold text-sm">Swell grande chegando!</div>
         <div className="text-xs text-muted-foreground mt-0.5">
-          {best.name} com ondas de {best.waveHeight.toFixed(1)}m — período de {Math.round(best.swellPeriod)}s
+          {best.name} com ondas de {best.waveHeight.toFixed(1)}m · período de {Math.round(best.swellPeriod)}s
         </div>
       </div>
       <button onClick={() => setDismissed(true)} className="text-muted-foreground hover:text-foreground transition-colors">

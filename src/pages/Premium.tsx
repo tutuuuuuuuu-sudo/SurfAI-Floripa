@@ -188,12 +188,12 @@ export default function PremiumPage() {
           <Card className="overflow-hidden border-primary/50" style={{ animation: 'slideUp 0.4s 0.1s ease-out both' }}>
             {selectedPlan === 'annual' && (
               <div className="text-center py-2 text-xs font-bold tracking-wider bg-primary text-primary-foreground">
-                MELHOR VALOR — PLANO ANUAL
+                MELHOR VALOR · PLANO ANUAL
               </div>
             )}
             {selectedPlan === 'monthly' && (
               <div className="text-center py-2 text-xs font-bold tracking-wider bg-muted text-muted-foreground">
-                PLANO MENSAL — CANCELE QUANDO QUISER
+                PLANO MENSAL · CANCELE QUANDO QUISER
               </div>
             )}
 
@@ -209,7 +209,7 @@ export default function PremiumPage() {
                       <span className="text-2xl font-bold text-rating-fair">,49</span>
                       <span className="text-sm text-muted-foreground mb-1">/mês</span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">Cobrado anualmente — R$ 149,90/ano</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Cobrado anualmente · R$ 149,90/ano</p>
                     <div className="flex items-center justify-center gap-1.5 mt-1.5">
                       <TrendingDown className="h-3.5 w-3.5 text-rating-good" />
                       <span className="text-xs font-semibold text-rating-good">Menos de R$ 0,42/dia · você economiza R$ 53/ano</span>

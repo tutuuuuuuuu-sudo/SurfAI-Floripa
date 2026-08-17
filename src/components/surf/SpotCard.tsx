@@ -133,7 +133,7 @@ export function SpotCard({ spot, latestComment }: SpotCardProps) {
           )}
           {tainha.status === 'fechada' && (
             <Badge className="bg-destructive/15 text-destructive border-destructive/30" variant="outline">
-              <Fish className="h-3 w-3 mr-1" />Fechada — tainha
+              <Fish className="h-3 w-3 mr-1" />Fechada · tainha
             </Badge>
           )}
         </div>
