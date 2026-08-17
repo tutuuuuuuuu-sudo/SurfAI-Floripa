@@ -109,3 +109,6 @@ vapid-keys.txt
 .content-drafts/
 .vercel
 .env*
+
+# Export gerado para auditoria via Gemini (scripts/export-gemini-audit.sh)
+.gemini-audit/

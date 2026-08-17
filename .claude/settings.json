@@ -1,23 +1,4 @@
 {
-  "alwaysThinkingEnabled": false,
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "AskUserQuestion",
-        "hooks": [{"type": "command", "command": "bash /workspace/.claude/hooks/ask-user-question.sh", "timeout": 600000}]
-      },
-      {
-        "matcher": "ExitPlanMode",
-        "hooks": [{"type": "command", "command": "bash /workspace/.claude/hooks/approve-plan.sh", "timeout": 600000}]
-      }
-    ],
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [{"type": "command", "command": "bash /workspace/.claude/hooks/backup.sh", "timeout": 120000}]
-      }
-    ]
-  },
   "permissions": {
     "allow": [
       "Bash(npx tsc --noEmit)",
@@ -39,7 +20,75 @@
       "mcp__claude_ai_Vercel__list_deployments",
       "mcp__claude_ai_Vercel__get_deployment_build_logs",
       "mcp__claude_ai_Supabase__list_projects",
-      "mcp__claude_ai_Supabase__get_project"
+      "mcp__claude_ai_Supabase__get_project",
+      "Bash(nohup npm run dev > /tmp/vite-dev.log 2>&1 & *)",
+      "Bash(npm uninstall *)",
+      "WebFetch(domain:www.pexels.com)",
+      "Bash(ffprobe -v error -show_entries format=duration -show_entries stream=width,height,r_frame_rate,codec_name -of default=noprint_wrappers=1 wave.mp4)",
+      "Bash(apt list *)",
+      "Bash(sudo apt-get install -y ffmpeg)",
+      "Bash(ffprobe -v error -show_entries format=duration:stream=width,height,r_frame_rate,codec_name,bit_rate -of default=noprint_wrappers=1 wave.mp4)",
+      "Bash(ffmpeg -i wave.mp4)",
+      "Bash(ffmpeg -i wave.mp4 -f null -)",
+      "Bash(sudo apt-get install -y liblapack3)",
+      "Bash(timeout 90 tail -f /tmp/claude-1000/-workspaces-SurfAI-Floripa/397a95da-1827-4fcd-a749-89fe0eb55a4b/tasks/bplhrahol.output)",
+      "Bash(mkdir -p /workspaces/SurfAI-Floripa/.tmp-video)",
+      "Bash(ffmpeg -i wave-raw.mp4 -f null -)",
+      "Bash(ffmpeg -y -i wave-raw.mp4 -vf \"fps=1\" frame-%02d.png)",
+      "Bash(ffmpeg -y -i wave-raw.mp4 -vf \"scale=1280:720\" -c:v libx264 -crf 26 -preset slow -an -movflags +faststart wave-optimized.mp4)",
+      "Bash(ffmpeg -y -i wave-raw.mp4 -vf \"select=eq\\(n\\\\,120\\)\" -vframes 1 -q:v 2 wave-poster.jpg)",
+      "Bash(ffmpeg -y -i wave-optimized.mp4 -vf \"select=eq\\(n\\\\,120\\)\" -vframes 1 check-optimized.png)",
+      "Bash(mkdir -p src/assets/landing)",
+      "Bash(cp .tmp-video/wave-optimized.mp4 src/assets/landing/wave-break.mp4)",
+      "Bash(ffmpeg -y -i .tmp-video/wave-poster.jpg -vf \"scale=1280:720\" -q:v 4 src/assets/landing/wave-break-poster.jpg)",
+      "Bash(awk '/^export function OceanWaves/,0' /workspaces/SurfAI-Floripa/src/components/landing/LandingComponents.tsx)",
+      "Bash(chmod +x /workspaces/SurfAI-Floripa/scripts/export-gemini-audit.sh)",
+      "Bash(/workspaces/SurfAI-Floripa/scripts/export-gemini-audit.sh)",
+      "Bash(grep -q \"^\\\\.gemini-audit/$\" /workspaces/SurfAI-Floripa/.gitignore)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(echo \"=== exit: $? ===\")",
+      "mcp__claude_ai_Google_Drive__create_file",
+      "Bash(grep -rnE \"text-\\(yellow|orange|cyan|blue|green|gray|red|amber|zinc\\)-[0-9]{2,3}|bg-\\(yellow|orange|cyan|blue|green|gray|red|amber|zinc\\)-[0-9]{2,3}|border-\\(yellow|orange|cyan|blue|green|gray|red|amber|zinc\\)-[0-9]{2,3}\" src/ --include=\"*.tsx\" --include=\"*.ts\")"
+    ],
+    "additionalDirectories": [
+      "/tmp"
     ]
-  }
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /workspace/.claude/hooks/ask-user-question.sh",
+            "timeout": 600000
+          }
+        ]
+      },
+      {
+        "matcher": "ExitPlanMode",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /workspace/.claude/hooks/approve-plan.sh",
+            "timeout": 600000
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /workspace/.claude/hooks/backup.sh",
+            "timeout": 120000
+          }
+        ]
+      }
+    ]
+  },
+  "alwaysThinkingEnabled": false
 }
