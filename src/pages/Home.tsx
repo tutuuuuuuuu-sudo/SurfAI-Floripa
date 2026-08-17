@@ -12,11 +12,11 @@ import { SwellPeriodWidget } from '@/components/home/SwellPeriodWidget'
 import { TrendBadge } from '@/components/home/TrendBadge'
 import { SwellAlert } from '@/components/home/SwellAlert'
 import { NotificationPanel } from '@/components/home/NotificationPanel'
+import { AIThinkingIndicator } from '@/components/home/AIThinkingIndicator'
 import { analyzeConditions, BeachCondition, CENTRO_SPOT_IDS } from '@/lib/surfData'
 import { useSurfData } from '@/contexts/SurfDataContext'
 import { getFavorites } from '@/lib/favorites'
 import { getLatestCommentsForSpots, LatestComment } from '@/lib/comments'
-import { getValidationSummaries, ValidationSummary } from '@/lib/validations'
 import { useAuth } from '@/contexts/AuthContext'
 import { getUserDisplayName } from '@/lib/supabase'
 import { usePremium } from '@/lib/premium'
@@ -28,7 +28,7 @@ import { isTainhaSeasonActive } from '@/lib/tainha'
 import { isOnboardingDone } from '@/lib/onboarding'
 import {
   Waves, TrendingUp, MapPin, Info, Heart, Settings,
-  Crown, Sparkles, Flame, Fish
+  Crown, Sparkles, Flame, Fish, GitCompareArrows
 } from 'lucide-react'
 
 export default function Home() {
@@ -42,7 +42,6 @@ export default function Home() {
   const [aiLoading, setAiLoading] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(() => !isOnboardingDone())
   const [latestComments, setLatestComments] = useState<Record<string, LatestComment>>({})
-  const [validations, setValidations] = useState<Record<string, ValidationSummary>>({})
   const aiReportFetchedRef = useRef(false)
   const premiumResolvedRef = useRef(false)
   const prevPremiumRef = useRef(false)
@@ -75,7 +74,6 @@ export default function Home() {
     // Busca o relato mais recente de cada praia em um único request
     const ids = allSpots.map(s => s.id)
     getLatestCommentsForSpots(ids).then(setLatestComments).catch(() => {})
-    getValidationSummaries(ids).then(setValidations).catch(() => {})
 
     return () => clearTimeout(t)
   }, [allSpots])
@@ -205,7 +203,15 @@ export default function Home() {
             <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
             <span>Atualizado às {(lastUpdated ?? new Date()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
           </div>
-          <NotificationPanel spots={allSpots} favorites={favorites} isPremium={isPremium} />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate('/compare')}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-border text-muted-foreground hover:border-primary/30 hover:text-primary transition-colors"
+            >
+              <GitCompareArrows className="h-3.5 w-3.5" />Comparar praias
+            </button>
+            <NotificationPanel spots={allSpots} favorites={favorites} isPremium={isPremium} />
+          </div>
         </div>
 
         <SwellAlert spots={allSpots} />
@@ -241,12 +247,7 @@ export default function Home() {
             </CardHeader>
             <CardContent className="px-4 pb-4">
               {aiLoading ? (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                  <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" style={{ animationDelay: '0.2s' }} />
-                  <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" style={{ animationDelay: '0.4s' }} />
-                  <span>Analisando condições com IA...</span>
-                </div>
+                <AIThinkingIndicator />
               ) : aiReport ? (
                 <div className="space-y-2">
                   <p className="text-sm text-foreground leading-relaxed">
@@ -373,7 +374,6 @@ export default function Home() {
                 <SpotCard
                   spot={item as BeachCondition}
                   latestComment={latestComments[(item as BeachCondition).id]}
-                  validation={validations[(item as BeachCondition).id]}
                 />
               </div>
             )

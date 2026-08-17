@@ -16,7 +16,7 @@ import {
   ArrowLeft, Waves, Wind, Navigation,
   TrendingUp, Compass, AlertCircle, Thermometer,
   Heart, Calendar, Sun, ChevronDown,
-  Share2, MessageCircle, Lock, Crown, Droplets
+  Share2, MessageCircle, Lock, Crown, Droplets, GitCompareArrows
 } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { toast } from 'sonner'
@@ -28,7 +28,6 @@ import { CommentsSection } from '@/components/spot/CommentsSection'
 import { ScoreExplainer } from '@/components/spot/ScoreExplainer'
 import { PicosSection } from '@/components/spot/PicosSection'
 import { BestWindowWidget } from '@/components/spot/BestWindowWidget'
-import { SpotValidation } from '@/components/spot/SpotValidation'
 
 const FIXED_DOMAIN = typeof window !== 'undefined' ? window.location.origin : ''
 const metersToFeet = (m: number): string => `${(m * 3.281).toFixed(1)}ft`
@@ -294,6 +293,15 @@ export default function SpotDetails() {
               <p className="text-xs text-muted-foreground">{spot.region} da Ilha · {spot.level}</p>
             </div>
             <div className="flex items-center gap-1.5 flex-shrink-0">
+              {user && (
+                <button
+                  onClick={() => navigate(`/compare?spot=${spot.id}`)}
+                  className="p-2 rounded-xl border border-border hover:bg-muted/50 transition-colors"
+                  title="Comparar com outra praia"
+                >
+                  <GitCompareArrows className="h-4 w-4"/>
+                </button>
+              )}
               <ShareButton spot={spot}/>
               <button
                 onClick={handleToggleFavorite}
@@ -404,8 +412,6 @@ export default function SpotDetails() {
               <AlertTitle className="text-primary text-sm">Análise Inteligente</AlertTitle>
               <AlertDescription className="text-foreground text-sm">{analyzeConditions(spot)}</AlertDescription>
             </Alert>
-
-            <SpotValidation spot={spot} />
 
             {/* Widget: contexto histórico do score */}
             {scoreHistory && scoreHistory.avg30 !== null && (() => {

@@ -4,14 +4,12 @@ import { BeachCondition } from '@/lib/surfData'
 import { getRatingInfo } from '@/lib/rating'
 import { getTainhaInfo } from '@/lib/tainha'
 import { LatestComment, formatCommentTime } from '@/lib/comments'
-import { ValidationSummary } from '@/lib/validations'
-import { Waves, Wind, Clock, Thermometer, ThumbsUp, Fish, MessageCircle } from 'lucide-react'
+import { Waves, Wind, Clock, Thermometer, ThumbsUp, Fish, MessageCircle, GitCompareArrows } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 interface SpotCardProps {
   spot: BeachCondition
   latestComment?: LatestComment
-  validation?: ValidationSummary
 }
 
 function getUserLevel(): string | null {
@@ -27,7 +25,7 @@ function getPersonalizedBadge(spot: BeachCondition, level: string | null): strin
   return null
 }
 
-export function SpotCard({ spot, latestComment, validation }: SpotCardProps) {
+export function SpotCard({ spot, latestComment }: SpotCardProps) {
   const navigate = useNavigate()
   const rating = getRatingInfo(spot.score)
   const personalBadge = getPersonalizedBadge(spot, getUserLevel())
@@ -51,7 +49,16 @@ export function SpotCard({ spot, latestComment, validation }: SpotCardProps) {
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1">
             <CardTitle className="text-xl mb-1">{spot.name}</CardTitle>
-            <Badge variant="outline" className="text-xs">{spot.region}</Badge>
+            <div className="flex items-center gap-1.5">
+              <Badge variant="outline" className="text-xs">{spot.region}</Badge>
+              <button
+                onClick={e => { e.stopPropagation(); navigate(`/compare?spot=${spot.id}`) }}
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors px-1.5 py-0.5 rounded-full hover:bg-primary/10"
+                title="Comparar com outra praia"
+              >
+                <GitCompareArrows className="h-3 w-3" />Comparar
+              </button>
+            </div>
           </div>
           <div className="text-right">
             <div className={`text-3xl font-bold ${rating.color}`}>
@@ -127,12 +134,6 @@ export function SpotCard({ spot, latestComment, validation }: SpotCardProps) {
           {tainha.status === 'fechada' && (
             <Badge className="bg-destructive/15 text-destructive border-destructive/30" variant="outline">
               <Fish className="h-3 w-3 mr-1" />Fechada — tainha
-            </Badge>
-          )}
-          {validation && validation.total > 0 && (
-            <Badge className="bg-rating-good/15 text-rating-good border-rating-good/30" variant="outline">
-              <ThumbsUp className="h-3 w-3 mr-1" />
-              {validation.matched}/{validation.total} confirmaram
             </Badge>
           )}
         </div>

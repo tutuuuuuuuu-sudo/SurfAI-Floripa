@@ -9,11 +9,10 @@ import { usePremium } from '@/lib/premium'
 import { getFavorites } from '@/lib/favorites'
 import { useSurfData } from '@/contexts/SurfDataContext'
 import { supabase, getUserDisplayName } from '@/lib/supabase'
-import { getTopContribution, TopContribution } from '@/lib/ranking'
 import {
   ArrowLeft, Crown, Heart, MessageCircle, Waves, Settings,
   LogOut, User, TrendingUp, MapPin, Star, Calendar, Award,
-  Camera, Edit2, Check, X, Wind, Clock, Flame, Trophy, GitCompareArrows
+  Camera, Edit2, Check, X, Wind, Clock, Flame
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { getRatingInfo } from '@/lib/rating'
@@ -62,7 +61,6 @@ export default function ProfilePage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [sessionDates, setSessionDates] = useState<string[]>([])
   const [streak, setStreak] = useState(0)
-  const [topContribution, setTopContribution] = useState<TopContribution | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -129,10 +127,6 @@ export default function ProfilePage() {
           }
           setStreak(s)
         }
-      }
-
-      if (user) {
-        getTopContribution().then(setTopContribution).catch(() => {})
       }
 
       setLoading(false)
@@ -414,23 +408,6 @@ export default function ProfilePage() {
           )
         })()}
 
-        {topContribution && (
-          <Card className="anim-slide cursor-pointer hover:border-primary/30 transition-colors" style={{ animationDelay: '0.18s' }}
-            onClick={() => navigate(`/spot/${topContribution.beachId}`)}>
-            <CardContent className="py-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Trophy className="h-5 w-5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold">
-                  #{topContribution.position} no ranking de {topContribution.beachName}
-                </p>
-                <p className="text-xs text-muted-foreground">{topContribution.count} confirmações este mês</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {favoriteSpots.length > 0 && (
           <Card className="anim-slide" style={{ animationDelay: '0.2s' }}>
             <CardHeader className="pb-3">
@@ -507,7 +484,6 @@ export default function ProfilePage() {
               { icon: Heart, label: 'Praias Favoritas', path: '/favorites', cls: 'text-destructive' },
               { icon: Waves, label: 'Todas as Praias', path: '/', cls: 'text-primary' },
               { icon: MapPin, label: 'Me Leva ao Pico', path: '/navigation', cls: 'text-rating-good' },
-              { icon: GitCompareArrows, label: 'Comparar Praias', path: '/compare', cls: 'text-rating-fair' },
               { icon: Settings, label: 'Configurações', path: '/settings', cls: 'text-muted-foreground' },
             ].map(item => (
               <button key={item.path} onClick={() => navigate(item.path)}
