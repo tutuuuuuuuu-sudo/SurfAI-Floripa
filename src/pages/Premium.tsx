@@ -15,7 +15,7 @@ const PREMIUM_BENEFITS = [
   { icon: Sparkles, title: 'Relatório de IA personalizado', desc: 'IA analisa as condições e escreve um relatório diário pro seu nível de surf.' },
   { icon: Calendar, title: 'Previsão 14 dias', desc: 'Planeje suas sessões com antecedência. Free tem apenas 3 dias.' },
   { icon: Bell, title: 'Alertas de swell', desc: 'Receba notificação quando suas praias favoritas estiverem boas.' },
-  { icon: BookOpen, title: 'Log de sessões', desc: 'Registre cada sessão com nota, duração e anotações. Veja seu histórico.' },
+  { icon: BookOpen, title: 'Diário de surf', desc: 'Registre cada sessão com nota, duração e anotações. Veja seu histórico.' },
   { icon: BarChart3, title: 'Histórico 30 dias', desc: 'Veja como as condições evoluíram nas últimas semanas.' },
   { icon: Zap, title: 'Melhor janela do dia', desc: 'Horário exato com melhores condições calculado hora a hora.' },
   { icon: ShieldOff, title: 'Sem anúncios', desc: 'Experiência limpa e sem interrupções.' },
@@ -280,7 +280,7 @@ export default function PremiumPage() {
               <div className="space-y-2.5">
                 {([
                   { feature: 'Condições em tempo real',       free: true,  premium: true },
-                  { feature: 'Score IA das praias',           free: true,  premium: true },
+                  { feature: 'Nota de IA das praias',         free: true,  premium: true },
                   { feature: 'Navegação GPS',                 free: true,  premium: true },
                   { feature: 'Relatos de surfistas',          free: true,  premium: true },
                   { feature: 'Previsão 3 dias',               free: true,  premium: true },

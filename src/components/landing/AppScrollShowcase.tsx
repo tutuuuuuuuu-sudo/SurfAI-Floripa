@@ -9,7 +9,7 @@ const STEPS = [
   {
     image: scoreImg,
     icon: Waves,
-    title: 'Score de IA em tempo real',
+    title: 'Nota de IA em tempo real',
     desc: 'Ondas, vento, maré e período viram uma nota de 0 a 10, atualizada a cada 15 minutos.',
   },
   {
@@ -22,7 +22,7 @@ const STEPS = [
     image: compareImg,
     icon: GitCompareArrows,
     title: 'Compare picos lado a lado',
-    desc: 'Não sabe pra onde ir? Compare score, ondas e vento de até 3 praias ao mesmo tempo.',
+    desc: 'Não sabe pra onde ir? Compare a nota, ondas e vento de até 3 praias ao mesmo tempo.',
   },
   {
     image: navigateImg,

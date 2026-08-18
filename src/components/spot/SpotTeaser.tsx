@@ -44,7 +44,7 @@ export function SpotTeaser({ spot, onBack, onLogin }: Props) {
                   <div key={i} className={`h-1.5 w-4 rounded-full ${i <= rating.bars ? rating.bg : 'bg-muted'}`} />
                 ))}
               </div>
-              <div className="text-xs text-muted-foreground/50 mt-1.5">Score IA</div>
+              <div className="text-xs text-muted-foreground/50 mt-1.5">Nota IA</div>
             </div>
           </div>
 

@@ -53,7 +53,7 @@ export default function ComparePage() {
   )
 
   const metrics = [
-    { key: 'score',      label: 'Score IA',          icon: TrendingUp, format: (v: number) => v.toFixed(1),        higher: true,  get: (s: BeachCondition) => s.score },
+    { key: 'score',      label: 'Nota IA',           icon: TrendingUp, format: (v: number) => v.toFixed(1),        higher: true,  get: (s: BeachCondition) => s.score },
     { key: 'waveHeight', label: 'Altura das Ondas',   icon: Waves,      format: (v: number) => `${v.toFixed(1)}m`,  higher: true,  get: (s: BeachCondition) => s.waveHeight },
     { key: 'swellPeriod',label: 'Período',            icon: Waves,      format: (v: number) => `${Math.round(v)}s`, higher: true,  get: (s: BeachCondition) => s.swellPeriod },
     { key: 'windSpeed',  label: 'Vento',              icon: Wind,       format: (v: number) => `${Math.round(v)}km/h`, higher: false, get: (s: BeachCondition) => s.windSpeed },
@@ -87,7 +87,7 @@ export default function ComparePage() {
         </div>
         <h2 className="text-xl font-bold mb-2">Comparar Praias é Premium</h2>
         <p className="text-muted-foreground text-sm mb-6 max-w-xs">
-          Compare score, ondas e vento de até 3 praias ao mesmo tempo, sem limite.
+          Compare a nota, ondas e vento de até 3 praias ao mesmo tempo, sem limite.
         </p>
         <Button onClick={() => navigate('/premium')} className="gap-2">
           <Crown className="h-4 w-4" />Assinar Premium

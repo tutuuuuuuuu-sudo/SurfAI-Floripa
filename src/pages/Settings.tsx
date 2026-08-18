@@ -300,12 +300,12 @@ export default function Settings() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <div className="text-sm font-semibold mb-2">Score mínimo para alertar</div>
+              <div className="text-sm font-semibold mb-2">Nota mínima para alertar</div>
               <div className="flex gap-2">
                 {[6, 7, 8, 9].map(score => (
                   <button
                     key={score}
-                    onClick={() => { setNotifMinScore(score); save('notif_minScore', score, 'Score mínimo') }}
+                    onClick={() => { setNotifMinScore(score); save('notif_minScore', score, 'Nota mínima') }}
                     className={`flex-1 py-2 text-sm rounded-xl border transition-colors ${
                       notifMinScore === score
                         ? 'border-primary bg-primary/10 text-primary font-bold'

@@ -12,7 +12,7 @@ Dois planos pagos: **Mensal R$ 16,90/mês** ou **Anual R$ 149,90/ano** (equivale
 
 | Recurso | Free | Premium |
 |---|---|---|
-| Score de condições por pico | ✅ | ✅ |
+| Nota de condições por pico | ✅ | ✅ |
 | Previsão 3 dias | ✅ | ✅ |
 | Previsão 14 dias | ❌ | ✅ |
 | Relatório IA diário | ❌ | ✅ |

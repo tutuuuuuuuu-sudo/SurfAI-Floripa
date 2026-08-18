@@ -116,7 +116,7 @@ export function NotificationPanel({ spots, favorites, isPremium }: Props) {
             <Separator />
             <div className="space-y-3">
               <div>
-                <div className="text-xs font-semibold mb-2">Score mínimo</div>
+                <div className="text-xs font-semibold mb-2">Nota mínima</div>
                 <div className="flex gap-2">
                   {[6, 7, 8, 9].map(score => (
                     <button

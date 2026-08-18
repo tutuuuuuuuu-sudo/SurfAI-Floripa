@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import {
   Waves, Zap, Bell, BarChart3, Clock, Shield,
   ArrowRight, CheckCircle2, TrendingUp,
-  MapPin, Crown, ChevronRight, Droplets, Lock,
+  MapPin, Crown, ChevronRight, Droplets,
   Smartphone,
 } from 'lucide-react'
 import { AppLogo } from '@/components/AppLogo'
@@ -98,7 +98,7 @@ export default function Landing() {
           </h1>
           <p className="text-lg text-white/90 max-w-lg leading-relaxed"
             style={{ animation: 'fadeIn 0.7s ease 0.4s both', textShadow: '0 2px 10px oklch(0 0 0 / 0.85), 0 1px 3px oklch(0 0 0 / 0.9)' }}>
-            Score de IA para {BEACH_COUNT} praias. Previsão de ondas, alertas e histórico:
+            Nota de IA para {BEACH_COUNT} praias. Previsão de ondas, alertas e histórico:
             tudo que você precisa para não perder a melhor sessão da semana.
           </p>
 
@@ -176,7 +176,7 @@ export default function Landing() {
               {BEACH_COUNT} praias. A ilha inteira.
             </h2>
             <p className="text-foreground/70 max-w-md mx-auto">
-              Nada de praia genérica ou achismo. Cada pico é monitorado com nome e localização reais.
+              Do Santinho ao Naufragados, ponta a ponta da ilha. Cada pico monitorado com nome e localização reais.
             </p>
           </Reveal>
           <BeachDirectory />
@@ -219,8 +219,8 @@ export default function Landing() {
           <div className="grid md:grid-cols-3 gap-6 relative">
             {[
               { step: '01', icon: Droplets, title: 'Dados em tempo real', desc: 'Coletamos dados de ondas, vento e maré de múltiplas fontes meteorológicas a cada 15 minutos, 24/7.', hue: 220 },
-              { step: '02', icon: Zap, title: 'IA calcula o score', desc: 'Nossa IA analisa todos os parâmetros e gera uma nota de 0 a 10 considerando o seu nível de surf.', hue: 195 },
-              { step: '03', icon: TrendingUp, title: 'Você decide em segundos', desc: 'Veja o score, compare praias e tome a melhor decisão, sem desperdício de tempo ou gasolina.', hue: 155 },
+              { step: '02', icon: Zap, title: 'IA calcula a nota', desc: 'Nossa IA analisa todos os parâmetros e gera uma nota de 0 a 10 considerando o seu nível de surf.', hue: 195 },
+              { step: '03', icon: TrendingUp, title: 'Você decide em segundos', desc: 'Veja a nota, compare praias e tome a melhor decisão, sem desperdício de tempo ou gasolina.', hue: 155 },
             ].map(({ step, icon: Icon, title, desc, hue }, i) => (
               <Reveal key={step} delay={i * 0.15}>
                 <div className="relative flex flex-col h-full rounded-2xl p-6 overflow-hidden"
@@ -264,7 +264,7 @@ export default function Landing() {
               Pare de adivinhar.<br />Comece a surfar na hora certa.
             </h2>
             <p className="text-foreground/70 text-lg max-w-xl mx-auto">
-              E tem mais: histórico, log de sessões e cobertura completa da ilha.
+              E tem mais: histórico, diário de surf e cobertura completa da ilha.
             </p>
           </Reveal>
 
@@ -301,8 +301,8 @@ export default function Landing() {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-bold text-base mb-1.5">Histórico e tendências</h3>
-                  <p className="text-sm text-foreground/60 leading-relaxed">Veja as condições dos últimos dias e reconheça os padrões de swell.</p>
+                  <h3 className="font-bold text-base mb-1.5">Histórico de condições</h3>
+                  <p className="text-sm text-foreground/60 leading-relaxed">30 dias de ondas e vento por praia — saiba se hoje é dia bom antes de sair de casa.</p>
                 </div>
                 <div className="absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-rating-fair/10 blur-2xl pointer-events-none" />
               </div>
@@ -320,7 +320,7 @@ export default function Landing() {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-bold text-base mb-1.5">Log de sessões</h3>
+                  <h3 className="font-bold text-base mb-1.5">Diário de surf</h3>
                   <p className="text-sm text-foreground/60 leading-relaxed">Registre suas sessões, notas e memórias no seu diário de surf pessoal.</p>
                 </div>
                 <div className="absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-rating-epic/10 blur-2xl pointer-events-none" />
@@ -365,20 +365,6 @@ export default function Landing() {
               <p className="text-foreground/70 leading-relaxed">
                 O Surf AI funciona igual a um app de verdade, sem ocupar espaço da loja. Acesse pelo Safari ou Chrome e adicione à tela inicial em segundos.
               </p>
-              <div className="space-y-3">
-                {[
-                  { icon: Zap, text: 'Carregamento ultra rápido, mesmo com sinal fraco' },
-                  { icon: Bell, text: 'Notificações push igual app nativo' },
-                  { icon: Lock, text: 'Seguro e sem permissões desnecessárias' },
-                ].map(({ icon: Icon, text }) => (
-                  <div key={text} className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
-                      <Icon className="h-4 w-4 text-primary" />
-                    </div>
-                    <span className="text-sm text-foreground/70">{text}</span>
-                  </div>
-                ))}
-              </div>
               <Button asChild className="font-bold bg-primary hover:bg-primary/90"
                 style={{ boxShadow: '0 0 20px oklch(0.6 0.16 200 / 0.3)' }}>
                 <Link to="/login">
@@ -550,7 +536,7 @@ export default function Landing() {
                   </span>
                 </h2>
                 <p className="text-muted-foreground mb-8 leading-relaxed text-base max-w-md mx-auto">
-                  Dados reais de {BEACH_COUNT} praias, score de IA e alertas personalizados.
+                  Dados reais de {BEACH_COUNT} praias, nota de IA e alertas personalizados.
                   Crie sua conta grátis em menos de 1 minuto.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">

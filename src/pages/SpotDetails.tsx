@@ -64,7 +64,7 @@ const ShareButton = ({ spot }: { spot: BeachCondition }) => {
   const handleShare = async () => {
     const rating = getRatingInfo(spot.score)
     const spotUrl = `${FIXED_DOMAIN}/spot/${spot.id}`
-    const text = `🏄 ${spot.name} está ${rating.label} agora!\n\nScore: ${spot.score.toFixed(1)}/10\nOndas: ${spot.waveHeight.toFixed(1)}m · Período: ${Math.round(spot.swellPeriod)}s\nVento: ${Math.round(spot.windSpeed)}km/h · Água: ${spot.waterConditions.temperature}°C\n\nVeja mais: ${spotUrl}`
+    const text = `🏄 ${spot.name} está ${rating.label} agora!\n\nNota: ${spot.score.toFixed(1)}/10\nOndas: ${spot.waveHeight.toFixed(1)}m · Período: ${Math.round(spot.swellPeriod)}s\nVento: ${Math.round(spot.windSpeed)}km/h · Água: ${spot.waterConditions.temperature}°C\n\nVeja mais: ${spotUrl}`
     if (navigator.share) {
       try { await navigator.share({ title: `Surf AI · ${spot.name}`, text, url: spotUrl }); return }
       catch { /* usuário cancelou o share nativo — cai pro clipboard abaixo */ }
@@ -338,7 +338,7 @@ export default function SpotDetails() {
               <div className="flex gap-0.5 mt-1.5">
                 {[1,2,3,4,5].map(i=><div key={i} className={`h-1.5 w-4 rounded-full ${i<=rating.bars?rating.bg:'bg-muted'}`}/>)}
               </div>
-              <div className="text-xs text-muted-foreground/50 mt-1.5">Score IA</div>
+              <div className="text-xs text-muted-foreground/50 mt-1.5">Nota IA</div>
             </button>
           </div>
 

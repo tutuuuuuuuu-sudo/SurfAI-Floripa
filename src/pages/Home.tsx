@@ -319,7 +319,7 @@ export default function Home() {
                 </div>
                 <div className="text-center bg-card/80 rounded-lg p-4 border">
                   <div className="text-4xl font-bold" style={{ color: getScoreColor(topSpot.score) }}>{Number(topSpot.score).toFixed(1)}</div>
-                  <div className="text-xs text-muted-foreground">Score IA</div>
+                  <div className="text-xs text-muted-foreground">Nota IA</div>
                 </div>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">

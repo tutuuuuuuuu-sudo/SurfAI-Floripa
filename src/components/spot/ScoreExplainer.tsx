@@ -8,7 +8,7 @@ export const ScoreExplainer = ({ spot, onClose }: { spot: BeachCondition, onClos
     <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold">Como calculamos o score</h3>
+          <h3 className="text-lg font-bold">Como calculamos a nota</h3>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted transition-colors"><X className="h-5 w-5 text-muted-foreground"/></button>
         </div>
         <div className={`text-6xl font-bold text-center mb-1 ${rating.color}`}>{spot.score.toFixed(1)}</div>
@@ -50,7 +50,7 @@ export const ScoreExplainer = ({ spot, onClose }: { spot: BeachCondition, onClos
             </div>
           ))}
         </div>
-        <p className="text-xs text-muted-foreground mt-5 text-center">Score calculado com base em ondulação, período, vento e orientação da praia</p>
+        <p className="text-xs text-muted-foreground mt-5 text-center">Nota calculada com base em ondulação, período, vento e orientação da praia</p>
       </div>
     </div>
   )

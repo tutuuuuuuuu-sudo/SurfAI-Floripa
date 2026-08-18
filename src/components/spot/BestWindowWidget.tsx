@@ -116,7 +116,7 @@ export function BestWindowWidget({ lat, lng, orientation }: Props) {
 
         {/* Gráfico de barras horário */}
         <div>
-          <p className="text-xs text-muted-foreground mb-2">Score hora a hora de hoje:</p>
+          <p className="text-xs text-muted-foreground mb-2">Nota hora a hora de hoje:</p>
           <div className="flex items-end gap-0.5 h-14">
             {slots.map(slot => {
               const info = getRatingInfo(slot.score)

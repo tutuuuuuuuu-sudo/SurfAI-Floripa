@@ -1,5 +1,6 @@
 import { MapPin } from 'lucide-react'
 import { Reveal } from '@/components/landing/LandingComponents'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { BEACH_DIRECTORY, type BeachRegion } from '@/lib/beachDirectory'
 import photoNorte from '@/assets/landing/directory-norte.jpg'
 import photoCentro from '@/assets/landing/directory-centro.jpg'
@@ -63,9 +64,24 @@ export function BeachDirectory() {
                     </span>
                   ))}
                   {hiddenCount > 0 && (
-                    <span className="text-xs font-medium text-foreground/80 bg-background/60 border border-border/40 rounded-full px-3 py-1.5">
-                      +{hiddenCount} mais
-                    </span>
+                    <Popover>
+                      <PopoverTrigger
+                        className="text-xs font-semibold text-primary bg-background/60 border border-primary/40 rounded-full px-3 py-1.5 hover:bg-primary/10 transition-colors"
+                      >
+                        +{hiddenCount} mais
+                      </PopoverTrigger>
+                      <PopoverContent className="w-56 p-3" align="start">
+                        <p className="text-xs font-semibold text-foreground/80 mb-2">Praias do {region} da ilha</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {beaches.slice(MAX_VISIBLE_BEACHES).map(b => (
+                            <span key={b.id}
+                              className="text-xs font-medium text-foreground/80 bg-muted rounded-full px-2.5 py-1">
+                              {b.name}
+                            </span>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   )}
                 </div>
               </div>
