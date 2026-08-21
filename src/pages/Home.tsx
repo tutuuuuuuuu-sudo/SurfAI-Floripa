@@ -12,6 +12,7 @@ import { SwellPeriodWidget } from '@/components/home/SwellPeriodWidget'
 import { TrendBadge } from '@/components/home/TrendBadge'
 import { SwellAlert } from '@/components/home/SwellAlert'
 import { NotificationPanel } from '@/components/home/NotificationPanel'
+import { GeoFinderCard } from '@/components/home/GeoFinderCard'
 import { AIThinkingIndicator } from '@/components/home/AIThinkingIndicator'
 import { analyzeConditions, BeachCondition } from '@/lib/surfData'
 import { useSurfData } from '@/contexts/SurfDataContext'
@@ -330,6 +331,10 @@ export default function Home() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {allSpots.length > 0 && (
+          <GeoFinderCard spots={allSpots} isPremium={isPremium} />
         )}
 
         {!isPremium && !premiumLoading && (
