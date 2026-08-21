@@ -409,6 +409,40 @@ export default function SpotDetails() {
         {/* Aba Agora */}
         {activeTab === 'agora' && (
           <div className="space-y-5">
+            {/* Melhor Janela do Dia — antes só vivia na aba Previsão (14 dias), escondida
+                atrás de um clique a mais pra uma pergunta sobre HOJE, não sobre o futuro.
+                Fica logo abaixo do seletor Agora/Previsão, primeira coisa da aba. */}
+            <button
+              onClick={() => setBestWindowOpen(o => !o)}
+              className="w-full flex items-center justify-between px-4 py-3 rounded-2xl border border-border/50 bg-card hover:border-primary/30 hover:bg-primary/5 transition-all"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Clock className="h-4 w-4 text-primary"/>
+                </div>
+                <div className="text-left">
+                  <div className="text-sm font-semibold flex items-center gap-1.5">
+                    Melhor Janela do Dia
+                    {!isPremium && !premiumLoading && <Crown className="h-3 w-3 text-rating-fair"/>}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Veja o melhor horário pra ir hoje</div>
+                </div>
+              </div>
+              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${bestWindowOpen ? 'rotate-180' : ''}`}/>
+            </button>
+            {bestWindowOpen && (
+              <div style={{animation:'slideUp 0.2s ease-out'}}>
+                {isPremium ? (
+                  <BestWindowWidget lat={spot.lat} lng={spot.lng} orientation={spot._beachOrientation ?? 90} />
+                ) : (
+                  <PremiumUpsellBanner
+                    title="Melhor Janela do Dia é Premium"
+                    subtitle="Veja exatamente qual horário vale a pena ir hoje"
+                  />
+                )}
+              </div>
+            )}
+
             {/* Widget: contexto histórico do score */}
             {scoreHistory && scoreHistory.avg30 !== null && (() => {
               const diff = spot.score - scoreHistory.avg30
@@ -509,39 +543,6 @@ export default function SpotDetails() {
               <AlertTitle className="text-primary text-sm">Análise Inteligente</AlertTitle>
               <AlertDescription className="text-foreground text-sm">{analyzeConditions(spot)}</AlertDescription>
             </Alert>
-
-            {/* Melhor Janela do Dia — antes só vivia na aba Previsão (14 dias), escondida
-                atrás de um clique a mais pra uma pergunta sobre HOJE, não sobre o futuro */}
-            <button
-              onClick={() => setBestWindowOpen(o => !o)}
-              className="w-full flex items-center justify-between px-4 py-3 rounded-2xl border border-border/50 bg-card hover:border-primary/30 hover:bg-primary/5 transition-all"
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Clock className="h-4 w-4 text-primary"/>
-                </div>
-                <div className="text-left">
-                  <div className="text-sm font-semibold flex items-center gap-1.5">
-                    Melhor Janela do Dia
-                    {!isPremium && !premiumLoading && <Crown className="h-3 w-3 text-rating-fair"/>}
-                  </div>
-                  <div className="text-xs text-muted-foreground">Veja o melhor horário pra ir hoje</div>
-                </div>
-              </div>
-              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${bestWindowOpen ? 'rotate-180' : ''}`}/>
-            </button>
-            {bestWindowOpen && (
-              <div style={{animation:'slideUp 0.2s ease-out'}}>
-                {isPremium ? (
-                  <BestWindowWidget lat={spot.lat} lng={spot.lng} orientation={spot._beachOrientation ?? 90} />
-                ) : (
-                  <PremiumUpsellBanner
-                    title="Melhor Janela do Dia é Premium"
-                    subtitle="Veja exatamente qual horário vale a pena ir hoje"
-                  />
-                )}
-              </div>
-            )}
 
             <Card>
               <CardHeader className="pb-2">

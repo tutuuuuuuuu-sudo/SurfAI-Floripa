@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Navigation, MapPin, Loader2 } from 'lucide-react'
+import { Compass, MapPin, Loader2 } from 'lucide-react'
 import { recommendBeach, type GeoRecommendation } from '@/lib/geoFinder'
-import { getScoreColor } from '@/lib/rating'
+import { getScoreColor, getRatingInfo } from '@/lib/rating'
 import { track } from '@/lib/monitoring'
 import { PremiumUpsellBanner } from '@/components/PremiumUpsellBanner'
 import type { BeachCondition } from '@/lib/surfData'
@@ -60,8 +60,8 @@ export function GeoFinderCard({ spots, isPremium }: Props) {
   if (!isPremium) {
     return (
       <PremiumUpsellBanner
-        title="Perto de Você é Premium"
-        subtitle="Descubra a melhor praia pertinho de onde você está agora"
+        title="Bora Surfar é Premium"
+        subtitle="A gente acha a praia mais perto de você com boa condição agora"
       />
     )
   }
@@ -70,15 +70,18 @@ export function GeoFinderCard({ spots, isPremium }: Props) {
     <Card className="border-primary/20 overflow-hidden">
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
-          <Navigation className="h-4 w-4 text-primary" />
-          Perto de Você
+          <Compass className="h-4 w-4 text-primary" />
+          Bora Surfar?
         </CardTitle>
+        <CardDescription className="text-xs">
+          A gente acha a praia mais perto de você com boa condição agora
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         {status === 'idle' && (
           <>
             <p className="text-xs text-muted-foreground">
-              Usamos sua localização só nesse momento, pra achar a praia mais perto — não guardamos.
+              Compartilha sua localização só por esse instante — não guardamos nada — e a gente te diz pra onde ir.
             </p>
             <Button variant="outline" size="sm" className="w-full" onClick={handleFindNearby}>
               <MapPin className="h-4 w-4 mr-2" />Usar minha localização
@@ -126,25 +129,33 @@ export function GeoFinderCard({ spots, isPremium }: Props) {
           <p className="text-xs text-muted-foreground">Não deu pra obter sua localização agora. Tente de novo mais tarde.</p>
         )}
 
-        {status === 'result' && result && (
-          <button
-            className="w-full text-left rounded-xl p-3 border border-border/40 hover:border-primary/40 transition-colors"
-            onClick={() => { track('spot_opened', { spot: result.recommended.name, source: 'geo_finder' }); navigate(`/spot/${result.recommended.id}`) }}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1">
-                <div className="font-semibold text-sm">{result.recommended.name}</div>
-                <div className="text-xs text-muted-foreground mt-0.5">
-                  {result.recommended.distanceKm.toFixed(1)}km de você
-                  {result.worthDetour && ` · ${result.extraDistanceKm.toFixed(1)}km a mais que ${result.nearest.name}, mas vale o desvio`}
+        {status === 'result' && result && (() => {
+          const recInfo = getRatingInfo(result.recommended.score)
+          const nearInfo = getRatingInfo(result.nearest.score)
+          const recColor = getScoreColor(result.recommended.score)
+          return (
+            <button
+              className="w-full text-left rounded-xl p-3 border border-border/40 hover:border-primary/40 transition-colors"
+              onClick={() => { track('spot_opened', { spot: result.recommended.name, source: 'geo_finder' }); navigate(`/spot/${result.recommended.id}`) }}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <div className="font-semibold text-sm">{result.recommended.name}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{result.recommended.distanceKm.toFixed(1)}km de você</div>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <div className="text-xl font-bold" style={{ color: recColor }}>{result.recommended.score.toFixed(1)}</div>
+                  <div className="text-[10px] font-bold" style={{ color: recColor }}>{recInfo.label}</div>
                 </div>
               </div>
-              <div className="text-xl font-bold flex-shrink-0" style={{ color: getScoreColor(result.recommended.score) }}>
-                {result.recommended.score.toFixed(1)}
-              </div>
-            </div>
-          </button>
-        )}
+              {result.worthDetour && (
+                <p className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border/30">
+                  Vale o desvio de +{result.extraDistanceKm.toFixed(1)}km: {result.nearest.name} é mais perto, mas só nota {result.nearest.score.toFixed(1)} ({nearInfo.label.toLowerCase()}).
+                </p>
+              )}
+            </button>
+          )
+        })()}
       </CardContent>
     </Card>
   )

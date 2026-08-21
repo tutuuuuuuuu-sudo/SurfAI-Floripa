@@ -33,6 +33,7 @@ interface Props {
 export function BestWindowWidget({ lat, lng, orientation }: Props) {
   const [data, setData] = useState<HourlyResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [selectedHour, setSelectedHour] = useState<number | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -129,7 +130,7 @@ export function BestWindowWidget({ lat, lng, orientation }: Props) {
 
         {/* Gráfico de barras horário */}
         <div>
-          <p className="text-xs text-muted-foreground mb-2">Nota hora a hora de hoje:</p>
+          <p className="text-xs text-muted-foreground mb-2">Nota hora a hora de hoje — toque numa barra pra ver o detalhe:</p>
           <div className="flex items-end gap-0.5">
             {slots.map(slot => {
               const info = getRatingInfo(slot.score)
@@ -137,12 +138,19 @@ export function BestWindowWidget({ lat, lng, orientation }: Props) {
               const isPast = slot.hour < nowHour
               const isCurrent = slot.hour === nowHour
               const showLabel = isCurrent || slot.hour % 4 === 0
+              const isSelected = selectedHour === slot.hour
               return (
-                <div key={slot.hour} className="flex-1 flex flex-col items-center gap-0.5" title={`${slot.label}: ${slot.score.toFixed(1)}`}>
+                <button
+                  key={slot.hour}
+                  type="button"
+                  onClick={() => setSelectedHour(isSelected ? null : slot.hour)}
+                  className="flex-1 flex flex-col items-center gap-0.5 bg-transparent border-0 p-0 cursor-pointer"
+                  title={`${slot.label} · ${info.label} (${slot.score.toFixed(1)}) · ${slot.waveHeight.toFixed(1)}m de onda · vento ${slot.windSpeed}km/h ${slot.windDirection} · período ${slot.swellPeriod}s`}
+                >
                   {/* Altura em % só resolve com um pai de altura fixa em px — daí o wrapper abaixo */}
                   <div className="w-full flex items-end" style={{ height: '40px' }}>
                     <div
-                      className={`w-full rounded-sm transition-all ${isPast ? 'opacity-30' : ''} ${slot.isPeak ? 'ring-1 ring-offset-1 ring-current' : ''}`}
+                      className={`w-full rounded-sm transition-all ${isPast ? 'opacity-30' : ''} ${slot.isPeak ? 'ring-1 ring-offset-1 ring-current' : ''} ${isSelected ? 'ring-2 ring-primary ring-offset-1' : ''}`}
                       style={{
                         height: `${heightPct}%`,
                         backgroundColor: isPast ? 'var(--muted-foreground)' : info.scoreColor,
@@ -152,10 +160,27 @@ export function BestWindowWidget({ lat, lng, orientation }: Props) {
                   <span className={`text-[9px] h-3 leading-3 ${isCurrent ? 'font-bold text-foreground' : 'text-muted-foreground'}`}>
                     {showLabel ? (isCurrent ? 'agr' : `${String(slot.hour).padStart(2, '0')}h`) : ''}
                   </span>
-                </div>
+                </button>
               )
             })}
           </div>
+
+          {selectedHour !== null && (() => {
+            const sel = slots.find(s => s.hour === selectedHour)
+            if (!sel) return null
+            const selInfo = getRatingInfo(sel.score)
+            return (
+              <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-muted/20 px-3 py-2" style={{ animation: 'slideUp 0.15s ease-out' }}>
+                <div>
+                  <span className={`text-sm font-bold ${selInfo.color}`}>{fmtHour(sel.hour)} · {selInfo.label}</span>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    {sel.waveHeight.toFixed(1)}m de onda · vento {sel.windSpeed}km/h {sel.windDirection} · período {sel.swellPeriod}s
+                  </div>
+                </div>
+                <div className={`text-xl font-bold flex-shrink-0 ${selInfo.color}`}>{sel.score.toFixed(1)}</div>
+              </div>
+            )
+          })()}
         </div>
 
       </CardContent>
