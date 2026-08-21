@@ -9,7 +9,7 @@ import { track } from '@/lib/monitoring'
 import { PremiumUpsellBanner } from '@/components/PremiumUpsellBanner'
 import type { BeachCondition } from '@/lib/surfData'
 
-type Status = 'idle' | 'requesting' | 'denied' | 'unsupported' | 'error' | 'result'
+type Status = 'idle' | 'requesting' | 'denied' | 'unsupported' | 'unavailable' | 'timeout' | 'error' | 'result'
 
 interface Props {
   spots: BeachCondition[]
@@ -20,7 +20,9 @@ function getPosition(): Promise<GeolocationPosition> {
   return new Promise((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(resolve, reject, {
       enableHighAccuracy: false,
-      timeout: 10000,
+      // Desktop sem GPS localiza por Wi-Fi/IP, que pode demorar mais que os 10s
+      // originais — 20s dá folga sem deixar o botão preso indefinidamente.
+      timeout: 20000,
       maximumAge: 5 * 60 * 1000,
     })
   })
@@ -42,8 +44,16 @@ export function GeoFinderCard({ spots, isPremium }: Props) {
       setStatus('result')
       track('geo_finder_used', { worthDetour: rec.worthDetour, recommended: rec.recommended.id })
     } catch (err) {
-      const denied = err instanceof GeolocationPositionError && err.code === err.PERMISSION_DENIED
-      setStatus(denied ? 'denied' : 'error')
+      // Códigos do GeolocationPositionError: 1 = PERMISSION_DENIED, 2 = POSITION_UNAVAILABLE
+      // (serviço de localização do sistema/navegador desligado), 3 = TIMEOUT.
+      if (err instanceof GeolocationPositionError) {
+        if (err.code === err.PERMISSION_DENIED) setStatus('denied')
+        else if (err.code === err.POSITION_UNAVAILABLE) setStatus('unavailable')
+        else if (err.code === err.TIMEOUT) setStatus('timeout')
+        else setStatus('error')
+      } else {
+        setStatus('error')
+      }
     }
   }
 
@@ -90,6 +100,26 @@ export function GeoFinderCard({ spots, isPremium }: Props) {
 
         {status === 'unsupported' && (
           <p className="text-xs text-muted-foreground">Seu navegador não suporta localização.</p>
+        )}
+
+        {status === 'unavailable' && (
+          <>
+            <p className="text-xs text-muted-foreground">
+              Não conseguimos localizar você. Verifique se o serviço de localização está ligado no computador ou celular (não só no navegador) e tente de novo.
+            </p>
+            <Button variant="outline" size="sm" className="w-full" onClick={handleFindNearby}>
+              <MapPin className="h-4 w-4 mr-2" />Tentar de novo
+            </Button>
+          </>
+        )}
+
+        {status === 'timeout' && (
+          <>
+            <p className="text-xs text-muted-foreground">Demorou demais pra localizar você. Sinal fraco costuma ser o motivo — vale tentar de novo.</p>
+            <Button variant="outline" size="sm" className="w-full" onClick={handleFindNearby}>
+              <MapPin className="h-4 w-4 mr-2" />Tentar de novo
+            </Button>
+          </>
         )}
 
         {status === 'error' && (

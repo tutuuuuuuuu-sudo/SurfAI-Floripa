@@ -15,7 +15,7 @@ import { SpotTeaser } from '@/components/spot/SpotTeaser'
 import {
   ArrowLeft, Waves, Wind, Navigation,
   TrendingUp, Compass, AlertCircle, Thermometer,
-  Heart, Calendar, Sun, ChevronDown,
+  Heart, Calendar, Sun, ChevronDown, Clock,
   Share2, MessageCircle, Lock, Crown, Droplets, GitCompareArrows
 } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -28,6 +28,7 @@ import { CommentsSection } from '@/components/spot/CommentsSection'
 import { ScoreExplainer } from '@/components/spot/ScoreExplainer'
 import { PicosSection } from '@/components/spot/PicosSection'
 import { BestWindowWidget } from '@/components/spot/BestWindowWidget'
+import { PremiumUpsellBanner } from '@/components/PremiumUpsellBanner'
 
 const FIXED_DOMAIN = typeof window !== 'undefined' ? window.location.origin : ''
 const metersToFeet = (m: number): string => `${(m * 3.281).toFixed(1)}ft`
@@ -164,6 +165,7 @@ export default function SpotDetails() {
   const [activeTab, setActiveTab] = useState<'agora'|'previsao'>('agora')
   const [scoreHistory, setScoreHistory] = useState<{ avg30: number | null; isMonthBest: boolean } | null>(null)
   const [commentsOpen, setCommentsOpen] = useState(false)
+  const [bestWindowOpen, setBestWindowOpen] = useState(false)
   const [usesFeet, setUsesFeet] = useState(() => {
     try { return JSON.parse(localStorage.getItem('pref_units') ?? '"metric"') === 'imperial' } catch { return false }
   })
@@ -508,6 +510,39 @@ export default function SpotDetails() {
               <AlertDescription className="text-foreground text-sm">{analyzeConditions(spot)}</AlertDescription>
             </Alert>
 
+            {/* Melhor Janela do Dia — antes só vivia na aba Previsão (14 dias), escondida
+                atrás de um clique a mais pra uma pergunta sobre HOJE, não sobre o futuro */}
+            <button
+              onClick={() => setBestWindowOpen(o => !o)}
+              className="w-full flex items-center justify-between px-4 py-3 rounded-2xl border border-border/50 bg-card hover:border-primary/30 hover:bg-primary/5 transition-all"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Clock className="h-4 w-4 text-primary"/>
+                </div>
+                <div className="text-left">
+                  <div className="text-sm font-semibold flex items-center gap-1.5">
+                    Melhor Janela do Dia
+                    {!isPremium && !premiumLoading && <Crown className="h-3 w-3 text-rating-fair"/>}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Veja o melhor horário pra ir hoje</div>
+                </div>
+              </div>
+              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${bestWindowOpen ? 'rotate-180' : ''}`}/>
+            </button>
+            {bestWindowOpen && (
+              <div style={{animation:'slideUp 0.2s ease-out'}}>
+                {isPremium ? (
+                  <BestWindowWidget lat={spot.lat} lng={spot.lng} orientation={spot._beachOrientation ?? 90} />
+                ) : (
+                  <PremiumUpsellBanner
+                    title="Melhor Janela do Dia é Premium"
+                    subtitle="Veja exatamente qual horário vale a pena ir hoje"
+                  />
+                )}
+              </div>
+            )}
+
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
@@ -601,10 +636,6 @@ export default function SpotDetails() {
                 </button>
               )}
             </div>
-
-            {isPremium && spot && (
-              <BestWindowWidget lat={spot.lat} lng={spot.lng} orientation={spot._beachOrientation ?? 90} />
-            )}
 
             {forecast.length === 0 ? (
               <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">

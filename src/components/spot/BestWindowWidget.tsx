@@ -130,26 +130,28 @@ export function BestWindowWidget({ lat, lng, orientation }: Props) {
         {/* Gráfico de barras horário */}
         <div>
           <p className="text-xs text-muted-foreground mb-2">Nota hora a hora de hoje:</p>
-          <div className="flex items-end gap-0.5 h-14">
+          <div className="flex items-end gap-0.5">
             {slots.map(slot => {
               const info = getRatingInfo(slot.score)
               const heightPct = Math.max(8, (slot.score / 10) * 100)
               const isPast = slot.hour < nowHour
               const isCurrent = slot.hour === nowHour
+              const showLabel = isCurrent || slot.hour % 4 === 0
               return (
                 <div key={slot.hour} className="flex-1 flex flex-col items-center gap-0.5" title={`${slot.label}: ${slot.score.toFixed(1)}`}>
-                  <div
-                    className={`w-full rounded-sm transition-all ${isPast ? 'opacity-30' : ''} ${slot.isPeak ? 'ring-1 ring-offset-1 ring-current' : ''}`}
-                    style={{
-                      height: `${heightPct}%`,
-                      backgroundColor: isPast ? 'var(--muted-foreground)' : info.scoreColor,
-                    }}
-                  />
-                  {(isCurrent || slot.hour % 4 === 0) && (
-                    <span className={`text-[9px] ${isCurrent ? 'font-bold text-foreground' : 'text-muted-foreground'}`}>
-                      {isCurrent ? 'agr' : `${String(slot.hour).padStart(2, '0')}h`}
-                    </span>
-                  )}
+                  {/* Altura em % só resolve com um pai de altura fixa em px — daí o wrapper abaixo */}
+                  <div className="w-full flex items-end" style={{ height: '40px' }}>
+                    <div
+                      className={`w-full rounded-sm transition-all ${isPast ? 'opacity-30' : ''} ${slot.isPeak ? 'ring-1 ring-offset-1 ring-current' : ''}`}
+                      style={{
+                        height: `${heightPct}%`,
+                        backgroundColor: isPast ? 'var(--muted-foreground)' : info.scoreColor,
+                      }}
+                    />
+                  </div>
+                  <span className={`text-[9px] h-3 leading-3 ${isCurrent ? 'font-bold text-foreground' : 'text-muted-foreground'}`}>
+                    {showLabel ? (isCurrent ? 'agr' : `${String(slot.hour).padStart(2, '0')}h`) : ''}
+                  </span>
                 </div>
               )
             })}
