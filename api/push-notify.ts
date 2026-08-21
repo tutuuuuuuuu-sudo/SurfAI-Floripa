@@ -212,6 +212,7 @@ export default async function handler(req: Request) {
     id: string; user_id: string; endpoint: string
     p256dh: string; auth: string
     min_score: number; favorite_only: boolean
+    beach_thresholds: Record<string, number> | null
   }
   const allSubs = await subRes.json() as PushSub[]
   if (allSubs.length === 0) return json({ ok: true, sent: 0 })
@@ -278,7 +279,8 @@ export default async function handler(req: Request) {
     const userFavs = favsByUser[sub.user_id] ?? []
     const goodBeaches = BEACHES.filter(b => {
       const score = scores[b.id] ?? 0
-      if (score < sub.min_score) return false
+      const threshold = sub.beach_thresholds?.[b.id] ?? sub.min_score
+      if (score < threshold) return false
       if (sub.favorite_only && !userFavs.includes(b.id)) return false
       return true
     }).sort((a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0))

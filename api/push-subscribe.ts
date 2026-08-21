@@ -52,6 +52,7 @@ export default async function handler(req: Request) {
     subscription: { endpoint: string; keys: { p256dh: string; auth: string } }
     minScore?: number
     favoriteOnly?: boolean
+    beachThresholds?: Record<string, number>
   }
 
   let body: SubscribeBody
@@ -64,6 +65,12 @@ export default async function handler(req: Request) {
     return json({ error: 'subscription inválida' }, 400)
   }
 
+  // Filtra só entradas válidas (nota 1-10) — o resto do corpo do request não é confiável
+  const beachThresholds: Record<string, number> = {}
+  for (const [beachId, score] of Object.entries(body.beachThresholds ?? {})) {
+    if (typeof score === 'number' && score >= 1 && score <= 10) beachThresholds[beachId] = score
+  }
+
   // Upsert: um usuário pode ter múltiplos dispositivos — usa endpoint como chave
   const row = {
     user_id: userId,
@@ -72,6 +79,7 @@ export default async function handler(req: Request) {
     auth: body.subscription.keys.auth,
     min_score: body.minScore ?? 7,
     favorite_only: body.favoriteOnly ?? true,
+    beach_thresholds: beachThresholds,
     updated_at: new Date().toISOString(),
   }
 

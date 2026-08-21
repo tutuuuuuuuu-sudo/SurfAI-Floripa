@@ -26,7 +26,8 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 
 export async function subscribeToNotifications(
   minScore = 7,
-  favoriteOnly = true
+  favoriteOnly = true,
+  beachThresholds: Record<string, number> = {}
 ): Promise<boolean> {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false
 
@@ -54,7 +55,7 @@ export async function subscribeToNotifications(
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ subscription, minScore, favoriteOnly }),
+        body: JSON.stringify({ subscription, minScore, favoriteOnly, beachThresholds }),
       }).catch(() => {}) // falha silenciosa — notificação local ainda funciona
     }
 
@@ -103,14 +104,16 @@ export function getSavedNotificationSettings(): {
   enabled: boolean
   minScore: number
   favoriteOnly: boolean
+  beachThresholds: Record<string, number>
 } {
-  return lsGetJson('notification_settings', { enabled: false, minScore: 7, favoriteOnly: true })
+  return lsGetJson('notification_settings', { enabled: false, minScore: 7, favoriteOnly: true, beachThresholds: {} })
 }
 
 export function saveNotificationSettings(settings: {
   enabled: boolean
   minScore: number
   favoriteOnly: boolean
+  beachThresholds: Record<string, number>
 }) {
   lsSetJson('notification_settings', settings)
 }
@@ -120,7 +123,8 @@ export async function checkAndNotifyGoodConditions(
   spots: { id: string, name: string, score: number, tide?: string, bestTimeWindow?: string }[],
   favorites: string[],
   minScore: number,
-  favoriteOnly: boolean
+  favoriteOnly: boolean,
+  beachThresholds: Record<string, number> = {}
 ): Promise<number> {
   if (Notification.permission !== 'granted') return 0
 
@@ -135,7 +139,8 @@ export async function checkAndNotifyGoodConditions(
   }
 
   const goodSpots = spots.filter(s => {
-    if (s.score < minScore) return false
+    const threshold = beachThresholds[s.id] ?? minScore
+    if (s.score < threshold) return false
     if (favoriteOnly && !favorites.includes(s.id)) return false
     // Não renotifica a mesma praia em menos de 6h
     if (cleaned[s.id] && now - cleaned[s.id] < 6 * 60 * 60 * 1000) return false

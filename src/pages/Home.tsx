@@ -71,7 +71,7 @@ export default function Home() {
       setFavorites(favs)
       const notifSettings = getSavedNotificationSettings()
       if (notifSettings.enabled) {
-        checkAndNotifyGoodConditions(allSpots, favs, notifSettings.minScore, notifSettings.favoriteOnly)
+        checkAndNotifyGoodConditions(allSpots, favs, notifSettings.minScore, notifSettings.favoriteOnly, notifSettings.beachThresholds)
       }
     })
     // Busca o relato mais recente de cada praia em um único request

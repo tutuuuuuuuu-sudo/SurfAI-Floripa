@@ -31,11 +31,12 @@ export function NotificationPanel({ spots, favorites, isPremium }: Props) {
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+  const favoriteSpots = spots.filter(s => favorites.includes(s.id))
 
   const handleEnable = async () => {
     if (!isPremium) return
     setLoading(true)
-    const success = await subscribeToNotifications(settings.minScore, settings.favoriteOnly)
+    const success = await subscribeToNotifications(settings.minScore, settings.favoriteOnly, settings.beachThresholds)
     if (success) {
       const s = { ...settings, enabled: true }
       setSettings(s)
@@ -43,6 +44,21 @@ export function NotificationPanel({ spots, favorites, isPremium }: Props) {
       setPermission('granted')
     }
     setLoading(false)
+  }
+
+  // Nota por praia é enviada pro servidor (push com app fechado) — se o alerta já
+  // está ativo, precisa reenviar a subscription pra atualizar o critério salvo lá.
+  // (mesma lacuna já existe hoje pra minScore/favoriteOnly — não é nova neste ponto)
+  const setBeachThreshold = (beachId: string, score: number | null) => {
+    const beachThresholds = { ...settings.beachThresholds }
+    if (score === null) delete beachThresholds[beachId]
+    else beachThresholds[beachId] = score
+    const s = { ...settings, beachThresholds }
+    setSettings(s)
+    saveNotificationSettings(s)
+    if (s.enabled && permission === 'granted') {
+      subscribeToNotifications(s.minScore, s.favoriteOnly, s.beachThresholds).catch(() => {})
+    }
   }
 
   const handleDisable = () => {
@@ -138,11 +154,45 @@ export function NotificationPanel({ spots, favorites, isPremium }: Props) {
                   <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${settings.favoriteOnly ? 'left-6' : 'left-1'}`} />
                 </button>
               </div>
+              {favoriteSpots.length > 0 && (
+                <>
+                  <Separator />
+                  <div>
+                    <div className="text-xs font-semibold mb-0.5">Nota mínima por praia</div>
+                    <div className="text-[11px] text-muted-foreground mb-2">Sobrepõe a nota geral só pra essa praia</div>
+                    <div className="space-y-2">
+                      {favoriteSpots.map(spot => {
+                        const custom = settings.beachThresholds[spot.id]
+                        return (
+                          <div key={spot.id} className="flex items-center justify-between gap-2">
+                            <span className="text-xs truncate flex-1">{spot.name}</span>
+                            <div className="flex gap-1">
+                              {[6, 7, 8, 9].map(score => (
+                                <button
+                                  key={score}
+                                  onClick={() => setBeachThreshold(spot.id, custom === score ? null : score)}
+                                  className={`w-7 py-1 text-[11px] rounded-lg border transition-colors ${
+                                    custom === score
+                                      ? 'border-primary bg-primary/10 text-primary font-bold'
+                                      : 'border-border text-muted-foreground hover:border-primary/30'
+                                  }`}
+                                >
+                                  {score}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
             {settings.enabled && permission === 'granted' && (
               <button
                 onClick={async () => {
-                  const sent = await checkAndNotifyGoodConditions(spots, favorites, settings.minScore, settings.favoriteOnly)
+                  const sent = await checkAndNotifyGoodConditions(spots, favorites, settings.minScore, settings.favoriteOnly, settings.beachThresholds)
                   if (sent > 0) toast.success('Notificação de teste enviada!')
                   else toast.info('Nenhuma praia atinge o score agora, nada a notificar.')
                 }}
