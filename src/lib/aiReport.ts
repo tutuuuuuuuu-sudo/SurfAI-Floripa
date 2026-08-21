@@ -42,20 +42,27 @@ function setCached(userId: string, report: string) {
   }
 }
 
+export interface AIReportResult {
+  report: string | null
+  // true quando a ausência de relatório é esperada (usuário free) — o chamador
+  // usa isso pra decidir entre "nada a mostrar" e "algo falhou, avisa o usuário".
+  premiumRequired: boolean
+}
+
 export async function fetchAIReport(
   spots: BeachCondition[],
   topSpot: BeachCondition,
   userLevel?: string,
   userId?: string
-): Promise<string | null> {
-  if (!userId) return null
+): Promise<AIReportResult> {
+  if (!userId) return { report: null, premiumRequired: false }
   const cached = getCached(userId)
-  if (cached) return cached.report
+  if (cached) return { report: cached.report, premiumRequired: false }
 
   try {
     const { data: { session } } = await supabase.auth.getSession()
     const token = session?.access_token
-    if (!token) return null
+    if (!token) return { report: null, premiumRequired: false }
 
     const res = await fetch('/api/ai-report', {
       method: 'POST',
@@ -67,15 +74,15 @@ export async function fetchAIReport(
     })
 
     if (res.status === 403) {
-      // Usuário free — não tenta retry, apenas retorna null silenciosamente
-      return null
+      // Usuário free — não tenta retry, esperado, não é uma falha
+      return { report: null, premiumRequired: true }
     }
 
     if (res.status === 401) {
       // Token expirado — tenta refresh antes de desistir
       const { data: refreshed } = await supabase.auth.refreshSession()
       const newToken = refreshed.session?.access_token
-      if (!newToken) return null
+      if (!newToken) return { report: null, premiumRequired: false }
 
       const retryRes = await fetch('/api/ai-report', {
         method: 'POST',
@@ -85,22 +92,22 @@ export async function fetchAIReport(
         },
         body: JSON.stringify({ spots, topSpot, userLevel }),
       })
-      // Se ainda for 403 após refresh, o usuário não tem premium
-      if (!retryRes.ok) return null
+      if (retryRes.status === 403) return { report: null, premiumRequired: true }
+      if (!retryRes.ok) return { report: null, premiumRequired: false }
       const retryData = await retryRes.json()
-      if (retryData.report) { setCached(userId, retryData.report); return retryData.report }
-      return null
+      if (retryData.report) { setCached(userId, retryData.report); return { report: retryData.report, premiumRequired: false } }
+      return { report: null, premiumRequired: false }
     }
 
-    if (!res.ok) return null
+    if (!res.ok) return { report: null, premiumRequired: false }
     const data = await res.json()
     if (data.report) {
       setCached(userId, data.report)
-      return data.report
+      return { report: data.report, premiumRequired: false }
     }
-    return null
+    return { report: null, premiumRequired: false }
   } catch {
-    return null
+    return { report: null, premiumRequired: false }
   }
 }
 

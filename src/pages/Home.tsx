@@ -45,6 +45,7 @@ export default function Home() {
   const [visible, setVisible] = useState(false)
   const [aiReport, setAiReport] = useState<string | null>(null)
   const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(() => !isOnboardingDone())
   const [latestComments, setLatestComments] = useState<Record<string, LatestComment>>({})
   const aiReportFetchedRef = useRef(false)
@@ -97,15 +98,20 @@ export default function Home() {
     const top = sortedAll[0]
     if (!top) return
     setAiLoading(true)
+    setAiError(false)
     const userLevel = (() => { try { return localStorage.getItem('pref_skill') ?? undefined } catch { return undefined } })()
     fetchAIReport(sortedAll.slice(0, 6), top, userLevel, user?.id)
-      .then(report => {
+      .then(({ report, premiumRequired }) => {
         setAiReport(report)
         if (report) track('ai_report_loaded', { top_spot: top.name, score: top.score })
+        // premiumRequired = usuário free, esperado, não é erro (o card mostra a prévia).
+        // Sem relatório e sem ser esse o motivo = falha real (ex: sem crédito na API,
+        // rate limit) — sem isso o card simplesmente sumia sem explicação nenhuma.
+        else if (isPremium && !premiumRequired) setAiError(true)
       })
-      .catch(() => {})
+      .catch(() => { if (isPremium) setAiError(true) })
       .finally(() => setAiLoading(false))
-  }, [allSpots, premiumLoading, user])
+  }, [allSpots, premiumLoading, user, isPremium])
 
   // Se o usuário vira premium via realtime (ex: pagou por Pix/boleto e o webhook
   // atualiza a assinatura enquanto ele já está na Home), o relatório precisa ser
@@ -230,7 +236,7 @@ export default function Home() {
           </div>
         )}
 
-        {(aiReport || aiLoading || (!premiumLoading && !isPremium && topSpot)) && (
+        {(aiReport || aiLoading || aiError || (!premiumLoading && !isPremium && topSpot)) && (
           <div className="relative anim-slide" style={{ animationDelay: '0.15s' }}>
             <div className="absolute -inset-1 rounded-2xl bg-primary/25 blur-md animate-pulse pointer-events-none" />
             <Card className="relative border-primary/50 bg-primary/8 shadow-lg shadow-primary/15">
@@ -284,6 +290,8 @@ export default function Home() {
                     <Crown className="h-4 w-4" />Ver relatório completo · Premium
                   </button>
                 </div>
+              ) : aiError ? (
+                <p className="text-sm text-muted-foreground">Não conseguimos gerar o relatório de hoje. Tente de novo mais tarde.</p>
               ) : null}
             </CardContent>
             </Card>
