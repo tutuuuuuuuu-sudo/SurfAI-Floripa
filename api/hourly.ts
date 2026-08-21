@@ -19,6 +19,7 @@ function json(data: unknown, status = 200) {
 import { verifyPremiumToken } from './_auth.js'
 import { isValidCoord, createRateLimiter } from './_httpUtils.js'
 import { todaySP, nowHourSP } from '../src/lib/timeSP.js'
+import { computeGoldenWindow, explainWindowEnd } from './_goldenWindow.js'
 
 // Rate limit por IP: 60 req/min
 const checkHourlyRateLimit = createRateLimiter(60)
@@ -91,7 +92,17 @@ export default async function handler(req: Request) {
     const futureSlots = slots.filter(s => s.hour >= nowHour)
     const bestFuture = futureSlots.reduce((best, s) => s.score > best.score ? s : best, futureSlots[0] ?? slots[0])
 
-    return json({ slots, bestWindow: bestFuture, isPremium: true })
+    // Janela de Ouro: intervalo (não só a hora de pico) + frase explicando o fim dela
+    const goldenWindow = computeGoldenWindow(futureSlots, bestFuture.hour)
+    const windowExplanation = goldenWindow ? explainWindowEnd(futureSlots, goldenWindow.endIdx) : null
+
+    return json({
+      slots,
+      bestWindow: bestFuture,
+      window: goldenWindow ? { startHour: goldenWindow.startHour, endHour: goldenWindow.endHour } : null,
+      windowExplanation,
+      isPremium: true,
+    })
   } catch {
     return json({ error: 'Erro interno' }, 500)
   }

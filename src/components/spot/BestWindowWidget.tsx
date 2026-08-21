@@ -20,6 +20,8 @@ interface HourlySlot {
 interface HourlyResponse {
   slots: HourlySlot[]
   bestWindow: HourlySlot
+  window: { startHour: number; endHour: number } | null
+  windowExplanation: string | null
 }
 
 interface Props {
@@ -67,12 +69,20 @@ export function BestWindowWidget({ lat, lng, orientation }: Props) {
 
   if (!data) return null
 
-  const { slots, bestWindow } = data
+  const { slots, bestWindow, window: goldenWindow, windowExplanation } = data
   const best = getRatingInfo(bestWindow.score)
   // Os slots vêm calculados no fuso de Floripa (api/hourly.ts) — usar o fuso do
   // dispositivo aqui divergiria para quem acessa de fora de America/Sao_Paulo.
   const nowHour = nowHourSP()
   const isBestNow = bestWindow.hour === nowHour
+  const fmtHour = (h: number) => `${String(h).padStart(2, '0')}h`
+  const isWindowRange = !!goldenWindow && goldenWindow.startHour !== goldenWindow.endHour
+  const isInsideWindow = !!goldenWindow && nowHour >= goldenWindow.startHour && nowHour <= goldenWindow.endHour
+  const headline = !isWindowRange
+    ? (isBestNow ? 'Agora é o melhor momento!' : `Melhor às ${bestWindow.label}`)
+    : isInsideWindow
+      ? `Janela boa agora — vai até ${fmtHour(goldenWindow!.endHour)}`
+      : `Melhor janela: ${fmtHour(goldenWindow!.startHour)} às ${fmtHour(goldenWindow!.endHour)}`
 
   return (
     <Card className="overflow-hidden">
@@ -94,7 +104,7 @@ export function BestWindowWidget({ lat, lng, orientation }: Props) {
               <div className="flex items-center gap-2 mb-1">
                 <Zap className={`h-4 w-4 ${best.color}`} />
                 <span className={`text-sm font-bold ${best.color}`}>
-                  {isBestNow ? 'Agora é o melhor momento!' : `Melhor às ${bestWindow.label}`}
+                  {headline}
                 </span>
               </div>
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -106,6 +116,9 @@ export function BestWindowWidget({ lat, lng, orientation }: Props) {
                 </span>
                 <span>{bestWindow.swellPeriod}s período</span>
               </div>
+              {windowExplanation && (
+                <p className="text-xs text-muted-foreground/80 mt-2">{windowExplanation}</p>
+              )}
             </div>
             <div className="text-right">
               <div className={`text-3xl font-bold ${best.color}`}>{bestWindow.score.toFixed(1)}</div>
