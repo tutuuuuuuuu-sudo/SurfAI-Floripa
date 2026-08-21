@@ -1,0 +1,45 @@
+// Chamada centralizada à API do Google Gemini — fonte única do modelo usado pelos
+// endpoints que geram texto com IA (ai-report, content-agent, daily-report), pra não
+// ter o mesmo fetch duplicado em três lugares. Free tier via chave do Google AI
+// Studio (ai.google.dev), sem cartão de crédito — troca a Anthropic (paga, sem tier
+// grátis contínuo) que ficava sem crédito e derrubava o relatório sem avisar ninguém.
+// Prefixo _ indica que não é um handler HTTP — não será exposto como endpoint pelo Vercel.
+
+const GEMINI_MODEL = 'gemini-2.0-flash'
+
+export type GeminiResult =
+  | { ok: true; text: string }
+  | { ok: false; status: number; error: string }
+
+export async function callGemini(
+  apiKey: string,
+  prompt: string,
+  maxOutputTokens: number,
+  timeoutMs = 15000
+): Promise<GeminiResult> {
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens, temperature: 0.9 },
+        }),
+        signal: AbortSignal.timeout(timeoutMs),
+      }
+    )
+
+    if (!res.ok) {
+      const error = await res.text()
+      return { ok: false, status: res.status, error }
+    }
+
+    const data = await res.json() as { candidates?: { content?: { parts?: { text?: string }[] } }[] }
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+    return { ok: true, text }
+  } catch (error) {
+    return { ok: false, status: 0, error: error instanceof Error ? error.message : 'Erro desconhecido' }
+  }
+}

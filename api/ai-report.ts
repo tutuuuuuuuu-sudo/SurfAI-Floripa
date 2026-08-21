@@ -12,6 +12,7 @@ const CORS = {
 }
 
 import { verifyToken, isPremiumUser } from './_auth.js'
+import { callGemini } from './_gemini.js'
 
 // Rate limit por userId: 10 chamadas por hora (relatório custa créditos Anthropic)
 const aiRateLimit = new Map<string, { count: number; reset: number }>()
@@ -87,9 +88,9 @@ export default async function handler(req: Request) {
     })
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY
+  const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY não configurada' }), {
+    return new Response(JSON.stringify({ error: 'GEMINI_API_KEY não configurada' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
     })
@@ -154,42 +155,16 @@ Escreva um relatório de 3-4 frases em português brasileiro, informal e direto,
 
 Não inclua emojis. Não repita ondas/período/vento em números exatos (o usuário já vê isso na tela). Não use travessão (—) em nenhuma frase — reescreva com vírgula, dois-pontos ou frases separadas. Responda APENAS o texto do relatório, sem títulos ou formatação.`
 
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 300,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-      signal: AbortSignal.timeout(15000),
-    })
-
-    if (!response.ok) {
-      const err = await response.text()
-      console.error('[ai-report] Anthropic error:', err)
-      return new Response(JSON.stringify({ error: 'Falha ao gerar relatório' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
-      })
-    }
-
-    const data = await response.json() as { content?: { text?: string }[] }
-    const report = data.content?.[0]?.text ?? ''
-
-    return new Response(JSON.stringify({ report }), {
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
-    })
-  } catch (error) {
-    console.error('[ai-report] erro:', error)
-    return new Response(JSON.stringify({ error: 'Erro interno' }), {
+  const result = await callGemini(apiKey, prompt, 300)
+  if (!result.ok) {
+    console.error('[ai-report] Gemini error:', result.status, result.error)
+    return new Response(JSON.stringify({ error: 'Falha ao gerar relatório' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
     })
   }
+
+  return new Response(JSON.stringify({ report: result.text }), {
+    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
+  })
 }

@@ -1,8 +1,9 @@
 export const config = { runtime: 'edge' }
 import { calculateSurfScore } from './_scoreEngine.js'
+import { callGemini } from './_gemini.js'
 
 const APP_URL = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
-const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY
+const GEMINI_KEY = process.env.GEMINI_API_KEY
 const AGENT_SECRET = process.env.AGENT_SECRET
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
@@ -191,7 +192,7 @@ async function generateSummary(data: {
   users: Awaited<ReturnType<typeof getUserStats>>
   surf: Awaited<ReturnType<typeof getSurfConditions>>
 }): Promise<string> {
-  if (!ANTHROPIC_KEY) return ''
+  if (!GEMINI_KEY) return ''
 
   const prompt = `Você é um assistente de negócios do app Surf AI Floripa. Escreva um relatório executivo curto e direto em português para o dono do app.
 
@@ -215,27 +216,8 @@ CONDIÇÕES DO MAR:
 
 Escreva 3-4 frases de análise: o que foi bom, o que precisa de atenção, e uma ação sugerida se necessário. Tom direto e profissional, sem emojis.`
 
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 300,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-      signal: AbortSignal.timeout(15000),
-    })
-    if (!res.ok) return ''
-    const d = await res.json() as { content?: { text?: string }[] }
-    return d.content?.[0]?.text ?? ''
-  } catch {
-    return ''
-  }
+  const result = await callGemini(GEMINI_KEY, prompt, 300)
+  return result.ok ? result.text : ''
 }
 
 // ── Email ─────────────────────────────────────────────────────────────────────

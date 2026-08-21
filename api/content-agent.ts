@@ -1,12 +1,13 @@
 export const config = { runtime: 'edge' }
 import { calculateSurfScore } from './_scoreEngine.js'
+import { callGemini } from './_gemini.js'
 
 // Agente de Conteúdo Viral
 // Gera legendas otimizadas para Instagram e TikTok baseadas nas condições reais do mar
 // Pode ser chamado manualmente via POST ou agendado via cron
 
 const APP_URL = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
-const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY
+const GEMINI_KEY = process.env.GEMINI_API_KEY
 const AGENT_SECRET = process.env.AGENT_SECRET // proteção para chamadas externas
 
 const SPOTS = [
@@ -74,7 +75,7 @@ async function fetchSpot(spot: typeof SPOTS[0]): Promise<SpotData | null> {
 }
 
 async function generateContent(spots: SpotData[], bestSpot: SpotData, tone: string): Promise<ContentResult | null> {
-  if (!ANTHROPIC_KEY) return null
+  if (!GEMINI_KEY) return null
 
   const now = new Date()
   const hourBrasilia = (now.getUTCHours() - 3 + 24) % 24
@@ -130,25 +131,9 @@ Responda APENAS em JSON:
 }`
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2048,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-      signal: AbortSignal.timeout(15000),
-    })
-
-    if (!res.ok) return null
-
-    const data = await res.json() as { content?: { text?: string }[] }
-    const raw = data.content?.[0]?.text ?? ''
+    const result = await callGemini(GEMINI_KEY, prompt, 2048)
+    if (!result.ok) return null
+    const raw = result.text
 
     // Extrai JSON da resposta
     const jsonMatch = raw.match(/\{[\s\S]*\}/)
@@ -229,8 +214,8 @@ export default async function handler(req: Request) {
     })
   }
 
-  if (!ANTHROPIC_KEY) {
-    return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY não configurada' }), {
+  if (!GEMINI_KEY) {
+    return new Response(JSON.stringify({ error: 'GEMINI_API_KEY não configurada' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     })

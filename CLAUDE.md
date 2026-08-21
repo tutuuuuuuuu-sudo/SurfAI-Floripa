@@ -252,7 +252,10 @@ Resend (emails transacionais)
 
 **Serverless** (`process.env.*`):
 - `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
-- `ANTHROPIC_API_KEY`
+- `GEMINI_API_KEY` (Google AI Studio, ai.google.dev — free tier. Usado por api/ai-report.ts,
+  api/content-agent.ts e api/daily-report.ts via api/_gemini.ts, fonte única da chamada ao
+  modelo. Trocou a Anthropic em 21/ago/2026 — sem tier grátis contínuo, ficou sem crédito e
+  derrubava o relatório da Home sem avisar ninguém)
 - `MP_ACCESS_TOKEN` (Mercado Pago)
 - `RESEND_API_KEY`
 
