@@ -4,9 +4,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { BeachCondition } from '@/lib/surfData'
 import { useSurfData } from '@/contexts/SurfDataContext'
-import { ArrowLeft, Waves, Wind, Thermometer, X, Plus, TrendingUp, Crown, Lock } from 'lucide-react'
+import { ArrowLeft, Waves, Wind, Thermometer, X, Plus, TrendingUp, TrendingDown, Minus, Crown, Lock } from 'lucide-react'
 import { getScoreColor, getRatingInfo } from '@/lib/rating'
 import { usePremium } from '@/lib/premium'
+import { supabase } from '@/lib/supabase'
+import { nowHourSP } from '@/lib/timeSP'
+import { computeTrend, type Trend } from '@/lib/compareTrend'
+
+const TREND_INFO: Record<Trend, { icon: typeof TrendingUp; label: string; className: string }> = {
+  up:      { icon: TrendingUp,   label: 'Melhorando', className: 'text-rating-good' },
+  down:    { icon: TrendingDown, label: 'Piorando',   className: 'text-rating-poor' },
+  stable:  { icon: Minus,        label: 'Estável',    className: 'text-muted-foreground' },
+}
 
 const getScoreLabel = (score: number) => getRatingInfo(score).label.charAt(0) + getRatingInfo(score).label.slice(1).toLowerCase()
 
@@ -36,6 +45,33 @@ export default function ComparePage() {
       }
     }
   }, [conditions]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Tendência (melhorando/piorando/estável) de cada praia selecionada, calculada a
+  // partir da previsão hora a hora — mesmo dado do card "Melhor Janela do Dia".
+  const [trends, setTrends] = useState<Record<string, Trend>>({})
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadTrends() {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      const nowHour = nowHourSP()
+      await Promise.all(selected.map(async spot => {
+        try {
+          const res = await fetch(
+            `/api/hourly?lat=${spot.lat}&lng=${spot.lng}&orientation=${spot._beachOrientation ?? 90}`,
+            token ? { headers: { Authorization: `Bearer ${token}` } } : {}
+          )
+          if (!res.ok || cancelled) return
+          const json = await res.json() as { slots: { hour: number; score: number }[] }
+          const trend = computeTrend(json.slots, nowHour)
+          if (trend && !cancelled) setTrends(prev => ({ ...prev, [spot.id]: trend }))
+        } catch { /* silencioso — a linha de tendência só some pra essa praia */ }
+      }))
+    }
+    if (selected.length >= 2) loadTrends()
+    return () => { cancelled = true }
+  }, [selected])
 
   const addSpot = (spot: BeachCondition) => {
     if (selected.find(s => s.id === spot.id)) return
@@ -220,6 +256,30 @@ export default function ComparePage() {
                   </div>
                 )
               })}
+
+              {/* Tendência das próximas horas — não entra no "melhor" das outras métricas
+                  porque não é um valor do momento atual, é uma direção */}
+              <div className={`grid gap-2 py-3 border-t ${selected.length === 3 ? 'grid-cols-4' : 'grid-cols-3'}`}>
+                <div className="flex items-center gap-1.5">
+                  <TrendingUp className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                  <span className="text-xs text-muted-foreground">Tendência (3h)</span>
+                </div>
+                {selected.map(spot => {
+                  const trend = trends[spot.id]
+                  const info = trend ? TREND_INFO[trend] : null
+                  return (
+                    <div key={spot.id} className="text-center rounded-lg py-1.5">
+                      {info ? (
+                        <div className={`inline-flex items-center gap-1 text-xs font-semibold ${info.className}`}>
+                          <info.icon className="h-3.5 w-3.5" />{info.label}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">···</span>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
             </CardContent>
           </Card>
         )}
