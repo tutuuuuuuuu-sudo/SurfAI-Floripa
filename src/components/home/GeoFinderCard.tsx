@@ -61,7 +61,7 @@ export function GeoFinderCard({ spots, isPremium }: Props) {
     return (
       <PremiumUpsellBanner
         title="Bora Surfar é Premium"
-        subtitle="A gente acha a praia mais perto de você com boa condição agora"
+        subtitle="O Surf AI encontra a praia com as melhores condições mais perto de você"
       />
     )
   }
@@ -74,7 +74,7 @@ export function GeoFinderCard({ spots, isPremium }: Props) {
           Bora Surfar?
         </CardTitle>
         <CardDescription className="text-xs">
-          A gente acha a praia mais perto de você com boa condição agora
+          O Surf AI encontra a praia com as melhores condições mais perto de você
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -131,29 +131,66 @@ export function GeoFinderCard({ spots, isPremium }: Props) {
 
         {status === 'result' && result && (() => {
           const recInfo = getRatingInfo(result.recommended.score)
-          const nearInfo = getRatingInfo(result.nearest.score)
           const recColor = getScoreColor(result.recommended.score)
+          const goToRecommended = () => {
+            track('spot_opened', { spot: result.recommended.name, source: 'geo_finder' })
+            navigate(`/spot/${result.recommended.id}`)
+          }
+
+          // Sem desvio que valha a pena: só a recomendação, sem comparação pra não confundir.
+          if (!result.worthDetour) {
+            return (
+              <button
+                className="w-full text-left rounded-xl p-3 border border-border/40 hover:border-primary/40 transition-colors"
+                onClick={goToRecommended}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <div className="font-semibold text-sm">{result.recommended.name}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{result.recommended.distanceKm.toFixed(1)}km de você</div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-xl font-bold" style={{ color: recColor }}>{result.recommended.score.toFixed(1)}</div>
+                    <div className="text-[10px] font-bold" style={{ color: recColor }}>{recInfo.label}</div>
+                  </div>
+                </div>
+              </button>
+            )
+          }
+
+          // Vale o desvio: mostra as duas opções lado a lado, cada uma com nome e
+          // distância próprios (não uma diferença pro usuário calcular de cabeça), e um
+          // veredito em português simples explicando a troca.
+          const nearInfo = getRatingInfo(result.nearest.score)
+          const nearColor = getScoreColor(result.nearest.score)
           return (
-            <button
-              className="w-full text-left rounded-xl p-3 border border-border/40 hover:border-primary/40 transition-colors"
-              onClick={() => { track('spot_opened', { spot: result.recommended.name, source: 'geo_finder' }); navigate(`/spot/${result.recommended.id}`) }}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1">
-                  <div className="font-semibold text-sm">{result.recommended.name}</div>
+            <div className="space-y-2.5">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-xl border border-border/40 p-3">
+                  <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Mais perto</div>
+                  <div className="text-sm font-semibold leading-tight">{result.nearest.name}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{result.nearest.distanceKm.toFixed(1)}km de você</div>
+                  <div className="text-base font-bold mt-1.5" style={{ color: nearColor }}>
+                    {result.nearest.score.toFixed(1)} <span className="text-[10px] font-bold">{nearInfo.label}</span>
+                  </div>
+                </div>
+                <button
+                  className="rounded-xl border-2 border-primary/50 bg-primary/5 p-3 text-left hover:bg-primary/10 transition-colors"
+                  onClick={goToRecommended}
+                >
+                  <div className="text-[10px] font-semibold text-primary uppercase tracking-wide mb-1.5">Vale o desvio</div>
+                  <div className="text-sm font-semibold leading-tight">{result.recommended.name}</div>
                   <div className="text-xs text-muted-foreground mt-0.5">{result.recommended.distanceKm.toFixed(1)}km de você</div>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <div className="text-xl font-bold" style={{ color: recColor }}>{result.recommended.score.toFixed(1)}</div>
-                  <div className="text-[10px] font-bold" style={{ color: recColor }}>{recInfo.label}</div>
-                </div>
+                  <div className="text-base font-bold mt-1.5" style={{ color: recColor }}>
+                    {result.recommended.score.toFixed(1)} <span className="text-[10px] font-bold">{recInfo.label}</span>
+                  </div>
+                </button>
               </div>
-              {result.worthDetour && (
-                <p className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border/30">
-                  Vale o desvio de +{result.extraDistanceKm.toFixed(1)}km: {result.nearest.name} é mais perto, mas só nota {result.nearest.score.toFixed(1)} ({nearInfo.label.toLowerCase()}).
-                </p>
-              )}
-            </button>
+              <p className="text-xs text-muted-foreground px-0.5">
+                {result.nearest.name} é a praia mais perto, mas o mar tá {nearInfo.label.toLowerCase()} lá agora.
+                Vale rodar {result.extraDistanceKm.toFixed(1)}km a mais até {result.recommended.name}.
+              </p>
+            </div>
           )
         })()}
       </CardContent>
