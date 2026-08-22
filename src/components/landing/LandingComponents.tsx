@@ -102,25 +102,23 @@ export function FloatingCTA({ onFree, onPremium }: { onFree: () => void; onPremi
   const [visible, setVisible] = useState(false)
   const [isPremiumMode, setIsPremiumMode] = useState(false)
 
+  // Troca pra "Assinar Premium" quando a seção de preço real (#pricing) cruza a metade
+  // da tela. Antes usava IntersectionObserver com threshold:0, que só dispara UMA vez ao
+  // entrar — nesse instante o topo do elemento ainda está perto do fundo da tela, então
+  // a condição quase nunca era verdadeira ali, e o observer não reavalia de novo enquanto
+  // a seção continua visível. Resultado: numa rolagem normal pra baixo, o modo Premium
+  // praticamente nunca ativava enquanto a seção de preço estava de fato na tela — só
+  // "acertava" depois de rolar past ela, quando já não fazia mais sentido nenhum. Um
+  // listener de scroll comum reavalia a cada evento de rolagem, não só na entrada.
   useEffect(() => {
-    const onScroll = () => setVisible(window.scrollY > 500)
+    const onScroll = () => {
+      setVisible(window.scrollY > 500)
+      const section = document.getElementById('pricing')
+      if (section) setIsPremiumMode(section.getBoundingClientRect().top < window.innerHeight / 2)
+    }
     window.addEventListener('scroll', onScroll, { passive: true })
     onScroll()
     return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-
-  // Troca pra "Assinar Premium" a partir do momento que a seção de preço real (#pricing)
-  // entra na tela — antes dependia de um pixel fixo (PREMIUM_SCROLL_THRESHOLD) sem
-  // nenhum vínculo com o layout real, quebrava a cada reordenação de seção.
-  useEffect(() => {
-    const section = document.getElementById('pricing')
-    if (!section) return
-    const observer = new IntersectionObserver(
-      ([entry]) => setIsPremiumMode(entry.boundingClientRect.top < window.innerHeight / 2),
-      { threshold: 0 }
-    )
-    observer.observe(section)
-    return () => observer.disconnect()
   }, [])
   return (
     <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8 pointer-events-none'}`}>
