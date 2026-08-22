@@ -1,14 +1,16 @@
 export const config = { runtime: 'edge' }
 
 import { verifyMpSignature } from './_mpAuth.js'
-import { createRateLimiter } from './_httpUtils.js'
+import { createPersistentRateLimiter } from './_httpUtils.js'
 import { fetchMpPayment, activatePremiumFromPayment } from './_mpPayment.js'
 
 // Por IP (não há userId disponível antes de buscar o pagamento no MP) — achado na
 // auditoria de 22/ago/2026: este endpoint público não tinha nenhum limite, ao
 // contrário do que um comentário em create-payment.ts dava a entender. Limite
 // generoso porque o próprio Mercado Pago reenvia notificações do mesmo IP.
-const checkWebhookRateLimit = createRateLimiter(60)
+// Persistido no Postgres — webhook de pagamento, precisa valer mesmo com várias
+// instâncias serverless rodando em paralelo.
+const checkWebhookRateLimit = createPersistentRateLimiter('mp-webhook', 60)
 
 function ok() {
   return new Response(JSON.stringify({ ok: true }), {
@@ -22,7 +24,7 @@ export default async function handler(req: Request) {
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 })
 
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown'
-  if (!checkWebhookRateLimit(ip)) {
+  if (!(await checkWebhookRateLimit(ip))) {
     return new Response('Too Many Requests', { status: 429, headers: { 'Retry-After': '60' } })
   }
 

@@ -1,11 +1,13 @@
 export const config = { runtime: 'edge' }
 import { createClient } from '@supabase/supabase-js'
-import { createRateLimiter } from './_httpUtils.js'
+import { createPersistentRateLimiter } from './_httpUtils.js'
 
 // Por userId (não IP) porque o endpoint já exige token válido — um bug de retry
 // no frontend ou usuário malicioso conseguia gerar preferências reais no Mercado
-// Pago sem limite antes desta correção.
-const checkPaymentRateLimit = createRateLimiter(5)
+// Pago sem limite antes desta correção. Persistido no Postgres (não Map em memória)
+// porque é um endpoint que mexe com dinheiro — precisa valer mesmo com várias
+// instâncias serverless rodando em paralelo.
+const checkPaymentRateLimit = createPersistentRateLimiter('create-payment', 5)
 
 const ALLOWED_ORIGIN = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 
@@ -54,7 +56,7 @@ export default async function handler(req: Request) {
 
   const userId = user.id
 
-  if (!checkPaymentRateLimit(userId)) {
+  if (!(await checkPaymentRateLimit(userId))) {
     return json({ error: 'Muitas tentativas, aguarde um minuto e tente de novo' }, 429)
   }
 

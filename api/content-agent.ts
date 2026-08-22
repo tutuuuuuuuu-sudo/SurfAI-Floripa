@@ -1,7 +1,7 @@
 export const config = { runtime: 'edge' }
 import { calculateSurfScore } from './_scoreEngine.js'
 import { callGemini } from './_gemini.js'
-import { createRateLimiter } from './_httpUtils.js'
+import { createPersistentRateLimiter } from './_httpUtils.js'
 import { getBeaches } from './_beachRegistry.js'
 
 // Agente de Conteúdo Viral
@@ -162,8 +162,10 @@ Responda APENAS em JSON:
 
 import { verifyAdminToken } from './_auth.js'
 
-// Rate limit por IP para chamadas de usuário: 20 req/hora
-const checkContentRateLimit = createRateLimiter(20, 3_600_000)
+// Rate limit por IP para chamadas de usuário: 20 req/hora. Persistido no Postgres —
+// endpoint admin que custa créditos de API do Gemini, precisa valer mesmo com várias
+// instâncias serverless rodando em paralelo.
+const checkContentRateLimit = createPersistentRateLimiter('content-agent', 20, 3_600_000)
 
 export default async function handler(req: Request) {
   // Cron roda via GitHub Actions (ver .github/workflows/content-agent.yml) com AGENT_SECRET via x-agent-secret
@@ -188,7 +190,7 @@ export default async function handler(req: Request) {
       })
     }
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown'
-    if (!checkContentRateLimit(ip)) {
+    if (!(await checkContentRateLimit(ip))) {
       return new Response(JSON.stringify({ error: 'Too Many Requests' }), {
         status: 429,
         headers: { 'Content-Type': 'application/json', 'Retry-After': '3600' },

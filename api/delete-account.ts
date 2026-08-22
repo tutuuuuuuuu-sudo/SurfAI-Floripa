@@ -1,12 +1,14 @@
 export const config = { runtime: 'edge' }
 
 import { verifyToken } from './_auth.js'
-import { createRateLimiter } from './_httpUtils.js'
+import { createPersistentRateLimiter } from './_httpUtils.js'
 
 // Por userId (endpoint já exige token válido) — achado na auditoria de 22/ago/2026:
 // era um dos endpoints sensíveis sem nenhum rate limit, ao contrário do que um
-// comentário em create-payment.ts dava a entender.
-const checkDeleteRateLimit = createRateLimiter(3)
+// comentário em create-payment.ts dava a entender. Persistido no Postgres (ação
+// destrutiva e irreversível — precisa valer mesmo com várias instâncias serverless
+// rodando em paralelo).
+const checkDeleteRateLimit = createPersistentRateLimiter('delete-account', 3)
 
 const ALLOWED_ORIGIN = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 const CORS = {
@@ -31,7 +33,7 @@ export default async function handler(req: Request) {
   const { valid, userId } = await verifyToken(token)
   if (!valid || !userId) return json({ error: 'Unauthorized' }, 401)
 
-  if (!checkDeleteRateLimit(userId)) {
+  if (!(await checkDeleteRateLimit(userId))) {
     return json({ error: 'Muitas tentativas, aguarde um minuto e tente de novo' }, 429)
   }
 
