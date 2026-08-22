@@ -44,7 +44,7 @@ async function fetchSpotScore(spot: typeof SPOTS[number]): Promise<SpotResult | 
     )
     if (!res.ok) return null
     const data = await res.json() as { waveHeight?: number; windSpeed?: number; windDirection?: string; swellPeriod?: number }
-    const windDir = (data.windDirection ?? 'N').split(' ')[0].split('(')[0].trim()
+    const windDir = (data.windDirection ?? 'N').toUpperCase()
     const score = calculateSurfScore(data.waveHeight ?? 0, data.windSpeed ?? 0, data.swellPeriod ?? 0, windDir, spot.orientation)
     return { name: spot.name, score, waveHeight: data.waveHeight ?? 0, swellPeriod: data.swellPeriod ?? 0, windSpeed: data.windSpeed ?? 0, windDirection: data.windDirection ?? '' }
   } catch {
@@ -79,13 +79,25 @@ async function getRecipients(): Promise<Recipient[]> {
     const eligibleIds = userIds.filter(id => !optedOut.has(id))
     if (eligibleIds.length === 0) return []
 
-    const usersRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?per_page=500`, { headers })
-    if (!usersRes.ok) return []
-    const usersData = await usersRes.json() as { users?: { id: string; email?: string; user_metadata?: { full_name?: string } }[] }
+    // Percorre todas as páginas do admin de usuários — antes só lia a 1ª página
+    // (per_page=500), então assinantes elegíveis cadastrados depois do 500º usuário
+    // TOTAL do app (não só premium) nunca recebiam o alerta, sem erro nem log
+    // (achado da auditoria de 22/ago/2026).
     const eligibleSet = new Set(eligibleIds)
-    return (usersData.users ?? [])
-      .filter(u => eligibleSet.has(u.id) && u.email)
-      .map(u => ({ email: u.email!, name: u.user_metadata?.full_name ?? 'Surfista' }))
+    const found: Recipient[] = []
+    const PER_PAGE = 500
+    for (let page = 1; page <= 50 && found.length < eligibleSet.size; page++) {
+      const usersRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?per_page=${PER_PAGE}&page=${page}`, { headers })
+      if (!usersRes.ok) break
+      const usersData = await usersRes.json() as { users?: { id: string; email?: string; user_metadata?: { full_name?: string } }[] }
+      const users = usersData.users ?? []
+      if (users.length === 0) break
+      for (const u of users) {
+        if (eligibleSet.has(u.id) && u.email) found.push({ email: u.email, name: u.user_metadata?.full_name ?? 'Surfista' })
+      }
+      if (users.length < PER_PAGE) break
+    }
+    return found
   } catch {
     return []
   }

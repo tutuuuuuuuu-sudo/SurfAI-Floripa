@@ -2,6 +2,7 @@ import { getWindyForecast } from './weatherApi'
 import { getRealWaterTemp } from './weatherData'
 import { calculateSurfScore, WIND_DEG as _WIND_DEG } from '../../api/_scoreEngine'
 import { getRatingInfo } from './rating'
+import { captureError } from './monitoring'
 
 export interface SubRegion {
   id: string
@@ -74,7 +75,10 @@ function getTideFromData(heights: number[], times: string[]): { height: number, 
   // Open-Meteo retorna times em horário local (BRT = UTC-3); toISOString() é UTC
   const nowStr = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 13)
   let idx = times.findIndex(t => t.startsWith(nowStr))
-  if (idx < 0) idx = 0
+  if (idx < 0) {
+    captureError(new Error(`Horário atual (${nowStr}) não encontrado nos dados de maré — usando índice 0`))
+    idx = 0
+  }
 
   const h = heights[idx] ?? 0.5
   const prev = heights[Math.max(0, idx - 1)] ?? h
@@ -399,8 +403,11 @@ async function _doFetchConditions(): Promise<BeachCondition[]> {
         const swellPeriod = Math.round(windyData?.swellPeriod ?? 10)
         const swellDirection = windyData?.swellDirection ?? 'SE'
         const waterTemp = realWaterTemp
-        const rawWindDir = (windyData?.windDirection ?? 'N').split('(')[0].split(/\s+/)[0].trim().toUpperCase()
+        const rawWindDir = (windyData?.windDirection ?? 'N').toUpperCase()
         const windDirection = WIND_DEG[rawWindDir] !== undefined ? rawWindDir : 'N'
+        if (WIND_DEG[rawWindDir] === undefined) {
+          captureError(new Error(`windDirection não reconhecido: "${windyData?.windDirection}"`), { beachId: beach.id })
+        }
 
         const score = calculateSurfScore(waveHeight, windSpeed, swellPeriod, windDirection, beach.orientation)
 

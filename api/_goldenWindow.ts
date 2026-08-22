@@ -29,6 +29,11 @@ export function computeGoldenWindow(slots: WindowSlot[], peakHour: number): Gold
   const idx = slots.findIndex(s => s.hour === peakHour)
   if (idx === -1) return null
 
+  // A própria hora de pico precisa ser "BOM" ou melhor — sem isso, um dia inteiro
+  // ruim (nota máxima 3.0, por exemplo) ainda formava uma "janela" de uma hora só,
+  // rotulada como boa condição (achado da auditoria de 22/ago/2026).
+  if (getRatingInfo(slots[idx].score).bars < GOOD_ENOUGH_BARS) return null
+
   let start = idx
   while (
     start > 0 &&

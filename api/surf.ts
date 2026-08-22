@@ -11,23 +11,6 @@ function degToDir(deg: number): string {
   return DIRS[Math.round(((deg % 360) + 360) % 360 / 22.5) % 16]
 }
 
-const DIR_TO_DEG: Record<string, number> = {
-  'N': 0, 'NNE': 22.5, 'NE': 45, 'ENE': 67.5,
-  'E': 90, 'ESE': 112.5, 'SE': 135, 'SSE': 157.5,
-  'S': 180, 'SSW': 202.5, 'SW': 225, 'WSW': 247.5,
-  'W': 270, 'WNW': 292.5, 'NW': 315, 'NNW': 337.5,
-}
-
-function classifyWind(direction: string, orientation: number): string {
-  const windDeg = DIR_TO_DEG[direction] ?? 0
-  const terralSource = (orientation + 180) % 360
-  let diff = Math.abs(windDeg - terralSource)
-  if (diff > 180) diff = 360 - diff
-  if (diff <= 45) return `${direction} (Terral)`
-  if (diff <= 90) return `${direction} (Lateral)`
-  return `${direction} (Frontal)`
-}
-
 function formatTimeBrasilia(isoString: string): string {
   const timePart = isoString.split('T')[1]
   return timePart ? timePart.substring(0, 5) : ''
@@ -262,7 +245,7 @@ export default async function handler(req: Request) {
       swellPeriod: result.swellPeriod,
       swellDirection: result.swellDirection,
       windSpeed: result.windSpeed,
-      windDirection: classifyWind(result.windDir, orientation),
+      windDirection: result.windDir,
       waterTemperature: result.waterTemperature,
       sunrise,
       sunset,

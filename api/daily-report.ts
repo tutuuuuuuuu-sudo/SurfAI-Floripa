@@ -152,7 +152,7 @@ async function getSurfConditions(): Promise<{
           )
           if (!res.ok) return null
           const d = await res.json() as { waveHeight?: number; swellPeriod?: number; windSpeed?: number; windDirection?: string }
-          const dir = (d.windDirection ?? 'N').split(' ')[0].split('(')[0].trim()
+          const dir = (d.windDirection ?? 'N').toUpperCase()
           const score = calculateSurfScore(d.waveHeight ?? 0, d.windSpeed ?? 0, d.swellPeriod ?? 0, dir, s.orientation)
           return { name: s.name, score, waveHeight: d.waveHeight, swellPeriod: d.swellPeriod, windSpeed: d.windSpeed, windDirection: d.windDirection }
         } catch { return null }

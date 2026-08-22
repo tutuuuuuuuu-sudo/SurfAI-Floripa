@@ -38,6 +38,11 @@ describe('computeGoldenWindow', () => {
     const slots = [slot(6, 7.0)]
     expect(computeGoldenWindow(slots, 12)).toBeNull()
   })
+
+  it('retorna null quando o dia inteiro é ruim, mesmo a "melhor" hora não sendo BOM', () => {
+    const slots = [slot(6, 2.5), slot(7, 3.0), slot(8, 2.0)]
+    expect(computeGoldenWindow(slots, 7)).toBeNull()
+  })
 })
 
 describe('explainWindowEnd', () => {

@@ -85,7 +85,7 @@ export async function getWeatherForecast(
         waveHeight: currentConditions.waveHeight,
         windSpeed: currentConditions.windSpeed,
         swellPeriod: currentConditions.swellPeriod,
-        windDirection: currentConditions.windDirection.split(' ')[0].trim(),
+        windDirection: currentConditions.windDirection,
         temperature: currentConditions.waterTemperature ?? cached[0].temperature,
         score: currentConditions.score,
         condition: getConditionFromScore(currentConditions.score),
@@ -134,7 +134,7 @@ export async function getWeatherForecast(
         waveHeight: currentConditions.waveHeight,
         windSpeed: currentConditions.windSpeed,
         swellPeriod: currentConditions.swellPeriod,
-        windDirection: currentConditions.windDirection.split(' ')[0].trim(),
+        windDirection: currentConditions.windDirection,
         temperature: currentConditions.waterTemperature ?? forecasts[0].temperature,
         score: currentConditions.score,
         condition: getConditionFromScore(currentConditions.score),
@@ -152,7 +152,7 @@ export async function getWeatherForecast(
 
 // Aplica o lock de UX nos dias além do limite free.
 // O servidor já bloqueou o dado real — esse lock é apenas visual (cadeado na UI).
-function applyPremiumLock(forecasts: WeatherForecast[], isPremium: boolean): WeatherForecast[] {
+export function applyPremiumLock(forecasts: WeatherForecast[], isPremium: boolean): WeatherForecast[] {
   if (isPremium) return forecasts.map(f => ({ ...f, locked: false }))
   return forecasts.map((f, i) => ({ ...f, locked: i >= FREE_DAYS }))
 }

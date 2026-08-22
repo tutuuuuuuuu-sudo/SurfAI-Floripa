@@ -1,7 +1,7 @@
 // Busca de previsão hora a hora (Open-Meteo) — fonte única usada por forecast.ts e hourly.ts.
 // Prefixo _ indica que não é um handler HTTP — não será exposto como endpoint pelo Vercel.
 
-import { calculateSurfScore } from './_scoreEngine.js'
+import { calculateSurfScore, applyDirectionalExposure } from './_scoreEngine.js'
 
 export function degreesToDir(deg: number): string {
   const dirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
@@ -23,6 +23,7 @@ interface MarineHourly {
   wave_period?: number[]
   swell_wave_height?: number[]
   swell_wave_period?: number[]
+  swell_wave_direction?: number[]
 }
 interface WeatherHourly {
   wind_speed_10m?: number[]
@@ -44,7 +45,7 @@ export async function fetchHourlyForecast(
   const [marineRes, weatherRes] = await Promise.all([
     fetch(
       `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}` +
-      `&hourly=wave_height,wave_period,swell_wave_height,swell_wave_period` +
+      `&hourly=wave_height,wave_period,swell_wave_height,swell_wave_period,swell_wave_direction` +
       `&length_unit=metric&timezone=America%2FSao_Paulo&forecast_days=${forecastDays}`
     ),
     fetch(
@@ -62,9 +63,14 @@ export async function fetchHourlyForecast(
 
   function readHour(idx: number, orientation: number): HourReading | null {
     if (idx < 0 || idx >= times.length) return null
-    const waveHeight = Number(
+    const rawWaveHeight = Number(
       (marine.hourly?.swell_wave_height?.[idx] ?? marine.hourly?.wave_height?.[idx] ?? 1.0).toFixed(1)
     )
+    const swellDirection = degreesToDir(marine.hourly?.swell_wave_direction?.[idx] ?? 180)
+    // Mesma correção de exposição direcional aplicada em surf.ts — sem isso, a mesma
+    // praia no mesmo instante podia mostrar nota diferente na Home vs na Previsão
+    // (achado crítico da auditoria de 22/ago/2026).
+    const waveHeight = applyDirectionalExposure(rawWaveHeight, swellDirection, orientation)
     const swellPeriod = Math.round(
       marine.hourly?.swell_wave_period?.[idx] ?? marine.hourly?.wave_period?.[idx] ?? 10
     )

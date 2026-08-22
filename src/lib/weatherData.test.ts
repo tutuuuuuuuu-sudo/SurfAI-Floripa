@@ -1,22 +1,16 @@
 import { describe, it, expect } from 'vitest'
+import { applyPremiumLock, FREE_DAYS, type WeatherForecast } from './weatherData'
 
-// Testa a lógica de lock diretamente — sem precisar mockar fetch
-// A função applyPremiumLock não é exportada, mas podemos testar via
-// uma versão inline idêntica para garantir o contrato de negócio.
-
-const FREE_DAYS = 3
-
-function applyPremiumLock(
-  forecasts: { date: string; score: number; locked: boolean }[],
-  isPremium: boolean
-) {
-  if (isPremium) return forecasts.map(f => ({ ...f, locked: false }))
-  return forecasts.map((f, i) => ({ ...f, locked: i >= FREE_DAYS }))
-}
-
-function makeDays(n: number) {
+function makeDays(n: number): WeatherForecast[] {
   return Array.from({ length: n }, (_, i) => ({
     date: `2026-06-0${i + 1}`,
+    dayName: `dia${i + 1}`,
+    waveHeight: 1.2,
+    windSpeed: 10,
+    windDirection: 'E',
+    swellPeriod: 10,
+    temperature: 24,
+    condition: 'Bom' as const,
     score: 7,
     locked: false,
   }))
@@ -52,14 +46,14 @@ describe('applyPremiumLock', () => {
     expect(() => applyPremiumLock([], true)).not.toThrow()
   })
 
-  it('com exatamente 3 dias, free não bloqueia nenhum', () => {
-    const result = applyPremiumLock(makeDays(3), false)
+  it('com exatamente FREE_DAYS dias, free não bloqueia nenhum', () => {
+    const result = applyPremiumLock(makeDays(FREE_DAYS), false)
     expect(result.every(d => !d.locked)).toBe(true)
   })
 
-  it('com exatamente 4 dias, free bloqueia só o último', () => {
-    const result = applyPremiumLock(makeDays(4), false)
-    expect(result[3].locked).toBe(true)
+  it('com um dia a mais que FREE_DAYS, free bloqueia só o último', () => {
+    const result = applyPremiumLock(makeDays(FREE_DAYS + 1), false)
+    expect(result[FREE_DAYS].locked).toBe(true)
     expect(result.filter(d => d.locked)).toHaveLength(1)
   })
 })
