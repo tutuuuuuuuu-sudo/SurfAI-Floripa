@@ -5,7 +5,10 @@
 // grátis contínuo) que ficava sem crédito e derrubava o relatório sem avisar ninguém.
 // Prefixo _ indica que não é um handler HTTP — não será exposto como endpoint pelo Vercel.
 
-const GEMINI_MODEL = 'gemini-2.0-flash'
+// gemini-2.0-flash foi descontinuado pelo Google em ago/2026 (erro 404 dizia
+// explicitamente pra trocar por este) — se voltar a dar 404 "no longer available",
+// checar qual é o modelo atual recomendado na mensagem de erro antes de trocar de novo.
+const GEMINI_MODEL = 'gemini-3.6-flash'
 
 export type GeminiResult =
   | { ok: true; text: string }
