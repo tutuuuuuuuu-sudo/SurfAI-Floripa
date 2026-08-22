@@ -319,7 +319,10 @@ export default function ProfilePage() {
           {[
             { icon: Heart, label: 'Favoritas', value: favorites.length, cls: 'text-destructive', action: () => navigate('/favorites') },
             { icon: MessageCircle, label: 'Relatos', value: commentCount, cls: 'text-primary', action: undefined },
-            { icon: Award, label: 'Nível', value: isPremium ? 'Pro' : 'Free', cls: isPremium ? 'text-rating-excellent' : 'text-muted-foreground', action: undefined },
+            // "Nível" já é usado em todo o resto do app pra nível de SURF (Iniciante/
+            // Intermediário/Avançado, ao lado do nome de cada praia) — "Plano" aqui evita
+            // a colisão de vocabulário com o tipo de assinatura (Pro/Free).
+            { icon: Award, label: 'Plano', value: isPremium ? 'Pro' : 'Free', cls: isPremium ? 'text-rating-excellent' : 'text-muted-foreground', action: undefined },
           ].map(stat => (
             <Card key={stat.label} className={`text-center ${stat.action ? 'cursor-pointer hover:border-primary/30 transition-colors' : ''}`} onClick={stat.action}>
               <CardContent className="pt-4 pb-4 space-y-1">

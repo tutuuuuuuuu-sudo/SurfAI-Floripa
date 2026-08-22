@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
 import { usePremium } from '@/lib/premium'
 import { useSurfData } from '@/contexts/SurfDataContext'
 import { getWeatherForecast, WeatherForecast } from '@/lib/weatherData'
@@ -73,6 +74,19 @@ export default function ForecastPage() {
               title="Previsão gratuita: 3 dias"
               subtitle="Premium libera 14 dias para qualquer praia"
             />
+          </div>
+        )}
+
+        {/* Esqueleto enquanto as condições ainda não chegaram — essa é a única aba fixa
+            do rodapé que ficava alguns segundos só com o cabeçalho vazio antes de
+            mostrar qualquer coisa, diferente do resto do app. */}
+        {loading && (
+          <div className="space-y-5">
+            <div className="flex gap-2">
+              {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-7 w-20 rounded-full flex-shrink-0" />)}
+            </div>
+            <Skeleton className="h-24 w-full rounded-xl" />
+            <Skeleton className="h-64 w-full rounded-xl" />
           </div>
         )}
 
