@@ -2,10 +2,9 @@ export const config = { runtime: 'edge' }
 import { createClient } from '@supabase/supabase-js'
 import { createRateLimiter } from './_httpUtils.js'
 
-// Único dos 4 endpoints sensíveis (create-payment, ai-report, delete-account,
-// mp-webhook) sem proteção contra abuso até essa correção — um bug de retry no
-// frontend ou usuário malicioso conseguia gerar preferências reais no Mercado
-// Pago sem limite. Por userId (não IP) porque o endpoint já exige token válido.
+// Por userId (não IP) porque o endpoint já exige token válido — um bug de retry
+// no frontend ou usuário malicioso conseguia gerar preferências reais no Mercado
+// Pago sem limite antes desta correção.
 const checkPaymentRateLimit = createRateLimiter(5)
 
 const ALLOWED_ORIGIN = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'

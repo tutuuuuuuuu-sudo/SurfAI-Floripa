@@ -21,6 +21,11 @@ export function getScoreColor(score: number): string {
   return getRatingInfo(score).scoreColor
 }
 
+export function getScoreLabel(score: number): string {
+  const label = getRatingInfo(score).label
+  return label.charAt(0) + label.slice(1).toLowerCase()
+}
+
 export function getThemeGradient(score: number): string {
   if (score >= 8.5) return 'from-rating-epic/30 via-background to-background'
   if (score >= 7)   return 'from-rating-excellent/30 via-background to-background'

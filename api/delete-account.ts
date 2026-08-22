@@ -1,6 +1,12 @@
 export const config = { runtime: 'edge' }
 
 import { verifyToken } from './_auth.js'
+import { createRateLimiter } from './_httpUtils.js'
+
+// Por userId (endpoint já exige token válido) — achado na auditoria de 22/ago/2026:
+// era um dos endpoints sensíveis sem nenhum rate limit, ao contrário do que um
+// comentário em create-payment.ts dava a entender.
+const checkDeleteRateLimit = createRateLimiter(3)
 
 const ALLOWED_ORIGIN = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 const CORS = {
@@ -24,6 +30,10 @@ export default async function handler(req: Request) {
 
   const { valid, userId } = await verifyToken(token)
   if (!valid || !userId) return json({ error: 'Unauthorized' }, 401)
+
+  if (!checkDeleteRateLimit(userId)) {
+    return json({ error: 'Muitas tentativas, aguarde um minuto e tente de novo' }, 429)
+  }
 
   const supabaseUrl = process.env.SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY

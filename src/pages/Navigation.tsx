@@ -6,10 +6,8 @@ import { BeachCondition } from '@/lib/surfData'
 import { useSurfData } from '@/contexts/SurfDataContext'
 import { ArrowLeft, Navigation, Waves, MapPin, ExternalLink, Wind, Timer, Thermometer, Map, Car, Apple } from 'lucide-react'
 
-import { getScoreColor, getRatingInfo } from '@/lib/rating'
+import { getScoreColor, getScoreLabel } from '@/lib/rating'
 import { useBodyScrollLock } from '@/hooks/use-body-scroll-lock'
-
-const getScoreLabel = (score: number): string => getRatingInfo(score).label.charAt(0) + getRatingInfo(score).label.slice(1).toLowerCase()
 
 const getLocationDesc = (id: string): string => {
   const map: Record<string, string> = {
@@ -20,25 +18,6 @@ const getLocationDesc = (id: string): string => {
     'barra-lagoa': 'Centro', 'novo-campeche': 'Centro', 'santinho': 'Norte da Ilha',
   }
   return map[id] ?? 'Florianópolis'
-}
-
-// ✅ Coordenadas BEM NA AREIA de cada praia (verificadas no Google Maps)
-// Praias com trilha: Matadeiro, Lagoinha, Naufragados — levam ao estacionamento/início da trilha
-const BEACH_DESTINATIONS: Record<string, { lat: number, lng: number, name: string, hasTrilha?: boolean }> = {
-  'campeche':       { lat: -27.697703,  lng: -48.4898603, name: 'Praia do Campeche · Lomba do Sabão' },
-  'novo-campeche':  { lat: -27.6661001, lng: -48.4755307, name: 'Praia do Novo Campeche' },
-  'morro-pedras':   { lat: -27.7170897, lng: -48.5034360, name: 'Praia do Morro das Pedras' },
-  'matadeiro':      { lat: -27.7548429, lng: -48.4985647, name: 'Praia do Matadeiro', hasTrilha: true },
-  'lagoinha-leste': { lat: -27.7732103, lng: -48.4863806, name: 'Lagoinha do Leste', hasTrilha: true },
-  'acores':         { lat: -27.7837144, lng: -48.5236746, name: 'Praia dos Açores' },
-  'solidao':        { lat: -27.7941233, lng: -48.5334965, name: 'Praia da Solidão' },
-  'armacao':        { lat: -27.7504078, lng: -48.5017637, name: 'Praia da Armação' },
-  'naufragados':    { lat: -27.8335587, lng: -48.5641537, name: 'Praia de Naufragados', hasTrilha: true },
-  'joaquina':       { lat: -27.6293577, lng: -48.4490173, name: 'Praia da Joaquina' },
-  'mole':           { lat: -27.6022459, lng: -48.4326839, name: 'Praia Mole' },
-  'mocambique':     { lat: -27.4937746, lng: -48.3955175, name: 'Praia do Moçambique' },
-  'barra-lagoa':    { lat: -27.5734502, lng: -48.4249390, name: 'Praia da Barra da Lagoa' },
-  'santinho':       { lat: -27.4618653, lng: -48.3761513, name: 'Praia do Santinho' },
 }
 
 // Sub-picos do Campeche com coordenadas bem na areia
@@ -63,10 +42,10 @@ const openNavigation = (destLat: number, destLng: number, app: 'google' | 'waze'
 }
 
 const NavModal = ({
-  name, score, beachId, lat, lng,
+  name, score, beachId, lat, lng, hikeAccess,
   waveHeight, windSpeed, swellPeriod, waterTemp, onClose
 }: {
-  name: string; score: number; beachId: string; lat: number; lng: number
+  name: string; score: number; beachId: string; lat: number; lng: number; hikeAccess?: boolean
   waveHeight: number; windSpeed: number; swellPeriod: number; waterTemp: number; onClose: () => void
 }) => {
   const color = getScoreColor(score)
@@ -74,10 +53,8 @@ const NavModal = ({
   const [selectedSubspot, setSelectedSubspot] = useState<typeof CAMPECHE_SUBSPOTS[0] | null>(null)
   useBodyScrollLock(true)
 
-
-  const dest = BEACH_DESTINATIONS[beachId] ?? { lat, lng, name }
-  const activeLat = selectedSubspot?.lat ?? dest.lat
-  const activeLng = selectedSubspot?.lng ?? dest.lng
+  const activeLat = selectedSubspot?.lat ?? lat
+  const activeLng = selectedSubspot?.lng ?? lng
 
 
 
@@ -141,7 +118,7 @@ const NavModal = ({
         )}
 
         {/* Trilha warning */}
-        {dest.hasTrilha && (
+        {hikeAccess && (
           <div className="mx-5 mt-4 p-3 rounded-xl bg-rating-fair/10 border border-rating-fair/30 text-xs text-rating-fair">
             Acesso por trilha: o GPS leva até o ponto de partida da trilha, não à areia.
           </div>
@@ -264,7 +241,6 @@ export default function NavigationPage() {
           <div className="space-y-2">
             {filtered.map((spot, idx) => {
               const color = getScoreColor(spot.score)
-              const dest = BEACH_DESTINATIONS[spot.id]
               return (
                 <Card
                   key={spot.id}
@@ -284,7 +260,7 @@ export default function NavigationPage() {
                         <div className="font-semibold">{spot.name}</div>
                         <div className="text-xs text-muted-foreground flex items-center gap-1">
                           {getLocationDesc(spot.id)}
-                          {dest?.hasTrilha && <span className="text-rating-fair">· via trilha</span>}
+                          {spot.hikeAccess && <span className="text-rating-fair">· via trilha</span>}
                         </div>
                         <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1"><Waves className="h-3 w-3" />{spot.waveHeight.toFixed(1)}m</span>
@@ -314,6 +290,7 @@ export default function NavigationPage() {
           beachId={selectedSpot.id}
           lat={selectedSpot.lat}
           lng={selectedSpot.lng}
+          hikeAccess={selectedSpot.hikeAccess}
           waveHeight={selectedSpot.waveHeight}
           windSpeed={selectedSpot.windSpeed}
           swellPeriod={selectedSpot.swellPeriod}

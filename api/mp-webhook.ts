@@ -1,6 +1,13 @@
 export const config = { runtime: 'edge' }
 
 import { verifyMpSignature } from './_mpAuth.js'
+import { createRateLimiter } from './_httpUtils.js'
+
+// Por IP (não há userId disponível antes de buscar o pagamento no MP) — achado na
+// auditoria de 22/ago/2026: este endpoint público não tinha nenhum limite, ao
+// contrário do que um comentário em create-payment.ts dava a entender. Limite
+// generoso porque o próprio Mercado Pago reenvia notificações do mesmo IP.
+const checkWebhookRateLimit = createRateLimiter(60)
 
 function ok() {
   return new Response(JSON.stringify({ ok: true }), {
@@ -12,6 +19,11 @@ export default async function handler(req: Request) {
   // MP envia GET, HEAD ou OPTIONS para validar o endpoint
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return ok()
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 })
+
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown'
+  if (!checkWebhookRateLimit(ip)) {
+    return new Response('Too Many Requests', { status: 429, headers: { 'Retry-After': '60' } })
+  }
 
   const accessToken = process.env.MP_ACCESS_TOKEN
   const supabaseUrl = process.env.SUPABASE_URL

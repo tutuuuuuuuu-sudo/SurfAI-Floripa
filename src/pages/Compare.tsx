@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { BeachCondition } from '@/lib/surfData'
 import { useSurfData } from '@/contexts/SurfDataContext'
 import { ArrowLeft, Waves, Wind, Thermometer, X, Plus, TrendingUp, TrendingDown, Minus, Crown, Lock } from 'lucide-react'
-import { getScoreColor, getRatingInfo } from '@/lib/rating'
+import { getScoreColor, getScoreLabel } from '@/lib/rating'
 import { usePremium } from '@/lib/premium'
 import { supabase } from '@/lib/supabase'
 import { nowHourSP } from '@/lib/timeSP'
@@ -16,8 +16,6 @@ const TREND_INFO: Record<Trend, { icon: typeof TrendingUp; label: string; classN
   down:    { icon: TrendingDown, label: 'Piorando',   className: 'text-rating-poor' },
   stable:  { icon: Minus,        label: 'Estável',    className: 'text-muted-foreground' },
 }
-
-const getScoreLabel = (score: number) => getRatingInfo(score).label.charAt(0) + getRatingInfo(score).label.slice(1).toLowerCase()
 
 const MAX_COMPARE = 3
 

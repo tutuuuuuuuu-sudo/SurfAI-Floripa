@@ -1,6 +1,7 @@
 export const config = { runtime: 'edge' }
 
 import { applyDirectionalExposure } from './_scoreEngine.js'
+import { createRateLimiter } from './_httpUtils.js'
 
 // ── Utilitários ───────────────────────────────────────────────────────────────
 
@@ -205,21 +206,7 @@ async function fetchStormglass(lat: string, lng: string): Promise<ForecastResult
 
 // ── Rate limiting simples por IP ──────────────────────────────────────────────
 // 30 requisições por IP por janela de 60s
-const rateLimitMap = new Map<string, { count: number; reset: number }>()
-const RATE_LIMIT = 30
-const RATE_WINDOW_MS = 60_000
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now()
-  const entry = rateLimitMap.get(ip)
-  if (!entry || now > entry.reset) {
-    rateLimitMap.set(ip, { count: 1, reset: now + RATE_WINDOW_MS })
-    return true
-  }
-  if (entry.count >= RATE_LIMIT) return false
-  entry.count++
-  return true
-}
+const checkRateLimit = createRateLimiter(30)
 
 // ── Handler principal ─────────────────────────────────────────────────────────
 
@@ -236,7 +223,6 @@ export default async function handler(req: Request) {
   const lat = url.searchParams.get('lat')
   const lng = url.searchParams.get('lng')
   const orientation = parseInt(url.searchParams.get('orientation') ?? '90')
-  const fetchTide = url.searchParams.get('tide') === 'true'
 
   if (!isValidCoord(lat, lng)) {
     return new Response(JSON.stringify({ error: 'lat/lng inválidos' }), {
@@ -269,31 +255,6 @@ export default async function handler(req: Request) {
       } catch { /* sunrise/sunset não crítico */ }
     }
 
-    // Maré via Stormglass (apenas se solicitado e chave disponível)
-    let tideData: { time: string; height: number; type?: string }[] = []
-    if (fetchTide) {
-      const stormKey = process.env.STORMGLASS_API_KEY
-      if (stormKey) {
-        try {
-          const now = new Date()
-          const start = new Date(now); start.setHours(0, 0, 0, 0)
-          const end = new Date(now); end.setHours(23, 59, 59, 999)
-          const tideRes = await fetch(
-            `https://api.stormglass.io/v2/tide/extremes/point?lat=${lat}&lng=${lng}&start=${start.toISOString()}&end=${end.toISOString()}`,
-            { headers: { Authorization: stormKey } }
-          )
-          if (tideRes.ok) {
-            const tideJson = await tideRes.json() as { data?: { time: string; height: number; type?: string }[] }
-            tideData = (tideJson.data ?? []).map((item) => ({
-              time: item.time,
-              height: Number(item.height.toFixed(2)),
-              type: item.type,
-            }))
-          }
-        } catch { /* maré não crítico */ }
-      }
-    }
-
     const exposedWaveHeight = applyDirectionalExposure(result.waveHeight, result.swellDirection, orientation)
 
     return new Response(JSON.stringify({
@@ -305,7 +266,6 @@ export default async function handler(req: Request) {
       waterTemperature: result.waterTemperature,
       sunrise,
       sunset,
-      tideData,
     }), { headers: corsHeaders })
   } catch {
     return new Response(JSON.stringify({ error: 'Erro interno' }), { status: 500, headers: corsHeaders })

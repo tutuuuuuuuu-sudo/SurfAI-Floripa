@@ -1,5 +1,7 @@
 export const config = { runtime: 'edge' }
 
+import { createRateLimiter } from './_httpUtils.js'
+
 const ALLOWED_ORIGIN = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 
 const CORS = {
@@ -61,21 +63,7 @@ async function fetchTideData(): Promise<{ heights: number[]; times: string[] } |
 
 // ── Rate limiting simples por IP ──────────────────────────────────────────────
 // 20 requisições por IP por janela de 60s
-const rateLimitMap = new Map<string, { count: number; reset: number }>()
-const RATE_LIMIT = 20
-const RATE_WINDOW_MS = 60_000
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now()
-  const entry = rateLimitMap.get(ip)
-  if (!entry || now > entry.reset) {
-    rateLimitMap.set(ip, { count: 1, reset: now + RATE_WINDOW_MS })
-    return true
-  }
-  if (entry.count >= RATE_LIMIT) return false
-  entry.count++
-  return true
-}
+const checkRateLimit = createRateLimiter(20)
 
 export default async function handler(req: Request) {
   if (req.method === 'OPTIONS') {

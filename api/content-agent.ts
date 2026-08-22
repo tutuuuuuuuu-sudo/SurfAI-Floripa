@@ -1,6 +1,7 @@
 export const config = { runtime: 'edge' }
 import { calculateSurfScore } from './_scoreEngine.js'
 import { callGemini } from './_gemini.js'
+import { createRateLimiter } from './_httpUtils.js'
 
 // Agente de Conteúdo Viral
 // Gera legendas otimizadas para Instagram e TikTok baseadas nas condições reais do mar
@@ -170,18 +171,7 @@ Responda APENAS em JSON:
 import { verifyAdminToken } from './_auth.js'
 
 // Rate limit por IP para chamadas de usuário: 20 req/hora
-const contentRateLimit = new Map<string, { count: number; reset: number }>()
-function checkContentRateLimit(ip: string): boolean {
-  const now = Date.now()
-  const entry = contentRateLimit.get(ip)
-  if (!entry || now > entry.reset) {
-    contentRateLimit.set(ip, { count: 1, reset: now + 3_600_000 })
-    return true
-  }
-  if (entry.count >= 20) return false
-  entry.count++
-  return true
-}
+const checkContentRateLimit = createRateLimiter(20, 3_600_000)
 
 export default async function handler(req: Request) {
   // Cron roda via GitHub Actions (ver .github/workflows/content-agent.yml) com AGENT_SECRET via x-agent-secret

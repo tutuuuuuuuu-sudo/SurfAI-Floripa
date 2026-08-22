@@ -9,7 +9,7 @@ import { OnboardingModal } from '@/components/OnboardingModal'
 import { AppLogo } from '@/components/AppLogo'
 import { AdBanner, AdCard } from '@/components/home/AdBanner'
 import { SwellPeriodWidget } from '@/components/home/SwellPeriodWidget'
-import { TrendBadge } from '@/components/home/TrendBadge'
+import { ConditionBadge } from '@/components/home/ConditionBadge'
 import { SwellAlert } from '@/components/home/SwellAlert'
 import { NotificationPanel } from '@/components/home/NotificationPanel'
 import { GeoFinderCard } from '@/components/home/GeoFinderCard'
@@ -316,7 +316,7 @@ export default function Home() {
                     <Flame className="h-5 w-5 text-rating-fair" />Melhor Pico Agora
                   </CardTitle>
                 </div>
-                <TrendBadge spot={topSpot} size="lg" />
+                <ConditionBadge spot={topSpot} size="lg" />
               </div>
             </CardHeader>
             <CardContent className="space-y-4">

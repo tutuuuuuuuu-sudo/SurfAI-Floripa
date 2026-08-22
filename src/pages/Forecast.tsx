@@ -9,10 +9,8 @@ import { usePremium } from '@/lib/premium'
 import { useSurfData } from '@/contexts/SurfDataContext'
 import { getWeatherForecast, WeatherForecast } from '@/lib/weatherData'
 import { ArrowLeft, Waves, Wind, Calendar, Crown, TrendingUp, Thermometer } from 'lucide-react'
-import { getScoreColor, getRatingInfo } from '@/lib/rating'
+import { getScoreColor, getScoreLabel } from '@/lib/rating'
 import { PremiumUpsellBanner } from '@/components/PremiumUpsellBanner'
-
-const getScoreLabel = (score: number) => getRatingInfo(score).label.charAt(0) + getRatingInfo(score).label.slice(1).toLowerCase()
 
 export default function ForecastPage() {
   const navigate = useNavigate()

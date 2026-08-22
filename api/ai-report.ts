@@ -13,20 +13,10 @@ const CORS = {
 
 import { verifyToken, isPremiumUser } from './_auth.js'
 import { callGemini } from './_gemini.js'
+import { createRateLimiter } from './_httpUtils.js'
 
 // Rate limit por userId: 10 chamadas por hora (relatório custa créditos de API do Gemini)
-const aiRateLimit = new Map<string, { count: number; reset: number }>()
-function checkAiRateLimit(userId: string): boolean {
-  const now = Date.now()
-  const entry = aiRateLimit.get(userId)
-  if (!entry || now > entry.reset) {
-    aiRateLimit.set(userId, { count: 1, reset: now + 3_600_000 })
-    return true
-  }
-  if (entry.count >= 10) return false
-  entry.count++
-  return true
-}
+const checkAiRateLimit = createRateLimiter(10, 3_600_000)
 
 // Detecta tentativas de prompt injection nos campos de texto
 function hasPromptInjection(value: string): boolean {

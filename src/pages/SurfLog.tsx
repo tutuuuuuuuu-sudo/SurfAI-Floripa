@@ -3,6 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { getRatingInfo } from '@/lib/rating'
@@ -161,7 +166,6 @@ export default function SurfLog() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Remover esta sessão? Esta ação não pode ser desfeita.')) return
     if (!user) return
     const { error } = await supabase
       .from('surf_sessions')
@@ -371,12 +375,32 @@ export default function SurfLog() {
                           <p className="text-xs text-muted-foreground italic border-l-2 border-border pl-2">{session.notes}</p>
                         )}
                       </div>
-                      <button
-                        onClick={() => handleDelete(session.id)}
-                        className="p-1.5 text-muted-foreground hover:text-destructive transition-colors flex-shrink-0"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <button
+                            className="p-1.5 text-muted-foreground hover:text-destructive transition-colors flex-shrink-0"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Remover esta sessão?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Esta ação não pode ser desfeita.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDelete(session.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Remover
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </CardContent>
                 </Card>
