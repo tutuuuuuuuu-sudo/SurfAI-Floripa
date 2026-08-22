@@ -155,7 +155,10 @@ Escreva um relatório de 3-4 frases em português brasileiro, informal e direto,
 
 Não inclua emojis. Não repita ondas/período/vento em números exatos (o usuário já vê isso na tela). Não use travessão (—) em nenhuma frase — reescreva com vírgula, dois-pontos ou frases separadas. Responda APENAS o texto do relatório, sem títulos ou formatação.`
 
-  const result = await callGemini(apiKey, prompt, 500)
+  // maxOutputTokens generoso porque gemini-3.6-flash gasta parte do orçamento pensando
+  // antes de responder (não dá pra desligar isso via config nessa versão da API — ver
+  // api/_gemini.ts) — sem folga, a resposta de verdade nunca chega a ser gerada.
+  const result = await callGemini(apiKey, prompt, 1000)
   if (!result.ok) {
     console.error('[ai-report] Gemini error:', result.status, result.error)
     return new Response(JSON.stringify({ error: 'Falha ao gerar relatório' }), {

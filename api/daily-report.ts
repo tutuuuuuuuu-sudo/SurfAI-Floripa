@@ -216,7 +216,7 @@ CONDIÇÕES DO MAR:
 
 Escreva 3-4 frases de análise: o que foi bom, o que precisa de atenção, e uma ação sugerida se necessário. Tom direto e profissional, sem emojis.`
 
-  const result = await callGemini(GEMINI_KEY, prompt, 500)
+  const result = await callGemini(GEMINI_KEY, prompt, 1000)
   return result.ok ? result.text : ''
 }
 

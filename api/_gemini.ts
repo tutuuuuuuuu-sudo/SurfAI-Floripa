@@ -28,12 +28,11 @@ export async function callGemini(
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          // thinkingBudget: 0 pede pra pular o raciocínio interno — gemini-3.6-flash é um
-          // modelo que "pensa" antes de responder, e sem isso o texto final podia nem
-          // caber no maxOutputTokens (visto em produção: resposta cortada no meio do
-          // raciocínio, nunca chegando na resposta de verdade). Se a API ignorar o campo
-          // (versão antiga do schema), o parsing abaixo ainda pula partes de raciocínio.
-          generationConfig: { maxOutputTokens, temperature: 0.9, thinkingConfig: { thinkingBudget: 0 } },
+          // thinkingConfig.thinkingBudget foi tentado aqui pra pular o raciocínio interno
+          // do gemini-3.6-flash, mas a API rejeita com 400 "invalid argument" nessa versão
+          // do schema — removido. O parsing abaixo já resolve o problema original (pular
+          // partes de raciocínio) sem precisar desse campo.
+          generationConfig: { maxOutputTokens, temperature: 0.9 },
         }),
         signal: AbortSignal.timeout(timeoutMs),
       }
