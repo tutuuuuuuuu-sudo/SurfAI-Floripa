@@ -12,6 +12,11 @@
 // checar só o formato do byte array não pegaria um erro de ordem de bytes ou de info string).
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 
+// TS 5.7+ tornou Uint8Array genérico sobre o tipo do buffer — ver comentário equivalente em push-notify.ts
+function asBufferSource(u: Uint8Array): BufferSource {
+  return u as unknown as BufferSource
+}
+
 function localB64urlEncode(buf: ArrayBuffer | Uint8Array): string {
   const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf)
   return btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
@@ -94,7 +99,7 @@ describe('makeVapidJwt', () => {
     const valid = await crypto.subtle.verify(
       { name: 'ECDSA', hash: 'SHA-256' },
       vapidPublicKey,
-      sigBytes,
+      asBufferSource(sigBytes),
       signedInput,
     )
     expect(valid).toBe(true)
@@ -108,7 +113,7 @@ describe('makeVapidJwt', () => {
     const valid = await crypto.subtle.verify(
       { name: 'ECDSA', hash: 'SHA-256' },
       otherKp.publicKey,
-      mod.base64urlDecode(sigB64),
+      asBufferSource(mod.base64urlDecode(sigB64)),
       signedInput,
     )
     expect(valid).toBe(false)
@@ -146,7 +151,7 @@ describe('encryptWebPush (RFC 8291)', () => {
       ...serverPublicKeyBytes,
     ])
     const prk = new Uint8Array(await crypto.subtle.deriveBits(
-      { name: 'HKDF', hash: 'SHA-256', salt: authSecret, info: infoWebPush.buffer },
+      { name: 'HKDF', hash: 'SHA-256', salt: asBufferSource(authSecret), info: asBufferSource(infoWebPush) },
       hkdfKey, 256,
     ))
 

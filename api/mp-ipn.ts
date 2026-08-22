@@ -1,6 +1,7 @@
 export const config = { runtime: 'edge' }
 
 import { verifyMpSignature } from './_mpAuth.js'
+import { fetchMpPayment, activatePremiumFromPayment } from './_mpPayment.js'
 
 export default async function handler(req: Request) {
   const url = new URL(req.url)
@@ -48,49 +49,16 @@ export default async function handler(req: Request) {
   }
 
   try {
-    const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${id}`, {
-      headers: { 'Authorization': `Bearer ${accessToken}` },
-      signal: AbortSignal.timeout(10000),
-    })
-
-    if (!mpRes.ok) return new Response('{"ok":true}', { status: 200, headers })
-
-    const payment = await mpRes.json() as {
-      id: number; status: string; external_reference: string;
-      preference_id: string; transaction_amount: number; payment_type_id: string
-    }
+    const payment = await fetchMpPayment(id, accessToken)
+    if (!payment) return new Response('{"ok":true}', { status: 200, headers })
 
     if (payment.status === 'approved' && payment.external_reference) {
-      const [userId, plan] = (payment.external_reference ?? '').split('|')
-      const durationDays = plan === 'annual' ? 365 : 30
-
-      // Idempotência garantida atomicamente pelo banco (activate_premium só ativa se
-      // mp_payment_id ainda não existir em payments) — o webhook principal (mp-webhook.ts)
-      // pode processar este mesmo pagamento em paralelo, mas só um dos dois vence.
-      const rpcRes = await fetch(`${supabaseUrl}/rest/v1/rpc/activate_premium`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': serviceKey,
-          'Authorization': `Bearer ${serviceKey}`,
-        },
-        body: JSON.stringify({
-          p_user_id: userId,
-          p_mp_payment_id: String(payment.id),
-          p_mp_preference_id: payment.preference_id ?? '',
-          p_amount: payment.transaction_amount,
-          p_payment_method: payment.payment_type_id ?? 'unknown',
-          p_duration_days: durationDays,
-          p_plan: plan === 'annual' ? 'annual' : 'monthly',
-        }),
-        signal: AbortSignal.timeout(10000),
-      })
-      if (!rpcRes.ok) {
-        console.error('[mp-ipn] activate_premium falhou:', await rpcRes.text())
+      const result = await activatePremiumFromPayment(payment, supabaseUrl, serviceKey)
+      if (!result.ok) {
+        console.error('[mp-ipn] activate_premium falhou:', result.reason === 'rpc-error' ? result.detail : result.reason)
         return new Response('{"error":"activation failed"}', { status: 500, headers })
       }
-      const activated = await rpcRes.json() as boolean
-      console.log(activated ? '[mp-ipn] ✅ Premium ativado:' : '[mp-ipn] Pagamento já processado, ignorando:', payment.id)
+      console.log(result.activated ? '[mp-ipn] ✅ Premium ativado:' : '[mp-ipn] Pagamento já processado, ignorando:', payment.id)
     }
 
     return new Response('{"ok":true}', { status: 200, headers })

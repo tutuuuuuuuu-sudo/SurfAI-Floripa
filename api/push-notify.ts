@@ -5,6 +5,13 @@ export const config = { runtime: 'edge' }
 
 import { calculateSurfScore } from './_scoreEngine.js'
 
+// TS 5.7+ tornou Uint8Array genérico sobre o tipo do buffer (ArrayBufferLike inclui
+// SharedArrayBuffer), o que quebra a atribuição direta às APIs de Web Crypto/fetch que
+// exigem BufferSource. Não muda nada em runtime — só ajusta o tipo no limite da chamada.
+function asBufferSource(u: Uint8Array): BufferSource {
+  return u as unknown as BufferSource
+}
+
 const SUPABASE_URL = process.env.SUPABASE_URL ?? ''
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY ?? ''
 const APP_URL = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
@@ -85,7 +92,7 @@ export async function encryptWebPush(
 
   // Importa chave pública do cliente para ECDH
   const clientKey = await crypto.subtle.importKey(
-    'raw', clientPublicKeyBytes, { name: 'ECDH', namedCurve: 'P-256' }, false, [],
+    'raw', asBufferSource(clientPublicKeyBytes), { name: 'ECDH', namedCurve: 'P-256' }, false, [],
   )
 
   // Deriva shared secret ECDH (32 bytes)
@@ -101,7 +108,7 @@ export async function encryptWebPush(
     ...serverPublicKey,
   ])
   const prk = new Uint8Array(await crypto.subtle.deriveBits(
-    { name: 'HKDF', hash: 'SHA-256', salt: authSecret, info: infoWebPush.buffer },
+    { name: 'HKDF', hash: 'SHA-256', salt: asBufferSource(authSecret), info: asBufferSource(infoWebPush) },
     hkdfKey, 256,
   ))
 
@@ -154,7 +161,7 @@ async function sendPush(endpoint: string, p256dh: string, auth: string, payload:
         Authorization: `vapid t=${jwt},k=${VAPID_PUBLIC_KEY}`,
         TTL: '86400',
       },
-      body,
+      body: asBufferSource(body),
       signal: AbortSignal.timeout(10000),
     })
     // 201, 200 = entregue; 404/410 = subscription não existe mais / expirou

@@ -2,6 +2,7 @@ export const config = { runtime: 'edge' }
 
 import { verifyMpSignature } from './_mpAuth.js'
 import { createRateLimiter } from './_httpUtils.js'
+import { fetchMpPayment, activatePremiumFromPayment } from './_mpPayment.js'
 
 // Por IP (não há userId disponível antes de buscar o pagamento no MP) — achado na
 // auditoria de 22/ago/2026: este endpoint público não tinha nenhum limite, ao
@@ -88,65 +89,27 @@ export default async function handler(req: Request) {
   if (!parsedBody.live_mode && Number(body.data.id) < 1000000) return ok()
 
   // Busca detalhes do pagamento no MP
-  const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${body.data.id}`, {
-    headers: { 'Authorization': `Bearer ${accessToken}` },
-    signal: AbortSignal.timeout(10000),
-  })
-
-  if (!mpRes.ok) {
+  const payment = await fetchMpPayment(body.data.id, accessToken)
+  if (!payment) {
     console.error('[mp-webhook] Erro ao buscar pagamento:', body.data.id)
     return new Response('MP fetch error', { status: 500 })
-  }
-
-  const payment = await mpRes.json() as {
-    id: number; status: string; external_reference: string;
-    preference_id: string; transaction_amount: number; payment_type_id: string
   }
 
   console.log('[mp-webhook] Payment status:', payment.status, 'userId:', payment.external_reference)
 
   if (payment.status !== 'approved') return ok()
 
-  // external_reference pode ser "userId|plan" (novo) ou só "userId" (legado)
-  const [userId, plan] = (payment.external_reference ?? '').split('|')
-  if (!userId) {
-    console.error('[mp-webhook] userId não encontrado no pagamento')
-    return new Response('Missing userId', { status: 400 })
-  }
+  const result = await activatePremiumFromPayment(payment, supabaseUrl, serviceKey)
 
-  // Duração: 12 meses para anual, 30 dias para mensal
-  const durationDays = plan === 'annual' ? 365 : 30
-
-  // Idempotência garantida atomicamente pelo banco (activate_premium só ativa se
-  // mp_payment_id ainda não existir em payments) — o IPN legado (mp-ipn.ts) pode
-  // processar este mesmo pagamento em paralelo, mas só um dos dois vence.
-  // Chama a função activate_premium via Supabase REST
-  const rpcRes = await fetch(`${supabaseUrl}/rest/v1/rpc/activate_premium`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': serviceKey,
-      'Authorization': `Bearer ${serviceKey}`,
-    },
-    body: JSON.stringify({
-      p_user_id: userId,
-      p_mp_payment_id: String(payment.id),
-      p_mp_preference_id: payment.preference_id ?? '',
-      p_amount: payment.transaction_amount,
-      p_payment_method: payment.payment_type_id ?? 'unknown',
-      p_duration_days: durationDays,
-      p_plan: plan === 'annual' ? 'annual' : 'monthly',
-    }),
-    signal: AbortSignal.timeout(10000),
-  })
-
-  if (!rpcRes.ok) {
-    const err = await rpcRes.text()
-    console.error('[mp-webhook] Erro activate_premium:', err)
+  if (!result.ok) {
+    if (result.reason === 'missing-userid') {
+      console.error('[mp-webhook] userId não encontrado no pagamento')
+      return new Response('Missing userId', { status: 400 })
+    }
+    console.error('[mp-webhook] Erro activate_premium:', result.detail)
     return new Response('DB error', { status: 500 })
   }
 
-  const activated = await rpcRes.json() as boolean
-  console.log(activated ? '[mp-webhook] ✅ Premium ativado para userId:' : '[mp-webhook] Pagamento já processado, ignorando. userId:', userId)
+  console.log(result.activated ? '[mp-webhook] ✅ Premium ativado para userId:' : '[mp-webhook] Pagamento já processado, ignorando. userId:', result.userId)
   return ok()
 }
