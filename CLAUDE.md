@@ -81,7 +81,6 @@ src/
 │   ├── OnboardingModal.tsx    # Modal de boas-vindas / nível do surfista
 │   ├── PWAInstallBanner.tsx   # Banner "Adicionar à tela inicial"
 │   ├── error-boundary.tsx     # ⚠️ NÃO REMOVER
-│   ├── theme-toggle.tsx       # Botão sol/lua dark/light — não montado em nenhuma página hoje
 │   └── CookieConsent.tsx      # Banner de consentimento de cookies (LGPD)
 ├── contexts/
 │   ├── AuthContext.tsx        # Auth Supabase — user, session, isPasswordRecovery
@@ -280,19 +279,23 @@ import { cn } from '@/lib/utils'
 - Gerenciado por `<ThemeProvider>` do `next-themes` em `src/main.tsx` (envolve `<App />`), com `attribute="class"`, `defaultTheme="dark"`, `storageKey="theme"`.
 - Padrão: **dark mode** para quem ainda não escolheu (sem preferência salva em `localStorage`).
 - Usuário pode alternar para light mode e a escolha persiste via `next-themes`.
-- Toggle: seção "Aparência" em `src/pages/Settings.tsx` (usa `useTheme()` do `next-themes` diretamente, com botões Claro/Escuro). O componente `<ThemeToggle />` (`src/components/theme-toggle.tsx`, botão sol/lua) existe mas não está montado em nenhuma página no momento.
+- Toggle: seção "Aparência" em `src/pages/Settings.tsx` (usa `useTheme()` do `next-themes` diretamente, com botões Claro/Escuro). Era o único lugar do app com esse controle — o componente `<ThemeToggle />` alternativo (botão sol/lua) nunca foi montado em nenhuma página e foi removido na auditoria de 22/ago/2026.
 
 ### Ícones
 - **Sempre** `lucide-react` — nunca emojis como ícones na UI
 - Exemplo: `import { Waves, MapPin, Crown } from 'lucide-react'`
 
 ### Componentes UI disponíveis (`src/components/ui/`)
-**Layout**: `card`, `sheet`, `dialog`, `drawer`, `popover`, `tabs`, `accordion`, `scroll-area`, `separator`, `resizable`
-**Forms**: `field`, `input`, `textarea`, `select`, `checkbox`, `switch`, `slider`, `calendar`, `combobox`
-**Nav**: `navigation-menu`, `breadcrumb`, `dropdown-menu`, `command`
-**Feedback**: `alert`, `alert-dialog`, `sonner`, `progress`, `skeleton`, `badge`, `spinner`, `empty`
-**Data**: `table`, `chart`, `avatar`, `carousel`, `tooltip`, `toggle`
-**Botões**: `button`, `button-group` (variants: default, destructive, outline, ghost, link)
+Só 12 primitivos do shadcn/ui — os outros ~42 gerados pelo scaffold inicial nunca chegaram
+a ser usados em nenhuma tela e foram removidos na auditoria de 22/ago/2026 (junto das
+dependências que só existiam pra sustentá-los: recharts, react-day-picker, cmdk, vaul,
+embla-carousel-react, react-resizable-panels, input-otp, @base-ui/react).
+- **Layout**: `card`, `glass-card`, `popover`, `separator`
+- **Feedback**: `alert`, `alert-dialog`, `sonner`, `progress`, `skeleton`, `badge`, `spinner`
+- **Botão**: `button` (variants: default, destructive, outline, ghost, link)
+
+Precisa de um componente que não está nessa lista (ex: `dialog`, `select`, `tabs`)? Rodar
+o CLI do shadcn (`npx shadcn@latest add <nome>`) pra gerar de novo, em vez de recriar à mão.
 
 ---
 
