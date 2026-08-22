@@ -140,21 +140,28 @@ export function GeoFinderCard({ spots, isPremium }: Props) {
           // Sem desvio que valha a pena: só a recomendação, sem comparação pra não confundir.
           if (!result.worthDetour) {
             return (
-              <button
-                className="w-full text-left rounded-xl p-3 border border-border/40 hover:border-primary/40 transition-colors"
-                onClick={goToRecommended}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1">
-                    <div className="font-semibold text-sm">{result.recommended.name}</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">{result.recommended.distanceKm.toFixed(1)}km de você</div>
+              <div className="space-y-2">
+                <button
+                  className="w-full text-left rounded-xl p-3 border border-border/40 hover:border-primary/40 transition-colors"
+                  onClick={goToRecommended}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <div className="font-semibold text-sm">{result.recommended.name}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">{result.recommended.distanceKm.toFixed(1)}km de você</div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <div className="text-xl font-bold" style={{ color: recColor }}>{result.recommended.score.toFixed(1)}</div>
+                      <div className="text-[10px] font-bold" style={{ color: recColor }}>{recInfo.label}</div>
+                    </div>
                   </div>
-                  <div className="text-right flex-shrink-0">
-                    <div className="text-xl font-bold" style={{ color: recColor }}>{result.recommended.score.toFixed(1)}</div>
-                    <div className="text-[10px] font-bold" style={{ color: recColor }}>{recInfo.label}</div>
-                  </div>
-                </div>
-              </button>
+                </button>
+                {!result.recommendedIsGood && (
+                  <p className="text-xs text-muted-foreground px-0.5">
+                    Nenhuma praia por perto está com boa condição agora — essa é a menos ruim.
+                  </p>
+                )}
+              </div>
             )
           }
 

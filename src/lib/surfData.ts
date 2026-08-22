@@ -44,6 +44,10 @@ export interface BeachCondition {
   lat: number
   lng: number
   _beachOrientation?: number
+  // Praia só acessível por trilha (Lagoinha do Leste, Naufragados) — usado pelo
+  // Smart Geo-Finder pra nunca sugerir essas praias como "vale o desvio" (distância
+  // em linha reta não captura tempo de caminhada).
+  hikeAccess?: boolean
 }
 
 // Cache de maré real para Floripa (lat -27.62, lng -48.48)
@@ -222,6 +226,7 @@ interface BeachDefinition {
   lng: number
   orientation: number
   bestTimeWindow: string
+  hikeAccess?: boolean
   subRegions?: { id: string; name: string; lat: number; lng: number; swellDirections?: string[]; tolerance?: 'estreita' | 'ampla'; exposicao?: number }[]
 }
 
@@ -261,7 +266,7 @@ const BEACHES: BeachDefinition[] = [
     ], bestTimeWindow: '06h - 09h' },
   { id: 'lagoinha-leste', name: 'Lagoinha do Leste', region: 'Sul' as const,
     lat: -27.7732103, lng: -48.4863806, // Lagoinha do Leste — início da trilha (Praia das Pacas)
-    orientation: 180, bestTimeWindow: 'Dia todo (acesso por trilha)' },
+    orientation: 180, bestTimeWindow: 'Dia todo (acesso por trilha)', hikeAccess: true },
   { id: 'acores', name: 'Açores', region: 'Sul' as const,
     lat: -27.7837144, lng: -48.5236746, // Praia dos Açores — bem na areia
     orientation: 120,
@@ -280,7 +285,7 @@ const BEACHES: BeachDefinition[] = [
     ], bestTimeWindow: '06h - 09h e 16h - 18h' },
   { id: 'naufragados', name: 'Naufragados', region: 'Sul' as const,
     lat: -27.8335587, lng: -48.5641537, // Naufragados — início da Trilha Caminho dos Naufragados
-    orientation: 180, bestTimeWindow: 'Depende da maré (acesso por trilha)' },
+    orientation: 180, bestTimeWindow: 'Depende da maré (acesso por trilha)', hikeAccess: true },
   { id: 'joaquina', name: 'Joaquina', region: 'Centro' as const,
     lat: -27.6293577, lng: -48.4490173, // Joaquina — bem na areia
     orientation: 90,
@@ -425,6 +430,7 @@ async function _doFetchConditions(): Promise<BeachCondition[]> {
           sunrise: windyData?.sunrise, sunset: windyData?.sunset,
           lat: beach.lat, lng: beach.lng,
           _beachOrientation: beach.orientation,
+          hikeAccess: beach.hikeAccess,
         } satisfies BeachCondition
       })
     )
