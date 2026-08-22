@@ -28,7 +28,12 @@ export async function callGemini(
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens, temperature: 0.9 },
+          // thinkingBudget: 0 pede pra pular o raciocínio interno — gemini-3.6-flash é um
+          // modelo que "pensa" antes de responder, e sem isso o texto final podia nem
+          // caber no maxOutputTokens (visto em produção: resposta cortada no meio do
+          // raciocínio, nunca chegando na resposta de verdade). Se a API ignorar o campo
+          // (versão antiga do schema), o parsing abaixo ainda pula partes de raciocínio.
+          generationConfig: { maxOutputTokens, temperature: 0.9, thinkingConfig: { thinkingBudget: 0 } },
         }),
         signal: AbortSignal.timeout(timeoutMs),
       }
@@ -39,8 +44,11 @@ export async function callGemini(
       return { ok: false, status: res.status, error }
     }
 
-    const data = await res.json() as { candidates?: { content?: { parts?: { text?: string }[] } }[] }
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+    const data = await res.json() as { candidates?: { content?: { parts?: { text?: string; thought?: boolean }[] } }[] }
+    const parts = data.candidates?.[0]?.content?.parts ?? []
+    // Pula qualquer parte marcada como "thought" (raciocínio interno) — só a resposta
+    // final importa. Sem essa marcação (modelo sem thinking), cai na primeira parte normal.
+    const text = parts.find(p => !p.thought && p.text)?.text ?? parts[0]?.text ?? ''
     return { ok: true, text }
   } catch (error) {
     return { ok: false, status: 0, error: error instanceof Error ? error.message : 'Erro desconhecido' }
