@@ -107,6 +107,9 @@ src/
 ```
 api/
 ├── _scoreEngine.ts     # ⚠️ FONTE ÚNICA do score. Importado por surfData.ts E pelos serverless
+├── _beachRegistry.ts   # ⚠️ FONTE ÚNICA de id/nome/região/coordenadas/orientação pros crons de backend
+│                          (content-agent, daily-report, email-alert, push-notify, snapshot, spot-meta) —
+│                          nunca duplicar essa lista de novo (já divergiu 1x, ver auditoria de 22/ago/2026)
 ├── _auth.ts            # Helper de validação de Bearer token Supabase, compartilhado entre endpoints
 ├── surf.ts             # Fetch Open-Meteo Marine → processa dados brutos de surf
 ├── tide.ts             # Dados de maré por pico
@@ -166,15 +169,16 @@ api/
 - **NÃO** adicionar detecção de recovery em `App.tsx` — já está no `AuthContext`.
 
 ### Picos (BEACHES)
-- Definidos em `src/lib/surfData.ts` como array `BEACHES`.
-- Coordenadas foram **confirmadas pelo usuário no Google Maps** — não alterar sem confirmação explícita.
+- Definidos em `src/lib/surfData.ts` como array `BEACHES` (rico — inclui subRegions, bestTimeWindow, hikeAccess, usado só pelo frontend).
+- Backend (crons) usa `api/_beachRegistry.ts` (id/nome/região/coordenadas/orientação) — **nunca criar uma terceira cópia**, os dois já precisam ser mantidos em sincronia manualmente.
+- Coordenadas foram **confirmadas pelo usuário no Google Maps** — não alterar sem confirmação explícita, nos dois arquivos.
 - Cada pico tem `orientation` (graus) usado no cálculo de offshore/onshore.
 - Sub-regiões têm `swellDirections` que determinam qual pico brilha em cada swell.
 
 ### Testes
-- Suite vitest: `npm test` → deve manter **70/70 passando**.
-- Arquivos de teste: `src/lib/*.test.ts` e `api/_scoreEngine.test.ts`.
-- Qualquer mudança em `surfData.ts`, `rating.ts` ou `_scoreEngine.ts` exige rodar os testes.
+- Suite vitest: `npm test` → deve manter todos os testes passando (rodar pra ver o número atual — já mudou várias vezes e qualquer contagem fixa aqui fica desatualizada rápido).
+- Arquivos de teste: `src/lib/*.test.ts` e `api/*.test.ts`.
+- Qualquer mudança em `surfData.ts`, `rating.ts`, `_scoreEngine.ts` ou `_beachRegistry.ts` exige rodar os testes.
 
 ### BrowserRouter
 - Já está em `App.tsx` (não no `main.tsx` como o template genérico sugere).
@@ -351,7 +355,7 @@ O CLAUDE.md anterior desta plataforma tinha regras gerais de UX — mantidas aqu
 
 ## ✅ CHECKLIST ANTES DE FINALIZAR QUALQUER MUDANÇA
 
-- [ ] `npm test` → 78/78 passando (se mudou surfData/rating/_scoreEngine)
+- [ ] `npm test` → todos passando (se mudou surfData/rating/_scoreEngine/_beachRegistry)
 - [ ] `npm run type-check` (`tsc -b --noEmit`) → 0 erros TypeScript. **Nunca rodar `npx tsc --noEmit` sozinho** — o `tsconfig.json` raiz usa project references (`files: []` + `references`), então sem `-b` o comando não segue as referências e sempre retorna "0 erros" mesmo com erros reais (bug descoberto em auditoria de 13/ago/2026).
 - [ ] `npm run lint` e `npm audit` de vez em quando (não fazem parte do fluxo rápido de toda mudança, mas rodar periodicamente — nenhum dos dois tinha sido rodado antes da auditoria de 13/ago/2026, achou 50 problemas de lint e 36 vulnerabilidades de dependência acumuladas, incluindo `react-router-dom` desatualizado com falhas de segurança altas)
 - [ ] **`type-check` + `test` + `build` passando não é "está tudo funcionando"** — são checagens automáticas, não cobrem comportamento em runtime. Antes de considerar terminada qualquer mudança que mexa em hook com efeito colateral (`useEffect` com listener, subscription, canal realtime do Supabase, `setInterval`, etc.) ou em componente que pode acabar renderizado dentro de outro que já usa o mesmo hook, **abrir o app de verdade (local ou produção) e testar o fluxo afetado no navegador** antes de dar por encerrado. Ninguém tinha feito isso nas correções de 13/ago/2026 até o usuário pedir explicitamente — apareceu um crash real: `Home.tsx` e `NotificationPanel.tsx` (renderizado dentro dela) chamavam `usePremium()` cada um, e as duas instâncias brigavam pelo mesmo canal realtime (`subscription:${user.id}`), derrubando a Home inteira pra qualquer usuário logado. `type-check`/testes/build passavam limpos o tempo todo — só apareceu testando ao vivo no navegador.

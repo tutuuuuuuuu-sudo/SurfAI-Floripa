@@ -1,27 +1,13 @@
 export const config = { runtime: 'edge' }
 
 import { calculateSurfScore } from './_scoreEngine.js'
+import { BEACH_REGISTRY } from './_beachRegistry.js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? ''
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY ?? ''
 const APP_URL = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 
-const BEACHES = [
-  { id: 'campeche',      name: 'Campeche',          lat: -27.6977, lng: -48.4899, orientation: 90  },
-  { id: 'novo-campeche', name: 'Novo Campeche',      lat: -27.6661, lng: -48.4755, orientation: 90  },
-  { id: 'morro-pedras',  name: 'Morro das Pedras',   lat: -27.7171, lng: -48.5034, orientation: 100 },
-  { id: 'matadeiro',     name: 'Matadeiro',           lat: -27.7548, lng: -48.4986, orientation: 110 },
-  { id: 'lagoinha-leste',name: 'Lagoinha do Leste',  lat: -27.7732, lng: -48.4864, orientation: 180 },
-  { id: 'acores',        name: 'Açores',              lat: -27.7837, lng: -48.5237, orientation: 120 },
-  { id: 'solidao',       name: 'Solidão',             lat: -27.7941, lng: -48.5335, orientation: 130 },
-  { id: 'armacao',       name: 'Armação',             lat: -27.7504, lng: -48.5018, orientation: 115 },
-  { id: 'naufragados',   name: 'Naufragados',         lat: -27.8336, lng: -48.5642, orientation: 180 },
-  { id: 'joaquina',      name: 'Joaquina',            lat: -27.6294, lng: -48.4490, orientation: 90  },
-  { id: 'mole',          name: 'Praia Mole',          lat: -27.6022, lng: -48.4327, orientation: 85  },
-  { id: 'mocambique',    name: 'Moçambique',          lat: -27.4938, lng: -48.3955, orientation: 80  },
-  { id: 'barra-lagoa',   name: 'Barra da Lagoa',      lat: -27.5735, lng: -48.4249, orientation: 75  },
-  { id: 'santinho',      name: 'Santinho',            lat: -27.4619, lng: -48.3762, orientation: 70  },
-]
+const BEACHES = BEACH_REGISTRY
 
 const WIND_DIR_MAP: Record<string, number> = {
   N:0,NNE:22.5,NE:45,ENE:67.5,E:90,ESE:112.5,SE:135,SSE:157.5,

@@ -8,6 +8,7 @@ export const config = { runtime: 'edge' }
 // avisa assinantes premium ativos que não desligaram a preferência.
 
 import { calculateSurfScore } from './_scoreEngine.js'
+import { getBeaches } from './_beachRegistry.js'
 
 const AGENT_SECRET = process.env.AGENT_SECRET
 const SUPABASE_URL = process.env.SUPABASE_URL
@@ -16,16 +17,9 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY
 const APP_URL = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 const SCORE_THRESHOLD = 6.0
 
-const SPOTS = [
-  { name: 'Campeche', lat: -27.697703, lng: -48.4898603, orientation: 90 },
-  { name: 'Joaquina', lat: -27.6293577, lng: -48.4490173, orientation: 90 },
-  { name: 'Praia Mole', lat: -27.6022459, lng: -48.4326839, orientation: 85 },
-  { name: 'Barra da Lagoa', lat: -27.5734502, lng: -48.424939, orientation: 75 },
-  { name: 'Santinho', lat: -27.4618653, lng: -48.3761513, orientation: 70 },
-  { name: 'Morro das Pedras', lat: -27.7170897, lng: -48.503436, orientation: 100 },
-  { name: 'Novo Campeche', lat: -27.6661001, lng: -48.4755307, orientation: 90 },
-  { name: 'Moçambique', lat: -27.4937746, lng: -48.3955175, orientation: 80 },
-]
+const SPOTS = getBeaches([
+  'campeche', 'joaquina', 'mole', 'barra-lagoa', 'santinho', 'morro-pedras', 'novo-campeche', 'mocambique',
+])
 
 interface SpotResult {
   name: string

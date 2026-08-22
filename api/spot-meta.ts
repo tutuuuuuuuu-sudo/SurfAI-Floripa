@@ -6,22 +6,16 @@ export const config = { runtime: 'edge' }
 // Usuários reais continuam recebendo a SPA normalmente (ver rewrite condicional no vercel.json).
 
 import { calculateSurfScore } from './_scoreEngine.js'
+import { getBeach } from './_beachRegistry.js'
+import { getRatingInfo } from '../src/lib/rating.js'
 
 const APP_URL = 'https://www.surfaifloripa.com.br'
 
 // Picos com página pública (vitrine total ou teaser) — união de PUBLIC_SPOT_IDS e
 // TEASER_SPOT_IDS em src/lib/surfData.ts. Bots recebem o mesmo tratamento nos dois
 // casos (meta tags com score real); a diferença vitrine/teaser só existe pro humano,
-// dentro de SpotDetails.tsx. Coordenadas e orientação replicadas do array BEACHES
-// (não alterar sem confirmação do usuário).
-const SPOTS: Record<string, { name: string; region: string; lat: number; lng: number; orientation: number }> = {
-  joaquina: { name: 'Joaquina', region: 'Centro', lat: -27.6293577, lng: -48.4490173, orientation: 90 },
-  mole: { name: 'Praia Mole', region: 'Centro', lat: -27.6022459, lng: -48.4326839, orientation: 85 },
-  campeche: { name: 'Campeche', region: 'Sul', lat: -27.697703, lng: -48.4898603, orientation: 90 },
-  'novo-campeche': { name: 'Novo Campeche', region: 'Sul', lat: -27.6661001, lng: -48.4755307, orientation: 90 },
-  matadeiro: { name: 'Matadeiro', region: 'Sul', lat: -27.7548429, lng: -48.4985647, orientation: 110 },
-  santinho: { name: 'Santinho', region: 'Norte', lat: -27.4618653, lng: -48.3761513, orientation: 70 },
-}
+// dentro de SpotDetails.tsx.
+const ALLOWED_IDS = ['joaquina', 'mole', 'campeche', 'novo-campeche', 'matadeiro', 'santinho']
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -62,7 +56,7 @@ function renderHtml(opts: { title: string; description: string; url: string }): 
 export default async function handler(req: Request) {
   const url = new URL(req.url)
   const id = url.searchParams.get('id') ?? ''
-  const spot = SPOTS[id]
+  const spot = ALLOWED_IDS.includes(id) ? getBeach(id) : undefined
   const pageUrl = `${APP_URL}/spot/${id}`
 
   if (!spot) {
@@ -94,7 +88,7 @@ export default async function handler(req: Request) {
           windDir,
           spot.orientation
         )
-        const label = score >= 8.5 ? 'ÉPICO' : score >= 7 ? 'EXCELENTE' : score >= 5.5 ? 'BOM' : score >= 4 ? 'REGULAR' : 'RUIM'
+        const label = getRatingInfo(score).label
         title = `${spot.name}: ${label} (${score.toFixed(1)}/10) agora | Surf AI Floripa`
         description = `${spot.name} está ${label} agora: ondas de ${data.waveHeight.toFixed(1)}m, vento ${Math.round(data.windSpeed)}km/h. Score de IA em tempo real para ${spot.region} da Ilha.`
       }

@@ -4,6 +4,7 @@ export const config = { runtime: 'edge' }
 // Busca subscriptions ativas, verifica condições e envia push para quem tiver praia boa
 
 import { calculateSurfScore } from './_scoreEngine.js'
+import { BEACH_REGISTRY } from './_beachRegistry.js'
 
 // TS 5.7+ tornou Uint8Array genérico sobre o tipo do buffer (ArrayBufferLike inclui
 // SharedArrayBuffer), o que quebra a atribuição direta às APIs de Web Crypto/fetch que
@@ -177,22 +178,7 @@ async function sendPush(endpoint: string, p256dh: string, auth: string, payload:
 
 // ── Handler principal ────────────────────────────────────────────────────────
 
-const BEACHES = [
-  { id: 'campeche',       lat: -27.6977, lng: -48.4899, orientation: 90  },
-  { id: 'novo-campeche',  lat: -27.6661, lng: -48.4755, orientation: 90  },
-  { id: 'morro-pedras',   lat: -27.7171, lng: -48.5034, orientation: 100 },
-  { id: 'matadeiro',      lat: -27.7548, lng: -48.4986, orientation: 110 },
-  { id: 'lagoinha-leste', lat: -27.7732, lng: -48.4864, orientation: 180 },
-  { id: 'acores',         lat: -27.7837, lng: -48.5237, orientation: 120 },
-  { id: 'solidao',        lat: -27.7941, lng: -48.5335, orientation: 130 },
-  { id: 'armacao',        lat: -27.7504, lng: -48.5018, orientation: 115 },
-  { id: 'naufragados',    lat: -27.8336, lng: -48.5642, orientation: 180 },
-  { id: 'joaquina',       lat: -27.6294, lng: -48.4490, orientation: 90  },
-  { id: 'mole',           lat: -27.6022, lng: -48.4327, orientation: 85  },
-  { id: 'mocambique',     lat: -27.4938, lng: -48.3955, orientation: 80  },
-  { id: 'barra-lagoa',    lat: -27.5735, lng: -48.4249, orientation: 75  },
-  { id: 'santinho',       lat: -27.4619, lng: -48.3762, orientation: 70  },
-]
+const BEACHES = BEACH_REGISTRY
 
 const WIND_DIR_MAP: Record<string, number> = {
   N:0,NNE:22.5,NE:45,ENE:67.5,E:90,ESE:112.5,SE:135,SSE:157.5,

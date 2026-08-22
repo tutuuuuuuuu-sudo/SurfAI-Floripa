@@ -1,6 +1,7 @@
 export const config = { runtime: 'edge' }
 import { calculateSurfScore } from './_scoreEngine.js'
 import { callGemini } from './_gemini.js'
+import { getBeaches } from './_beachRegistry.js'
 
 const APP_URL = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 const GEMINI_KEY = process.env.GEMINI_API_KEY
@@ -10,14 +11,7 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.en
 const RESEND_API_KEY = process.env.RESEND_API_KEY
 const REPORT_EMAIL = process.env.REPORT_EMAIL
 
-const SPOTS = [
-  { name: 'Campeche',        lat: -27.697703, lng: -48.4898603, orientation: 90 },
-  { name: 'Joaquina',        lat: -27.6293577, lng: -48.4490173, orientation: 90 },
-  { name: 'Praia Mole',      lat: -27.6022459, lng: -48.4326839, orientation: 85 },
-  { name: 'Barra da Lagoa',  lat: -27.5734502, lng: -48.424939,  orientation: 75 },
-  { name: 'Santinho',        lat: -27.4618653, lng: -48.3761513, orientation: 70 },
-  { name: 'Morro das Pedras',lat: -27.7170897, lng: -48.503436,  orientation: 100 },
-]
+const SPOTS = getBeaches(['campeche', 'joaquina', 'mole', 'barra-lagoa', 'santinho', 'morro-pedras'])
 
 // ── Fontes de dados ───────────────────────────────────────────────────────────
 

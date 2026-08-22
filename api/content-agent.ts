@@ -2,6 +2,7 @@ export const config = { runtime: 'edge' }
 import { calculateSurfScore } from './_scoreEngine.js'
 import { callGemini } from './_gemini.js'
 import { createRateLimiter } from './_httpUtils.js'
+import { getBeaches } from './_beachRegistry.js'
 
 // Agente de Conteúdo Viral
 // Gera legendas otimizadas para Instagram e TikTok baseadas nas condições reais do mar
@@ -11,15 +12,7 @@ const APP_URL = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 const GEMINI_KEY = process.env.GEMINI_API_KEY
 const AGENT_SECRET = process.env.AGENT_SECRET // proteção para chamadas externas
 
-// Orientação alinhada ao cadastro canônico em src/lib/surfData.ts (BEACHES) — não mexer
-// sem conferir lá primeiro, essa cópia já divergiu uma vez (auditoria de 22/ago/2026).
-const SPOTS = [
-  { id: 'campeche',    name: 'Campeche',       lat: -27.68, lng: -48.49, orientation: 90 },
-  { id: 'joaquina',   name: 'Joaquina',        lat: -27.63, lng: -48.44, orientation: 90 },
-  { id: 'mole',       name: 'Praia Mole',      lat: -27.60, lng: -48.44, orientation: 85 },
-  { id: 'barra-lagoa',name: 'Barra da Lagoa',  lat: -27.57, lng: -48.43, orientation: 75 },
-  { id: 'santinho',   name: 'Santinho',        lat: -27.51, lng: -48.39, orientation: 70 },
-]
+const SPOTS = getBeaches(['campeche', 'joaquina', 'mole', 'barra-lagoa', 'santinho'])
 
 interface SpotData {
   name: string
