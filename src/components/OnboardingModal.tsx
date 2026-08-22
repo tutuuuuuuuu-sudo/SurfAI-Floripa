@@ -8,6 +8,7 @@ import { useSurfData } from '@/contexts/SurfDataContext'
 import { getScoreColor } from '@/lib/rating'
 import { captureError } from '@/lib/monitoring'
 import { markOnboardingDone } from '@/lib/onboarding'
+import { useBodyScrollLock } from '@/hooks/use-body-scroll-lock'
 
 type SkillLevel = 'Iniciante' | 'Intermediário' | 'Avançado'
 type TimeSlot = 'manha' | 'tarde' | 'qualquer'
@@ -31,6 +32,7 @@ interface Props {
 export function OnboardingModal({ onDone }: Props) {
   const navigate = useNavigate()
   const { conditions } = useSurfData()
+  useBodyScrollLock(true)
   const [step, setStep] = useState(1)
   const [level, setLevel] = useState<SkillLevel | null>(null)
   const [favoriteSpotId, setFavoriteSpotId] = useState<string | null>(null)

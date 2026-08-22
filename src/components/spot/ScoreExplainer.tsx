@@ -1,9 +1,11 @@
 import { X, Waves, Clock, Wind } from 'lucide-react'
 import { BeachCondition } from '@/lib/surfData'
 import { getRatingInfo } from '@/lib/rating'
+import { useBodyScrollLock } from '@/hooks/use-body-scroll-lock'
 
 export const ScoreExplainer = ({ spot, onClose }: { spot: BeachCondition, onClose: () => void }) => {
   const rating = getRatingInfo(spot.score)
+  useBodyScrollLock(true)
   return (
     <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>

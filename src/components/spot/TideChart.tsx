@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react'
 import { Maximize2, X } from 'lucide-react'
 import { getRealTide } from '@/lib/weatherData'
+import { useBodyScrollLock } from '@/hooks/use-body-scroll-lock'
 
 const generateTideData = (realLevels?: number[]) => {
   const now = new Date()
@@ -137,6 +138,7 @@ export const TideChart = ({ tide }: { tide: string }) => {
   const [realLevels, setRealLevels] = useState<number[]|undefined>(undefined)
   const [realState, setRealState] = useState<string>(tide)
   useEffect(() => { getRealTide().then(data=>{ if(data){setRealLevels(data.hourlyLevels);setRealState(data.state)} }) }, [])
+  useBodyScrollLock(expanded)
   return (
     <>
       <div className="relative">
@@ -145,7 +147,7 @@ export const TideChart = ({ tide }: { tide: string }) => {
       </div>
       {expanded&&(
         <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-sm flex items-center justify-center p-4" onClick={()=>setExpanded(false)}>
-          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-2xl shadow-2xl" onClick={e=>e.stopPropagation()}>
+          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e=>e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold">Como vai estar o mar hoje?</h3>
               <button onClick={()=>setExpanded(false)} className="p-1.5 rounded-lg hover:bg-muted transition-colors"><X className="h-5 w-5 text-muted-foreground"/></button>

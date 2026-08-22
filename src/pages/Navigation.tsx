@@ -7,6 +7,7 @@ import { useSurfData } from '@/contexts/SurfDataContext'
 import { ArrowLeft, Navigation, Waves, MapPin, ExternalLink, Wind, Timer, Thermometer, Map, Car, Apple } from 'lucide-react'
 
 import { getScoreColor, getRatingInfo } from '@/lib/rating'
+import { useBodyScrollLock } from '@/hooks/use-body-scroll-lock'
 
 const getScoreLabel = (score: number): string => getRatingInfo(score).label.charAt(0) + getRatingInfo(score).label.slice(1).toLowerCase()
 
@@ -71,6 +72,7 @@ const NavModal = ({
   const color = getScoreColor(score)
   const isCampeche = beachId === 'campeche'
   const [selectedSubspot, setSelectedSubspot] = useState<typeof CAMPECHE_SUBSPOTS[0] | null>(null)
+  useBodyScrollLock(true)
 
 
   const dest = BEACH_DESTINATIONS[beachId] ?? { lat, lng, name }
