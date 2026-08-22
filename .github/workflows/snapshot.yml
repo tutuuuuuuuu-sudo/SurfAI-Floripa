@@ -1,0 +1,20 @@
+name: Snapshot — Histórico de Condições
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  run-snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chamar endpoint de snapshot
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L \
+            "${{ secrets.APP_URL }}/api/snapshot?secret=${{ secrets.SNAPSHOT_SECRET }}")
+          echo "Status HTTP: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "Snapshot retornou status $STATUS"
+            exit 1
+          fi

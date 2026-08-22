@@ -1,0 +1,23 @@
+name: Daily Report — Resumo Diário do App
+
+on:
+  schedule:
+    # 9h BRT (12h UTC) e 20h BRT (23h UTC)
+    - cron: '0 12 * * *'
+    - cron: '0 23 * * *'
+  workflow_dispatch:
+
+jobs:
+  send-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chamar endpoint de daily-report
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L \
+            -H "x-agent-secret: ${{ secrets.AGENT_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/daily-report")
+          echo "Status HTTP: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "daily-report retornou status $STATUS"
+            exit 1
+          fi
