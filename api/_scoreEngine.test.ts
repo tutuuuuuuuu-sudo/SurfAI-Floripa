@@ -1,6 +1,33 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import { calculateSurfScore, applyDirectionalExposure } from './_scoreEngine'
+import { calculateSurfScore, applyDirectionalExposure, explainSurfScore } from './_scoreEngine'
+
+describe('explainSurfScore', () => {
+  it('a soma dos três componentes bate exatamente com calculateSurfScore (mesmos inputs)', () => {
+    const cases: [number, number, number, string, number][] = [
+      [2.5, 5, 16, 'W', 90],
+      [1.0, 12, 9, 'S', 90],
+      [0.4, 21, 7, 'SSE', 90],
+      [0.7, 24, 7, 'S', 180],
+    ]
+    for (const args of cases) {
+      const total = calculateSurfScore(...args)
+      const breakdown = explainSurfScore(...args)
+      expect(breakdown.total).toBe(total)
+      const sum = Number((breakdown.waveBase + breakdown.windPenalty + breakdown.periodAdjust).toFixed(1))
+      // Só diverge da soma bruta quando o clamp [1,10] do calculateSurfScore entra em ação
+      const clamped = Math.min(10, Math.max(1, sum))
+      expect(breakdown.total).toBe(clamped)
+    }
+  })
+
+  it('classifica o vento como offshore/lateral/onshore de acordo com o ângulo até a praia', () => {
+    // Praia orientação 90° (leste) — offshore é vento W (270°)
+    expect(explainSurfScore(1, 5, 10, 'W', 90).windQuality).toBe('offshore')
+    expect(explainSurfScore(1, 5, 10, 'N', 90).windQuality).toBe('lateral')
+    expect(explainSurfScore(1, 5, 10, 'E', 90).windQuality).toBe('onshore')
+  })
+})
 
 describe('calculateSurfScore', () => {
   // ── Limites absolutos ────────────────────────────────────────────────────────

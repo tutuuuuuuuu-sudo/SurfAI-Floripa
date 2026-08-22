@@ -8,13 +8,25 @@ export const WIND_DEG: Record<string, number> = {
   W: 270, WNW: 292.5, NW: 315, NNW: 337.5,
 }
 
-export function calculateSurfScore(
+export interface ScoreBreakdown {
+  waveBase: number
+  windPenalty: number
+  windQuality: 'offshore' | 'lateral' | 'onshore'
+  periodAdjust: number
+  total: number
+}
+
+// Fonte única do cálculo — calculateSurfScore() abaixo só chama isto e pega o total.
+// Existe separado (em vez de só retornar o número) pra que a UI que EXPLICA a nota pro
+// usuário (ScoreExplainer.tsx) use os mesmos três números que compõem a nota de verdade,
+// em vez de recalcular uma aproximação própria que pode não bater com o total.
+export function explainSurfScore(
   waveHeight: number,
   windSpeed: number,
   swellPeriod: number,
   windDir: string,
   beachOrientation: number
-): number {
+): ScoreBreakdown {
   // Base de score pela altura da onda
   let waveBase: number
   if (waveHeight >= 2.5) waveBase = 10
@@ -34,14 +46,18 @@ export function calculateSurfScore(
   if (angleDiff > 180) angleDiff = 360 - angleDiff
 
   let windPenalty: number
+  let windQuality: ScoreBreakdown['windQuality']
   if (angleDiff <= 45) {
     // Offshore — vento saindo do mar, deixa ondas limpas
+    windQuality = 'offshore'
     windPenalty = windSpeed <= 10 ? 0 : windSpeed <= 15 ? -0.3 : windSpeed <= 20 ? -0.8 : -1.5
   } else if (angleDiff <= 90) {
     // Lateral
+    windQuality = 'lateral'
     windPenalty = windSpeed <= 10 ? -0.5 : windSpeed <= 15 ? -1.0 : windSpeed <= 20 ? -1.8 : -2.5
   } else {
     // Onshore — vento bagunçando as ondas
+    windQuality = 'onshore'
     windPenalty = windSpeed <= 10 ? -1.0 : windSpeed <= 15 ? -2.0 : windSpeed <= 20 ? -3.0 : -4.0
   }
 
@@ -55,7 +71,18 @@ export function calculateSurfScore(
   else if (swellPeriod >= 7) periodAdjust = -0.4
   else periodAdjust = -0.6
 
-  return Math.min(10, Math.max(1, Number((waveBase + windPenalty + periodAdjust).toFixed(1))))
+  const total = Math.min(10, Math.max(1, Number((waveBase + windPenalty + periodAdjust).toFixed(1))))
+  return { waveBase, windPenalty, windQuality, periodAdjust, total }
+}
+
+export function calculateSurfScore(
+  waveHeight: number,
+  windSpeed: number,
+  swellPeriod: number,
+  windDir: string,
+  beachOrientation: number
+): number {
+  return explainSurfScore(waveHeight, windSpeed, swellPeriod, windDir, beachOrientation).total
 }
 
 // Corrige a altura de onda "crua" do modelo de oceano aberto pela exposição direcional

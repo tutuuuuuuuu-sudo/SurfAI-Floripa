@@ -1,11 +1,25 @@
 import { X, Waves, Clock, Wind } from 'lucide-react'
 import { BeachCondition } from '@/lib/surfData'
 import { getRatingInfo } from '@/lib/rating'
+import { explainSurfScore } from '../../../api/_scoreEngine'
 import { useBodyScrollLock } from '@/hooks/use-body-scroll-lock'
+
+const WIND_QUALITY_LABEL: Record<string, string> = {
+  offshore: 'offshore, deixa a onda limpa',
+  lateral: 'lateral',
+  onshore: 'onshore, bagunça a onda',
+}
+
+const fmtSigned = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(n).toFixed(1)}`
+const adjustColor = (n: number) => n < 0 ? 'text-rating-poor' : n > 0 ? 'text-rating-good' : 'text-muted-foreground'
 
 export const ScoreExplainer = ({ spot, onClose }: { spot: BeachCondition, onClose: () => void }) => {
   const rating = getRatingInfo(spot.score)
   useBodyScrollLock(true)
+  // Mesma função que gera a nota de verdade (api/_scoreEngine.ts) — os três números
+  // abaixo somam exatamente pra spot.score, não é mais uma ilustração aproximada.
+  const breakdown = explainSurfScore(spot.waveHeight, spot.windSpeed, spot.swellPeriod, spot.windDirection, spot._beachOrientation ?? 90)
+
   return (
     <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
@@ -15,44 +29,58 @@ export const ScoreExplainer = ({ spot, onClose }: { spot: BeachCondition, onClos
         </div>
         <div className={`text-6xl font-bold text-center mb-1 ${rating.color}`}>{spot.score.toFixed(1)}</div>
         <div className={`text-center text-sm font-bold mb-6 ${rating.color}`}>{rating.label}</div>
+
         <div className="space-y-4">
-          {[
-            {
-              label:'Ondulação', max:10, icon:Waves,
-              desc:`${spot.waveHeight.toFixed(1)}m`,
-              value: spot.waveHeight>=2.5?10:spot.waveHeight>=2.0?9.5:spot.waveHeight>=1.5?9.0:
-                     spot.waveHeight>=1.2?8.5:spot.waveHeight>=1.0?8.0:spot.waveHeight>=0.8?7.5:
-                     spot.waveHeight>=0.6?7.0:spot.waveHeight>=0.5?6.5:spot.waveHeight>=0.4?5.5:4.0,
-            },
-            {
-              label:'Período', max:10, icon:Clock,
-              desc:`${Math.round(spot.swellPeriod)}s entre ondas`,
-              // Ajuste normalizado para escala visual (não é o ajuste absoluto do engine)
-              value: spot.swellPeriod>=16?10:spot.swellPeriod>=14?9:spot.swellPeriod>=12?8:
-                     spot.swellPeriod>=10?7:spot.swellPeriod>=8?6:spot.swellPeriod>=7?5:4,
-            },
-            {
-              label:'Vento', max:10, icon:Wind,
-              desc:`${Math.round(spot.windSpeed)}km/h ${spot.windDirection}`,
-              value: spot.windSpeed<=10?9:spot.windSpeed<=15?7.5:spot.windSpeed<=20?6:4,
-            },
-          ].map(item => (
-            <div key={item.label} className="flex items-center gap-3">
-              <item.icon className="h-5 w-5 text-primary flex-shrink-0" />
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-semibold">{item.label}</span>
-                  <span className="text-sm font-bold text-primary">{item.value.toFixed(1)}/10</span>
-                </div>
-                <div className="w-full bg-muted rounded-full h-1.5">
-                  <div className="bg-primary h-1.5 rounded-full transition-all duration-700" style={{width:`${Math.min(100,(item.value/item.max)*100)}%`}}/>
-                </div>
-                <div className="text-xs text-muted-foreground mt-0.5">{item.desc}</div>
+          {/* Ondulação é a BASE (4 a 10) — vento e período só ajustam ela pra cima ou baixo,
+              não são notas próprias que somadas dividem por 3. Mostrar os três como barras
+              de /10 independentes fazia a soma não bater com a nota final. */}
+          <div className="flex items-center gap-3">
+            <Waves className="h-5 w-5 text-primary flex-shrink-0" />
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-semibold">Ondulação (base)</span>
+                <span className="text-sm font-bold text-primary">{breakdown.waveBase.toFixed(1)}/10</span>
+              </div>
+              <div className="w-full bg-muted rounded-full h-1.5">
+                <div className="bg-primary h-1.5 rounded-full transition-all duration-700" style={{ width: `${breakdown.waveBase * 10}%` }}/>
+              </div>
+              <div className="text-xs text-muted-foreground mt-0.5">{spot.waveHeight.toFixed(1)}m</div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Wind className="h-5 w-5 text-primary flex-shrink-0" />
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-semibold">Vento</span>
+                <span className={`text-sm font-bold ${adjustColor(breakdown.windPenalty)}`}>{fmtSigned(breakdown.windPenalty)}</span>
+              </div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                {Math.round(spot.windSpeed)}km/h {spot.windDirection} · {WIND_QUALITY_LABEL[breakdown.windQuality]}
               </div>
             </div>
-          ))}
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Clock className="h-5 w-5 text-primary flex-shrink-0" />
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-semibold">Período</span>
+                <span className={`text-sm font-bold ${adjustColor(breakdown.periodAdjust)}`}>{fmtSigned(breakdown.periodAdjust)}</span>
+              </div>
+              <div className="text-xs text-muted-foreground mt-0.5">{Math.round(spot.swellPeriod)}s entre ondas</div>
+            </div>
+          </div>
         </div>
-        <p className="text-xs text-muted-foreground mt-5 text-center">Nota calculada com base em ondulação, período, vento e orientação da praia</p>
+
+        <div className="mt-5 pt-4 border-t border-border/50 flex items-center justify-center gap-1.5 text-sm font-mono flex-wrap text-muted-foreground">
+          <span>{breakdown.waveBase.toFixed(1)}</span>
+          <span>{fmtSigned(breakdown.windPenalty)}</span>
+          <span>{fmtSigned(breakdown.periodAdjust)}</span>
+          <span>=</span>
+          <span className={`font-bold ${rating.color}`}>{spot.score.toFixed(1)}</span>
+        </div>
+        <p className="text-xs text-muted-foreground mt-3 text-center">A ondulação define a base; vento e período ajustam pra cima ou pra baixo</p>
       </div>
     </div>
   )
