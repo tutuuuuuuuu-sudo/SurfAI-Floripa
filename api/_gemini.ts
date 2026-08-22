@@ -18,7 +18,10 @@ export async function callGemini(
   apiKey: string,
   prompt: string,
   maxOutputTokens: number,
-  timeoutMs = 15000
+  // Raciocínio interno do gemini-3.6-flash + maxOutputTokens maiores (ver ai-report.ts)
+  // pode levar mais tempo — 20s dá folga sem estourar o limite de execução das funções
+  // edge da Vercel (~25s).
+  timeoutMs = 20000
 ): Promise<GeminiResult> {
   try {
     const res = await fetch(

@@ -131,7 +131,10 @@ Responda APENAS em JSON:
 }`
 
   try {
-    const result = await callGemini(GEMINI_KEY, prompt, 2048)
+    // Mesma folga extra de ai-report.ts pro raciocínio interno do gemini-3.6-flash —
+    // aqui a resposta já era mais longa (JSON com 4 variantes de post) então precisa de
+    // mais espaço ainda pra não cortar no meio do JSON e quebrar o JSON.parse abaixo.
+    const result = await callGemini(GEMINI_KEY, prompt, 6000)
     if (!result.ok) return null
     const raw = result.text
 
