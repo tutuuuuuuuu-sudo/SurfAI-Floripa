@@ -111,7 +111,7 @@ api/
 ├── _auth.ts            # Helper de validação de Bearer token Supabase, compartilhado entre endpoints
 ├── surf.ts             # Fetch Open-Meteo Marine → processa dados brutos de surf
 ├── tide.ts             # Dados de maré por pico
-├── ai-report.ts        # Gera relatório IA (OpenAI) — exige Bearer token Supabase + premium
+├── ai-report.ts        # Gera relatório IA (Gemini, via api/_gemini.ts) — exige Bearer token Supabase + premium
 ├── forecast.ts         # Forecast detalhado por pico
 ├── create-payment.ts   # Cria preferência de pagamento no Mercado Pago
 ├── mp-webhook.ts       # Webhook do MP → atualiza subscriptions no Supabase
@@ -229,7 +229,6 @@ shadcn/ui + radix-ui
 React Router DOM (BrowserRouter em App.tsx)
 next-themes (dark/light)
 lucide-react (ícones — nunca emojis)
-recharts (gráficos)
 sonner (toasts)
 @sentry/react (erros em produção)
 posthog-js (analytics)
@@ -239,7 +238,7 @@ posthog-js (analytics)
 ```
 Vercel (deploy automático via GitHub main)
 Supabase (Auth + Postgres + Realtime + Storage)
-OpenAI (relatório IA)
+Google Gemini (relatório IA — api/_gemini.ts, GEMINI_API_KEY)
 Mercado Pago (pagamentos)
 Resend (emails transacionais)
 ```

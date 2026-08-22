@@ -7,6 +7,8 @@ on:
     - cron: '0 23 * * *'
   workflow_dispatch:
 
+permissions: {}
+
 jobs:
   send-report:
     runs-on: ubuntu-latest

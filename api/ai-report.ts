@@ -14,7 +14,7 @@ const CORS = {
 import { verifyToken, isPremiumUser } from './_auth.js'
 import { callGemini } from './_gemini.js'
 
-// Rate limit por userId: 10 chamadas por hora (relatório custa créditos Anthropic)
+// Rate limit por userId: 10 chamadas por hora (relatório custa créditos de API do Gemini)
 const aiRateLimit = new Map<string, { count: number; reset: number }>()
 function checkAiRateLimit(userId: string): boolean {
   const now = Date.now()

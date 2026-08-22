@@ -514,7 +514,7 @@ export default function SpotDetails() {
                       {usesFeet ? 'm' : 'ft'}
                     </button>
                   </div>
-                  <AnimatedProgress value={spot.waveHeight * 20}/>
+                  <AnimatedProgress value={Math.min(100, spot.waveHeight * 20)}/>
                   <div className="pt-1 border-t border-border/30">
                     <div className="text-xs text-muted-foreground mb-1">Período</div>
                     <SwellPeriodBadge period={spot.swellPeriod}/>

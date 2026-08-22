@@ -13,16 +13,16 @@ export const CommentsSection = ({ spot }: { spot: BeachCondition }) => {
   const [submitting, setSubmitting] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string|null>(null)
 
-  useEffect(() => {
-    loadComments()
-    supabase.auth.getUser().then(({data}) => setCurrentUserId(data.user?.id ?? null))
-  }, [spot.id])
-
   const loadComments = async () => {
     setLoading(true)
     setComments(await getComments(spot.id))
     setLoading(false)
   }
+
+  useEffect(() => {
+    loadComments()
+    supabase.auth.getUser().then(({data}) => setCurrentUserId(data.user?.id ?? null))
+  }, [spot.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = async () => {
     if (!newComment.trim() || !currentUserId) return

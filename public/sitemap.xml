@@ -36,6 +36,46 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.surfaifloripa.com.br/spot/morro-pedras</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.surfaifloripa.com.br/spot/lagoinha-leste</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.surfaifloripa.com.br/spot/acores</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.surfaifloripa.com.br/spot/solidao</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.surfaifloripa.com.br/spot/armacao</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.surfaifloripa.com.br/spot/naufragados</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.surfaifloripa.com.br/spot/mocambique</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.surfaifloripa.com.br/spot/barra-lagoa</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.surfaifloripa.com.br/privacy</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
