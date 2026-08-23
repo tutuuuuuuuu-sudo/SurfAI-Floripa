@@ -15,8 +15,15 @@ export const WindCompass = ({ direction, speed }: { direction: string, speed: nu
   // WIND_DEG guarda a direção de onde o vento VEM (convenção meteorológica padrão —
   // "vento de nordeste" = vem do NE). A seta deve mostrar pra ONDE o vento está indo
   // (o fluxo), não de onde veio, então rotaciona +180° em relação ao código.
-  const degrees = (directionToDegrees(direction) + 180) % 360
+  // Direção de onde o vento VEM (0° = N, sentido horário) — usada tanto pro rótulo
+  // colorido na rosa quanto (rotacionada +180°) pra seta, que aponta pra ONDE o vento vai.
+  const fromDegrees = directionToDegrees(direction)
+  const degrees = (fromDegrees + 180) % 360
   const { code, name } = formatWindDirection(direction)
+  // Posiciona o rótulo da direção atual no mesmo raio dos pontos cardeais fixos (N/S/L/O).
+  const labelRad = (fromDegrees - 90) * Math.PI / 180
+  const labelX = 70 + 63 * Math.cos(labelRad)
+  const labelY = 70 + 63 * Math.sin(labelRad)
   const color = speed <= 10 ? 'var(--color-rating-good)' : speed <= 20 ? 'var(--color-rating-fair)' : 'var(--color-rating-poor)'
   const allDirs = [0,22.5,45,67.5,90,112.5,135,157.5,180,202.5,225,247.5,270,292.5,315,337.5]
   return (
@@ -33,10 +40,13 @@ export const WindCompass = ({ direction, speed }: { direction: string, speed: nu
           const inner = isCardinal?50:isMain?52:55, outer = isCardinal?62:isMain?61:60
           return <line key={deg} x1={70+inner*Math.cos(rad)} y1={70+inner*Math.sin(rad)} x2={70+outer*Math.cos(rad)} y2={70+outer*Math.sin(rad)} stroke="currentColor" strokeWidth={isCardinal?1.5:isMain?1:0.7} className="text-muted-foreground" opacity={isCardinal?0.45:isMain?0.3:0.18}/>
         })}
-        <text x="70" y="7" textAnchor="middle" fontSize="10" fontWeight="bold" fill={color}>N</text>
+        <text x="70" y="10" textAnchor="middle" fontSize="9" fill="currentColor" className="text-muted-foreground" opacity="0.4">N</text>
         <text x="70" y="136" textAnchor="middle" fontSize="9" fill="currentColor" className="text-muted-foreground" opacity="0.4">S</text>
         <text x="135" y="73" textAnchor="middle" fontSize="9" fill="currentColor" className="text-muted-foreground" opacity="0.4">L</text>
         <text x="5" y="73" textAnchor="middle" fontSize="9" fill="currentColor" className="text-muted-foreground" opacity="0.4">O</text>
+        {/* Marca a direção real de onde o vento vem, na cor da intensidade — os N/S/L/O
+            acima são só referência fixa da rosa, nunca indicavam a direção de verdade. */}
+        <text x={labelX} y={labelY} textAnchor="middle" dominantBaseline="middle" fontSize="9" fontWeight="bold" fill={color}>{code}</text>
         <g transform={`rotate(${degrees},70,70)`}>
           <line x1="70" y1="70" x2="70" y2="26" stroke={color} strokeWidth="2.5" strokeLinecap="round"/>
           <polygon points="70,15 64,28 76,28" fill={color}/>

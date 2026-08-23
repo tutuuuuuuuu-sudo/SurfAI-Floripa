@@ -1,4 +1,4 @@
-import { getWindyForecast } from './weatherApi'
+import { getWindyForecast, WeatherCondition } from './weatherApi'
 import { getRealWaterTemp } from './weatherData'
 import { calculateSurfScore, WIND_DEG as _WIND_DEG } from '../../api/_scoreEngine'
 import { getRatingInfo } from './rating'
@@ -42,6 +42,7 @@ export interface BeachCondition {
   bestTimeWindow: string
   sunrise?: string
   sunset?: string
+  weatherCondition?: WeatherCondition | null
   lat: number
   lng: number
   _beachOrientation?: number
@@ -205,6 +206,15 @@ export function getSubRegionMatch(
   return { minDiff, waveMin, waveMax, match, matchCls }
 }
 
+// Formata a altura de onda como faixa (±5%, mesmo cálculo de getSubRegionMatch acima) em
+// vez de um número único e preciso — a leitura de onda em si já tem margem de erro, um
+// número fixo tipo "0.8m" passa uma precisão que o dado não tem de verdade.
+export function formatWaveRange(waveHeight: number): string {
+  const min = (waveHeight * 0.95).toFixed(1)
+  const max = (waveHeight * 1.05).toFixed(1)
+  return min === max ? `${min}m` : `${min}–${max}m`
+}
+
 const getBestSubRegion = (subRegions: { id: string, swellDirections?: string[] }[], swellDirection: string): string => {
   const best = subRegions
     .map(sub => ({ id: sub.id, minDiff: swellAngularDiff(sub.swellDirections ?? [], swellDirection) }))
@@ -336,6 +346,7 @@ interface WindyData {
   swellDirection: string
   sunrise?: string
   sunset?: string
+  weatherCondition?: WeatherCondition | null
 }
 
 // Calcula melhor janela do dia dinamicamente usando dados horários da API
@@ -435,6 +446,7 @@ async function _doFetchConditions(): Promise<BeachCondition[]> {
           waterConditions: { temperature: waterTemp, wetsuit: getWetsuitInfo(waterTemp) },
           bestTimeWindow: calculateBestWindow(windyData, beach.orientation),
           sunrise: windyData?.sunrise, sunset: windyData?.sunset,
+          weatherCondition: windyData?.weatherCondition,
           lat: beach.lat, lng: beach.lng,
           _beachOrientation: beach.orientation,
           hikeAccess: beach.hikeAccess,

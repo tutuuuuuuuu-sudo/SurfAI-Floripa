@@ -139,11 +139,12 @@ ${spotsContext}
 
 Melhor praia agora (já visível na tela do usuário, não repita isso): ${topName} (score ${topScore.toFixed(1)}/10, ondas ${topWave.toFixed(1)}m, período ${topPeriod}s, vento ${topWind}km/h ${topDir})
 
-Escreva um relatório de 3-4 frases em português brasileiro, informal e direto, para ${safeLevel ? `surfistas de nível ${safeLevel}` : 'todos os níveis'}, que:
+Escreva um relatório de no máximo 3 frases curtas, em português brasileiro, para ${safeLevel ? `surfistas de nível ${safeLevel}` : 'todos os níveis'}, que:
 1. Comece com uma frase de impacto comparando praias (ex: por que uma praia específica está melhor que as outras agora, ou um contraste claro entre duas opções) — nunca comece reafirmando o placar da melhor praia
 2. Aponte uma tendência ou risco que não dá pra ver só olhando o número: piora/melhora esperada ao longo do dia, janela de horário mais curta que o normal, praia alternativa pra quem não conseguir ir na primeira opção
 3. Feche com uma dica prática e específica de segurança ou tática (não genérica) para quem vai surfar hoje
-4. Use linguagem de surfista brasileiro, seja animado se as condições estiverem boas
+
+Seja direto e objetivo, tipo um amigo experiente te avisando rápido, não um texto literário. Frases curtas, uma informação concreta por frase. NUNCA use metáfora, floreio poético ou frase de efeito (nada de "a única energia de verdade", "o mar abre uma janela", "a bancada conectando as séries" — isso é enfeite, não informação). Se não houver um risco/tendência real para apontar, é melhor uma frase a menos do que forçar um enchimento.
 
 Não inclua emojis. Não repita ondas/período/vento em números exatos (o usuário já vê isso na tela). Não use travessão (—) em nenhuma frase — reescreva com vírgula, dois-pontos ou frases separadas. Responda APENAS o texto do relatório, sem títulos ou formatação.`
 

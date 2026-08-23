@@ -1,6 +1,12 @@
 // weatherApi.ts — proxy via /api/surf (Windy → Open-Meteo → Stormglass, server-side)
 // Chaves de API nunca chegam ao browser.
 
+export interface WeatherCondition {
+  code: number
+  label: string
+  icon: 'sun' | 'cloud-sun' | 'cloud' | 'rain' | 'storm'
+}
+
 export interface WindyForecastData {
   waveHeight: number
   swellPeriod: number
@@ -10,6 +16,7 @@ export interface WindyForecastData {
   waterTemperature?: number
   sunrise?: string
   sunset?: string
+  weatherCondition?: WeatherCondition | null
 }
 
 const cache: Record<string, { data: WindyForecastData; time: number }> = {}
@@ -64,6 +71,7 @@ export async function getWindyForecast(
       waterTemperature: data.waterTemperature ?? undefined,
       sunrise: data.sunrise,
       sunset: data.sunset,
+      weatherCondition: data.weatherCondition ?? null,
     }
 
     cache[cacheKey] = { data: result, time: now }

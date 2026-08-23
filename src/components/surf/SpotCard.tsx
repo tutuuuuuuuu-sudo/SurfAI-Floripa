@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { BeachCondition } from '@/lib/surfData'
+import { BeachCondition, formatWaveRange } from '@/lib/surfData'
 import { getRatingInfo } from '@/lib/rating'
 import { getTainhaInfo } from '@/lib/tainha'
 import { LatestComment, formatCommentTime } from '@/lib/comments'
@@ -82,7 +82,7 @@ export function SpotCard({ spot, latestComment }: SpotCardProps) {
           <div className="flex items-center gap-1.5">
             <Waves className="h-4 w-4 text-primary flex-shrink-0" />
             <div>
-              <div className="text-sm font-semibold">{Number(spot.waveHeight).toFixed(1)}m</div>
+              <div className="text-sm font-semibold">{formatWaveRange(spot.waveHeight)}</div>
               <div className="text-xs text-muted-foreground">Ondas</div>
             </div>
           </div>

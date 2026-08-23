@@ -218,7 +218,7 @@ export default function Landing() {
 
           <div className="grid md:grid-cols-3 gap-6 relative">
             {[
-              { step: '01', icon: Droplets, title: 'Dados em tempo real', desc: 'Coletamos dados de ondas, vento e maré de múltiplas fontes meteorológicas a cada 15 minutos, 24/7.', hue: 220 },
+              { step: '01', icon: Droplets, title: 'Dados em tempo real', desc: 'Coletamos dados de ondas, vento e maré de múltiplas fontes meteorológicas a cada 15 minutos, o dia inteiro.', hue: 220 },
               { step: '02', icon: Zap, title: 'IA calcula a nota', desc: 'Nossa IA analisa todos os parâmetros e gera uma nota de 0 a 10 considerando o seu nível de surf.', hue: 195 },
               { step: '03', icon: TrendingUp, title: 'Você decide em segundos', desc: 'Veja a nota, compare praias e tome a melhor decisão, sem desperdício de tempo ou gasolina.', hue: 155 },
             ].map(({ step, icon: Icon, title, desc, hue }, i) => (

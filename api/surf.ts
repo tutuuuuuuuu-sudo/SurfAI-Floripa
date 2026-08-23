@@ -187,6 +187,40 @@ async function fetchStormglass(lat: string, lng: string): Promise<ForecastResult
   }
 }
 
+// ── Condição do tempo (sol/nublado/chuva) ──────────────────────────────────────
+
+export interface WeatherCondition {
+  code: number
+  label: string
+  icon: 'sun' | 'cloud-sun' | 'cloud' | 'rain' | 'storm'
+}
+
+function mapWeatherCode(code: number, isDay: boolean): WeatherCondition {
+  // Códigos WMO da Open-Meteo (https://open-meteo.com/en/docs) agrupados no que
+  // importa pro surfista: sol, nublado, chuva ou tempestade.
+  if (code === 0) return { code, label: isDay ? 'Sol' : 'Céu limpo', icon: 'sun' }
+  if (code <= 2) return { code, label: 'Parcialmente nublado', icon: 'cloud-sun' }
+  if (code === 3 || code === 45 || code === 48) return { code, label: 'Nublado', icon: 'cloud' }
+  if ([95, 96, 99].includes(code)) return { code, label: 'Tempestade', icon: 'storm' }
+  if (code >= 51) return { code, label: 'Chuva', icon: 'rain' }
+  return { code, label: 'Nublado', icon: 'cloud' }
+}
+
+async function fetchWeatherCondition(lat: string, lng: string): Promise<WeatherCondition | null> {
+  try {
+    const res = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=weather_code,is_day`,
+      { signal: AbortSignal.timeout(6000) }
+    )
+    if (!res.ok) return null
+    const data = await res.json() as { current?: { weather_code?: number; is_day?: number } }
+    if (data.current?.weather_code == null) return null
+    return mapWeatherCode(data.current.weather_code, data.current.is_day !== 0)
+  } catch {
+    return null
+  }
+}
+
 // ── Rate limiting simples por IP ──────────────────────────────────────────────
 // 30 requisições por IP por janela de 60s
 const checkRateLimit = createRateLimiter(30)
@@ -218,10 +252,17 @@ export default async function handler(req: Request) {
   const corsHeaders = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': allowedOrigin }
 
   try {
-    // Cascade: Windy (melhor qualidade) → Open-Meteo (gratuito) → Stormglass (fallback)
-    const result = (await fetchWindy(lat!, lng!))
-      ?? (await fetchOpenMeteo(lat!, lng!))
-      ?? (await fetchStormglass(lat!, lng!))
+    // Cascade: Windy (melhor qualidade) → Open-Meteo (gratuito) → Stormglass (fallback).
+    // Condição do tempo é buscada em paralelo, independente de qual fonte de onda/vento
+    // ganhar a cascade acima (Windy não retorna weather_code) — se falhar, weatherCondition
+    // fica null e o frontend simplesmente não mostra o badge, sem quebrar o resto.
+    const [result, weatherCondition] = await Promise.all([
+      (async () => (await fetchWindy(lat!, lng!))
+        ?? (await fetchOpenMeteo(lat!, lng!))
+        ?? (await fetchStormglass(lat!, lng!))
+      )(),
+      fetchWeatherCondition(lat!, lng!),
+    ])
 
     if (!result) {
       return new Response(JSON.stringify({ error: 'Nenhuma fonte disponível' }), { status: 503, headers: corsHeaders })
@@ -249,6 +290,7 @@ export default async function handler(req: Request) {
       waterTemperature: result.waterTemperature,
       sunrise,
       sunset,
+      weatherCondition,
     }), { headers: corsHeaders })
   } catch {
     return new Response(JSON.stringify({ error: 'Erro interno' }), { status: 500, headers: corsHeaders })

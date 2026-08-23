@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { SpotCard } from '@/components/surf/SpotCard'
 import { OnboardingModal } from '@/components/OnboardingModal'
 import { AppLogo } from '@/components/AppLogo'
@@ -14,7 +13,7 @@ import { SwellAlert } from '@/components/home/SwellAlert'
 import { NotificationPanel } from '@/components/home/NotificationPanel'
 import { GeoFinderCard } from '@/components/home/GeoFinderCard'
 import { AIThinkingIndicator } from '@/components/home/AIThinkingIndicator'
-import { analyzeConditions, BeachCondition } from '@/lib/surfData'
+import { analyzeConditions, BeachCondition, formatWaveRange } from '@/lib/surfData'
 import { useSurfData } from '@/contexts/SurfDataContext'
 import { getFavorites } from '@/lib/favorites'
 import { getLatestCommentsForSpots, LatestComment } from '@/lib/comments'
@@ -28,9 +27,15 @@ import { getSavedNotificationSettings, checkAndNotifyGoodConditions } from '@/li
 import { isTainhaSeasonActive } from '@/lib/tainha'
 import { isOnboardingDone } from '@/lib/onboarding'
 import {
-  Waves, TrendingUp, MapPin, Info, Heart, Settings,
-  Crown, Sparkles, Flame, Fish, GitCompareArrows
+  Waves, TrendingUp, MapPin, Heart, Settings,
+  Crown, Sparkles, Flame, Fish, GitCompareArrows,
+  Sun, CloudSun, Cloud, CloudRain, CloudLightning
 } from 'lucide-react'
+import type { WeatherCondition } from '@/lib/weatherApi'
+
+const WEATHER_ICONS: Record<WeatherCondition['icon'], typeof Sun> = {
+  'sun': Sun, 'cloud-sun': CloudSun, 'cloud': Cloud, 'rain': CloudRain, 'storm': CloudLightning,
+}
 
 export default function Home() {
   const [activeRegion, setActiveRegion] = useState<string>(() => {
@@ -212,6 +217,16 @@ export default function Home() {
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
             <span>Atualizado às {(lastUpdated ?? new Date()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+            {topSpot?.weatherCondition && (() => {
+              const WeatherIcon = WEATHER_ICONS[topSpot.weatherCondition.icon]
+              return (
+                <>
+                  <span className="text-muted-foreground/40">·</span>
+                  <WeatherIcon className="h-3.5 w-3.5" />
+                  <span>{topSpot.weatherCondition.label}</span>
+                </>
+              )
+            })()}
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -332,7 +347,7 @@ export default function Home() {
                 </div>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">
-                <div><div className="text-xs text-muted-foreground">Ondas</div><div className="text-lg font-semibold">{Number(topSpot.waveHeight).toFixed(1)}m</div></div>
+                <div><div className="text-xs text-muted-foreground">Ondas</div><div className="text-lg font-semibold">{formatWaveRange(topSpot.waveHeight)}</div></div>
                 <div><div className="text-xs text-muted-foreground">Período</div><div className="text-lg font-semibold">{Math.round(topSpot.swellPeriod)}s</div></div>
                 <div><div className="text-xs text-muted-foreground">Maré</div><div className="text-lg font-semibold">{topSpot.tide}</div></div>
                 <div><div className="text-xs text-muted-foreground">Água</div><div className="text-lg font-semibold">{topSpot.waterConditions.temperature}°C</div></div>
@@ -350,13 +365,6 @@ export default function Home() {
             <AdBanner />
           </div>
         )}
-
-        <SwellPeriodWidget />
-
-        <Alert className="anim-slide" style={{ animationDelay: '0.35s' }}>
-          <Info className="h-4 w-4" />
-          <AlertDescription>A Inteligência Artificial analisa vento, swell, maré, batimetria e orientação das praias para indicar onde está melhor para surfar agora.</AlertDescription>
-        </Alert>
 
         <div className="flex items-center justify-between anim-slide" style={{ animationDelay: '0.4s' }}>
           <h2 className="text-xl font-bold">Todas as Praias</h2>
@@ -414,6 +422,8 @@ export default function Home() {
             </div>
           )}
         </div>
+
+        <SwellPeriodWidget />
       </main>
     </div>
   )

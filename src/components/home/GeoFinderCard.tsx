@@ -170,17 +170,24 @@ export function GeoFinderCard({ spots, isPremium }: Props) {
           // veredito em português simples explicando a troca.
           const nearInfo = getRatingInfo(result.nearest.score)
           const nearColor = getScoreColor(result.nearest.score)
+          const goToNearest = () => {
+            track('spot_opened', { spot: result.nearest.name, source: 'geo_finder' })
+            navigate(`/spot/${result.nearest.id}`)
+          }
           return (
             <div className="space-y-2.5">
               <div className="grid grid-cols-2 gap-2">
-                <div className="rounded-xl border border-border/40 p-3">
+                <button
+                  className="rounded-xl border border-border/40 p-3 text-left hover:bg-muted/20 transition-colors"
+                  onClick={goToNearest}
+                >
                   <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Mais perto</div>
                   <div className="text-sm font-semibold leading-tight">{result.nearest.name}</div>
                   <div className="text-xs text-muted-foreground mt-0.5">{result.nearest.distanceKm.toFixed(1)}km de você</div>
                   <div className="text-base font-bold mt-1.5" style={{ color: nearColor }}>
                     {result.nearest.score.toFixed(1)} <span className="text-[10px] font-bold">{nearInfo.label}</span>
                   </div>
-                </div>
+                </button>
                 <button
                   className="rounded-xl border-2 border-primary/50 bg-primary/5 p-3 text-left hover:bg-primary/10 transition-colors"
                   onClick={goToRecommended}
