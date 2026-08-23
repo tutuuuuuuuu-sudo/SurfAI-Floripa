@@ -15,7 +15,7 @@ Dois planos pagos: **Mensal R$ 16,90/mês** ou **Anual R$ 149,90/ano** (equivale
 | Nota de condições por pico | ✅ | ✅ |
 | Previsão 3 dias | ✅ | ✅ |
 | Previsão 14 dias | ❌ | ✅ |
-| Relatório IA diário | ❌ | ✅ |
+| Chat com o Surf AI (IA) | ❌ | ✅ |
 | Alertas de swell (push) | ❌ | ✅ |
 | Histórico 30 dias | ❌ | ✅ |
 | Melhor janela horária do dia | ❌ | ✅ |
@@ -113,7 +113,9 @@ api/
 ├── _auth.ts            # Helper de validação de Bearer token Supabase, compartilhado entre endpoints
 ├── surf.ts             # Fetch Open-Meteo Marine → processa dados brutos de surf
 ├── tide.ts             # Dados de maré por pico
-├── ai-report.ts        # Gera relatório IA (Gemini, via api/_gemini.ts) — exige Bearer token Supabase + premium
+├── surf-chat.ts        # Chat com o Surf AI (Gemini multi-turn, via api/_gemini.ts) — exige Bearer token Supabase + premium.
+│                          Substituiu o antigo "Relatório do dia" automático em 23/ago/2026 (gastava
+│                          chamada de IA toda vez que qualquer Premium abria o app, mesmo sem pedir)
 ├── forecast.ts         # Forecast detalhado por pico
 ├── create-payment.ts   # Cria preferência de pagamento no Mercado Pago
 ├── mp-webhook.ts       # Webhook do MP → atualiza subscriptions no Supabase
@@ -157,11 +159,21 @@ api/
 - Função centralizadora: `getRatingInfo(score)` em `src/lib/rating.ts` — **nunca replicar** o switch de faixas.
 - Thresholds: ≥8.5 ÉPICO | ≥7 EXCELENTE | ≥5.5 BOM | ≥4 REGULAR | <4 RUIM
 
-### Relatório IA — uma única busca por sessão
-- `Home.tsx` tem `aiReportFetchedRef` (useRef) que impede re-fetch a cada ciclo de dados.
-- O cache fica em `localStorage` por 30min (`src/lib/aiReport.ts`).
-- `api/ai-report.ts` exige `Authorization: Bearer <supabase_token>` e verifica se o usuário é premium antes de chamar a OpenAI.
-- Status 403 = usuário free → retorna `null` silenciosamente, sem erro.
+### Chat com o Surf AI — substituiu o relatório automático (23/ago/2026)
+- O antigo "Relatório do dia" (`fetchAIReport`, `api/ai-report.ts`) foi removido — disparava
+  uma chamada de IA sozinho toda vez que qualquer Premium abria a Home, mesmo sem querer ler.
+  `src/lib/aiReport.ts` ficou só com `clearAIReportCache()` (limpa cache órfão de usuários
+  antigos no logout — não busca mais nada).
+- Entrada única de IA na Home agora é o card "Converse com o Surf AI" (Premium), que abre
+  `SurfChatPanel.tsx` (painel full-screen animado) e chama `api/surf-chat.ts` só quando o
+  usuário manda uma mensagem de verdade — sob demanda, não automático.
+- `api/surf-chat.ts` exige `Authorization: Bearer <supabase_token>`, verifica premium, aplica
+  rate limit persistido (40 msgs/usuário/dia) e usa `callGeminiChat` (multi-turn, em
+  `api/_gemini.ts`) com histórico salvo em `chat_messages` (Supabase, RLS por usuário).
+- **Cota do Gemini**: conta ainda está no Free Tier do Google AI Studio — **20 chamadas por
+  dia, TOTAL, pra todo o app** (relatório antigo + content-agent + daily-report + chat, tudo
+  na mesma cota). Usuário está ciente e decidiu não ativar cobrança por enquanto (23/ago/2026).
+  Se "a IA parou de responder" for reportado, checar isso antes de investigar como bug.
 
 ### Auth e recuperação de senha
 - `AuthContext.tsx` detecta `type=recovery` no hash da URL e seta `isPasswordRecovery = true`.
@@ -212,7 +224,6 @@ Open-Meteo Marine API
 - Dados de surf: 15min em memória (`conditionsState` em `surfData.ts`)
 - Evita race condition: promise `inflight` garante que fetches simultâneos esperem o mesmo resultado
 - Limite de concorrência: 5 praias por lote (para não exceder limites do Vercel Free)
-- Relatório IA: 30min em `localStorage`
 
 ### Regiões da ilha
 - Três regiões reais, direto no campo `region` de cada praia (não é mais um filtro sobreposto): `Norte`, `Centro`, `Sul`.
@@ -254,10 +265,11 @@ Resend (emails transacionais)
 
 **Serverless** (`process.env.*`):
 - `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
-- `GEMINI_API_KEY` (Google AI Studio, ai.google.dev — free tier. Usado por api/ai-report.ts,
-  api/content-agent.ts e api/daily-report.ts via api/_gemini.ts, fonte única da chamada ao
-  modelo. Trocou a Anthropic em 21/ago/2026 — sem tier grátis contínuo, ficou sem crédito e
-  derrubava o relatório da Home sem avisar ninguém)
+- `GEMINI_API_KEY` (Google AI Studio, ai.google.dev — **ainda Free Tier**, teto de 20
+  chamadas/dia pra TODO o app, ver seção "Chat com o Surf AI" acima. Usado por
+  api/surf-chat.ts, api/content-agent.ts e api/daily-report.ts via api/_gemini.ts, fonte
+  única da chamada ao modelo. Trocou a Anthropic em 21/ago/2026 — sem tier grátis contínuo,
+  ficou sem crédito e derrubava o relatório da Home sem avisar ninguém)
 - `MP_ACCESS_TOKEN` (Mercado Pago)
 - `RESEND_API_KEY`
 

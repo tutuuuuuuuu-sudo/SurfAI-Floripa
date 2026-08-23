@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -11,8 +11,8 @@ import { ConditionBadge } from '@/components/home/ConditionBadge'
 import { SwellAlert } from '@/components/home/SwellAlert'
 import { NotificationPanel } from '@/components/home/NotificationPanel'
 import { GeoFinderCard } from '@/components/home/GeoFinderCard'
-import { AIThinkingIndicator } from '@/components/home/AIThinkingIndicator'
 import { SurfChatPanel } from '@/components/home/SurfChatPanel'
+import { PremiumUpsellBanner } from '@/components/PremiumUpsellBanner'
 import { analyzeConditions, BeachCondition, formatWaveRange } from '@/lib/surfData'
 import { useSurfData } from '@/contexts/SurfDataContext'
 import { getFavorites } from '@/lib/favorites'
@@ -20,7 +20,6 @@ import { getLatestCommentsForSpots, LatestComment } from '@/lib/comments'
 import { useAuth } from '@/contexts/AuthContext'
 import { getUserDisplayName } from '@/lib/supabase'
 import { usePremium } from '@/lib/premium'
-import { fetchAIReport, splitFirstSentence } from '@/lib/aiReport'
 import { track } from '@/lib/monitoring'
 import { getScoreColor, getThemeGradient } from '@/lib/rating'
 import { getSavedNotificationSettings, checkAndNotifyGoodConditions } from '@/lib/notifications'
@@ -29,7 +28,7 @@ import { isOnboardingDone } from '@/lib/onboarding'
 import {
   Waves, TrendingUp, MapPin, Heart, Settings,
   Crown, Sparkles, Flame, Fish, GitCompareArrows,
-  Sun, CloudSun, Cloud, CloudRain, CloudLightning, MessageCircle
+  Sun, CloudSun, Cloud, CloudRain, CloudLightning, MessageCircle, ChevronRight
 } from 'lucide-react'
 import type { WeatherCondition } from '@/lib/weatherApi'
 
@@ -48,15 +47,9 @@ export default function Home() {
   const [topSpot, setTopSpot] = useState<BeachCondition | null>(null)
   const [favorites, setFavorites] = useState<string[]>([])
   const [visible, setVisible] = useState(false)
-  const [aiReport, setAiReport] = useState<string | null>(null)
-  const [aiLoading, setAiLoading] = useState(false)
-  const [aiError, setAiError] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(() => !isOnboardingDone())
   const [chatOpen, setChatOpen] = useState(false)
   const [latestComments, setLatestComments] = useState<Record<string, LatestComment>>({})
-  const aiReportFetchedRef = useRef(false)
-  const premiumResolvedRef = useRef(false)
-  const prevPremiumRef = useRef(false)
   const navigate = useNavigate()
   const { user } = useAuth()
   const { isPremium, loading: premiumLoading } = usePremium()
@@ -88,45 +81,6 @@ export default function Home() {
 
     return () => clearTimeout(t)
   }, [allSpots])
-
-  // Busca o relatório AI uma única vez — aguarda status premium ser resolvido
-  useEffect(() => {
-    if (premiumLoading) return
-    // Reseta o ref quando o status premium resolve pela primeira vez,
-    // garantindo que o fetch ocorra com o token correto (premium ou free)
-    if (!premiumResolvedRef.current) {
-      premiumResolvedRef.current = true
-      aiReportFetchedRef.current = false
-    }
-    if (allSpots.length === 0 || aiReportFetchedRef.current) return
-    aiReportFetchedRef.current = true
-    const sortedAll = [...allSpots].sort((a, b) => b.score - a.score)
-    const top = sortedAll[0]
-    if (!top) return
-    setAiLoading(true)
-    setAiError(false)
-    const userLevel = (() => { try { return localStorage.getItem('pref_skill') ?? undefined } catch { return undefined } })()
-    fetchAIReport(sortedAll.slice(0, 6), top, userLevel, user?.id)
-      .then(({ report, premiumRequired }) => {
-        setAiReport(report)
-        if (report) track('ai_report_loaded', { top_spot: top.name, score: top.score })
-        // premiumRequired = usuário free, esperado, não é erro (o card mostra a prévia).
-        // Sem relatório e sem ser esse o motivo = falha real (ex: sem crédito na API,
-        // rate limit) — sem isso o card simplesmente sumia sem explicação nenhuma.
-        else if (isPremium && !premiumRequired) setAiError(true)
-      })
-      .catch(() => { if (isPremium) setAiError(true) })
-      .finally(() => setAiLoading(false))
-  }, [allSpots, premiumLoading, user, isPremium])
-
-  // Se o usuário vira premium via realtime (ex: pagou por Pix/boleto e o webhook
-  // atualiza a assinatura enquanto ele já está na Home), o relatório precisa ser
-  // buscado de novo com o token premium — sem isso, o card de IA fica ausente até
-  // a pessoa recarregar a página manualmente.
-  useEffect(() => {
-    if (isPremium && !prevPremiumRef.current) aiReportFetchedRef.current = false
-    prevPremiumRef.current = isPremium
-  }, [isPremium])
 
   const userName = user ? getUserDisplayName(user) : 'Surfista'
   const userInitial = userName.charAt(0).toUpperCase()
@@ -252,71 +206,37 @@ export default function Home() {
           </div>
         )}
 
-        {(aiReport || aiLoading || aiError || (!premiumLoading && !isPremium && topSpot)) && (
-          <div className="relative anim-slide" style={{ animationDelay: '0.15s' }}>
-            <div className="absolute -inset-1 rounded-2xl bg-primary/25 blur-md animate-pulse pointer-events-none" />
-            <Card className="relative border-primary/50 bg-primary/8 shadow-lg shadow-primary/15">
-            <CardHeader className="pb-2 pt-4 px-4">
-              <CardTitle className="text-base flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="h-7 w-7 rounded-lg bg-primary/15 flex items-center justify-center flex-shrink-0">
-                    <Sparkles className="h-4 w-4 text-primary" />
+        {!premiumLoading && (
+          <div className="anim-slide" style={{ animationDelay: '0.15s' }}>
+            {isPremium ? (
+              <div className="relative">
+                <div className="absolute -inset-1 rounded-2xl bg-primary/25 blur-md animate-pulse pointer-events-none" />
+                <button
+                  onClick={() => { track('surf_chat_opened'); setChatOpen(true) }}
+                  className="relative w-full text-left rounded-2xl border border-primary/50 bg-primary/8 shadow-lg shadow-primary/15 p-4 hover:bg-primary/12 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0">
+                      <MessageCircle className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-base flex items-center gap-1.5">
+                        <Sparkles className="h-4 w-4 text-primary flex-shrink-0" />Converse com o Surf AI
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        Chatbot com IA que já sabe as condições de agora — pergunte qual praia ir, tire dúvidas, peça dicas.
+                      </p>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-primary flex-shrink-0" />
                   </div>
-                  <span className="font-bold">Relatório do dia · IA</span>
-                </div>
-                {!premiumLoading && !isPremium && (
-                  <Badge className="bg-rating-fair/15 text-rating-fair border border-rating-fair/30 text-[10px] px-1.5 py-0 gap-1">
-                    <Crown className="h-3 w-3" />Premium
-                  </Badge>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="px-4 pb-4">
-              {aiLoading ? (
-                <AIThinkingIndicator />
-              ) : aiReport ? (
-                <div className="space-y-2">
-                  <p className="text-sm text-foreground leading-relaxed">
-                    {(() => {
-                      const { first, rest } = splitFirstSentence(aiReport)
-                      if (!rest) return aiReport
-                      return <><span className="font-semibold">{first}</span> {rest}</>
-                    })()}
-                  </p>
-                  <p className="text-xs text-muted-foreground/50">Gerado por IA com base nos dados atuais. Confirme as condições antes de entrar no mar.</p>
-                  <button
-                    onClick={() => { track('surf_chat_opened'); setChatOpen(true) }}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary/15 border border-primary/40 hover:bg-primary/25 transition-colors text-sm font-bold text-primary"
-                  >
-                    <MessageCircle className="h-4 w-4" />Converse com o Surf AI
-                  </button>
-                </div>
-              ) : !isPremium && topSpot ? (
-                // Prévia com blur para usuários free
-                <div className="space-y-3">
-                  <div className="relative">
-                    <p className="text-sm text-foreground leading-relaxed line-clamp-2">
-                      {topSpot.name} está com a melhor nota agora, mas outro pico pode compensar mais dependendo do horário que você for. A análise completa cruza as praias e mostra a janela ideal do dia...
-                    </p>
-                    <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-card/90 to-transparent pointer-events-none" />
-                  </div>
-                  <div className="relative overflow-hidden rounded-lg">
-                    <p className="text-sm text-muted-foreground leading-relaxed blur-sm select-none" aria-hidden>
-                      Pelo swell de hoje, a tendência é o mar abrir uma janela mais curta que o normal: quem chegar cedo aproveita melhor. Se estiver muito cheio, considere ir para a opção alternativa mais próxima.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => navigate('/premium')}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-rating-fair/15 border border-rating-fair/40 hover:bg-rating-fair/25 transition-colors text-sm font-bold text-rating-fair"
-                  >
-                    <Crown className="h-4 w-4" />Ver relatório completo · Premium
-                  </button>
-                </div>
-              ) : aiError ? (
-                <p className="text-sm text-muted-foreground">Não conseguimos gerar o relatório de hoje. Tente de novo mais tarde.</p>
-              ) : null}
-            </CardContent>
-            </Card>
+                </button>
+              </div>
+            ) : (
+              <PremiumUpsellBanner
+                title="Converse com o Surf AI"
+                subtitle="Chatbot com IA que conhece as condições de agora — exclusivo Premium"
+              />
+            )}
           </div>
         )}
 
