@@ -16,8 +16,44 @@ function json(data: unknown, status = 200) {
 }
 
 import { verifyToken, isPremiumUser } from './_auth.js'
-import { callGeminiChat, type ChatTurn } from './_gemini.js'
+import { callGeminiChat, type ChatTurn, type GeminiResult } from './_gemini.js'
+import { callGroqChat, callOpenRouterChat } from './_llmProviders.js'
 import { createPersistentRateLimiter, hasPromptInjection } from './_httpUtils.js'
+
+// Cascata de provedores: tenta o Gemini primeiro (melhor qualidade), cai pro Groq se
+// falhar/esgotar cota, cai pro OpenRouter se o Groq também falhar. Groq sozinho (free tier,
+// 14.400 req/dia) já cobre qualquer volume realista do chat — o Gemini fica só como
+// "melhor opção quando disponível", nunca é uma dependência crítica.
+// Timeouts mais curtos que uma chamada solo (era 22s) porque agora até 3 tentativas em
+// sequência precisam caber no limite de ~25s da função edge da Vercel.
+async function callChatCascade(
+  systemContext: string,
+  turns: ChatTurn[],
+  maxOutputTokens: number
+): Promise<{ result: GeminiResult; provider: string }> {
+  const geminiKey = process.env.GEMINI_API_KEY
+  if (geminiKey) {
+    const r = await callGeminiChat(geminiKey, systemContext, turns, maxOutputTokens, 9000)
+    if (r.ok) return { result: r, provider: 'gemini' }
+    console.error('[surf-chat] Gemini falhou, tentando Groq:', r.status, r.error)
+  }
+
+  const groqKey = process.env.GROQ_API_KEY
+  if (groqKey) {
+    const r = await callGroqChat(groqKey, systemContext, turns, maxOutputTokens, 7000)
+    if (r.ok) return { result: r, provider: 'groq' }
+    console.error('[surf-chat] Groq falhou, tentando OpenRouter:', r.status, r.error)
+  }
+
+  const openRouterKey = process.env.OPENROUTER_API_KEY
+  if (openRouterKey) {
+    const r = await callOpenRouterChat(openRouterKey, systemContext, turns, maxOutputTokens, 7000)
+    if (r.ok) return { result: r, provider: 'openrouter' }
+    console.error('[surf-chat] OpenRouter falhou:', r.status, r.error)
+  }
+
+  return { result: { ok: false, status: 0, error: 'Todos os provedores de IA falharam ou não estão configurados' }, provider: 'none' }
+}
 
 // 40 mensagens por usuário por dia (janela de 24h, não por hora) — chat é uso contínuo,
 // ao contrário do relatório (1x/dia). Mesmo raciocínio de custo do checkAiRateLimit de
@@ -107,10 +143,9 @@ export default async function handler(req: Request) {
     return json({ error: 'Limite diário de mensagens atingido. Volta amanhã!' }, 429)
   }
 
-  const apiKey = process.env.GEMINI_API_KEY
   const supabaseUrl = process.env.SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
-  if (!apiKey || !supabaseUrl || !serviceKey) return json({ error: 'Configuração incompleta' }, 500)
+  if (!supabaseUrl || !serviceKey) return json({ error: 'Configuração incompleta' }, 500)
 
   let body: ChatBody
   try {
@@ -172,15 +207,15 @@ Regras:
 
   const turns: ChatTurn[] = [...history, { role: 'user', text: message }]
 
-  // maxOutputTokens generoso: gemini-3.6-flash gasta parte do orçamento "pensando" antes de
-  // responder (mesmo motivo do ai-report.ts) — 2000 dá folga pra não cortar no meio da frase.
-  // Timeout de 22s (perto do limite de ~25s da função edge da Vercel) — achado testando ao
-  // vivo que 20s às vezes não é suficiente quando o histórico de conversa cresce.
-  const result = await callGeminiChat(apiKey, systemContext, turns, 2000, 22000)
+  // maxOutputTokens generoso: modelos com "pensamento" interno (gemini-3.6-flash) gastam
+  // parte do orçamento pensando antes de responder — 2000 dá folga pra não cortar no meio
+  // da frase.
+  const { result, provider } = await callChatCascade(systemContext, turns, 2000)
   if (!result.ok) {
-    console.error('[surf-chat] Gemini error:', result.status, result.error)
+    console.error('[surf-chat] Todos os provedores falharam:', result.status, result.error)
     return json({ error: 'Falha ao responder. Tenta de novo.' }, 500)
   }
+  console.log('[surf-chat] Respondido via:', provider)
 
   await saveMessages(supabaseUrl, serviceKey, userId, message, result.text)
 
