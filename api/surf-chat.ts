@@ -47,9 +47,12 @@ async function fetchUserContext(supabaseUrl: string, serviceKey: string, userId:
   const [prefsRes, favsRes, historyRes] = await Promise.all([
     fetch(`${supabaseUrl}/rest/v1/user_preferences?user_id=eq.${userId}&select=pref_skill&limit=1`, { headers }),
     fetch(`${supabaseUrl}/rest/v1/favorites?user_id=eq.${userId}&select=beach_name&limit=10`, { headers }),
-    // Últimas 8 mensagens (mais novas primeiro), pra controlar custo/contexto — reinvertidas
-    // abaixo pra ordem cronológica antes de virar `contents` do Gemini.
-    fetch(`${supabaseUrl}/rest/v1/chat_messages?user_id=eq.${userId}&select=role,content&order=created_at.desc&limit=8`, { headers }),
+    // Últimas 4 mensagens (mais novas primeiro), pra controlar custo/contexto — reinvertidas
+    // abaixo pra ordem cronológica antes de virar `contents` do Gemini. Era 8, mas testando
+    // ao vivo, conversa mais longa deixava o "pensamento" do gemini-3.6-flash lento o
+    // suficiente pra estourar até o timeout de 22s com retry — 4 já dá continuidade real
+    // sem pesar tanto.
+    fetch(`${supabaseUrl}/rest/v1/chat_messages?user_id=eq.${userId}&select=role,content&order=created_at.desc&limit=4`, { headers }),
   ])
 
   const prefs = prefsRes.ok ? (await prefsRes.json() as { pref_skill?: string }[]) : []
