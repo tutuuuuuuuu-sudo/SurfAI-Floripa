@@ -4,6 +4,23 @@ export function isValidCoord(lat: string | null, lng: string | null): boolean {
   return !isNaN(latN) && !isNaN(lngN) && latN >= -90 && latN <= 90 && lngN >= -180 && lngN <= 180
 }
 
+// Detecta tentativas de prompt injection em campos de texto livre enviados pelo usuário
+// antes de repassar pro Gemini — usado por ai-report.ts e surf-chat.ts.
+export function hasPromptInjection(value: string): boolean {
+  const lower = value.toLowerCase()
+  return (
+    lower.includes('ignore') ||
+    lower.includes('esquece') ||
+    lower.includes('system:') ||
+    lower.includes('assistant:') ||
+    lower.includes('instrução') ||
+    lower.includes('instrucao') ||
+    lower.includes('prompt') ||
+    lower.includes('<|') ||
+    lower.includes('|>')
+  )
+}
+
 // Rate limit simples por IP, em memória (por instância — cada instância serverless tem seu
 // próprio contador, então sob tráfego alto com várias instâncias em paralelo o limite real
 // não é 100% respeitado). Usar só em endpoints públicos de dados (surf/maré/previsão) onde

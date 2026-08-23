@@ -4,21 +4,30 @@
 export interface AuthResult {
   valid: boolean
   userId: string | null
+  // Mesma lógica de src/lib/supabase.ts (getUserDisplayName), duplicada aqui de propósito:
+  // essa função roda no edge (Vercel), não pode importar aquele módulo (ele instancia um
+  // client supabase-js com import.meta.env, que só existe no build do Vite).
+  displayName: string | null
 }
 
 export async function verifyToken(token: string): Promise<AuthResult> {
   const supabaseUrl = process.env.SUPABASE_URL
   const anonKey = process.env.SUPABASE_ANON_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
-  if (!supabaseUrl || !anonKey) return { valid: false, userId: null }
+  if (!supabaseUrl || !anonKey) return { valid: false, userId: null, displayName: null }
   try {
     const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
       headers: { Authorization: `Bearer ${token}`, apikey: anonKey },
     })
-    if (!res.ok) return { valid: false, userId: null }
-    const user = await res.json() as { id?: string }
-    return { valid: true, userId: user.id ?? null }
+    if (!res.ok) return { valid: false, userId: null, displayName: null }
+    const user = await res.json() as { id?: string; email?: string; user_metadata?: Record<string, unknown> }
+    const meta = user.user_metadata ?? {}
+    const displayName = (meta.full_name as string | undefined)
+      ?? (meta.name as string | undefined)
+      ?? user.email?.split('@')[0]
+      ?? null
+    return { valid: true, userId: user.id ?? null, displayName }
   } catch {
-    return { valid: false, userId: null }
+    return { valid: false, userId: null, displayName: null }
   }
 }
 

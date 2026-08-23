@@ -12,6 +12,7 @@ import { SwellAlert } from '@/components/home/SwellAlert'
 import { NotificationPanel } from '@/components/home/NotificationPanel'
 import { GeoFinderCard } from '@/components/home/GeoFinderCard'
 import { AIThinkingIndicator } from '@/components/home/AIThinkingIndicator'
+import { SurfChatPanel } from '@/components/home/SurfChatPanel'
 import { analyzeConditions, BeachCondition, formatWaveRange } from '@/lib/surfData'
 import { useSurfData } from '@/contexts/SurfDataContext'
 import { getFavorites } from '@/lib/favorites'
@@ -28,7 +29,7 @@ import { isOnboardingDone } from '@/lib/onboarding'
 import {
   Waves, TrendingUp, MapPin, Heart, Settings,
   Crown, Sparkles, Flame, Fish, GitCompareArrows,
-  Sun, CloudSun, Cloud, CloudRain, CloudLightning
+  Sun, CloudSun, Cloud, CloudRain, CloudLightning, MessageCircle
 } from 'lucide-react'
 import type { WeatherCondition } from '@/lib/weatherApi'
 
@@ -51,6 +52,7 @@ export default function Home() {
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(() => !isOnboardingDone())
+  const [chatOpen, setChatOpen] = useState(false)
   const [latestComments, setLatestComments] = useState<Record<string, LatestComment>>({})
   const aiReportFetchedRef = useRef(false)
   const premiumResolvedRef = useRef(false)
@@ -282,6 +284,12 @@ export default function Home() {
                     })()}
                   </p>
                   <p className="text-xs text-muted-foreground/50">Gerado por IA com base nos dados atuais. Confirme as condições antes de entrar no mar.</p>
+                  <button
+                    onClick={() => { track('surf_chat_opened'); setChatOpen(true) }}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary/15 border border-primary/40 hover:bg-primary/25 transition-colors text-sm font-bold text-primary"
+                  >
+                    <MessageCircle className="h-4 w-4" />Converse com o Surf AI
+                  </button>
                 </div>
               ) : !isPremium && topSpot ? (
                 // Prévia com blur para usuários free
@@ -422,6 +430,14 @@ export default function Home() {
           )}
         </div>
       </main>
+
+      <SurfChatPanel
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+        spots={[...allSpots].sort((a, b) => b.score - a.score)}
+        userLevel={(() => { try { return localStorage.getItem('pref_skill') ?? undefined } catch { return undefined } })()}
+        userName={userName}
+      />
     </div>
   )
 }

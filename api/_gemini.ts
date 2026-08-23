@@ -56,3 +56,47 @@ export async function callGemini(
     return { ok: false, status: 0, error: error instanceof Error ? error.message : 'Erro desconhecido' }
   }
 }
+
+export interface ChatTurn {
+  role: 'user' | 'model'
+  text: string
+}
+
+// Versão multi-turn de callGemini, usada pelo chat (api/surf-chat.ts) — os outros
+// chamadores (ai-report, content-agent, daily-report) continuam usando callGemini acima,
+// que é single-turn e não precisa de histórico de conversa.
+export async function callGeminiChat(
+  apiKey: string,
+  systemContext: string,
+  history: ChatTurn[],
+  maxOutputTokens: number,
+  timeoutMs = 20000
+): Promise<GeminiResult> {
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemContext }] },
+          contents: history.map(turn => ({ role: turn.role, parts: [{ text: turn.text }] })),
+          generationConfig: { maxOutputTokens, temperature: 0.9 },
+        }),
+        signal: AbortSignal.timeout(timeoutMs),
+      }
+    )
+
+    if (!res.ok) {
+      const error = await res.text()
+      return { ok: false, status: res.status, error }
+    }
+
+    const data = await res.json() as { candidates?: { content?: { parts?: { text?: string; thought?: boolean }[] } }[] }
+    const parts = data.candidates?.[0]?.content?.parts ?? []
+    const text = parts.find(p => !p.thought && p.text)?.text ?? parts[0]?.text ?? ''
+    return { ok: true, text }
+  } catch (error) {
+    return { ok: false, status: 0, error: error instanceof Error ? error.message : 'Erro desconhecido' }
+  }
+}

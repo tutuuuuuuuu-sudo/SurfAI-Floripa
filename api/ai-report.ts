@@ -13,28 +13,12 @@ const CORS = {
 
 import { verifyToken, isPremiumUser } from './_auth.js'
 import { callGemini } from './_gemini.js'
-import { createPersistentRateLimiter } from './_httpUtils.js'
+import { createPersistentRateLimiter, hasPromptInjection } from './_httpUtils.js'
 
 // Rate limit por userId: 10 chamadas por hora (relatório custa créditos de API do Gemini).
 // Persistido no Postgres — limite de custo real, precisa valer mesmo com várias
 // instâncias serverless rodando em paralelo.
 const checkAiRateLimit = createPersistentRateLimiter('ai-report', 10, 3_600_000)
-
-// Detecta tentativas de prompt injection nos campos de texto
-function hasPromptInjection(value: string): boolean {
-  const lower = value.toLowerCase()
-  return (
-    lower.includes('ignore') ||
-    lower.includes('esquece') ||
-    lower.includes('system:') ||
-    lower.includes('assistant:') ||
-    lower.includes('instrução') ||
-    lower.includes('instrucao') ||
-    lower.includes('prompt') ||
-    lower.includes('<|') ||
-    lower.includes('|>')
-  )
-}
 
 export default async function handler(req: Request) {
   if (req.method === 'OPTIONS') {
