@@ -45,6 +45,10 @@ async function callOpenAICompatibleChat(
 
 // Free tier: 14.400 requisições/dia, 30/min, 6.000 tokens/min — sem cartão de crédito
 // (console.groq.com). Sozinho já cobre com folga qualquer volume realista do chat.
+// Modelo: llama-3.3-70b-versatile foi descontinuado pelo Groq em 17/jun/2026 (achado
+// testando ao vivo, erro 404) — openai/gpt-oss-120b é a migração recomendada pelo próprio
+// Groq na nota de depreciação. Se voltar a dar 404 "model not found", checar
+// console.groq.com/docs/deprecations pelo substituto atual.
 export function callGroqChat(
   apiKey: string,
   systemContext: string,
@@ -53,15 +57,18 @@ export function callGroqChat(
   timeoutMs: number
 ): Promise<GeminiResult> {
   return callOpenAICompatibleChat(
-    'https://api.groq.com/openai/v1', apiKey, 'llama-3.3-70b-versatile',
+    'https://api.groq.com/openai/v1', apiKey, 'openai/gpt-oss-120b',
     systemContext, history, maxOutputTokens, timeoutMs
   )
 }
 
 // Free tier: 50 requisições/dia por padrão, ou 1.000/dia permanentemente após uma compra
 // única (não recorrente) de US$10 em créditos na conta (openrouter.ai). Modelo `:free`
-// específico pode mudar com o tempo — conferir a lista atual em openrouter.ai/models se
-// esse parar de funcionar (retirado da lista gratuita).
+// específico pode mudar com o tempo (lineup deles muda com frequência, achado testando ao
+// vivo — meta-llama/llama-3.3-70b-instruct:free saiu da lista gratuita) — conferir a lista
+// atual em openrouter.ai/models se esse também parar de funcionar. deepseek-chat (não é
+// modelo de "raciocínio" como o deepseek-r1) evita reintroduzir o mesmo problema de
+// latência que já tivemos com o "pensamento" do Gemini.
 export function callOpenRouterChat(
   apiKey: string,
   systemContext: string,
@@ -70,7 +77,7 @@ export function callOpenRouterChat(
   timeoutMs: number
 ): Promise<GeminiResult> {
   return callOpenAICompatibleChat(
-    'https://openrouter.ai/api/v1', apiKey, 'meta-llama/llama-3.3-70b-instruct:free',
+    'https://openrouter.ai/api/v1', apiKey, 'deepseek/deepseek-chat-v3-0324:free',
     systemContext, history, maxOutputTokens, timeoutMs
   )
 }
