@@ -26,7 +26,19 @@ import { createPersistentRateLimiter, hasPromptInjection } from './_httpUtils.js
 // "melhor opção quando disponível", nunca é uma dependência crítica.
 // Timeouts mais curtos que uma chamada solo (era 22s) porque agora até 3 tentativas em
 // sequência precisam caber no limite de ~25s da função edge da Vercel.
-async function callChatCascade(
+//
+// Trata `ok: true` com texto vazio/só espaço como falha do provedor, não como resposta
+// válida — achado testando a cascata (24/ago/2026): Gemini bloqueado por safety filter e
+// OpenAI-compatible com `choices: []` (filtro de conteúdo do lado do Groq/OpenRouter) voltam
+// HTTP 200 com corpo sem candidato/choice nenhum, e o parser de cada provedor já reduz isso
+// pra `text: ''` — sem essa checagem a cascata aceitava a "resposta" vazia como sucesso,
+// respondia nada pro usuário E salvava uma mensagem de assistente vazia em chat_messages
+// (que voltava como turno `model` vazio pro Gemini na conversa seguinte).
+function hasUsableText(r: GeminiResult): r is { ok: true; text: string } {
+  return r.ok && r.text.trim().length > 0
+}
+
+export async function callChatCascade(
   systemContext: string,
   turns: ChatTurn[],
   maxOutputTokens: number
@@ -34,22 +46,22 @@ async function callChatCascade(
   const geminiKey = process.env.GEMINI_API_KEY
   if (geminiKey) {
     const r = await callGeminiChat(geminiKey, systemContext, turns, maxOutputTokens, 9000)
-    if (r.ok) return { result: r, provider: 'gemini' }
-    console.error('[surf-chat] Gemini falhou, tentando Groq:', r.status, r.error)
+    if (hasUsableText(r)) return { result: r, provider: 'gemini' }
+    console.error('[surf-chat] Gemini falhou ou voltou vazio, tentando Groq:', r.ok ? 'texto vazio' : r.status, r.ok ? '' : r.error)
   }
 
   const groqKey = process.env.GROQ_API_KEY
   if (groqKey) {
     const r = await callGroqChat(groqKey, systemContext, turns, maxOutputTokens, 7000)
-    if (r.ok) return { result: r, provider: 'groq' }
-    console.error('[surf-chat] Groq falhou, tentando OpenRouter:', r.status, r.error)
+    if (hasUsableText(r)) return { result: r, provider: 'groq' }
+    console.error('[surf-chat] Groq falhou ou voltou vazio, tentando OpenRouter:', r.ok ? 'texto vazio' : r.status, r.ok ? '' : r.error)
   }
 
   const openRouterKey = process.env.OPENROUTER_API_KEY
   if (openRouterKey) {
     const r = await callOpenRouterChat(openRouterKey, systemContext, turns, maxOutputTokens, 7000)
-    if (r.ok) return { result: r, provider: 'openrouter' }
-    console.error('[surf-chat] OpenRouter falhou:', r.status, r.error)
+    if (hasUsableText(r)) return { result: r, provider: 'openrouter' }
+    console.error('[surf-chat] OpenRouter falhou ou voltou vazio:', r.ok ? 'texto vazio' : r.status, r.ok ? '' : r.error)
   }
 
   return { result: { ok: false, status: 0, error: 'Todos os provedores de IA falharam ou não estão configurados' }, provider: 'none' }
