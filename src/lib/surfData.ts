@@ -304,7 +304,7 @@ const BEACHES: BeachDefinition[] = [
     lat: -27.6293577, lng: -48.4490173, // Joaquina — bem na areia
     orientation: 90,
     subRegions: [
-      { id: 'pedra-do-sami', name: 'Pedra do Sami', lat: -27.6340, lng: -48.4520, swellDirections: ['E', 'SE', 'S', 'SSE'] },
+      { id: 'costao', name: 'Costão', lat: -27.6340, lng: -48.4520, swellDirections: ['E', 'SE', 'S', 'SSE'] },
       { id: 'meio', name: 'Meio da Praia', lat: -27.6294, lng: -48.4490, swellDirections: ['E', 'SE'] },
       { id: 'canto-direito', name: 'Canto Direito', lat: -27.6250, lng: -48.4460, swellDirections: ['NE', 'E', 'ENE'] },
     ], bestTimeWindow: 'Agora até 11h' },

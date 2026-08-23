@@ -7,7 +7,6 @@ import { SpotCard } from '@/components/surf/SpotCard'
 import { OnboardingModal } from '@/components/OnboardingModal'
 import { AppLogo } from '@/components/AppLogo'
 import { AdBanner, AdCard } from '@/components/home/AdBanner'
-import { SwellPeriodWidget } from '@/components/home/SwellPeriodWidget'
 import { ConditionBadge } from '@/components/home/ConditionBadge'
 import { SwellAlert } from '@/components/home/SwellAlert'
 import { NotificationPanel } from '@/components/home/NotificationPanel'
@@ -422,8 +421,6 @@ export default function Home() {
             </div>
           )}
         </div>
-
-        <SwellPeriodWidget />
       </main>
     </div>
   )
