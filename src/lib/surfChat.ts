@@ -48,6 +48,11 @@ export async function sendChatMessage(message: string, spots: BeachCondition[], 
 
     if (res.status === 429) return { ok: false, error: 'Limite diário de mensagens atingido. Volta amanhã!', rateLimited: true }
     if (res.status === 403) return { ok: false, error: 'Esse recurso é exclusivo Premium.' }
+
+    // O Gemini às vezes demora demais "pensando" (achado testando ao vivo) e o endpoint
+    // retorna 500 por timeout — uma retentativa resolve a maioria desses casos sem o
+    // usuário precisar mandar a mensagem de novo manualmente.
+    if (!res.ok) res = await postChatMessage(token, message, spots, userLevel)
     if (!res.ok) return { ok: false, error: 'Não consegui responder agora. Tenta de novo.' }
 
     const data = await res.json() as { reply?: string; error?: string }
