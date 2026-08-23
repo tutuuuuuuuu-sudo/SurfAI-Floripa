@@ -67,7 +67,7 @@ export function SurfChatPanel({ open, onClose, spots, userLevel, userName }: Pro
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col" style={{ animation: 'slideUpSheet 0.3s ease-out' }}>
+    <div className="fixed inset-0 z-[60] bg-background flex flex-col" style={{ animation: 'slideUpSheet 0.3s ease-out' }}>
       <header className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-card/80 backdrop-blur-md flex-shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <div className="h-8 w-8 rounded-lg bg-primary/15 flex items-center justify-center flex-shrink-0">
