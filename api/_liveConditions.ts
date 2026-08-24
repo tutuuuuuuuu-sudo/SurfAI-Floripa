@@ -57,14 +57,23 @@ async function fetchWindy(lat: string, lng: string): Promise<LiveConditions | nu
         body: JSON.stringify({ lat: parseFloat(lat), lon: parseFloat(lng), model: 'gfs', parameters: ['wind', 'temp'], levels: ['surface'], key }),
       }),
     ])
-    if (!waveRes.ok || !windRes.ok) return null
+    if (!waveRes.ok || !windRes.ok) {
+      console.error('[liveConditions] Windy HTTP não-ok:', waveRes.status, windRes.status)
+      return null
+    }
 
     const waveData = await waveRes.json() as Record<string, unknown>
     const windData = await windRes.json() as Record<string, unknown>
-    if ('error' in waveData || 'error' in windData) return null
+    if ('error' in waveData || 'error' in windData) {
+      console.error('[liveConditions] Windy retornou erro:', waveData.error ?? windData.error)
+      return null
+    }
 
     const ts = (waveData.ts ?? windData.ts) as number[] | undefined
-    if (!ts?.length) return null
+    if (!ts?.length) {
+      console.error('[liveConditions] Windy sem timestamps (ts) na resposta')
+      return null
+    }
 
     const wi = nearestTsIndex(ts)
     const windTs = (windData.ts ?? ts) as number[]
@@ -74,7 +83,10 @@ async function fetchWindy(lat: string, lng: string): Promise<LiveConditions | nu
     const sP = ((waveData['swell1_period-surface'] as number[])?.[wi] ?? 8)
     const sD = ((waveData['swell1_direction-surface'] as number[])?.[wi] ?? 90)
 
-    if (finalH < 0.05) return null
+    if (finalH < 0.05) {
+      console.error('[liveConditions] Windy waves_height muito baixo/ausente:', finalH)
+      return null
+    }
 
     const wu = ((windData['wind_u-surface'] as number[])?.[wIdx] ?? 0)
     const wv = ((windData['wind_v-surface'] as number[])?.[wIdx] ?? 0)
@@ -92,7 +104,8 @@ async function fetchWindy(lat: string, lng: string): Promise<LiveConditions | nu
       windDir: degToDir(windDirDeg),
       waterTemperature,
     }
-  } catch {
+  } catch (err) {
+    console.error('[liveConditions] Windy lançou exceção:', err)
     return null
   }
 }
@@ -184,9 +197,20 @@ async function fetchStormglass(lat: string, lng: string): Promise<LiveConditions
 }
 
 // Mesma cascata que já era usada só dentro de surf.ts: Windy (melhor qualidade) →
-// Open-Meteo (gratuito) → Stormglass (fallback).
+// Open-Meteo (gratuito) → Stormglass (fallback). Loga qual fonte respondeu de fato (mesmo
+// padrão de callChatCascade em surf-chat.ts) — sem isso não dava pra saber, só pelos
+// números, se a Windy estava mesmo respondendo ou se o app rodava só no fallback
+// silenciosamente (achado 24/ago/2026 investigando altura de onda divergente do Surfline).
 export async function fetchLiveConditions(lat: string, lng: string): Promise<LiveConditions | null> {
-  return (await fetchWindy(lat, lng))
-    ?? (await fetchOpenMeteo(lat, lng))
-    ?? (await fetchStormglass(lat, lng))
+  const windy = await fetchWindy(lat, lng)
+  if (windy) { console.log('[liveConditions] Fonte: windy'); return windy }
+
+  const openMeteo = await fetchOpenMeteo(lat, lng)
+  if (openMeteo) { console.log('[liveConditions] Fonte: open-meteo (windy falhou)'); return openMeteo }
+
+  const stormglass = await fetchStormglass(lat, lng)
+  if (stormglass) { console.log('[liveConditions] Fonte: stormglass (windy e open-meteo falharam)'); return stormglass }
+
+  console.error('[liveConditions] Todas as fontes falharam')
+  return null
 }
