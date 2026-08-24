@@ -8,9 +8,25 @@ export interface ChatMessage {
   created_at: string
 }
 
+export interface ChatUsage {
+  used: number
+  max: number
+  remaining: number
+}
+
 export type SendChatResult =
-  | { ok: true; reply: string }
-  | { ok: false; error: string; rateLimited?: boolean }
+  | { ok: true; reply: string; usage?: ChatUsage }
+  | { ok: false; error: string; rateLimited?: boolean; usage?: ChatUsage }
+
+async function parseUsage(res: Response): Promise<ChatUsage | undefined> {
+  try {
+    const data = await res.json() as { used?: number; max?: number; remaining?: number }
+    if (data.max == null) return undefined
+    return { used: data.used ?? data.max, max: data.max, remaining: data.remaining ?? 0 }
+  } catch {
+    return undefined
+  }
+}
 
 async function postChatMessage(token: string, message: string, spots: BeachCondition[], userLevel?: string) {
   return fetch('/api/surf-chat', {
@@ -51,20 +67,49 @@ export async function sendChatMessage(message: string, spots: BeachCondition[], 
       res = await postChatMessage(newToken, message, spots, userLevel)
     }
 
-    if (res.status === 429) return { ok: false, error: 'Limite diário de mensagens atingido. Volta amanhã!', rateLimited: true }
+    if (res.status === 429) {
+      const usage = await parseUsage(res)
+      return { ok: false, error: 'Limite diário de mensagens atingido. Volta amanhã!', rateLimited: true, usage }
+    }
     if (res.status === 403) return { ok: false, error: 'Esse recurso é exclusivo Premium.' }
 
     // O Gemini às vezes demora demais "pensando" (achado testando ao vivo) e o endpoint
     // retorna 500 por timeout — uma retentativa resolve a maioria desses casos sem o
     // usuário precisar mandar a mensagem de novo manualmente.
     if (!res.ok) res = await postChatMessage(token, message, spots, userLevel)
-    if (!res.ok) return { ok: false, error: 'Não consegui responder agora. Tenta de novo.' }
+    if (!res.ok) return { ok: false, error: 'Não consegui responder agora. Tenta de novo.', usage: await parseUsage(res) }
 
-    const data = await res.json() as { reply?: string; error?: string }
-    if (!data.reply) return { ok: false, error: data.error ?? 'Resposta vazia.' }
-    return { ok: true, reply: data.reply }
+    const data = await res.json() as { reply?: string; error?: string; used?: number; max?: number; remaining?: number }
+    const usage = data.max != null ? { used: data.used ?? 0, max: data.max, remaining: data.remaining ?? 0 } : undefined
+    if (!data.reply) return { ok: false, error: data.error ?? 'Resposta vazia.', usage }
+    return { ok: true, reply: data.reply, usage }
   } catch {
     return { ok: false, error: 'Erro de conexão. Verifique sua internet e tente de novo.' }
+  }
+}
+
+// Lê quanto da cota diária já foi consumido SEM gastar mensagem — usado só ao abrir o
+// chat, pra mostrar a barra de uso antes do primeiro envio da sessão (api/chat-usage.ts).
+export async function getChatUsage(): Promise<ChatUsage | null> {
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token
+    if (!token) return null
+
+    let res = await fetch('/api/chat-usage', { headers: { Authorization: `Bearer ${token}` } })
+
+    if (res.status === 401) {
+      const { data: refreshed } = await supabase.auth.refreshSession()
+      const newToken = refreshed.session?.access_token
+      if (!newToken) return null
+      res = await fetch('/api/chat-usage', { headers: { Authorization: `Bearer ${newToken}` } })
+    }
+
+    if (!res.ok) return null
+    const usage = await parseUsage(res)
+    return usage ?? null
+  } catch {
+    return null
   }
 }
 

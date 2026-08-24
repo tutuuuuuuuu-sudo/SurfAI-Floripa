@@ -18,7 +18,7 @@ function json(data: unknown, status = 200) {
 import { verifyToken, isPremiumUser } from './_auth.js'
 import { callGeminiChat, type ChatTurn, type GeminiResult } from './_gemini.js'
 import { callGroqChat, callOpenRouterChat } from './_llmProviders.js'
-import { createPersistentRateLimiter, hasPromptInjection } from './_httpUtils.js'
+import { createPersistentRateLimiterWithCount, hasPromptInjection } from './_httpUtils.js'
 
 // Cascata de provedores: tenta o Gemini primeiro (melhor qualidade), cai pro Groq se
 // falhar/esgotar cota, cai pro OpenRouter se o Groq também falhar. Groq sozinho (free tier,
@@ -67,10 +67,17 @@ export async function callChatCascade(
   return { result: { ok: false, status: 0, error: 'Todos os provedores de IA falharam ou não estão configurados' }, provider: 'none' }
 }
 
-// 40 mensagens por usuário por dia (janela de 24h, não por hora) — chat é uso contínuo,
-// ao contrário do relatório (1x/dia). Mesmo raciocínio de custo do checkAiRateLimit de
-// ai-report.ts. Persistido no Postgres — precisa valer com várias instâncias em paralelo.
-const checkChatRateLimit = createPersistentRateLimiter('surf-chat', 40, 24 * 60 * 60 * 1000)
+// 20 mensagens por usuário por dia (janela de 24h, não por hora) — chat é uso contínuo,
+// ao contrário do relatório (1x/dia). Baixado de 40 pra 20 em 24/ago/2026: com a base de
+// assinantes crescendo, 40/usuário deixava de fazer sentido frente à cota real e
+// COMPARTILHADA dos provedores de IA (Groq, o principal, dá só 14.400 req/dia pro app
+// inteiro — 1000 assinantes ativos batendo 40 cada excederia isso de longe, ver cálculo
+// que motivou essa mudança). Exportado pro endpoint api/chat-usage.ts usar o mesmo teto e
+// janela na barra de consumo do frontend, sem duplicar os números.
+export const CHAT_RATE_LIMIT_PREFIX = 'surf-chat'
+export const CHAT_DAILY_MAX = 20
+export const CHAT_WINDOW_MS = 24 * 60 * 60 * 1000
+const checkChatRateLimit = createPersistentRateLimiterWithCount(CHAT_RATE_LIMIT_PREFIX, CHAT_DAILY_MAX, CHAT_WINDOW_MS)
 
 interface SpotSummary { name: string; score: number; waveHeight: number; windSpeed: number; windDirection: string; swellPeriod: number }
 interface ChatBody {
@@ -151,8 +158,9 @@ export default async function handler(req: Request) {
   const premium = await isPremiumUser(userId)
   if (!premium) return json({ error: 'Premium required', code: 'NOT_PREMIUM' }, 403)
 
-  if (!(await checkChatRateLimit(userId))) {
-    return json({ error: 'Limite diário de mensagens atingido. Volta amanhã!' }, 429)
+  const usage = await checkChatRateLimit(userId)
+  if (!usage.allowed) {
+    return json({ error: 'Limite diário de mensagens atingido. Volta amanhã!', used: usage.used, max: usage.max, remaining: 0 }, 429)
   }
 
   const supabaseUrl = process.env.SUPABASE_URL
@@ -228,11 +236,14 @@ Regras:
   const { result, provider } = await callChatCascade(systemContext, turns, 2000)
   if (!result.ok) {
     console.error('[surf-chat] Todos os provedores falharam:', result.status, result.error)
-    return json({ error: 'Falha ao responder. Tenta de novo.' }, 500)
+    // A tentativa já consumiu uma mensagem da cota (incrementada lá em cima, antes de saber
+    // se ia dar certo) — devolve o saldo atualizado mesmo na falha, pra barra do frontend
+    // não ficar desatualizada.
+    return json({ error: 'Falha ao responder. Tenta de novo.', used: usage.used, max: usage.max, remaining: usage.remaining }, 500)
   }
   console.log('[surf-chat] Respondido via:', provider)
 
   await saveMessages(supabaseUrl, serviceKey, userId, message, result.text)
 
-  return json({ reply: result.text })
+  return json({ reply: result.text, used: usage.used, max: usage.max, remaining: usage.remaining })
 }

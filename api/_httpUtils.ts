@@ -80,3 +80,78 @@ export function createPersistentRateLimiter(prefix: string, maxPerWindow: number
     }
   }
 }
+
+export interface RateLimitUsage {
+  allowed: boolean
+  used: number
+  max: number
+  remaining: number
+}
+
+// Variante de createPersistentRateLimiter que também informa quanto já foi consumido —
+// usada onde o frontend precisa mostrar uma barra de uso (ex: "você ainda tem 5 mensagens
+// hoje" no chat). Mesmo contador/janela do Postgres, só troca a função RPC chamada
+// (check_rate_limit_count, que retorna o count em vez de um boolean pronto — quem decide
+// `allowed` é o TS, comparando com maxPerWindow).
+export function createPersistentRateLimiterWithCount(prefix: string, maxPerWindow: number, windowMs = 60_000) {
+  const windowSeconds = Math.max(1, Math.round(windowMs / 1000))
+  return async function checkRateLimit(key: string): Promise<RateLimitUsage> {
+    const supabaseUrl = process.env.SUPABASE_URL
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
+    const failOpen = { allowed: true, used: 0, max: maxPerWindow, remaining: maxPerWindow }
+    if (!supabaseUrl || !serviceKey) {
+      console.error(`[rateLimit:${prefix}] SUPABASE_URL/SERVICE_ROLE_KEY ausente — limite não aplicado`)
+      return failOpen
+    }
+    try {
+      const res = await fetch(`${supabaseUrl}/rest/v1/rpc/check_rate_limit_count`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: serviceKey,
+          Authorization: `Bearer ${serviceKey}`,
+        },
+        body: JSON.stringify({ p_key: `${prefix}:${key}`, p_window_seconds: windowSeconds }),
+        signal: AbortSignal.timeout(5000),
+      })
+      if (!res.ok) {
+        console.error(`[rateLimit:${prefix}] HTTP ${res.status} ao checar limite — deixando passar`)
+        return failOpen
+      }
+      const used = (await res.json()) as number
+      return { allowed: used <= maxPerWindow, used, max: maxPerWindow, remaining: Math.max(0, maxPerWindow - used) }
+    } catch (err) {
+      console.error(`[rateLimit:${prefix}] Erro de rede ao checar limite — deixando passar:`, err)
+      return failOpen
+    }
+  }
+}
+
+// Lê o consumo atual SEM incrementar (peek_rate_limit_count) — usada só na abertura do
+// chat, pra mostrar a barra de uso antes do usuário mandar qualquer mensagem.
+export function createPersistentRateLimitPeeker(prefix: string, maxPerWindow: number, windowMs = 60_000) {
+  const windowSeconds = Math.max(1, Math.round(windowMs / 1000))
+  return async function peekRateLimit(key: string): Promise<{ used: number; max: number; remaining: number }> {
+    const supabaseUrl = process.env.SUPABASE_URL
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
+    const fallback = { used: 0, max: maxPerWindow, remaining: maxPerWindow }
+    if (!supabaseUrl || !serviceKey) return fallback
+    try {
+      const res = await fetch(`${supabaseUrl}/rest/v1/rpc/peek_rate_limit_count`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: serviceKey,
+          Authorization: `Bearer ${serviceKey}`,
+        },
+        body: JSON.stringify({ p_key: `${prefix}:${key}`, p_window_seconds: windowSeconds }),
+        signal: AbortSignal.timeout(5000),
+      })
+      if (!res.ok) return fallback
+      const used = (await res.json()) as number
+      return { used, max: maxPerWindow, remaining: Math.max(0, maxPerWindow - used) }
+    } catch {
+      return fallback
+    }
+  }
+}
