@@ -22,6 +22,31 @@ function nearestTsIndex(ts: number[]): number {
   return nearestIndexForMs(Date.now(), ts)
 }
 
+// Média circular de graus (0-360) — média aritmética simples quebra perto do "corte" 350°/10°
+// (daria 180°, errado). Usada pra suavizar direção de swell/vento sobre uma janela.
+function circularMeanDeg(degs: number[]): number {
+  let sumSin = 0, sumCos = 0
+  degs.forEach(d => {
+    const rad = (d * Math.PI) / 180
+    sumSin += Math.sin(rad)
+    sumCos += Math.cos(rad)
+  })
+  return (Math.atan2(sumSin, sumCos) * 180 / Math.PI + 360) % 360
+}
+
+function mean(nums: number[]): number {
+  return nums.reduce((a, b) => a + b, 0) / nums.length
+}
+
+// Janela de índices vizinhos (raio 1 = até 3 instantes) pra suavização, sem sair dos limites.
+function windowIndices(idx: number, len: number, radius: number): number[] {
+  const start = Math.max(0, idx - radius)
+  const end = Math.min(len - 1, idx + radius)
+  const out: number[] = []
+  for (let i = start; i <= end; i++) out.push(i)
+  return out
+}
+
 export interface LiveConditions {
   waveHeight: number
   swellPeriod: number
@@ -102,19 +127,36 @@ async function fetchWindyRaw(lat: string, lng: string): Promise<WindyRaw | null>
   }
 }
 
+// Suaviza sobre uma pequena janela de instantes vizinhos ao redor de `wi`/`wIdx` (raio 1 —
+// até 3 pontos), em vez de usar só o instante mais próximo. Achado 24/ago/2026, reportado
+// pelo usuário: a mesma praia (Campeche) mostrou 1.5m numa consulta e 0.7m minutos depois,
+// sem nenhuma mudança de código — a Windy retorna leituras de altura/direção de swell que
+// oscilam bastante em poucos minutos pro litoral de Floripa, e pegar um único instante
+// amplifica esse ruído em vez de suavizar. Direção usa média circular (evita o bug de
+// "350° e 10° têm média 180°").
 function extractWindyPoint(raw: WindyRaw, wi: number, wIdx: number): LiveConditions | null {
-  const finalH = ((raw.waveData['waves_height-surface'] as number[])?.[wi] ?? 0)
-  const sP = ((raw.waveData['swell1_period-surface'] as number[])?.[wi] ?? 8)
-  const sD = ((raw.waveData['swell1_direction-surface'] as number[])?.[wi] ?? 90)
-  if (finalH < 0.05) return null
+  const heights = raw.waveData['waves_height-surface'] as number[] | undefined
+  const periods = raw.waveData['swell1_period-surface'] as number[] | undefined
+  const dirs = raw.waveData['swell1_direction-surface'] as number[] | undefined
+  if (!heights?.length) return null
 
-  const wu = ((raw.windData['wind_u-surface'] as number[])?.[wIdx] ?? 0)
-  const wv = ((raw.windData['wind_v-surface'] as number[])?.[wIdx] ?? 0)
+  const hIdxs = windowIndices(wi, heights.length, 1)
+  const finalH = mean(hIdxs.map(i => heights[i] ?? heights[wi] ?? 0))
+  if (finalH < 0.05) return null
+  const sP = mean(hIdxs.map(i => periods?.[i] ?? periods?.[wi] ?? 8))
+  const sD = circularMeanDeg(hIdxs.map(i => dirs?.[i] ?? dirs?.[wi] ?? 90))
+
+  const wus = raw.windData['wind_u-surface'] as number[] | undefined
+  const wvs = raw.windData['wind_v-surface'] as number[] | undefined
+  const wIdxs = windowIndices(wIdx, Math.max(wus?.length ?? 1, 1), 1)
+  const wu = mean(wIdxs.map(i => wus?.[i] ?? 0))
+  const wv = mean(wIdxs.map(i => wvs?.[i] ?? 0))
   const windSpeedKmh = Math.round(Math.sqrt(wu * wu + wv * wv) * 3.6)
   const windDirDeg = (Math.atan2(-wu, -wv) * 180 / Math.PI + 360) % 360
 
-  const tempK = (raw.windData['temp-surface'] as number[])?.[wIdx]
-  const waterTemperature = tempK != null ? Math.round(tempK - 273.15) : null
+  const temps = raw.windData['temp-surface'] as number[] | undefined
+  const tempSamples = wIdxs.map(i => temps?.[i]).filter((v): v is number => v != null)
+  const waterTemperature = tempSamples.length ? Math.round(mean(tempSamples) - 273.15) : null
 
   return {
     waveHeight: Number(finalH.toFixed(1)),
