@@ -177,7 +177,10 @@ export default async function handler(req: Request) {
   const { skill, favoriteNames, history } = await fetchUserContext(supabaseUrl, serviceKey, userId)
   const userLevel = sanitizeName(body.userLevel ?? skill ?? '')
 
-  const spotsContext = (body.spots ?? []).slice(0, 6).map(s => {
+  // Teto de 20, não 6 — achado testando ao vivo (23/ago/2026): cortar em 6 fazia o chat negar
+  // ter dado de praias reais (ex: Morro das Pedras) só porque não estavam entre as 6 com
+  // nota mais alta no momento. As 14 praias monitoradas hoje cabem folgado num teto de 20.
+  const spotsContext = (body.spots ?? []).slice(0, 20).map(s => {
     const name = sanitizeName(s.name)
     const score = sanitizeNum(s.score, 0, 10)
     const wave = sanitizeNum(s.waveHeight, 0, 20)

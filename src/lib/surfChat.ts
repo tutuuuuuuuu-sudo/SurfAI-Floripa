@@ -22,7 +22,12 @@ async function postChatMessage(token: string, message: string, spots: BeachCondi
     body: JSON.stringify({
       message,
       userLevel,
-      spots: spots.slice(0, 6).map(s => ({
+      // Manda todas as praias monitoradas (14 hoje), não só as top 6 por nota — achado
+      // testando ao vivo (23/ago/2026): cortar em 6 fazia o chat negar ter dado de praias
+      // reais só porque não estavam entre as mais bem avaliadas no momento (ex: Morro das
+      // Pedras sumia sempre que 6 outras praias tinham nota maior). Teto de 20 é só defesa
+      // contra a lista de praias crescer sem essa constante acompanhar.
+      spots: spots.slice(0, 20).map(s => ({
         name: s.name, score: s.score, waveHeight: s.waveHeight,
         windSpeed: s.windSpeed, windDirection: s.windDirection, swellPeriod: s.swellPeriod,
       })),
