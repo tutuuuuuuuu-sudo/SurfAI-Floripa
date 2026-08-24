@@ -25,7 +25,17 @@ const GOOD_ENOUGH_BARS = getRatingInfo(5.5).bars
 
 // Expande a partir da melhor hora (peakHour) enquanto as horas vizinhas e contíguas
 // se mantiverem no mesmo patamar "BOM" ou melhor — vira um intervalo, não só um instante.
-export function computeGoldenWindow(slots: WindowSlot[], peakHour: number): GoldenWindow | null {
+// `sunriseHour`/`sunsetHour` (opcionais) travam a expansão dentro da luz do dia — sem isso,
+// uma sequência "BOM" que atravessa o pôr do sol (ex: pico às 17h, ainda bom até 19h no
+// modelo) virava janela recomendada incluindo horário escuro (achado 24/ago/2026: a
+// seleção do pico em si já ficou restrita à luz do dia em hourly.ts, mas a EXPANSÃO da
+// janela em volta dele também precisa respeitar o limite, não só o ponto de partida).
+export function computeGoldenWindow(
+  slots: WindowSlot[],
+  peakHour: number,
+  sunriseHour: number | null = null,
+  sunsetHour: number | null = null
+): GoldenWindow | null {
   const idx = slots.findIndex(s => s.hour === peakHour)
   if (idx === -1) return null
 
@@ -38,14 +48,16 @@ export function computeGoldenWindow(slots: WindowSlot[], peakHour: number): Gold
   while (
     start > 0 &&
     slots[start - 1].hour === slots[start].hour - 1 &&
-    getRatingInfo(slots[start - 1].score).bars >= GOOD_ENOUGH_BARS
+    getRatingInfo(slots[start - 1].score).bars >= GOOD_ENOUGH_BARS &&
+    (sunriseHour === null || slots[start - 1].hour >= sunriseHour)
   ) start--
 
   let end = idx
   while (
     end < slots.length - 1 &&
     slots[end + 1].hour === slots[end].hour + 1 &&
-    getRatingInfo(slots[end + 1].score).bars >= GOOD_ENOUGH_BARS
+    getRatingInfo(slots[end + 1].score).bars >= GOOD_ENOUGH_BARS &&
+    (sunsetHour === null || slots[end + 1].hour <= sunsetHour)
   ) end++
 
   return { startHour: slots[start].hour, endHour: slots[end].hour, startIdx: start, endIdx: end }

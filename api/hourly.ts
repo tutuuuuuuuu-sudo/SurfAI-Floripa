@@ -83,17 +83,26 @@ export default async function handler(req: Request) {
 
     if (slots.length === 0) return json({ error: 'Sem dados horários' }, 503)
 
+    const { sunriseHour, sunsetHour } = hourly
+
     // Marca a melhor janela (score mais alto)
     const peakScore = Math.max(...slots.map(s => s.score))
     const peakIdx = slots.findIndex(s => s.score === peakScore)
     if (peakIdx >= 0) slots[peakIdx].isPeak = true
 
-    // Melhor janela futura (a partir de agora)
+    // Melhor janela futura (a partir de agora), restrita à luz do dia — sem isso o cálculo
+    // podia recomendar "melhor janela: 21h às 23h" (achado 24/ago/2026, reportado pelo
+    // usuário). Se não sobrar nenhuma hora de luz do dia à frente (ex: já é noite), cai de
+    // volta pra todas as horas futuras em vez de quebrar sem sugestão nenhuma.
     const futureSlots = slots.filter(s => s.hour >= nowHour)
-    const bestFuture = futureSlots.reduce((best, s) => s.score > best.score ? s : best, futureSlots[0] ?? slots[0])
+    const daylightFutureSlots = futureSlots.filter(s =>
+      (sunriseHour === null || s.hour >= sunriseHour) && (sunsetHour === null || s.hour <= sunsetHour)
+    )
+    const candidateSlots = daylightFutureSlots.length > 0 ? daylightFutureSlots : futureSlots
+    const bestFuture = candidateSlots.reduce((best, s) => s.score > best.score ? s : best, candidateSlots[0] ?? slots[0])
 
     // Janela de Ouro: intervalo (não só a hora de pico) + frase explicando o fim dela
-    const goldenWindow = computeGoldenWindow(futureSlots, bestFuture.hour)
+    const goldenWindow = computeGoldenWindow(futureSlots, bestFuture.hour, sunriseHour, sunsetHour)
     const windowExplanation = goldenWindow ? explainWindowEnd(futureSlots, goldenWindow.endIdx) : null
 
     return json({
