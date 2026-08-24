@@ -65,11 +65,63 @@ interface WindyRaw {
   windData: Record<string, unknown>
 }
 
+// Cache curto (Supabase, compartilhado entre TODAS as instâncias serverless — cache em
+// memória local não serve, cada invocação edge pode cair numa instância diferente) pra
+// chamada crua à Windy. Achado 24/ago/2026, reportado pelo usuário: a MESMA consulta
+// (mesma praia, poucos segundos de diferença) voltava com altura/direção diferentes da
+// Windy — 1.2m, depois 1.4m, depois 1.6m em ~20s. Não é ruído de horário do modelo (isso já
+// foi suavizado em extractWindyPoint), é a própria API da Windy respondendo de forma
+// inconsistente pra requisições quase simultâneas (provável balanceamento entre servidores
+// deles com cache/estado diferente). Guardar a resposta por alguns minutos garante que
+// todo mundo (app inteiro, todas as instâncias) vê o MESMO número nessa janela, em vez de
+// arriscar uma nova chamada à Windy a cada request.
+const WINDY_CACHE_TTL_MS = 10 * 60 * 1000
+
+async function getCachedWindyRaw(cacheKey: string): Promise<WindyRaw | null> {
+  const supabaseUrl = process.env.SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
+  if (!supabaseUrl || !serviceKey) return null
+  try {
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/live_conditions_cache?cache_key=eq.${encodeURIComponent(cacheKey)}&select=payload,fetched_at`,
+      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
+    )
+    if (!res.ok) return null
+    const rows = await res.json() as { payload: WindyRaw; fetched_at: string }[]
+    const row = rows[0]
+    if (!row) return null
+    if (Date.now() - new Date(row.fetched_at).getTime() > WINDY_CACHE_TTL_MS) return null
+    return row.payload
+  } catch {
+    return null
+  }
+}
+
+async function setCachedWindyRaw(cacheKey: string, raw: WindyRaw): Promise<void> {
+  const supabaseUrl = process.env.SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
+  if (!supabaseUrl || !serviceKey) return
+  try {
+    await fetch(`${supabaseUrl}/rest/v1/live_conditions_cache`, {
+      method: 'POST',
+      headers: {
+        apikey: serviceKey, Authorization: `Bearer ${serviceKey}`,
+        'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates',
+      },
+      body: JSON.stringify({ cache_key: cacheKey, payload: raw, fetched_at: new Date().toISOString() }),
+    })
+  } catch { /* cache é best-effort — nunca deve derrubar o fluxo principal */ }
+}
+
 // Chamada crua à Windy, compartilhada entre fetchWindy (só "agora") e
 // fetchWindyHourlySeries (a previsão hora a hora inteira) — a API já devolve a série
 // completa num único POST, então extrair só o índice mais próximo (como fetchWindy fazia
 // sozinho antes) descartava o resto sem necessidade.
 async function fetchWindyRaw(lat: string, lng: string): Promise<WindyRaw | null> {
+  const cacheKey = `windy:${lat}:${lng}`
+  const cached = await getCachedWindyRaw(cacheKey)
+  if (cached) return cached
+
   const key = process.env.WINDY_API_KEY
   if (!key) return null
 
@@ -120,7 +172,9 @@ async function fetchWindyRaw(lat: string, lng: string): Promise<WindyRaw | null>
     }
     const windTs = (windData.ts ?? ts) as number[]
 
-    return { ts, windTs, waveData, windData }
+    const raw: WindyRaw = { ts, windTs, waveData, windData }
+    await setCachedWindyRaw(cacheKey, raw)
+    return raw
   } catch (err) {
     console.error('[liveConditions] Windy lançou exceção:', err)
     return null
