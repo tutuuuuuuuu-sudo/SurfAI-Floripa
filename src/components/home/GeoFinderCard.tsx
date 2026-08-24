@@ -61,7 +61,7 @@ export function GeoFinderCard({ spots, isPremium }: Props) {
     return (
       <PremiumUpsellBanner
         title="Bora Surfar é Premium"
-        subtitle="O Surf AI encontra a praia com as melhores condições mais perto de você"
+        subtitle="A gente compara as praias mais perto de você e mostra pra onde vale ir agora"
       />
     )
   }
@@ -74,7 +74,7 @@ export function GeoFinderCard({ spots, isPremium }: Props) {
           Bora Surfar?
         </CardTitle>
         <CardDescription className="text-xs">
-          O Surf AI encontra a praia com as melhores condições mais perto de você
+          A gente compara as praias mais perto de você e mostra pra onde vale ir agora
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -201,8 +201,16 @@ export function GeoFinderCard({ spots, isPremium }: Props) {
                 </button>
               </div>
               <p className="text-xs text-muted-foreground px-0.5">
-                {result.nearest.name} é a praia mais perto, mas o mar tá {nearInfo.label.toLowerCase()} lá agora.
-                Vale rodar {result.extraDistanceKm.toFixed(1)}km a mais até {result.recommended.name}.
+                {result.extraDistanceKm < 1.5
+                  // Desvio pequeno (achado 24/ago/2026: "vale rodar 0.4km a mais" soava sem
+                  // sentido — 0.4km não é um desvio de verdade, é praticamente a mesma
+                  // distância). Nesse caso o motivo de ir pra lá é só a condição, não a rota.
+                  ? <>{result.nearest.name} e {result.recommended.name} ficam praticamente na
+                      mesma distância, mas {result.recommended.name} está {recInfo.label.toLowerCase()} —
+                      bem melhor que {result.nearest.name} ({nearInfo.label.toLowerCase()}). Vale ir direto pra lá.</>
+                  : <>{result.nearest.name} é a praia mais perto, mas o mar tá {nearInfo.label.toLowerCase()} lá agora.
+                      Vale rodar mais {result.extraDistanceKm.toFixed(1)}km até {result.recommended.name}.</>
+                }
               </p>
             </div>
           )
