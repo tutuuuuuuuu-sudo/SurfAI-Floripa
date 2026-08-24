@@ -9,14 +9,17 @@ function degToDir(deg: number): string {
   return DIRS[Math.round(((deg % 360) + 360) % 360 / 22.5) % 16]
 }
 
-function nearestTsIndex(ts: number[]): number {
-  const nowMs = Date.now()
+function nearestIndexForMs(targetMs: number, ts: number[]): number {
   let best = 0, bestDiff = Infinity
   ts.forEach((t, i) => {
-    const diff = Math.abs((t > 1e11 ? t : t * 1000) - nowMs)
+    const diff = Math.abs((t > 1e11 ? t : t * 1000) - targetMs)
     if (diff < bestDiff) { bestDiff = diff; best = i }
   })
   return best
+}
+
+function nearestTsIndex(ts: number[]): number {
+  return nearestIndexForMs(Date.now(), ts)
 }
 
 export interface LiveConditions {
@@ -30,7 +33,18 @@ export interface LiveConditions {
   sunset?: string
 }
 
-async function fetchWindy(lat: string, lng: string): Promise<LiveConditions | null> {
+interface WindyRaw {
+  ts: number[]
+  windTs: number[]
+  waveData: Record<string, unknown>
+  windData: Record<string, unknown>
+}
+
+// Chamada crua à Windy, compartilhada entre fetchWindy (só "agora") e
+// fetchWindyHourlySeries (a previsão hora a hora inteira) — a API já devolve a série
+// completa num único POST, então extrair só o índice mais próximo (como fetchWindy fazia
+// sozinho antes) descartava o resto sem necessidade.
+async function fetchWindyRaw(lat: string, lng: string): Promise<WindyRaw | null> {
   const key = process.env.WINDY_API_KEY
   if (!key) return null
 
@@ -79,40 +93,86 @@ async function fetchWindy(lat: string, lng: string): Promise<LiveConditions | nu
       console.error('[liveConditions] Windy sem timestamps (ts) na resposta')
       return null
     }
-
-    const wi = nearestTsIndex(ts)
     const windTs = (windData.ts ?? ts) as number[]
-    const wIdx = nearestTsIndex(windTs)
 
-    const finalH = ((waveData['waves_height-surface'] as number[])?.[wi] ?? 0)
-    const sP = ((waveData['swell1_period-surface'] as number[])?.[wi] ?? 8)
-    const sD = ((waveData['swell1_direction-surface'] as number[])?.[wi] ?? 90)
-
-    if (finalH < 0.05) {
-      console.error('[liveConditions] Windy waves_height muito baixo/ausente:', finalH)
-      return null
-    }
-
-    const wu = ((windData['wind_u-surface'] as number[])?.[wIdx] ?? 0)
-    const wv = ((windData['wind_v-surface'] as number[])?.[wIdx] ?? 0)
-    const windSpeedKmh = Math.round(Math.sqrt(wu * wu + wv * wv) * 3.6)
-    const windDirDeg = (Math.atan2(-wu, -wv) * 180 / Math.PI + 360) % 360
-
-    const tempK = (windData['temp-surface'] as number[])?.[wIdx]
-    const waterTemperature = tempK != null ? Math.round(tempK - 273.15) : null
-
-    return {
-      waveHeight: Number(finalH.toFixed(1)),
-      swellPeriod: Math.round(sP),
-      swellDirection: degToDir(sD),
-      windSpeed: windSpeedKmh,
-      windDir: degToDir(windDirDeg),
-      waterTemperature,
-    }
+    return { ts, windTs, waveData, windData }
   } catch (err) {
     console.error('[liveConditions] Windy lançou exceção:', err)
     return null
   }
+}
+
+function extractWindyPoint(raw: WindyRaw, wi: number, wIdx: number): LiveConditions | null {
+  const finalH = ((raw.waveData['waves_height-surface'] as number[])?.[wi] ?? 0)
+  const sP = ((raw.waveData['swell1_period-surface'] as number[])?.[wi] ?? 8)
+  const sD = ((raw.waveData['swell1_direction-surface'] as number[])?.[wi] ?? 90)
+  if (finalH < 0.05) return null
+
+  const wu = ((raw.windData['wind_u-surface'] as number[])?.[wIdx] ?? 0)
+  const wv = ((raw.windData['wind_v-surface'] as number[])?.[wIdx] ?? 0)
+  const windSpeedKmh = Math.round(Math.sqrt(wu * wu + wv * wv) * 3.6)
+  const windDirDeg = (Math.atan2(-wu, -wv) * 180 / Math.PI + 360) % 360
+
+  const tempK = (raw.windData['temp-surface'] as number[])?.[wIdx]
+  const waterTemperature = tempK != null ? Math.round(tempK - 273.15) : null
+
+  return {
+    waveHeight: Number(finalH.toFixed(1)),
+    swellPeriod: Math.round(sP),
+    swellDirection: degToDir(sD),
+    windSpeed: windSpeedKmh,
+    windDir: degToDir(windDirDeg),
+    waterTemperature,
+  }
+}
+
+async function fetchWindy(lat: string, lng: string): Promise<LiveConditions | null> {
+  const raw = await fetchWindyRaw(lat, lng)
+  if (!raw) return null
+  const point = extractWindyPoint(raw, nearestTsIndex(raw.ts), nearestTsIndex(raw.windTs))
+  if (!point) {
+    console.error('[liveConditions] Windy waves_height muito baixo/ausente')
+    return null
+  }
+  return point
+}
+
+export interface WindyHourPoint extends LiveConditions {
+  date: string  // "AAAA-MM-DD" no fuso de Floripa
+  hour: number  // 0-23 no fuso de Floripa
+}
+
+// Série hora a hora completa da Windy (não só "agora") — usada por hourly.ts pra manter a
+// Melhor Janela do Dia na MESMA fonte em todas as horas, não só na hora atual. Sem isso,
+// "agora" vinha da Windy (fetchWindy acima) enquanto as próximas horas vinham só do
+// Open-Meteo (_hourlyForecast.ts) — dois modelos diferentes podem divergir bastante na
+// direção do swell num mesmo ponto/instante, e como a altura exposta depende fortemente
+// dessa direção (applyDirectionalExposure), a troca de fonte de uma hora pra outra podia
+// criar uma queda impossível fisicamente (achado 24/ago/2026, reportado pelo usuário: 1.4m
+// "agora" caindo pra 0.4m já na hora seguinte, no Morro das Pedras — Windy tinha o swell
+// vindo de E, Open-Meteo tinha o MESMO swell vindo de SSE pro mesmo ponto/instante).
+export async function fetchWindyHourlySeries(lat: string, lng: string): Promise<WindyHourPoint[] | null> {
+  const raw = await fetchWindyRaw(lat, lng)
+  if (!raw) return null
+
+  const fmt = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hour12: false,
+  })
+
+  const points: WindyHourPoint[] = []
+  raw.ts.forEach((t, i) => {
+    const ms = t > 1e11 ? t : t * 1000
+    const parts = fmt.formatToParts(new Date(ms))
+    const get = (type: string) => parts.find(p => p.type === type)?.value ?? ''
+    const date = `${get('year')}-${get('month')}-${get('day')}`
+    const hour = parseInt(get('hour'), 10) % 24
+
+    const wIdx = nearestIndexForMs(ms, raw.windTs)
+    const point = extractWindyPoint(raw, i, wIdx)
+    if (point) points.push({ ...point, date, hour })
+  })
+
+  return points.length > 0 ? points : null
 }
 
 function formatTimeBrasilia(isoString: string): string {
