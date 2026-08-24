@@ -20,8 +20,6 @@ import { verifyPremiumToken } from './_auth.js'
 import { isValidCoord, createRateLimiter } from './_httpUtils.js'
 import { todaySP, nowHourSP } from '../src/lib/timeSP.js'
 import { computeGoldenWindow, explainWindowEnd } from './_goldenWindow.js'
-import { fetchLiveConditions } from './_liveConditions.js'
-import { calculateSurfScore, applyDirectionalExposure } from './_scoreEngine.js'
 
 // Rate limit por IP: 60 req/min
 const checkHourlyRateLimit = createRateLimiter(60)
@@ -58,10 +56,7 @@ export default async function handler(req: Request) {
   if (!isPremium) return json({ error: 'Premium required' }, 403)
 
   try {
-    const [hourly, live] = await Promise.all([
-      fetchHourlyForecast(lat!, lng!, 2),
-      fetchLiveConditions(lat!, lng!),
-    ])
+    const hourly = await fetchHourlyForecast(lat!, lng!, 2)
     if (!hourly) return json({ error: 'Dados indisponíveis' }, 503)
 
     // _hourlyForecast.ts busca os horários com timezone=America/Sao_Paulo explícito;
@@ -87,24 +82,6 @@ export default async function handler(req: Request) {
     })
 
     if (slots.length === 0) return json({ error: 'Sem dados horários' }, 503)
-
-    // Sobrescreve o slot "agora" com a MESMA fonte usada pela nota principal (surf.ts,
-    // via fetchLiveConditions) — sem isso, a mesma praia no mesmo instante podia mostrar
-    // nota diferente na Home vs na Melhor Janela do Dia, porque essa vinha só do modelo
-    // horário do Open-Meteo, uma fonte diferente da cascade Windy/Open-Meteo/Stormglass
-    // que decide a nota principal (achado 24/ago/2026).
-    if (live) {
-      const nowSlotIdx = slots.findIndex(s => s.hour === nowHour)
-      if (nowSlotIdx >= 0) {
-        const waveHeight = applyDirectionalExposure(live.waveHeight, live.swellDirection, orientation)
-        const score = calculateSurfScore(waveHeight, live.windSpeed, live.swellPeriod, live.windDir, orientation)
-        slots[nowSlotIdx] = {
-          ...slots[nowSlotIdx],
-          waveHeight, score,
-          windSpeed: live.windSpeed, windDirection: live.windDir, swellPeriod: live.swellPeriod,
-        }
-      }
-    }
 
     // Marca a melhor janela (score mais alto)
     const peakScore = Math.max(...slots.map(s => s.score))

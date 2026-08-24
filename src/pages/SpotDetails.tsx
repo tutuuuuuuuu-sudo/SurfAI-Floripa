@@ -433,7 +433,10 @@ export default function SpotDetails() {
             {bestWindowOpen && (
               <div style={{animation:'slideUp 0.2s ease-out'}}>
                 {isPremium ? (
-                  <BestWindowWidget lat={spot.lat} lng={spot.lng} orientation={spot._beachOrientation ?? 90} />
+                  <BestWindowWidget
+                    lat={spot.lat} lng={spot.lng} orientation={spot._beachOrientation ?? 90}
+                    current={{ waveHeight: spot.waveHeight, windSpeed: spot.windSpeed, windDirection: spot.windDirection, swellPeriod: spot.swellPeriod, score: spot.score }}
+                  />
                 ) : (
                   <PremiumUpsellBanner
                     title="Melhor Janela do Dia é Premium"

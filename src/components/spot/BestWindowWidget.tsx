@@ -28,9 +28,17 @@ interface Props {
   lat: number
   lng: number
   orientation: number
+  // Leitura "agora" já carregada pela própria SpotDetails (mesma nota do badge do topo da
+  // página) — usada pra sobrescrever o slot da hora atual aqui embaixo. Sem isso, esse
+  // widget fazia sua PRÓPRIA busca de dado "ao vivo" no servidor, numa chamada separada e
+  // em outro instante — com um swell mudando rápido (achado 24/ago/2026, ex: Matadeiro
+  // mostrando 8.7 no topo e 7.5 aqui pro mesmo "agora"), os dois podiam divergir de
+  // verdade mesmo com o mesmo código, só por causa da diferença de alguns segundos/minutos
+  // entre as duas chamadas. Usar o mesmo dado já carregado elimina essa janela de tempo.
+  current: { waveHeight: number; windSpeed: number; windDirection: string; swellPeriod: number; score: number }
 }
 
-export function BestWindowWidget({ lat, lng, orientation }: Props) {
+export function BestWindowWidget({ lat, lng, orientation, current }: Props) {
   const [data, setData] = useState<HourlyResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedHour, setSelectedHour] = useState<number | null>(null)
@@ -70,11 +78,17 @@ export function BestWindowWidget({ lat, lng, orientation }: Props) {
 
   if (!data) return null
 
-  const { slots, bestWindow, window: goldenWindow, windowExplanation } = data
-  const best = getRatingInfo(bestWindow.score)
   // Os slots vêm calculados no fuso de Floripa (api/hourly.ts) — usar o fuso do
   // dispositivo aqui divergiria para quem acessa de fora de America/Sao_Paulo.
   const nowHour = nowHourSP()
+
+  // Sobrescreve o slot da hora atual com `current` (mesma leitura do badge do topo da
+  // página) — garante que "agora" aqui NUNCA diverge do resto da tela, nem quando as
+  // condições estão mudando rápido (ver comentário na prop `current` acima).
+  const slots = data.slots.map(s => s.hour === nowHour ? { ...s, ...current } : s)
+  const bestWindow = data.bestWindow.hour === nowHour ? { ...data.bestWindow, ...current } : data.bestWindow
+  const { window: goldenWindow, windowExplanation } = data
+  const best = getRatingInfo(bestWindow.score)
   const isBestNow = bestWindow.hour === nowHour
   const fmtHour = (h: number) => `${String(h).padStart(2, '0')}h`
   const isWindowRange = !!goldenWindow && goldenWindow.startHour !== goldenWindow.endHour
