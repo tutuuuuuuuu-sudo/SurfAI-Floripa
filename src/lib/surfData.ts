@@ -14,6 +14,7 @@ export interface SubRegion {
   swellDirections?: string[]
   tolerance?: 'estreita' | 'ampla'
   exposicao?: number
+  idealPeriodMin?: number
 }
 
 export interface WaterConditions {
@@ -178,15 +179,27 @@ export interface SubRegionMatch {
 // `exposicao` é um fator independente da direção: sub-picos abrigados por uma ponta/morro
 // (ex: Ponta Esquerda dos Açores, perto do costão que protege o Pântano do Sul) têm um teto
 // de tamanho mais baixo que o resto da praia mesmo quando o swell bate na direção ideal.
+//
+// "Dia clássico" (`idealPeriodMin`): alguns picos `estreita` (ex: Principal/Direitas do
+// Campeche) dependem de período longo pra ilha/costão refratar e "pentear" o swell — sem
+// isso, mesmo com a direção certa, a mecânica que os torna especiais não liga de verdade
+// (achado 24/ago/2026, a partir de dossiê técnico enviado pelo usuário: só SE/SSE com
+// período ≥12s produz as "direitas clássicas"; período curto não ativa a refração). Por
+// isso o multiplicador de altura desses picos continua modesto (a ilha FILTRA energia, não
+// aumenta — a altura menor é esperada e correta), mas a QUALIDADE nesse dia específico
+// supera os vizinhos "ampla", que só ganham em tamanho, não em forma/organização da onda.
 export function getSubRegionMatch(
   swellDirections: string[] | undefined,
   swellDirection: string,
   waveHeight: number,
   tolerance?: 'estreita' | 'ampla',
-  exposicao: number = 1.0
+  exposicao: number = 1.0,
+  swellPeriod?: number,
+  idealPeriodMin?: number
 ): SubRegionMatch {
   const minDiff = swellAngularDiff(swellDirections ?? [], swellDirection)
   const narrow = tolerance === 'estreita'
+  const classicDay = narrow && minDiff === 0 && (idealPeriodMin === undefined || (swellPeriod ?? 0) >= idealPeriodMin)
 
   const mult = (narrow
     ? (minDiff === 0 ? 1.0 : minDiff === 1 ? 0.55 : minDiff === 2 ? 0.4 : 0.3)
@@ -196,10 +209,14 @@ export function getSubRegionMatch(
   const waveMin = (waveEst * 0.95).toFixed(1)
   const waveMax = (waveEst * 1.05).toFixed(1)
 
-  const match = narrow
+  const match = classicDay
+    ? 'Dia clássico'
+    : narrow
     ? (minDiff === 0 ? 'Swell perfeito' : minDiff === 1 ? 'Swell bom' : 'Swell ruim')
     : (minDiff === 0 ? 'Swell perfeito' : minDiff <= 2 ? 'Swell bom' : minDiff <= 4 ? 'Swell parcial' : 'Swell ruim')
-  const matchCls = narrow
+  const matchCls = classicDay
+    ? 'text-rating-epic'
+    : narrow
     ? (minDiff === 0 ? 'text-rating-good' : minDiff === 1 ? 'text-rating-excellent' : 'text-rating-poor')
     : (minDiff === 0 ? 'text-rating-good' : minDiff <= 2 ? 'text-rating-excellent' : minDiff <= 4 ? 'text-rating-fair' : 'text-rating-poor')
 
@@ -215,10 +232,29 @@ export function formatWaveRange(waveHeight: number): string {
   return min === max ? `${min}m` : `${min}–${max}m`
 }
 
-const getBestSubRegion = (subRegions: { id: string, swellDirections?: string[] }[], swellDirection: string): string => {
+// Empate de direção (minDiff igual) entre um pico `estreita` e um `ampla` é resolvido a
+// favor do `estreita` quando ele está no seu "dia clássico" (ver comentário em
+// getSubRegionMatch) — hoje ele só bate minDiff=0 nessa janela rara e específica, enquanto
+// um pico `ampla` bate minDiff=0 com bem mais frequência (aceita várias direções "de boa").
+// Sem essa regra, a ordem de definição no array decidia o empate (achado 24/ago/2026: swell
+// perfeito de SE pra Campeche marcava "Melhor agora" na Lomba do Sabão só por ela vir
+// primeiro no array, mesmo em dias clássicos de Direitas na Principal).
+const getBestSubRegion = (
+  subRegions: { id: string, swellDirections?: string[], tolerance?: 'estreita' | 'ampla', idealPeriodMin?: number }[],
+  swellDirection: string,
+  swellPeriod: number
+): string => {
   const best = subRegions
-    .map(sub => ({ id: sub.id, minDiff: swellAngularDiff(sub.swellDirections ?? [], swellDirection) }))
-    .reduce((a, b) => (b.minDiff < a.minDiff ? b : a))
+    .map(sub => {
+      const minDiff = swellAngularDiff(sub.swellDirections ?? [], swellDirection)
+      const classicDay = sub.tolerance === 'estreita' && minDiff === 0
+        && (sub.idealPeriodMin === undefined || swellPeriod >= sub.idealPeriodMin)
+      return { id: sub.id, minDiff, classicDay }
+    })
+    .reduce((a, b) => {
+      if (b.classicDay !== a.classicDay) return b.classicDay ? b : a
+      return b.minDiff < a.minDiff ? b : a
+    })
   return best.id
 }
 
@@ -241,7 +277,7 @@ interface BeachDefinition {
   orientation: number
   bestTimeWindow: string
   hikeAccess?: boolean
-  subRegions?: { id: string; name: string; lat: number; lng: number; swellDirections?: string[]; tolerance?: 'estreita' | 'ampla'; exposicao?: number }[]
+  subRegions?: { id: string; name: string; lat: number; lng: number; swellDirections?: string[]; tolerance?: 'estreita' | 'ampla'; exposicao?: number; idealPeriodMin?: number }[]
 }
 
 const BEACHES: BeachDefinition[] = [
@@ -252,13 +288,13 @@ const BEACHES: BeachDefinition[] = [
     subRegions: [
       { id: 'lomba-sabao', name: 'Lomba do Sabão', lat: -27.6974, lng: -48.4899, swellDirections: ['E', 'SE'] },
       { id: 'palanque', name: 'Palanque', lat: -27.6929, lng: -48.4870, swellDirections: ['S', 'SSE', 'SE', 'E'] },
-      { id: 'principal', name: 'Principal', lat: -27.6893, lng: -48.4825, swellDirections: ['SE', 'SSE'], tolerance: 'estreita' },
+      { id: 'principal', name: 'Principal', lat: -27.6893, lng: -48.4825, swellDirections: ['SE', 'SSE'], tolerance: 'estreita', idealPeriodMin: 12 },
     ], bestTimeWindow: '06h - 09h' },
   { id: 'novo-campeche', name: 'Novo Campeche', region: 'Centro' as const,
     lat: -27.6661001, lng: -48.4755307, // Praia do Novo Campeche — bem na areia
     orientation: 90,
     subRegions: [
-      { id: 'riozinho', name: 'Riozinho', lat: -27.686650, lng: -48.481560, swellDirections: ['SE', 'ESE'], tolerance: 'estreita' },
+      { id: 'riozinho', name: 'Riozinho', lat: -27.686650, lng: -48.481560, swellDirections: ['SE', 'ESE'], tolerance: 'estreita', idealPeriodMin: 10 },
       { id: 'centro', name: 'Centro', lat: -27.6648, lng: -48.4784, swellDirections: ['E', 'SE'] },
       { id: 'pico-da-cruz', name: 'Pico da Cruz', lat: -27.6498, lng: -48.4739, swellDirections: ['SE', 'S', 'SSE'] },
     ], bestTimeWindow: '06h - 09h' },
@@ -425,12 +461,13 @@ async function _doFetchConditions(): Promise<BeachCondition[]> {
         let subRegions: SubRegion[] | undefined = undefined
         if (beach.subRegions && beach.subRegions.length > 0) {
           const beachSubs = beach.subRegions
-          const bestSubId = getBestSubRegion(beachSubs, swellDirection)
+          const bestSubId = getBestSubRegion(beachSubs, swellDirection, swellPeriod)
           subRegions = beachSubs.map(sub => ({
             id: sub.id, name: sub.name, lat: sub.lat, lng: sub.lng,
             swellDirections: sub.swellDirections ?? [],
             tolerance: sub.tolerance,
             exposicao: sub.exposicao,
+            idealPeriodMin: sub.idealPeriodMin,
             description: sub.id === bestSubId
               ? `Melhor com swell de ${swellDirection}`
               : `Funciona melhor com swell de ${sub.swellDirections?.join(', ') ?? 'E'}`,
