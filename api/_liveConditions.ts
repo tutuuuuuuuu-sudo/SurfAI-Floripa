@@ -80,19 +80,28 @@ const WINDY_CACHE_TTL_MS = 10 * 60 * 1000
 async function getCachedWindyRaw(cacheKey: string): Promise<WindyRaw | null> {
   const supabaseUrl = process.env.SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
-  if (!supabaseUrl || !serviceKey) return null
+  if (!supabaseUrl || !serviceKey) {
+    console.error('[liveConditions] cache: SUPABASE_URL/SERVICE_ROLE_KEY ausente')
+    return null
+  }
   try {
     const res = await fetch(
       `${supabaseUrl}/rest/v1/live_conditions_cache?cache_key=eq.${encodeURIComponent(cacheKey)}&select=payload,fetched_at`,
       { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
     )
-    if (!res.ok) return null
+    if (!res.ok) {
+      console.error('[liveConditions] cache GET não-ok:', res.status, await res.text())
+      return null
+    }
     const rows = await res.json() as { payload: WindyRaw; fetched_at: string }[]
     const row = rows[0]
     if (!row) return null
-    if (Date.now() - new Date(row.fetched_at).getTime() > WINDY_CACHE_TTL_MS) return null
+    const ageMs = Date.now() - new Date(row.fetched_at).getTime()
+    if (ageMs > WINDY_CACHE_TTL_MS) return null
+    console.log('[liveConditions] cache HIT', cacheKey, `idade=${Math.round(ageMs / 1000)}s`)
     return row.payload
-  } catch {
+  } catch (err) {
+    console.error('[liveConditions] cache GET lançou exceção:', err)
     return null
   }
 }
@@ -102,7 +111,7 @@ async function setCachedWindyRaw(cacheKey: string, raw: WindyRaw): Promise<void>
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
   if (!supabaseUrl || !serviceKey) return
   try {
-    await fetch(`${supabaseUrl}/rest/v1/live_conditions_cache`, {
+    const res = await fetch(`${supabaseUrl}/rest/v1/live_conditions_cache`, {
       method: 'POST',
       headers: {
         apikey: serviceKey, Authorization: `Bearer ${serviceKey}`,
@@ -110,7 +119,14 @@ async function setCachedWindyRaw(cacheKey: string, raw: WindyRaw): Promise<void>
       },
       body: JSON.stringify({ cache_key: cacheKey, payload: raw, fetched_at: new Date().toISOString() }),
     })
-  } catch { /* cache é best-effort — nunca deve derrubar o fluxo principal */ }
+    if (!res.ok) {
+      console.error('[liveConditions] cache SET não-ok:', res.status, await res.text())
+    } else {
+      console.log('[liveConditions] cache SET ok', cacheKey)
+    }
+  } catch (err) {
+    console.error('[liveConditions] cache SET lançou exceção:', err)
+  }
 }
 
 // Chamada crua à Windy, compartilhada entre fetchWindy (só "agora") e
