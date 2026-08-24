@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Compass, MapPin, Loader2 } from 'lucide-react'
+import { Compass, MapPin, Loader2, Navigation, GitCompareArrows } from 'lucide-react'
 import { recommendBeach, type GeoRecommendation } from '@/lib/geoFinder'
 import { getScoreColor, getRatingInfo } from '@/lib/rating'
 import { track } from '@/lib/monitoring'
@@ -15,6 +15,9 @@ interface Props {
   spots: BeachCondition[]
   isPremium: boolean
 }
+
+const mapsUrl = (lat: number, lng: number) => `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`
+const wazeUrl = (lat: number, lng: number) => `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`
 
 function getPosition(): Promise<GeolocationPosition> {
   return new Promise((resolve, reject) => {
@@ -60,7 +63,7 @@ export function GeoFinderCard({ spots, isPremium }: Props) {
   if (!isPremium) {
     return (
       <PremiumUpsellBanner
-        title="Bora Surfar é Premium"
+        title="Onde Surfar Agora é Premium"
         subtitle="A gente compara as praias mais perto de você e mostra pra onde vale ir agora"
       />
     )
@@ -71,7 +74,7 @@ export function GeoFinderCard({ spots, isPremium }: Props) {
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
           <Compass className="h-4 w-4 text-primary" />
-          Bora Surfar?
+          Onde Surfar Agora
         </CardTitle>
         <CardDescription className="text-xs">
           A gente compara as praias mais perto de você e mostra pra onde vale ir agora
@@ -81,7 +84,7 @@ export function GeoFinderCard({ spots, isPremium }: Props) {
         {status === 'idle' && (
           <>
             <p className="text-xs text-muted-foreground">
-              Compartilha sua localização só por esse instante — não guardamos nada — e a gente te diz pra onde ir.
+              Compartilha sua localização só por esse instante (não guardamos nada) e a gente te diz pra onde ir.
             </p>
             <Button variant="outline" size="sm" className="w-full" onClick={handleFindNearby}>
               <MapPin className="h-4 w-4 mr-2" />Usar minha localização
@@ -118,7 +121,7 @@ export function GeoFinderCard({ spots, isPremium }: Props) {
 
         {status === 'timeout' && (
           <>
-            <p className="text-xs text-muted-foreground">Demorou demais pra localizar você. Sinal fraco costuma ser o motivo — vale tentar de novo.</p>
+            <p className="text-xs text-muted-foreground">Demorou demais pra localizar você. Sinal fraco costuma ser o motivo, vale tentar de novo.</p>
             <Button variant="outline" size="sm" className="w-full" onClick={handleFindNearby}>
               <MapPin className="h-4 w-4 mr-2" />Tentar de novo
             </Button>
@@ -141,24 +144,24 @@ export function GeoFinderCard({ spots, isPremium }: Props) {
           if (!result.worthDetour) {
             return (
               <div className="space-y-2">
-                <button
-                  className="w-full text-left rounded-xl p-3 border border-border/40 hover:border-primary/40 transition-colors"
-                  onClick={goToRecommended}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1">
-                      <div className="font-semibold text-sm">{result.recommended.name}</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">{result.recommended.distanceKm.toFixed(1)}km de você</div>
+                <div className="rounded-xl border border-border/40 hover:border-primary/40 transition-colors overflow-hidden">
+                  <button className="w-full text-left p-3" onClick={goToRecommended}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <div className="font-semibold text-sm">{result.recommended.name}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">{result.recommended.distanceKm.toFixed(1)}km de você</div>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <div className="text-xl font-bold" style={{ color: recColor }}>{result.recommended.score.toFixed(1)}</div>
+                        <div className="text-[10px] font-bold" style={{ color: recColor }}>{recInfo.label}</div>
+                      </div>
                     </div>
-                    <div className="text-right flex-shrink-0">
-                      <div className="text-xl font-bold" style={{ color: recColor }}>{result.recommended.score.toFixed(1)}</div>
-                      <div className="text-[10px] font-bold" style={{ color: recColor }}>{recInfo.label}</div>
-                    </div>
-                  </div>
-                </button>
+                  </button>
+                  <NavButtons lat={result.recommended.lat} lng={result.recommended.lng} />
+                </div>
                 {!result.recommendedIsGood && (
                   <p className="text-xs text-muted-foreground px-0.5">
-                    Nenhuma praia por perto está com boa condição agora — essa é a menos ruim.
+                    Nenhuma praia por perto está com boa condição agora. Essa é a menos ruim.
                   </p>
                 )}
               </div>
@@ -174,31 +177,35 @@ export function GeoFinderCard({ spots, isPremium }: Props) {
             track('spot_opened', { spot: result.nearest.name, source: 'geo_finder' })
             navigate(`/spot/${result.nearest.id}`)
           }
+          const goToCompare = () => {
+            track('geo_finder_compare_opened', { nearest: result.nearest.id, recommended: result.recommended.id })
+            navigate(`/compare?spot=${result.nearest.id}&spot2=${result.recommended.id}`)
+          }
           return (
             <div className="space-y-2.5">
               <div className="grid grid-cols-2 gap-2">
-                <button
-                  className="rounded-xl border border-border/40 p-3 text-left hover:bg-muted/20 transition-colors"
-                  onClick={goToNearest}
-                >
-                  <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Mais perto</div>
-                  <div className="text-sm font-semibold leading-tight">{result.nearest.name}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">{result.nearest.distanceKm.toFixed(1)}km de você</div>
-                  <div className="text-base font-bold mt-1.5" style={{ color: nearColor }}>
-                    {result.nearest.score.toFixed(1)} <span className="text-[10px] font-bold">{nearInfo.label}</span>
-                  </div>
-                </button>
-                <button
-                  className="rounded-xl border-2 border-primary/50 bg-primary/5 p-3 text-left hover:bg-primary/10 transition-colors"
-                  onClick={goToRecommended}
-                >
-                  <div className="text-[10px] font-semibold text-primary uppercase tracking-wide mb-1.5">Vale o desvio</div>
-                  <div className="text-sm font-semibold leading-tight">{result.recommended.name}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">{result.recommended.distanceKm.toFixed(1)}km de você</div>
-                  <div className="text-base font-bold mt-1.5" style={{ color: recColor }}>
-                    {result.recommended.score.toFixed(1)} <span className="text-[10px] font-bold">{recInfo.label}</span>
-                  </div>
-                </button>
+                <div className="rounded-xl border border-border/40 hover:bg-muted/20 transition-colors overflow-hidden">
+                  <button className="w-full text-left p-3" onClick={goToNearest}>
+                    <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Mais perto</div>
+                    <div className="text-sm font-semibold leading-tight">{result.nearest.name}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{result.nearest.distanceKm.toFixed(1)}km de você</div>
+                    <div className="text-base font-bold mt-1.5" style={{ color: nearColor }}>
+                      {result.nearest.score.toFixed(1)} <span className="text-[10px] font-bold">{nearInfo.label}</span>
+                    </div>
+                  </button>
+                  <NavButtons lat={result.nearest.lat} lng={result.nearest.lng} />
+                </div>
+                <div className="rounded-xl border-2 border-primary/50 bg-primary/5 hover:bg-primary/10 transition-colors overflow-hidden">
+                  <button className="w-full text-left p-3" onClick={goToRecommended}>
+                    <div className="text-[10px] font-semibold text-primary uppercase tracking-wide mb-1.5">Vale o desvio</div>
+                    <div className="text-sm font-semibold leading-tight">{result.recommended.name}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{result.recommended.distanceKm.toFixed(1)}km de você</div>
+                    <div className="text-base font-bold mt-1.5" style={{ color: recColor }}>
+                      {result.recommended.score.toFixed(1)} <span className="text-[10px] font-bold">{recInfo.label}</span>
+                    </div>
+                  </button>
+                  <NavButtons lat={result.recommended.lat} lng={result.recommended.lng} />
+                </div>
               </div>
               <p className="text-xs text-muted-foreground px-0.5">
                 {result.extraDistanceKm < 1.5
@@ -206,16 +213,42 @@ export function GeoFinderCard({ spots, isPremium }: Props) {
                   // sentido — 0.4km não é um desvio de verdade, é praticamente a mesma
                   // distância). Nesse caso o motivo de ir pra lá é só a condição, não a rota.
                   ? <>{result.nearest.name} e {result.recommended.name} ficam praticamente na
-                      mesma distância, mas {result.recommended.name} está {recInfo.label.toLowerCase()} —
+                      mesma distância, mas {result.recommended.name} está {recInfo.label.toLowerCase()},
                       bem melhor que {result.nearest.name} ({nearInfo.label.toLowerCase()}). Vale ir direto pra lá.</>
                   : <>{result.nearest.name} é a praia mais perto, mas o mar tá {nearInfo.label.toLowerCase()} lá agora.
                       Vale rodar mais {result.extraDistanceKm.toFixed(1)}km até {result.recommended.name}.</>
                 }
               </p>
+              <Button variant="ghost" size="sm" className="w-full text-xs" onClick={goToCompare}>
+                <GitCompareArrows className="h-3.5 w-3.5 mr-1.5" />Comparar as duas praias
+              </Button>
             </div>
           )
         })()}
       </CardContent>
     </Card>
+  )
+}
+
+// Leva direto pro Maps/Waze a partir do próprio card, sem precisar abrir a praia e depois
+// achar o botão de rota lá dentro (achado 24/ago/2026, reportado pelo usuário: usuário já
+// decide "vou nessa" só de ver a recomendação, mas tinha que ir até a aba "Me Leva" e
+// procurar a praia de novo pra navegar até ela).
+function NavButtons({ lat, lng }: { lat: number; lng: number }) {
+  return (
+    <div className="grid grid-cols-2 gap-px bg-border/40" onClick={e => e.stopPropagation()}>
+      <a
+        href={mapsUrl(lat, lng)} target="_blank" rel="noopener noreferrer"
+        className="flex items-center justify-center gap-1 py-1.5 text-[10px] font-semibold bg-background hover:bg-muted/40 transition-colors"
+      >
+        <Navigation className="h-3 w-3" />Maps
+      </a>
+      <a
+        href={wazeUrl(lat, lng)} target="_blank" rel="noopener noreferrer"
+        className="flex items-center justify-center gap-1 py-1.5 text-[10px] font-semibold bg-background hover:bg-muted/40 transition-colors"
+      >
+        <Navigation className="h-3 w-3" />Waze
+      </a>
+    </div>
   )
 }

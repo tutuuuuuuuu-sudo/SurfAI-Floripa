@@ -30,12 +30,18 @@ export default function ComparePage() {
   const [search, setSearch] = useState('')
 
   // Se veio de um card de praia específico (?spot=id), começa com ela + a melhor
-  // colocada; senão, inicializa com as 2 melhores do momento.
+  // colocada. Se vieram duas (?spot=id&spot2=id2, ex: do Bora Surfar comparando "mais
+  // perto" com "vale o desvio"), começa com as duas exatas em vez de completar com a
+  // melhor nota. Senão, inicializa com as 2 melhores do momento.
   useEffect(() => {
     if (allSpots.length > 0 && selected.length === 0) {
       const preselectedId = searchParams.get('spot')
+      const preselectedId2 = searchParams.get('spot2')
       const preselected = preselectedId ? allSpots.find(s => s.id === preselectedId) : null
-      if (preselected) {
+      const preselected2 = preselectedId2 ? allSpots.find(s => s.id === preselectedId2) : null
+      if (preselected && preselected2) {
+        setSelected([preselected, preselected2])
+      } else if (preselected) {
         const runnerUp = allSpots.find(s => s.id !== preselected.id)
         setSelected(runnerUp ? [preselected, runnerUp] : [preselected])
       } else {
