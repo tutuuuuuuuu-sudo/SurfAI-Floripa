@@ -224,7 +224,7 @@ export default function Home() {
                         <Sparkles className="h-4 w-4 text-primary flex-shrink-0" />Converse com o Surf AI
                       </div>
                       <p className="text-sm text-muted-foreground mt-0.5">
-                        Já sabe as condições de todas as praias agora. Pergunta onde ir e recebe a resposta na hora.
+                        Não sabe pra onde ir hoje? Pergunta pro Surf AI e recebe a resposta na hora.
                       </p>
                     </div>
                     <ChevronRight className="h-5 w-5 text-primary flex-shrink-0" />
@@ -234,7 +234,7 @@ export default function Home() {
             ) : (
               <PremiumUpsellBanner
                 title="Converse com o Surf AI"
-                subtitle="Exclusivo Premium: pergunta onde surfar e recebe a resposta na hora"
+                subtitle="Não sabe pra onde ir hoje? Pergunta pro Surf AI, recurso exclusivo Premium"
               />
             )}
           </div>
