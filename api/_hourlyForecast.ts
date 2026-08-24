@@ -63,8 +63,11 @@ export async function fetchHourlyForecast(
 
   function readHour(idx: number, orientation: number): HourReading | null {
     if (idx < 0 || idx >= times.length) return null
+    // wave_height é a altura combinada (wind waves + swell) — swell_wave_height sozinho é só
+    // o componente de swell, sempre menor ou igual ao total. Prioridade estava invertida
+    // (achado 24/ago/2026, mesmo problema do fetchOpenMeteo em _liveConditions.ts).
     const rawWaveHeight = Number(
-      (marine.hourly?.swell_wave_height?.[idx] ?? marine.hourly?.wave_height?.[idx] ?? 1.0).toFixed(1)
+      (marine.hourly?.wave_height?.[idx] ?? marine.hourly?.swell_wave_height?.[idx] ?? 1.0).toFixed(1)
     )
     const swellDirection = degreesToDir(marine.hourly?.swell_wave_direction?.[idx] ?? 180)
     // Mesma correção de exposição direcional aplicada em surf.ts — sem isso, a mesma

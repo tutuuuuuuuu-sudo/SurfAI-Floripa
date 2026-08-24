@@ -5,12 +5,13 @@ import {
   Waves, Zap, Bell, BarChart3, Clock, Shield,
   ArrowRight, CheckCircle2, TrendingUp,
   MapPin, Crown, ChevronRight, Droplets,
-  Smartphone,
+  Smartphone, Sparkles, Compass, Scale,
 } from 'lucide-react'
 import { AppLogo } from '@/components/AppLogo'
 import {
   AnimatedNumber,
   FAQItem, Reveal, FloatingCTA,
+  ChatPreviewMockup, GeoFinderMockup, GoldenWindowMockup,
 } from '@/components/landing/LandingComponents'
 import { AppScrollShowcase } from '@/components/landing/AppScrollShowcase'
 import { WaveScrollHero } from '@/components/landing/WaveScrollHero'
@@ -70,8 +71,8 @@ export default function Landing() {
         <div className="mx-auto flex max-w-2xl flex-col items-center gap-3 sm:gap-4">
           <div className="flex flex-wrap justify-center gap-2" style={{ animation: 'fadeIn 0.6s ease both' }}>
             <Badge variant="outline" className="border-primary/40 text-primary bg-black/30 px-3 py-1 text-xs font-semibold backdrop-blur-md">
-              <Zap className="h-3 w-3 mr-1.5 fill-current" />
-              Inteligência Artificial
+              <Sparkles className="h-3 w-3 mr-1.5 fill-current" />
+              Chat com IA
             </Badge>
             <Badge variant="outline" className="border-rating-good/40 text-rating-good bg-black/30 px-3 py-1 text-xs font-semibold backdrop-blur-md">
               <Waves className="h-3 w-3 mr-1.5" />
@@ -98,7 +99,7 @@ export default function Landing() {
           </h1>
           <p className="text-lg text-white/90 max-w-lg leading-relaxed"
             style={{ animation: 'fadeIn 0.7s ease 0.4s both', textShadow: '0 2px 10px oklch(0 0 0 / 0.85), 0 1px 3px oklch(0 0 0 / 0.9)' }}>
-            Nota de IA para {BEACH_COUNT} praias. Previsão de ondas, alertas e histórico:
+            Pergunta pro Surf AI, veja a nota de {BEACH_COUNT} praias e receba alertas:
             tudo que você precisa para não perder a melhor sessão da semana.
           </p>
 
@@ -139,14 +140,6 @@ export default function Landing() {
               </Link>
             </Button>
           </div>
-
-          <div className="flex flex-wrap justify-center gap-2" style={{ animation: 'fadeIn 0.6s ease 0.65s both' }}>
-            {['Grátis para começar', 'Sem cartão de crédito', 'Instala em 1 minuto'].map(t => (
-              <span key={t} className="flex items-center gap-1.5 text-xs font-medium text-white/90 bg-black/30 backdrop-blur-md rounded-full px-2.5 py-1 border border-white/10">
-                <CheckCircle2 className="h-3.5 w-3.5 text-rating-good flex-shrink-0" />{t}
-              </span>
-            ))}
-          </div>
         </div>
       </WaveScrollHero>
 
@@ -162,6 +155,75 @@ export default function Landing() {
             </h2>
           </Reveal>
           <AppScrollShowcase />
+        </div>
+      </section>
+
+      {/* 3 JEITOS DE DECIDIR NA HORA — chat, Bora Surfar e melhor janela do dia, os 3
+          recursos de IA/decisão mais fortes do produto e que a landing nunca mostrou
+          antes. Chat vem primeiro e maior de propósito: é o principal hoje. */}
+      <section className="py-20 border-t border-border/30 relative z-10">
+        <div className="container mx-auto px-5 max-w-5xl">
+          <Reveal className="text-center mb-14">
+            <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 mb-4 px-4 py-1">
+              <Sparkles className="h-3 w-3 mr-1.5" />
+              Novidades
+            </Badge>
+            <h2 className="text-3xl md:text-4xl font-black mb-4">
+              3 jeitos de decidir na hora.
+            </h2>
+            <p className="text-foreground/70 max-w-md mx-auto">
+              Chega de ficar rolando tela tentando adivinhar. A IA já faz a leitura pra você.
+            </p>
+          </Reveal>
+
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <Reveal delay={0} className="md:col-span-2">
+              <div className="grid md:grid-cols-2 gap-6 items-center rounded-2xl p-6 md:p-8"
+                style={{ background: 'oklch(0.6 0.16 200 / 0.06)', border: '1px solid oklch(0.6 0.16 200 / 0.3)' }}>
+                <div>
+                  <div className="h-12 w-12 rounded-2xl flex items-center justify-center mb-4"
+                    style={{ background: 'oklch(0.6 0.16 200 / 0.15)', border: '1px solid oklch(0.6 0.16 200 / 0.4)' }}>
+                    <Sparkles className="h-6 w-6 text-primary" />
+                  </div>
+                  <h3 className="font-black text-xl md:text-2xl mb-2">Converse com o Surf AI</h3>
+                  <p className="text-sm text-foreground/70 leading-relaxed">
+                    Pergunta o que quiser sobre qualquer uma das {BEACH_COUNT} praias, sobre as condições agora ou sobre o app —
+                    a IA responde na hora, com dado real, sem enrolação.
+                  </p>
+                </div>
+                <ChatPreviewMockup />
+              </div>
+            </Reveal>
+
+            <Reveal delay={0.1}>
+              <div className="h-full flex flex-col rounded-2xl p-6"
+                style={{ background: 'oklch(1 0 0 / 0.03)', border: '1px solid oklch(1 0 0 / 0.1)' }}>
+                <div className="h-11 w-11 rounded-xl flex items-center justify-center mb-4 bg-rating-good/15 border border-rating-good/30">
+                  <Compass className="h-5 w-5 text-rating-good" />
+                </div>
+                <h3 className="font-bold text-lg mb-2">Bora Surfar?</h3>
+                <p className="text-sm text-foreground/70 leading-relaxed mb-4">
+                  Compartilha sua localização por um instante (não guardamos nada) e o Surf AI compara a praia mais perto
+                  com a que está com a melhor condição por perto — e te diz se vale rodar mais um pouco.
+                </p>
+                <div className="mt-auto"><GeoFinderMockup /></div>
+              </div>
+            </Reveal>
+
+            <Reveal delay={0.2}>
+              <div className="h-full flex flex-col rounded-2xl p-6"
+                style={{ background: 'oklch(1 0 0 / 0.03)', border: '1px solid oklch(1 0 0 / 0.1)' }}>
+                <div className="h-11 w-11 rounded-xl flex items-center justify-center mb-4 bg-rating-epic/15 border border-rating-epic/30">
+                  <Clock className="h-5 w-5 text-rating-epic" />
+                </div>
+                <h3 className="font-bold text-lg mb-2">Melhor Janela do Dia</h3>
+                <p className="text-sm text-foreground/70 leading-relaxed mb-4">
+                  Nota hora a hora de cada pico — saiba exatamente a janela certa pra sair de casa, sem chutar.
+                </p>
+                <div className="mt-auto"><GoldenWindowMockup /></div>
+              </div>
+            </Reveal>
+          </div>
         </div>
       </section>
 
@@ -425,11 +487,14 @@ export default function Landing() {
           <div className="grid md:grid-cols-2 gap-10 items-center mb-10">
             <Reveal className="space-y-2.5">
               {[
+                { icon: Sparkles, title: 'Chat com o Surf AI' },
+                { icon: Compass, title: 'Bora Surfar — a praia certa perto de você' },
+                { icon: Clock, title: 'Melhor janela do dia, hora a hora' },
                 { icon: BarChart3, title: 'Previsão 14 dias completa' },
                 { icon: Bell, title: 'Alertas quando seu spot estiver épico' },
                 { icon: TrendingUp, title: 'Histórico completo de condições' },
+                { icon: Scale, title: 'Comparação entre praias' },
                 { icon: Shield, title: 'Experiência 100% sem anúncios' },
-                { icon: Zap, title: 'Acesso antecipado a novos recursos' },
               ].map(({ icon: Icon, title }) => (
                 <div key={title} className="flex items-center gap-3">
                   <div className="h-6 w-6 rounded-lg bg-rating-fair/15 flex items-center justify-center flex-shrink-0">
@@ -536,7 +601,7 @@ export default function Landing() {
                   </span>
                 </h2>
                 <p className="text-muted-foreground mb-8 leading-relaxed text-base max-w-md mx-auto">
-                  Dados reais de {BEACH_COUNT} praias, nota de IA e alertas personalizados.
+                  Dados reais de {BEACH_COUNT} praias, chat com IA e alertas personalizados.
                   Crie sua conta grátis em menos de 1 minuto.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
@@ -547,7 +612,7 @@ export default function Landing() {
                       boxShadow: '0 0 40px oklch(0.6 0.2 210 / 0.6), 0 0 80px oklch(0.6 0.2 210 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.15)',
                     }}>
                     <Link to="/login">
-                      Criar conta gratuita
+                      Criar conta grátis
                       <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
                     </Link>
                   </Button>
@@ -559,13 +624,6 @@ export default function Landing() {
                       Ver plano Premium
                     </Link>
                   </Button>
-                </div>
-                <div className="flex flex-wrap items-center justify-center gap-6">
-                  {['Grátis para começar', 'Sem cartão de crédito', 'Funciona no iPhone e Android'].map(t => (
-                    <span key={t} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-rating-good flex-shrink-0" />{t}
-                    </span>
-                  ))}
                 </div>
               </div>
             </div>

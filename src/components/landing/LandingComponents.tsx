@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { ChevronDown, Check, X, Crown, ArrowRight } from 'lucide-react'
+import { ChevronDown, Crown, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 // ── Hook: animação de entrada no scroll ─────────────────────────────────────
@@ -88,12 +88,72 @@ export function FAQItem({ q, a }: { q: string; a: string }) {
   )
 }
 
-// ── Célula do plano ───────────────────────────────────────────────────────────
+// ── Mockup: Chat com o Surf AI ───────────────────────────────────────────────
+// Ilustrativo, sem dado real nem chamada de API — só pra dar a sensação de como o
+// chat responde de verdade (mesmo padrão de bolha do SurfChatPanel.tsx).
 
-export function PlanCell({ value }: { value: boolean | string }) {
-  if (value === true) return <Check className="h-4 w-4 text-rating-good mx-auto" />
-  if (value === false) return <X className="h-4 w-4 text-muted-foreground/30 mx-auto" />
-  return <span className="text-xs font-semibold text-primary">{value}</span>
+export function ChatPreviewMockup() {
+  return (
+    <div className="rounded-2xl p-4 space-y-2.5"
+      style={{ background: 'oklch(1 0 0 / 0.03)', border: '1px solid oklch(1 0 0 / 0.08)' }}>
+      <div className="flex justify-end">
+        <div className="max-w-[85%] rounded-2xl rounded-br-sm px-3.5 py-2 text-xs font-medium bg-primary text-primary-foreground">
+          e a Joaquina, tá surfável?
+        </div>
+      </div>
+      <div className="flex justify-start">
+        <div className="max-w-[90%] rounded-2xl rounded-bl-sm px-3.5 py-2 text-xs leading-relaxed bg-card border border-border/50">
+          Tá com 1.4m e período de 9s — boa pra intermediário. Vento ainda calmo, deve piorar depois do meio-dia.
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Mockup: Bora Surfar ──────────────────────────────────────────────────────
+// Reproduz o layout real de GeoFinderCard.tsx (Mais perto vs Vale o desvio) com
+// dado estático só pra ilustrar a decisão.
+
+export function GeoFinderMockup() {
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      <div className="rounded-xl border border-border/40 p-3 text-left">
+        <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Mais perto</div>
+        <div className="text-sm font-semibold leading-tight">Campeche</div>
+        <div className="text-xs text-muted-foreground mt-0.5">1.2km de você</div>
+        <div className="text-base font-bold mt-1.5 text-rating-fair">5.8 <span className="text-[10px] font-bold">REGULAR</span></div>
+      </div>
+      <div className="rounded-xl border-2 border-primary/50 bg-primary/5 p-3 text-left">
+        <div className="text-[10px] font-semibold text-primary uppercase tracking-wide mb-1.5">Vale o desvio</div>
+        <div className="text-sm font-semibold leading-tight">Joaquina</div>
+        <div className="text-xs text-muted-foreground mt-0.5">4.6km de você</div>
+        <div className="text-base font-bold mt-1.5 text-rating-epic">8.3 <span className="text-[10px] font-bold">ÉPICO</span></div>
+      </div>
+    </div>
+  )
+}
+
+// ── Mockup: Melhor Janela do Dia ─────────────────────────────────────────────
+// Reproduz o gráfico de barras real de BestWindowWidget.tsx com valores estáticos.
+
+const WINDOW_BARS = [20, 30, 35, 45, 55, 70, 85, 95, 90, 65, 40, 25]
+
+export function GoldenWindowMockup() {
+  return (
+    <div className="rounded-2xl p-4"
+      style={{ background: 'oklch(1 0 0 / 0.03)', border: '1px solid oklch(1 0 0 / 0.08)' }}>
+      <div className="text-xs font-bold text-rating-epic mb-3">Janela boa agora — vai até 15h</div>
+      <div className="flex items-end gap-1" style={{ height: '48px' }}>
+        {WINDOW_BARS.map((h, i) => (
+          <div key={i} className="flex-1 rounded-sm"
+            style={{
+              height: `${h}%`,
+              background: h >= 85 ? 'oklch(0.75 0.18 145)' : h >= 55 ? 'oklch(0.8 0.16 95)' : 'oklch(0.6 0.02 240 / 0.3)',
+            }} />
+        ))}
+      </div>
+    </div>
+  )
 }
 
 // ── CTA Flutuante ─────────────────────────────────────────────────────────────

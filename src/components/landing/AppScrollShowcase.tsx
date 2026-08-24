@@ -71,8 +71,11 @@ export function AppScrollShowcase() {
               {/* aspect-ratio aqui (não na moldura externa) pra bater exatamente com os
                   prints 390×844 — antes a proporção ficava na moldura, que soma borda+padding,
                   então a área interna real tinha uma proporção levemente diferente da imagem
-                  e o crop manual (top/height) desalinhava o conteúdo dentro do celular. */}
-              <div className="relative aspect-[390/844] w-full overflow-hidden rounded-[30px]" style={{ background: '#0d0d0d' }}>
+                  e o crop manual (top/height) desalinhava o conteúdo dentro do celular.
+                  Raio interno = raio externo (36px) menos borda+padding (11px) — raio maior
+                  que isso faz o canto interno "estourar" pra fora do canto externo na
+                  diagonal (achado 24/ago/2026, visível nos 4 cantos do celular). */}
+              <div className="relative aspect-[390/844] w-full overflow-hidden rounded-[25px]" style={{ background: '#0d0d0d' }}>
                 <img src={step.image} alt={step.title} className="absolute inset-0 h-full w-full object-cover" />
               </div>
             </div>
@@ -149,7 +152,9 @@ function PhoneFrame({ active }: { active: number }) {
         boxShadow: '0 24px 60px oklch(0 0 0 / 0.45), 0 0 0 1px oklch(1 0 0 / 0.06), 0 0 80px oklch(0.6 0.16 200 / 0.08)',
       }}>
       <div className="absolute left-1/2 top-1.5 z-20 h-3 w-10 -translate-x-1/2 rounded-full bg-black sm:top-2 sm:h-4 sm:w-14 md:top-2.5 md:h-5 md:w-20" />
-      <div className="relative aspect-[390/844] w-full overflow-hidden rounded-[22px] sm:rounded-[30px] md:rounded-[36px]" style={{ background: '#0d0d0d' }}>
+      {/* Raio interno = raio externo menos borda+padding em cada breakpoint (28-8=20,
+          36-11=25, 44-12=32) — mesmo ajuste do card mobile empilhado acima. */}
+      <div className="relative aspect-[390/844] w-full overflow-hidden rounded-[20px] sm:rounded-[25px] md:rounded-[32px]" style={{ background: '#0d0d0d' }}>
         {STEPS.map((step, i) => (
           <img
             key={step.title}
