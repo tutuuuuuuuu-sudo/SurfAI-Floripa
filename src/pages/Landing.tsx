@@ -41,7 +41,7 @@ export default function Landing() {
 
       {/* NAV */}
       <nav className="sticky top-0 z-50 backdrop-blur-xl border-b"
-        style={{ background: 'oklch(var(--background) / 0.75)', borderColor: 'oklch(1 0 0 / 0.06)' }}>
+        style={{ background: 'oklch(var(--background) / 0.88)', borderColor: 'oklch(1 0 0 / 0.06)' }}>
         <div className="container mx-auto px-5 py-3 flex items-center justify-between max-w-6xl">
           <div className="flex items-center gap-2.5">
             <AppLogo size={34} variant="full" />
@@ -51,7 +51,7 @@ export default function Landing() {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" asChild
-              className="text-sm text-muted-foreground hover:text-foreground">
+              className="text-sm text-foreground/85 hover:text-foreground">
               <Link to="/login">Entrar</Link>
             </Button>
             <Button size="sm" asChild
@@ -178,11 +178,11 @@ export default function Landing() {
 
           <div className="grid md:grid-cols-2 gap-6 mb-6">
             <Reveal delay={0} className="md:col-span-2">
-              <div className="grid md:grid-cols-2 gap-6 items-center rounded-2xl p-6 md:p-8"
-                style={{ background: 'oklch(0.6 0.16 200 / 0.06)', border: '1px solid oklch(0.6 0.16 200 / 0.3)' }}>
-                <div>
-                  <div className="h-12 w-12 rounded-2xl flex items-center justify-center mb-4"
-                    style={{ background: 'oklch(0.6 0.16 200 / 0.15)', border: '1px solid oklch(0.6 0.16 200 / 0.4)' }}>
+              <div className="group relative grid md:grid-cols-2 gap-6 items-center overflow-hidden rounded-2xl p-6 md:p-8 bg-primary/10 border border-primary/35 transition-transform duration-300 hover:-translate-y-1"
+                style={{ boxShadow: '0 4px 32px color-mix(in oklch, var(--primary) 20%, transparent)' }}>
+                <div className="relative z-10">
+                  <div className="h-12 w-12 rounded-2xl flex items-center justify-center mb-4 bg-primary/20 border border-primary/45"
+                    style={{ boxShadow: '0 0 24px color-mix(in oklch, var(--primary) 40%, transparent)' }}>
                     <Sparkles className="h-6 w-6 text-primary" />
                   </div>
                   <h3 className="font-black text-xl md:text-2xl mb-2">Converse com o Surf AI</h3>
@@ -191,36 +191,41 @@ export default function Landing() {
                     a IA responde na hora, com dado real, sem enrolação.
                   </p>
                 </div>
-                <ChatPreviewMockup />
+                <div className="relative z-10"><ChatPreviewMockup /></div>
+                <div className="absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-primary/15 blur-3xl pointer-events-none" />
               </div>
             </Reveal>
 
             <Reveal delay={0.1}>
-              <div className="h-full flex flex-col rounded-2xl p-6"
-                style={{ background: 'oklch(1 0 0 / 0.03)', border: '1px solid oklch(1 0 0 / 0.1)' }}>
-                <div className="h-11 w-11 rounded-xl flex items-center justify-center mb-4 bg-rating-good/15 border border-rating-good/30">
+              <div className="group relative h-full flex flex-col overflow-hidden rounded-2xl p-6 bg-rating-good/[0.09] border border-rating-good/35 transition-transform duration-300 hover:-translate-y-1"
+                style={{ boxShadow: '0 4px 24px oklch(0 0 0 / 0.12)' }}>
+                <div className="relative z-10 h-11 w-11 rounded-xl flex items-center justify-center mb-4 bg-rating-good/20 border border-rating-good/45"
+                  style={{ boxShadow: '0 0 20px color-mix(in oklch, var(--rating-good) 40%, transparent)' }}>
                   <Compass className="h-5 w-5 text-rating-good" />
                 </div>
-                <h3 className="font-bold text-lg mb-2">Bora Surfar?</h3>
-                <p className="text-sm text-foreground/70 leading-relaxed mb-4">
+                <h3 className="relative z-10 font-bold text-lg mb-2">Bora Surfar?</h3>
+                <p className="relative z-10 text-sm text-foreground/70 leading-relaxed mb-4">
                   Compartilha sua localização por um instante (não guardamos nada) e o Surf AI compara a praia mais perto
                   com a que está com a melhor condição por perto — e te diz se vale rodar mais um pouco.
                 </p>
-                <div className="mt-auto"><GeoFinderMockup /></div>
+                <div className="relative z-10 mt-auto"><GeoFinderMockup /></div>
+                <div className="absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-rating-good/15 blur-2xl pointer-events-none" />
               </div>
             </Reveal>
 
             <Reveal delay={0.2}>
-              <div className="h-full flex flex-col rounded-2xl p-6"
-                style={{ background: 'oklch(1 0 0 / 0.03)', border: '1px solid oklch(1 0 0 / 0.1)' }}>
-                <div className="h-11 w-11 rounded-xl flex items-center justify-center mb-4 bg-rating-epic/15 border border-rating-epic/30">
+              <div className="group relative h-full flex flex-col overflow-hidden rounded-2xl p-6 bg-rating-epic/[0.09] border border-rating-epic/35 transition-transform duration-300 hover:-translate-y-1"
+                style={{ boxShadow: '0 4px 24px oklch(0 0 0 / 0.12)' }}>
+                <div className="relative z-10 h-11 w-11 rounded-xl flex items-center justify-center mb-4 bg-rating-epic/20 border border-rating-epic/45"
+                  style={{ boxShadow: '0 0 20px color-mix(in oklch, var(--rating-epic) 40%, transparent)' }}>
                   <Clock className="h-5 w-5 text-rating-epic" />
                 </div>
-                <h3 className="font-bold text-lg mb-2">Melhor Janela do Dia</h3>
-                <p className="text-sm text-foreground/70 leading-relaxed mb-4">
+                <h3 className="relative z-10 font-bold text-lg mb-2">Melhor Janela do Dia</h3>
+                <p className="relative z-10 text-sm text-foreground/70 leading-relaxed mb-4">
                   Nota hora a hora de cada pico — saiba exatamente a janela certa pra sair de casa, sem chutar.
                 </p>
-                <div className="mt-auto"><GoldenWindowMockup /></div>
+                <div className="relative z-10 mt-auto"><GoldenWindowMockup /></div>
+                <div className="absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-rating-epic/15 blur-2xl pointer-events-none" />
               </div>
             </Reveal>
           </div>
@@ -318,7 +323,7 @@ export default function Landing() {
       </section>
 
       {/* MAIS RECURSOS — cada card usa uma cor do próprio sistema de rating do app */}
-      <section className="py-20 border-t border-border/30">
+      <section id="feature-highlights" className="py-20 border-t border-border/30">
         <div className="container mx-auto px-5 max-w-5xl">
           <Reveal className="text-center mb-14">
             <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 mb-4 px-4 py-1">Funcionalidades</Badge>
@@ -550,7 +555,7 @@ export default function Landing() {
       </section>
 
       {/* FAQ — objeções resolvidas logo depois do preço, antes do fechamento final */}
-      <section className="py-20 border-t border-border/30">
+      <section id="faq" className="py-20 border-t border-border/30">
         <div className="container mx-auto px-5 max-w-2xl">
           <Reveal className="text-center mb-14">
             <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 mb-4 px-4 py-1">FAQ</Badge>

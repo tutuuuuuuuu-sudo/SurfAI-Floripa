@@ -170,9 +170,24 @@ export function FloatingCTA({ onFree, onPremium }: { onFree: () => void; onPremi
   // praticamente nunca ativava enquanto a seção de preço estava de fato na tela — só
   // "acertava" depois de rolar past ela, quando já não fazia mais sentido nenhum. Um
   // listener de scroll comum reavalia a cada evento de rolagem, não só na entrada.
+  //
+  // Escondido nos "Mais Recursos" e no FAQ: testado ao vivo em 24/ago/2026, o pill fixo
+  // (sem reservar espaço no fluxo da página) cobria o texto dos cards de feature e, mais
+  // grave, cobria por cima o item "Posso cancelar quando quiser?" do FAQ, impedindo o
+  // clique nele. As duas seções já têm CTA própria logo abaixo/dentro delas, então sumir
+  // o flutuante ali não perde conversão -- só evita competir com clique real.
   useEffect(() => {
+    const CTA_BAND_PX = 90 // altura aproximada do pill + respiro
+    const CONFLICT_SECTION_IDS = ['feature-highlights', 'faq']
+
     const onScroll = () => {
-      setVisible(window.scrollY > 500)
+      const overlapsConflictSection = CONFLICT_SECTION_IDS.some((id) => {
+        const el = document.getElementById(id)
+        if (!el) return false
+        const rect = el.getBoundingClientRect()
+        return rect.top < window.innerHeight && rect.bottom > window.innerHeight - CTA_BAND_PX
+      })
+      setVisible(window.scrollY > 500 && !overlapsConflictSection)
       const section = document.getElementById('pricing')
       if (section) setIsPremiumMode(section.getBoundingClientRect().top < window.innerHeight / 2)
     }

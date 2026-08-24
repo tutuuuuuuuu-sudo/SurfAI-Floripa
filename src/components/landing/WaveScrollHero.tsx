@@ -90,7 +90,7 @@ export function WaveScrollHero({ children }: { children: ReactNode }) {
                 muted
                 loop
                 playsInline
-                preload="auto"
+                preload="metadata"
                 className="h-full w-full object-cover"
               />
               <div className="absolute inset-0 pointer-events-none"
