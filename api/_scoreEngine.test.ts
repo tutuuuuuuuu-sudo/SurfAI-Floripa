@@ -131,10 +131,10 @@ describe('applyDirectionalExposure', () => {
     expect(result).toBeLessThan(1.0)
   })
 
-  it('nunca reduz abaixo do piso de 55%', () => {
+  it('nunca reduz abaixo do piso de 30%', () => {
     // Swell vindo de trás da praia (180° de diferença) — pior caso possível
     const result = applyDirectionalExposure(1.0, 'W', 90)
-    expect(result).toBeGreaterThanOrEqual(0.55)
+    expect(result).toBeGreaterThanOrEqual(0.3)
   })
 
   it('quanto maior o desalinhamento, maior a redução', () => {

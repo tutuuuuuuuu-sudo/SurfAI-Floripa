@@ -89,6 +89,17 @@ export function calculateSurfScore(
 // da praia: swell alinhado com a praia (mesma direção de `beachOrientation`) chega quase
 // sem perda; swell de lado perde energia por refração/difração que o modelo pontual não
 // capta. Não substitui calibração local (camada 3) — só corrige o desalinhamento angular.
+//
+// Curva revista em 24/ago/2026: o piso duro de 0.55 (cos(ângulo), sem deixar cair mais que
+// isso) cortava quase pela metade já a partir de ~57° de diferença — achado comparando as
+// 14 praias monitoradas contra o Surfline (LOTUS): a altura saía sistematicamente abaixo
+// do real em quase toda praia, não por ruído aleatório. A direção de swell que a Windy
+// retorna é o ângulo de mar aberto, não o ângulo já refratado que chega de fato na praia
+// (a própria física de refração — documentada pelo usuário pro Campeche — faz o litoral
+// "capturar" mais energia do que o ângulo bruto sugere), e o piso antigo batia forte
+// justo na faixa de 40-70° onde a maioria das leituras reais cai. Curva nova
+// (`0.3 + 0.7·cos`, piso 30% só no desalinhamento extremo ~180°) é bem mais suave nessa
+// faixa intermediária sem inflar demais o caso oposto total.
 export function applyDirectionalExposure(
   waveHeight: number,
   swellDir: string,
@@ -100,6 +111,6 @@ export function applyDirectionalExposure(
   let angleDiff = Math.abs(swellDeg - beachOrientation)
   if (angleDiff > 180) angleDiff = 360 - angleDiff
 
-  const exposureFactor = Math.max(0.55, Math.cos((angleDiff * Math.PI) / 180))
+  const exposureFactor = 0.3 + 0.7 * Math.max(0, Math.cos((angleDiff * Math.PI) / 180))
   return Number((waveHeight * exposureFactor).toFixed(1))
 }
