@@ -58,7 +58,9 @@ async function fetchWindy(lat: string, lng: string): Promise<LiveConditions | nu
       }),
     ])
     if (!waveRes.ok || !windRes.ok) {
-      console.error('[liveConditions] Windy HTTP não-ok:', waveRes.status, windRes.status)
+      const waveErrBody = !waveRes.ok ? await waveRes.text() : null
+      const windErrBody = !windRes.ok ? await windRes.text() : null
+      console.error('[liveConditions] Windy HTTP não-ok:', waveRes.status, waveErrBody, '|', windRes.status, windErrBody)
       return null
     }
 
