@@ -49,7 +49,10 @@ async function fetchWindy(lat: string, lng: string): Promise<LiveConditions | nu
         // mesmo ponto — em Campeche, ~0.9m nosso contra ~1.7-1.8m combinado real. swell1
         // continua sendo pedido só pelo período/direção (mais informativos pro score que
         // os da onda combinada).
-        body: JSON.stringify({ lat: parseFloat(lat), lon: parseFloat(lng), model: 'gfsWave', parameters: ['waves', 'swell1'], key }),
+        // 'levels' é exigido pela API mesmo pro modelo de onda (achado 24/ago/2026: sem
+        // isso a Windy retornava 400 "levels must be an array") — só a chamada de vento
+        // abaixo tinha esse campo antes.
+        body: JSON.stringify({ lat: parseFloat(lat), lon: parseFloat(lng), model: 'gfsWave', parameters: ['waves', 'swell1'], levels: ['surface'], key }),
       }),
       fetch(endpoint, {
         method: 'POST',
