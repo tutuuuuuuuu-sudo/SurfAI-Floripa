@@ -64,11 +64,13 @@ export function callGroqChat(
 
 // Free tier: 50 requisições/dia por padrão, ou 1.000/dia permanentemente após uma compra
 // única (não recorrente) de US$10 em créditos na conta (openrouter.ai). Modelo `:free`
-// específico pode mudar com o tempo (lineup deles muda com frequência, achado testando ao
-// vivo — meta-llama/llama-3.3-70b-instruct:free saiu da lista gratuita) — conferir a lista
-// atual em openrouter.ai/models se esse também parar de funcionar. deepseek-chat (não é
-// modelo de "raciocínio" como o deepseek-r1) evita reintroduzir o mesmo problema de
-// latência que já tivemos com o "pensamento" do Gemini.
+// específico pode mudar com o tempo (lineup deles muda com frequência — já trocou 2x: primeiro
+// meta-llama/llama-3.3-70b-instruct:free saiu da lista gratuita, depois deepseek/deepseek-chat-
+// v3-0324:free também saiu, achado 24/ago/2026 testando ao vivo forçando esse nível da cascata
+// de propósito, HTTP 404 "This model is unavailable for free") — conferir a lista atual em
+// openrouter.ai/models se esse também parar de funcionar. Gemma (Google, não é modelo de
+// "raciocínio" por padrão como o deepseek-r1 ou o GLM 5.2) evita reintroduzir o mesmo problema
+// de latência que já tivemos com o "pensamento" do Gemini.
 export function callOpenRouterChat(
   apiKey: string,
   systemContext: string,
@@ -77,7 +79,7 @@ export function callOpenRouterChat(
   timeoutMs: number
 ): Promise<GeminiResult> {
   return callOpenAICompatibleChat(
-    'https://openrouter.ai/api/v1', apiKey, 'deepseek/deepseek-chat-v3-0324:free',
+    'https://openrouter.ai/api/v1', apiKey, 'google/gemma-4-26b-a4b-it:free',
     systemContext, history, maxOutputTokens, timeoutMs
   )
 }
