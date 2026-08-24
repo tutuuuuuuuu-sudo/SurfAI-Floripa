@@ -75,7 +75,13 @@ interface WindyRaw {
 // deles com cache/estado diferente). Guardar a resposta por alguns minutos garante que
 // todo mundo (app inteiro, todas as instâncias) vê o MESMO número nessa janela, em vez de
 // arriscar uma nova chamada à Windy a cada request.
-const WINDY_CACHE_TTL_MS = 10 * 60 * 1000
+//
+// 15min (decisão do usuário, 24/ago/2026): com o cache, o consumo diário da Windy é
+// ~14 praias × (1440min/dia ÷ TTL) × 2 chamadas (onda+vento) — 10min dava ~4.000
+// chamadas/dia; 15min corta pra ~2.700, e ainda bate com o mesmo cache de 15min que já
+// existe no navegador (src/lib/surfData.ts), então a "idade" da leitura fica coerente
+// entre as duas camadas.
+const WINDY_CACHE_TTL_MS = 15 * 60 * 1000
 
 async function getCachedWindyRaw(cacheKey: string): Promise<WindyRaw | null> {
   const supabaseUrl = process.env.SUPABASE_URL
