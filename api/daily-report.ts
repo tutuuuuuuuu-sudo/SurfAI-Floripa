@@ -15,8 +15,12 @@ const SPOTS = getBeaches(['campeche', 'joaquina', 'mole', 'barra-lagoa', 'santin
 
 // Contas do founder e da família, usadas pra testar o app — excluídas de todas as
 // contagens do relatório (usuários, assinantes, MRR) pra não confundir os números reais
-// (surfaifloripa@gmail.com e sergiogarraza@gmail.com)
-const EXCLUDED_USER_IDS = ['8989de89-2c74-468c-b963-6e4011175d82', '147f3924-a8ee-46ff-9e3b-2b4d583c0ed6']
+// (surfaifloripa@gmail.com, r2rgarraza@gmail.com — conta pessoal do founder — e sergiogarraza@gmail.com)
+const EXCLUDED_USER_IDS = [
+  '8989de89-2c74-468c-b963-6e4011175d82',
+  '16237659-67f0-456a-abb8-e8a0bbc3e4fb',
+  '147f3924-a8ee-46ff-9e3b-2b4d583c0ed6',
+]
 const excludeFilter = (column: string) => `${column}=not.in.(${EXCLUDED_USER_IDS.join(',')})`
 
 // ── Fontes de dados ───────────────────────────────────────────────────────────
