@@ -12,6 +12,10 @@ jobs:
   run-health:
     runs-on: ubuntu-latest
     steps:
+      - name: DEBUG tamanho dos secrets (temporário, remover depois)
+        run: |
+          echo "APP_URL bytes: $(printf '%s' "${{ secrets.APP_URL }}" | wc -c)"
+          echo "HEALTH_SECRET bytes: $(printf '%s' "${{ secrets.HEALTH_SECRET }}" | wc -c)"
       - name: Chamar endpoint de health
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L \
