@@ -8,8 +8,8 @@ const GEMINI_KEY = process.env.GEMINI_API_KEY
 const AGENT_SECRET = process.env.AGENT_SECRET
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
-const RESEND_API_KEY = process.env.RESEND_API_KEY
-const REPORT_EMAIL = process.env.REPORT_EMAIL
+const CALLMEBOT_PHONE = process.env.CALLMEBOT_PHONE
+const CALLMEBOT_APIKEY = process.env.CALLMEBOT_APIKEY
 
 const SPOTS = getBeaches(['campeche', 'joaquina', 'mole', 'barra-lagoa', 'santinho', 'morro-pedras'])
 
@@ -214,31 +214,13 @@ Escreva 3-4 frases de análise: o que foi bom, o que precisa de atenção, e uma
   return result.ok ? result.text : ''
 }
 
-// ── Email ─────────────────────────────────────────────────────────────────────
-
-const GITHUB_ACTIONS_URL = process.env.GITHUB_ACTIONS_URL ?? ''
-
-function scoreColor(score: number): string {
-  if (score >= 8.5) return '#a855f7' // épico — roxo
-  if (score >= 7)   return '#22c55e' // excelente — verde
-  if (score >= 5.5) return '#3b82f6' // bom — azul
-  if (score >= 4)   return '#eab308' // regular — amarelo
-  return '#ef4444'                   // ruim — vermelho
-}
-
-function conditionLabel(score: number): string {
-  if (score >= 8.5) return 'ÉPICO'
-  if (score >= 7) return 'EXCELENTE'
-  if (score >= 5.5) return 'BOM'
-  if (score >= 4) return 'REGULAR'
-  return 'RUIM'
-}
+// ── WhatsApp (CallMeBot) ─────────────────────────────────────────────────────
 
 function medal(i: number): string {
   return i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'
 }
 
-function buildEmailHtml(data: {
+function buildWhatsAppText(data: {
   period: string
   date: string
   users: Awaited<ReturnType<typeof getUserStats>>
@@ -246,182 +228,50 @@ function buildEmailHtml(data: {
   aiSummary: string
 }): string {
   const { period, date, users, surf, aiSummary } = data
-  const greeting = period === 'Manhã' ? 'Bom dia!' : 'Boa noite!'
+  const greeting = period === 'Manhã' ? 'Bom dia' : 'Boa noite'
 
-  const top3Rows = surf.top3.map((s, i) => `
-    <tr>
-      <td style="padding:12px 14px;border-bottom:1px solid #1a1a1a;font-size:14px;">
-        ${medal(i)} <strong>${s.name}</strong>
-      </td>
-      <td style="padding:12px 8px;border-bottom:1px solid #1a1a1a;text-align:center;">
-        <span style="color:${scoreColor(s.score)};font-weight:700;font-size:18px;">${s.score}</span>
-      </td>
-      <td style="padding:12px 8px;border-bottom:1px solid #1a1a1a;text-align:center;">
-        <span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;color:${scoreColor(s.score)};background:#1a1a1a;letter-spacing:0.5px;">${conditionLabel(s.score)}</span>
-      </td>
-      <td style="padding:12px 10px;border-bottom:1px solid #1a1a1a;text-align:right;font-size:12px;color:#666;">
-        ${s.waveHeight}m · ${s.swellPeriod}s · ${s.windSpeed}km/h
-      </td>
-    </tr>
-  `).join('')
+  const lines = [
+    `🏄 *Surf AI · Relatório ${period} · ${date}*`,
+    '',
+    `${greeting}! Resumo do app:`,
+    '',
+    `Usuários: ${users.total} (+${users.newToday} hoje)`,
+    `Premium ativo: ${users.premiumActive} (+${users.newPremiumToday} hoje)`,
+    `Receita hoje: R$ ${users.revenueToday.toFixed(2)}`,
+    `MRR estimado: R$ ${users.mrr.toFixed(2)}`,
+    `Conversão: ${users.conversionRate}%`,
+  ]
 
-  const supabaseDashUrl = process.env.SUPABASE_DASHBOARD_URL ?? 'https://supabase.com'
+  if (users.cancelledToday > 0) lines.push(`Cancelamentos: ${users.cancelledToday}`)
 
-  return `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#050505;font-family:'Helvetica Neue',Arial,sans-serif;color:#e5e5e5;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#050505;padding:32px 16px;">
-    <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="background:#0d0d0d;border-radius:12px;overflow:hidden;max-width:600px;width:100%;">
+  lines.push('', `Melhor praia agora: ${surf.bestSpot} (${surf.bestScore}/10)`, `Score médio: ${surf.avgScore}/10`)
 
-        <!-- Header -->
-        <tr>
-          <td style="background:#111;padding:28px 32px;border-bottom:1px solid #1f1f1f;">
-            <p style="margin:0 0 6px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1.5px;">RELATÓRIO ${period.toUpperCase()} · ${date}</p>
-            <h1 style="margin:0;font-size:24px;font-weight:700;">${greeting} Aqui está o resumo do app</h1>
-          </td>
-        </tr>
+  const top3Lines = surf.top3.map((s, i) => `${medal(i)} ${s.name} — ${s.score}/10`).join('\n')
+  if (top3Lines) lines.push('', top3Lines)
 
-        <!-- Stats 2x2 -->
-        <tr>
-          <td style="padding:24px 32px 0;">
-            <table width="100%" cellpadding="0" cellspacing="0">
-              <tr>
-                <td width="50%" style="padding:0 8px 16px 0;">
-                  <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1f1f1f;border-radius:8px;background:#111;">
-                    <tr><td style="padding:16px;">
-                      <p style="margin:0 0 10px;font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1px;">USUÁRIOS TOTAIS</p>
-                      <p style="margin:0;font-size:28px;font-weight:700;color:#fff;">${users.total}</p>
-                      <p style="margin:6px 0 0;font-size:12px;color:#555;">${users.newToday} novos hoje</p>
-                    </td></tr>
-                  </table>
-                </td>
-                <td width="50%" style="padding:0 0 16px 8px;">
-                  <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1f1f1f;border-radius:8px;background:#111;">
-                    <tr><td style="padding:16px;">
-                      <p style="margin:0 0 10px;font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1px;">PREMIUM ATIVO</p>
-                      <p style="margin:0;font-size:28px;font-weight:700;color:#a855f7;">${users.premiumActive}</p>
-                      <p style="margin:6px 0 0;font-size:12px;color:#555;">${users.newPremiumToday} novos hoje</p>
-                    </td></tr>
-                  </table>
-                </td>
-              </tr>
-              <tr>
-                <td width="50%" style="padding:0 8px 0 0;">
-                  <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1f1f1f;border-radius:8px;background:#111;">
-                    <tr><td style="padding:16px;">
-                      <p style="margin:0 0 10px;font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1px;">RECEITA HOJE</p>
-                      <p style="margin:0;font-size:22px;font-weight:700;color:${users.revenueToday > 0 ? '#22c55e' : '#fff'};">R$ ${users.revenueToday.toFixed(2)}</p>
-                      <p style="margin:6px 0 0;font-size:12px;color:#555;">${users.cancelledToday === 0 ? 'sem cancelamentos' : users.cancelledToday + ' cancelamento(s)'}</p>
-                    </td></tr>
-                  </table>
-                </td>
-                <td width="50%" style="padding:0 0 0 8px;">
-                  <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1f1f1f;border-radius:8px;background:#111;">
-                    <tr><td style="padding:16px;">
-                      <p style="margin:0 0 10px;font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1px;">MRR ESTIMADO</p>
-                      <p style="margin:0;font-size:22px;font-weight:700;color:${users.mrr > 0 ? '#22c55e' : '#fff'};">R$ ${users.mrr.toFixed(2)}</p>
-                      <p style="margin:6px 0 0;font-size:12px;color:#555;">${users.conversionRate}% de conversão</p>
-                    </td></tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
+  if (surf.tainhaSeasonActive) lines.push('', '🐟 Temporada da tainha ativa')
 
-        <!-- Tainha banner -->
-        ${surf.tainhaSeasonActive ? `
-        <tr>
-          <td style="padding:20px 32px 0;">
-            <p style="margin:0;padding:12px 16px;background:#0f2d2e;border:1px solid #134e4e;border-radius:8px;font-size:13px;color:#2dd4bf;">
-              🐟 Temporada da tainha ativa — maio a agosto
-            </p>
-          </td>
-        </tr>` : ''}
+  if (aiSummary) lines.push('', aiSummary)
 
-        <!-- Top 3 praias -->
-        <tr>
-          <td style="padding:24px 32px 0;">
-            <p style="margin:0 0 14px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">TOP 3 PRAIAS AGORA · SCORE MÉDIO: ${surf.avgScore}/10</p>
-            <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1f1f1f;border-radius:8px;overflow:hidden;">
-              <tbody>${top3Rows}</tbody>
-            </table>
-          </td>
-        </tr>
-
-        <!-- Resumo IA -->
-        ${aiSummary ? `
-        <tr>
-          <td style="padding:24px 32px 0;">
-            <p style="margin:0 0 12px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">Análise do Dia</p>
-            <p style="margin:0;font-size:13px;line-height:1.7;color:#bbb;background:#111;padding:14px 16px;border-radius:8px;border-left:3px solid #a855f7;">${aiSummary}</p>
-          </td>
-        </tr>` : ''}
-
-        <!-- Status dos agentes -->
-        <tr>
-          <td style="padding:24px 32px 0;">
-            <p style="margin:0 0 12px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">Status dos Agentes</p>
-            <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #1f1f1f;border-radius:8px;background:#111;">
-              <tr><td style="padding:16px;">
-                <p style="margin:0 0 8px;font-size:13px;color:#ccc;"><span style="color:#22c55e;margin-right:8px;">✓</span>Email alert — agendado (8h e 19h BRT)</p>
-                <p style="margin:0 0 8px;font-size:13px;color:#ccc;"><span style="color:#22c55e;margin-right:8px;">✓</span>Agente de conteúdo — agendado (10h e 13h BRT)</p>
-                <p style="margin:0 0 16px;font-size:13px;color:#ccc;"><span style="color:#22c55e;margin-right:8px;">✓</span>Relatório diário — este email (7h e 20h BRT)</p>
-                <p style="margin:0;font-size:11px;color:#444;">
-                  <a href="${GITHUB_ACTIONS_URL}" style="color:#555;text-decoration:none;">github.com → Actions</a>
-                  <span style="color:#2a2a2a;margin:0 8px;">|</span>
-                  <a href="${supabaseDashUrl}" style="color:#555;text-decoration:none;">supabase.com → Dashboard</a>
-                  <span style="color:#2a2a2a;margin:0 8px;">|</span>
-                  <a href="${APP_URL}" style="color:#555;text-decoration:none;">surfaifloripa.com.br</a>
-                </p>
-              </td></tr>
-            </table>
-          </td>
-        </tr>
-
-        <!-- Footer -->
-        <tr>
-          <td style="padding:24px 32px;border-top:1px solid #1a1a1a;margin-top:24px;">
-            <p style="margin:0;font-size:11px;color:#333;">Surf AI Floripa · Relatório automático ${period.toLowerCase()} · ${date}</p>
-          </td>
-        </tr>
-
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>`
+  return lines.join('\n')
 }
 
-async function sendReportEmail(data: {
+async function sendReportWhatsApp(data: {
   period: string
   date: string
   users: Awaited<ReturnType<typeof getUserStats>>
   surf: Awaited<ReturnType<typeof getSurfConditions>>
   aiSummary: string
 }): Promise<boolean> {
-  if (!RESEND_API_KEY || !REPORT_EMAIL) return false
+  if (!CALLMEBOT_PHONE || !CALLMEBOT_APIKEY) return false
 
-  const subject = `[${data.period}] Surf AI · ${data.date} — MRR R$${data.users.mrr.toFixed(0)} · ${data.surf.bestSpot} ${data.surf.bestScore}/10`
-  const html = buildEmailHtml(data)
+  const text = buildWhatsAppText(data)
 
   try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: 'Surf AI Floripa <relatorios@alo.surfaifloripa.com.br>',
-        to: [REPORT_EMAIL],
-        subject,
-        html,
-      }),
-      signal: AbortSignal.timeout(10000),
-    })
+    const res = await fetch(
+      `https://api.callmebot.com/whatsapp.php?phone=${CALLMEBOT_PHONE}&apikey=${CALLMEBOT_APIKEY}&text=${encodeURIComponent(text)}`,
+      { signal: AbortSignal.timeout(10000) }
+    )
     return res.ok
   } catch {
     return false
@@ -460,7 +310,7 @@ export default async function handler(req: Request) {
 
   const aiSummary = await generateSummary({ period, users, surf })
 
-  const emailSent = await sendReportEmail({ period, date: dateStr, users, surf, aiSummary })
+  const whatsappSent = await sendReportWhatsApp({ period, date: dateStr, users, surf, aiSummary })
 
   return new Response(JSON.stringify({
     period,
@@ -468,7 +318,7 @@ export default async function handler(req: Request) {
     users,
     surf,
     aiSummary,
-    emailSent,
+    whatsappSent,
   }), {
     headers: { 'Content-Type': 'application/json' },
   })

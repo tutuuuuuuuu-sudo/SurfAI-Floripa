@@ -11,17 +11,11 @@ jobs:
   run-push-notify:
     runs-on: ubuntu-latest
     steps:
-      - name: DEBUG tamanho e caracteres do secret (temporário, remover depois)
-        run: |
-          S="${{ secrets.PUSH_NOTIFY_SECRET }}"
-          echo "PUSH_NOTIFY_SECRET bytes (raw): $(printf '%s' "$S" | wc -c)"
-          echo "PUSH_NOTIFY_SECRET bytes (sem espaco/newline): $(printf '%s' "$S" | tr -d '[:space:]' | wc -c)"
-          echo "primeiro byte (codigo): $(printf '%s' "$S" | head -c1 | od -An -tu1)"
-          echo "ultimo byte (codigo): $(printf '%s' "$S" | tail -c1 | od -An -tu1)"
       - name: Chamar endpoint de push-notify
         run: |
+          SECRET=$(printf '%s' "${{ secrets.PUSH_NOTIFY_SECRET }}" | tr -d '[:space:]')
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L \
-            "${{ secrets.APP_URL }}/api/push-notify?secret=${{ secrets.PUSH_NOTIFY_SECRET }}")
+            "${{ secrets.APP_URL }}/api/push-notify?secret=$SECRET")
           echo "Status HTTP: $STATUS"
           if [ "$STATUS" != "200" ]; then
             echo "Push-notify retornou status $STATUS"

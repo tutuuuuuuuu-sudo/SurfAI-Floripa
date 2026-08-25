@@ -121,7 +121,7 @@ api/
 ├── mp-webhook.ts       # Webhook do MP → atualiza subscriptions no Supabase
 ├── mp-ipn.ts           # IPN (notificação instantânea) do MP
 ├── delete-account.ts   # Exclusão de conta do usuário (LGPD)
-├── daily-report.ts     # Envia relatório diário por email (Resend) — só pro founder (REPORT_EMAIL), uso interno
+├── daily-report.ts     # Envia relatório diário por WhatsApp (CallMeBot) — só pro founder, uso interno
 ├── email-alert.ts      # Alerta de "mar bom" por email (Resend) — só assinantes premium, opt-out em Configurações
 ├── content-agent.ts    # Gera sugestões de conteúdo para ContentStudio (só admin, ver api/_auth.ts)
 ├── is-admin.ts         # Checa se o usuário logado está na tabela `admins` (a tabela em si não é lida pelo client, RLS bloqueia)
@@ -271,7 +271,11 @@ Resend (emails transacionais)
   única da chamada ao modelo. Trocou a Anthropic em 21/ago/2026 — sem tier grátis contínuo,
   ficou sem crédito e derrubava o relatório da Home sem avisar ninguém)
 - `MP_ACCESS_TOKEN` (Mercado Pago)
-- `RESEND_API_KEY`
+- `RESEND_API_KEY` (ainda usado por `api/email-alert.ts` e `api/health.ts` — NÃO pelo `daily-report.ts`, ver abaixo)
+- `CALLMEBOT_PHONE`, `CALLMEBOT_APIKEY` (WhatsApp pessoal do founder via CallMeBot, serviço
+  gratuito de terceiro — usado só por `api/daily-report.ts`, trocou o envio por e-mail em
+  25/ago/2026 a pedido do usuário, "polui demais o email". `CALLMEBOT_PHONE` é o número sem o
+  9 extra, formato que o WhatsApp do usuário reportou pro serviço no cadastro)
 
 ### Alias de importação
 ```typescript
