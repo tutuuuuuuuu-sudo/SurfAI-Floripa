@@ -13,6 +13,12 @@ const CALLMEBOT_APIKEY = process.env.CALLMEBOT_APIKEY
 
 const SPOTS = getBeaches(['campeche', 'joaquina', 'mole', 'barra-lagoa', 'santinho', 'morro-pedras'])
 
+// Contas do founder e da família, usadas pra testar o app — excluídas de todas as
+// contagens do relatório (usuários, assinantes, MRR) pra não confundir os números reais
+// (surfaifloripa@gmail.com e sergiogarraza@gmail.com)
+const EXCLUDED_USER_IDS = ['8989de89-2c74-468c-b963-6e4011175d82', '147f3924-a8ee-46ff-9e3b-2b4d583c0ed6']
+const excludeFilter = (column: string) => `${column}=not.in.(${EXCLUDED_USER_IDS.join(',')})`
+
 // ── Fontes de dados ───────────────────────────────────────────────────────────
 
 async function getUserStats(): Promise<{
@@ -41,7 +47,7 @@ async function getUserStats(): Promise<{
       fetch(`${SUPABASE_URL}/auth/v1/admin/users?per_page=1`, {
         headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` },
       }),
-      fetch(`${SUPABASE_URL}/rest/v1/subscriptions?status=eq.premium&expires_at=gte.${new Date().toISOString()}&select=id,created_at,plan,amount`, {
+      fetch(`${SUPABASE_URL}/rest/v1/subscriptions?status=eq.premium&expires_at=gte.${new Date().toISOString()}&${excludeFilter('user_id')}&select=id,created_at,plan,amount`, {
         headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` },
       }),
     ])
@@ -64,7 +70,7 @@ async function getUserStats(): Promise<{
 
     // Cancelamentos (subscriptions com status cancelled, atualizadas hoje)
     const cancelRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/subscriptions?status=eq.cancelled&updated_at=gte.${todayISO}&select=id`,
+      `${SUPABASE_URL}/rest/v1/subscriptions?status=eq.cancelled&updated_at=gte.${todayISO}&${excludeFilter('user_id')}&select=id`,
       { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } }
     )
     const cancelData = cancelRes.ok ? await cancelRes.json() as { id: string }[] : []
@@ -72,7 +78,7 @@ async function getUserStats(): Promise<{
 
     // Total de usuários via Content-Range (não carrega todos os registros na memória)
     const countRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?select=id`,
+      `${SUPABASE_URL}/rest/v1/profiles?select=id&${excludeFilter('id')}`,
       {
         headers: {
           apikey: SUPABASE_SERVICE_KEY,
@@ -87,7 +93,7 @@ async function getUserStats(): Promise<{
 
     // Novos usuários hoje via Content-Range (evita carregar registros só para contar)
     const newTodayRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?select=id&created_at=gte.${todayISO}`,
+      `${SUPABASE_URL}/rest/v1/profiles?select=id&created_at=gte.${todayISO}&${excludeFilter('id')}`,
       {
         headers: {
           apikey: SUPABASE_SERVICE_KEY,
