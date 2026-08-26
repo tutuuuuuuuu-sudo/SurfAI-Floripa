@@ -83,7 +83,7 @@ async function testWindy(): Promise<TestResult> {
     const res = await fetch('https://api.windy.com/api/point-forecast/v2', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lat: -27.68, lon: -48.49, model: 'gfsWave', parameters: ['swell1'], key }),
+      body: JSON.stringify({ lat: -27.68, lon: -48.49, model: 'gfsWave', parameters: ['swell1'], levels: ['surface'], key }),
       signal: AbortSignal.timeout(8000),
     })
     const ms = Date.now() - start
