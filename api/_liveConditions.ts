@@ -315,28 +315,33 @@ function formatTimeBrasilia(isoString: string): string {
 
 async function fetchOpenMeteo(lat: string, lng: string): Promise<LiveConditions | null> {
   try {
-    // models=ecmwf_wam (achado 28/ago/2026): pede o modelo ECMWF direto, o mesmo que
-    // Windy.com/Surfline/Surfguru/Waves mostram — em vez do modelo padrão da Open-Meteo
-    // (classe GFS, sistematicamente mais baixo pro litoral de Floripa, ver comentário de
-    // MODEL_BIAS_CORRECTION acima). Por isso NÃO aplica mais applyModelBiasCorrection aqui:
-    // pedir o modelo certo resolve o viés na raiz, sem precisar de multiplicador nenhum.
-    const [marineRes, weatherRes] = await Promise.all([
-      fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}&current=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,swell_wave_direction,sea_surface_temperature&length_unit=metric&models=ecmwf_wam`),
+    // Duas chamadas de marine em paralelo (achado 28/ago/2026): o modelo ecmwf_wam retorna
+    // só wave_height/wave_period/wave_direction (a onda combinada) — swell_wave_*, e
+    // principalmente sea_surface_temperature, voltam `null` quando `models=ecmwf_wam` é
+    // pedido sozinho (testado ao vivo: o payload inteiro desses campos vem null, não é
+    // ausência de dado no ponto, é o modelo não calcular esses parâmetros). Por isso a
+    // altura de onda vem do modelo ecmwf_wam direto (o mesmo que Windy.com/Surfline/
+    // Surfguru/Waves mostram — ver comentário de MODEL_BIAS_CORRECTION acima, por isso NÃO
+    // aplica applyModelBiasCorrection aqui), mas período/direção de swell e temperatura da
+    // água continuam vindo do modelo padrão (blend com mais parâmetros calculados).
+    const [marineRes, marineEcmwfRes, weatherRes] = await Promise.all([
+      fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}&current=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,swell_wave_direction,sea_surface_temperature&length_unit=metric`),
+      fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}&current=wave_height&length_unit=metric&models=ecmwf_wam`),
       fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=wind_speed_10m,wind_direction_10m&daily=sunrise,sunset&wind_speed_unit=kmh&timezone=America%2FSao_Paulo`),
     ])
-    if (!marineRes.ok || !weatherRes.ok) return null
+    if (!marineRes.ok || !marineEcmwfRes.ok || !weatherRes.ok) return null
 
     interface OpenMeteoMarine { error?: string; current?: { swell_wave_height?: number; swell_wave_period?: number; swell_wave_direction?: number; wave_height?: number; wave_period?: number; wave_direction?: number; sea_surface_temperature?: number } }
+    interface OpenMeteoMarineEcmwf { error?: string; current?: { wave_height?: number } }
     interface OpenMeteoWeather { error?: string; current?: { wind_speed_10m?: number; wind_direction_10m?: number }; daily?: { sunrise?: string[]; sunset?: string[] } }
     const marine = await marineRes.json() as OpenMeteoMarine
+    const marineEcmwf = await marineEcmwfRes.json() as OpenMeteoMarineEcmwf
     const weather = await weatherRes.json() as OpenMeteoWeather
-    if (marine.error || weather.error) return null
+    if (marine.error || marineEcmwf.error || weather.error) return null
 
-    // wave_height é a altura combinada (wind waves + swell) — swell_wave_height sozinho é só
-    // o componente de swell, sempre menor ou igual ao total. A prioridade estava invertida
-    // (achado 24/ago/2026, mesmo problema do fetchWindy acima): preferia o componente menor
-    // em vez do total real.
-    const waveHeightBruto = marine.current?.wave_height ?? marine.current?.swell_wave_height ?? 0
+    // wave_height (ecmwf_wam) é a altura combinada (wind waves + swell) do modelo certo —
+    // fallback pro modelo padrão só se o ecmwf_wam vier vazio (ex: fora da grade dele).
+    const waveHeightBruto = marineEcmwf.current?.wave_height ?? marine.current?.wave_height ?? marine.current?.swell_wave_height ?? 0
     if (waveHeightBruto < 0.1 || Number.isNaN(waveHeightBruto)) return null
 
     return {

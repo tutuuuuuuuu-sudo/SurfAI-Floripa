@@ -61,14 +61,22 @@ export async function fetchHourlyForecast(
   lng: string,
   forecastDays: number
 ): Promise<HourlyForecast | null> {
-  const [marineRes, weatherRes] = await Promise.all([
-    // models=ecmwf_wam (28/ago/2026): mesmo modelo pedido em _liveConditions.ts fetchOpenMeteo
-    // — pra "agora", hora a hora e os 14 dias baterem na mesma fonte (ver comentário de
-    // MODEL_BIAS_CORRECTION em _liveConditions.ts pro histórico completo).
+  const [marineRes, marineEcmwfRes, weatherRes] = await Promise.all([
     fetch(
       `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}` +
       `&hourly=wave_height,wave_period,swell_wave_height,swell_wave_period,swell_wave_direction` +
-      `&length_unit=metric&timezone=America%2FSao_Paulo&forecast_days=${forecastDays}&models=ecmwf_wam`
+      `&length_unit=metric&timezone=America%2FSao_Paulo&forecast_days=${forecastDays}`
+    ),
+    // models=ecmwf_wam (28/ago/2026, ver comentário de MODEL_BIAS_CORRECTION em
+    // _liveConditions.ts pro histórico completo): pede a altura de onda do modelo ECMWF
+    // direto — o mesmo modelo que Windy.com/Surfline/Surfguru/Waves mostram, em vez do
+    // modelo padrão (classe GFS, sistematicamente mais baixo). Chamada separada porque
+    // ecmwf_wam sozinho só retorna wave_height/wave_period (a onda combinada) — período e
+    // direção de swell continuam vindo da chamada padrão acima, que os calcula.
+    fetch(
+      `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}` +
+      `&hourly=wave_height&length_unit=metric&timezone=America%2FSao_Paulo` +
+      `&forecast_days=${forecastDays}&models=ecmwf_wam`
     ),
     // daily=sunrise,sunset na MESMA chamada que já busca vento/temperatura hora a hora —
     // sem round-trip extra pro nascer/pôr do sol.
@@ -79,9 +87,10 @@ export async function fetchHourlyForecast(
     ),
   ])
 
-  if (!marineRes.ok || !weatherRes.ok) return null
+  if (!marineRes.ok || !marineEcmwfRes.ok || !weatherRes.ok) return null
 
   const marine = await marineRes.json() as { hourly?: MarineHourly }
+  const marineEcmwf = await marineEcmwfRes.json() as { hourly?: { wave_height?: number[] } }
   const weather = await weatherRes.json() as { hourly?: WeatherHourly; daily?: DailySunTimes }
   const times = marine.hourly?.time ?? []
   const sunriseHour = isoHour(weather.daily?.sunrise?.[0])
@@ -89,11 +98,10 @@ export async function fetchHourlyForecast(
 
   function readHour(idx: number, orientation: number): HourReading | null {
     if (idx < 0 || idx >= times.length) return null
-    // wave_height é a altura combinada (wind waves + swell) — swell_wave_height sozinho é só
-    // o componente de swell, sempre menor ou igual ao total. Prioridade estava invertida
-    // (achado 24/ago/2026, mesmo problema do fetchOpenMeteo em _liveConditions.ts).
+    // wave_height (ecmwf_wam) é a altura combinada (wind waves + swell) do modelo certo —
+    // fallback pro modelo padrão só se vier vazio pra esse índice.
     const rawWaveHeight = Number(
-      (marine.hourly?.wave_height?.[idx] ?? marine.hourly?.swell_wave_height?.[idx] ?? 1.0).toFixed(1)
+      (marineEcmwf.hourly?.wave_height?.[idx] ?? marine.hourly?.wave_height?.[idx] ?? marine.hourly?.swell_wave_height?.[idx] ?? 1.0).toFixed(1)
     )
     const swellDirection = degreesToDir(marine.hourly?.swell_wave_direction?.[idx] ?? 180)
     // Mesma correção de exposição direcional aplicada em surf.ts — sem isso, a mesma
