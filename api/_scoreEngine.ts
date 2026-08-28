@@ -20,6 +20,18 @@ export interface ScoreBreakdown {
 // Existe separado (em vez de só retornar o número) pra que a UI que EXPLICA a nota pro
 // usuário (ScoreExplainer.tsx) use os mesmos três números que compõem a nota de verdade,
 // em vez de recalcular uma aproximação própria que pode não bater com o total.
+// Pesos revistos em 28/ago/2026, a pedido explícito do usuário (founder, surfista local):
+// tamanho de onda sozinho não faz um mar bom em Floripa — pode estar grande e mal-encaixado,
+// ou com vento forte destruindo a forma. O usuário estimou a proporção real (não é medição,
+// é julgamento de quem surfa a região): ~50% tamanho, ~30% vento, ~20% período/formato do
+// swell. As faixas abaixo foram calibradas pra bater com essa proporção (raio de variação de
+// cada componente: onda 6.0 pontos ≈ 54%, vento 3.0 ≈ 27%, período 2.2 ≈ 20% — aproximação,
+// não exata, difícil bater 50/30/20 perfeito com um piso fixo de onda em 4.0).
+//
+// Os limiares de waveBase também foram multiplicados por 1.85 nesta mesma sessão, pra
+// acompanhar a correção de viés do modelo bruto (ver MODEL_BIAS_CORRECTION em
+// _liveConditions.ts) — sem isso, a mesma condição real de mar passaria a cair numa faixa
+// mais alta só porque o número de entrada mudou de escala, não porque o mar ficou melhor.
 export function explainSurfScore(
   waveHeight: number,
   windSpeed: number,
@@ -27,20 +39,22 @@ export function explainSurfScore(
   windDir: string,
   beachOrientation: number
 ): ScoreBreakdown {
-  // Base de score pela altura da onda
+  // Base de score pela altura da onda (limiares × 1.85 — ver comentário acima)
   let waveBase: number
-  if (waveHeight >= 2.5) waveBase = 10
-  else if (waveHeight >= 2.0) waveBase = 9.5
-  else if (waveHeight >= 1.5) waveBase = 9.0
-  else if (waveHeight >= 1.2) waveBase = 8.5
-  else if (waveHeight >= 1.0) waveBase = 8.0
-  else if (waveHeight >= 0.8) waveBase = 7.5
-  else if (waveHeight >= 0.6) waveBase = 7.0
-  else if (waveHeight >= 0.5) waveBase = 6.5
-  else if (waveHeight >= 0.4) waveBase = 5.5
+  if (waveHeight >= 4.63) waveBase = 10
+  else if (waveHeight >= 3.70) waveBase = 9.5
+  else if (waveHeight >= 2.78) waveBase = 9.0
+  else if (waveHeight >= 2.22) waveBase = 8.5
+  else if (waveHeight >= 1.85) waveBase = 8.0
+  else if (waveHeight >= 1.48) waveBase = 7.5
+  else if (waveHeight >= 1.11) waveBase = 7.0
+  else if (waveHeight >= 0.93) waveBase = 6.5
+  else if (waveHeight >= 0.74) waveBase = 5.5
   else waveBase = 4.0
 
-  // Penalização pelo vento considerando a orientação da praia
+  // Penalização pelo vento considerando a orientação da praia (faixa reduzida de 4.0 pra
+  // 3.0 de amplitude máxima, pra abrir espaço pro peso maior do período — ver comentário
+  // acima sobre a proporção 50/30/20)
   const offshoreDir = (beachOrientation + 180) % 360
   let angleDiff = Math.abs((WIND_DEG[windDir] ?? 0) - offshoreDir)
   if (angleDiff > 180) angleDiff = 360 - angleDiff
@@ -50,26 +64,27 @@ export function explainSurfScore(
   if (angleDiff <= 45) {
     // Offshore — vento saindo do mar, deixa ondas limpas
     windQuality = 'offshore'
-    windPenalty = windSpeed <= 10 ? 0 : windSpeed <= 15 ? -0.3 : windSpeed <= 20 ? -0.8 : -1.5
+    windPenalty = windSpeed <= 10 ? 0 : windSpeed <= 15 ? -0.2 : windSpeed <= 20 ? -0.6 : -1.1
   } else if (angleDiff <= 90) {
     // Lateral
     windQuality = 'lateral'
-    windPenalty = windSpeed <= 10 ? -0.5 : windSpeed <= 15 ? -1.0 : windSpeed <= 20 ? -1.8 : -2.5
+    windPenalty = windSpeed <= 10 ? -0.4 : windSpeed <= 15 ? -0.8 : windSpeed <= 20 ? -1.4 : -1.9
   } else {
     // Onshore — vento bagunçando as ondas
     windQuality = 'onshore'
-    windPenalty = windSpeed <= 10 ? -1.0 : windSpeed <= 15 ? -2.0 : windSpeed <= 20 ? -3.0 : -4.0
+    windPenalty = windSpeed <= 10 ? -0.8 : windSpeed <= 15 ? -1.5 : windSpeed <= 20 ? -2.3 : -3.0
   }
 
-  // Ajuste pelo período do swell
+  // Ajuste pelo período do swell (faixa ampliada de 1.1 pra 2.2 de amplitude — dobrou o peso
+  // relativo do período, pra chegar mais perto dos ~20% que o usuário pediu)
   let periodAdjust: number
-  if (swellPeriod >= 16) periodAdjust = 0.5
-  else if (swellPeriod >= 14) periodAdjust = 0.3
-  else if (swellPeriod >= 12) periodAdjust = 0.2
+  if (swellPeriod >= 16) periodAdjust = 1.0
+  else if (swellPeriod >= 14) periodAdjust = 0.6
+  else if (swellPeriod >= 12) periodAdjust = 0.4
   else if (swellPeriod >= 10) periodAdjust = 0
-  else if (swellPeriod >= 8) periodAdjust = -0.2
-  else if (swellPeriod >= 7) periodAdjust = -0.4
-  else periodAdjust = -0.6
+  else if (swellPeriod >= 8) periodAdjust = -0.4
+  else if (swellPeriod >= 7) periodAdjust = -0.8
+  else periodAdjust = -1.2
 
   const total = Math.min(10, Math.max(1, Number((waveBase + windPenalty + periodAdjust).toFixed(1))))
   return { waveBase, windPenalty, windQuality, periodAdjust, total }

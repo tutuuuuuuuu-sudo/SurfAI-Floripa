@@ -5,10 +5,10 @@ import { calculateSurfScore, applyDirectionalExposure, explainSurfScore } from '
 describe('explainSurfScore', () => {
   it('a soma dos três componentes bate exatamente com calculateSurfScore (mesmos inputs)', () => {
     const cases: [number, number, number, string, number][] = [
-      [2.5, 5, 16, 'W', 90],
-      [1.0, 12, 9, 'S', 90],
-      [0.4, 21, 7, 'SSE', 90],
-      [0.7, 24, 7, 'S', 180],
+      [4.63, 5, 16, 'W', 90],
+      [1.85, 12, 9, 'S', 90],
+      [0.74, 21, 7, 'SSE', 90],
+      [1.30, 24, 7, 'S', 180],
     ]
     for (const args of cases) {
       const total = calculateSurfScore(...args)
@@ -45,19 +45,23 @@ describe('calculateSurfScore', () => {
   // ── Altura de onda ───────────────────────────────────────────────────────────
 
   it('ondas 2.5m+ com condições ideais retorna 10', () => {
-    // Praia orientação 90° (leste), vento W (offshore), vento leve, período longo
-    const score = calculateSurfScore(2.5, 5, 16, 'W', 90)
+    // Praia orientação 90° (leste), vento W (offshore), vento leve, período longo.
+    // Entrada em 5.0 (não 2.5) pra representar a mesma onda real depois da correção de
+    // viés de modelo de 28/ago/2026 (MODEL_BIAS_CORRECTION em _liveConditions.ts) — o
+    // valor que chega aqui já vem multiplicado por ~1.85 antes de entrar nessa função.
+    const score = calculateSurfScore(5.0, 5, 16, 'W', 90)
     expect(score).toBe(10)
   })
 
   it('ondas 1.0m retorna base 8.0 com condições neutras', () => {
-    // Período 10s (neutro), vento offshore leve
-    const score = calculateSurfScore(1.0, 5, 10, 'W', 90)
+    // Período 10s (neutro), vento offshore leve. Entrada em 1.85 (não 1.0) — mesmo motivo
+    // do teste acima, é o limiar exato de waveBase=8.0 na escala pós-correção.
+    const score = calculateSurfScore(1.85, 5, 10, 'W', 90)
     expect(score).toBe(8)
   })
 
   it('ondas muito pequenas (0.3m) penaliza bastante', () => {
-    const score = calculateSurfScore(0.3, 5, 10, 'W', 90)
+    const score = calculateSurfScore(0.56, 5, 10, 'W', 90)
     expect(score).toBeLessThan(5)
   })
 
