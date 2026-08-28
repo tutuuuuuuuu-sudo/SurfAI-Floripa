@@ -1,0 +1,23 @@
+name: Refresh Windy Cache — Atualização proativa das 14 praias
+
+on:
+  schedule:
+    - cron: '0 */2 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  run-refresh-windy-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chamar endpoint de refresh-windy-cache
+        run: |
+          SECRET=$(printf '%s' "${{ secrets.REFRESH_WINDY_CACHE_SECRET }}" | tr -d '[:space:]')
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L \
+            "${{ secrets.APP_URL }}/api/refresh-windy-cache?secret=$SECRET")
+          echo "Status HTTP: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "refresh-windy-cache retornou status $STATUS"
+            exit 1
+          fi

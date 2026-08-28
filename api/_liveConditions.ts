@@ -76,12 +76,21 @@ interface WindyRaw {
 // todo mundo (app inteiro, todas as instâncias) vê o MESMO número nessa janela, em vez de
 // arriscar uma nova chamada à Windy a cada request.
 //
-// 15min (decisão do usuário, 24/ago/2026): com o cache, o consumo diário da Windy é
-// ~14 praias × (1440min/dia ÷ TTL) × 2 chamadas (onda+vento) — 10min dava ~4.000
-// chamadas/dia; 15min corta pra ~2.700, e ainda bate com o mesmo cache de 15min que já
-// existe no navegador (src/lib/surfData.ts), então a "idade" da leitura fica coerente
-// entre as duas camadas.
-const WINDY_CACHE_TTL_MS = 15 * 60 * 1000
+// 150min / 2h30 (revisado 28/ago/2026 — ver refresh-windy-cache.ts): o TTL de 15min
+// original tornava o consumo de chamadas diretamente proporcional ao tráfego (cada
+// praia sem visita há >15min gera uma chamada nova pro primeiro pedido que chegar) —
+// achado 27/ago/2026: isso já estava estourando a cota diária de 500 chamadas da Windy
+// bem cedo (chegou a esgotar às 09:52 UTC), derrubando o app pro fallback Open-Meteo
+// (mais fraco pra essa costa) pelo resto do dia inteiro, cada vez mais cedo conforme o
+// tráfego cresce. Agora um cron (`refresh-windy-cache.ts`, a cada 2h, 12x/dia) é o único
+// responsável por manter o cache quente — 14 praias × 2 chamadas × 12 = 336
+// chamadas/dia, bem abaixo do limite, IMPORTANTE que TTL fique bem maior que o
+// intervalo do cron (2h) pra pedido de usuário nunca disparar chamada reativa própria
+// nesse meio-tempo (senão volta a depender de tráfego). Esse valor de 15min continua
+// sendo usado só como referência de "idade máxima aceitável" pro cache do navegador
+// (src/lib/surfData.ts) — as duas camadas não precisam mais bater exatamente, já que a
+// camada de servidor agora é atualizada por tempo fixo, não por pedido.
+const WINDY_CACHE_TTL_MS = 150 * 60 * 1000
 
 async function getCachedWindyRaw(cacheKey: string): Promise<WindyRaw | null> {
   const supabaseUrl = process.env.SUPABASE_URL
@@ -139,11 +148,14 @@ async function setCachedWindyRaw(cacheKey: string, raw: WindyRaw): Promise<void>
 // fetchWindyHourlySeries (a previsão hora a hora inteira) — a API já devolve a série
 // completa num único POST, então extrair só o índice mais próximo (como fetchWindy fazia
 // sozinho antes) descartava o resto sem necessidade.
-async function fetchWindyRaw(lat: string, lng: string): Promise<WindyRaw | null> {
+//
+// Faz a chamada ao vivo à Windy e grava no cache, sem checar se já existe uma entrada
+// válida antes — usado tanto pelo caminho reativo (fetchWindyRaw, quando o cache expirou)
+// quanto pelo cron proativo (refresh-windy-cache.ts, que sempre quer forçar um dado novo,
+// nunca ler o que já está lá). Extraído em 28/ago/2026 justamente pra esse cron poder
+// reaproveitar a mesma lógica de chamada+gravação sem duplicar.
+export async function fetchAndCacheWindyRaw(lat: string, lng: string): Promise<WindyRaw | null> {
   const cacheKey = `windy:${lat}:${lng}`
-  const cached = await getCachedWindyRaw(cacheKey)
-  if (cached) return cached
-
   const key = process.env.WINDY_API_KEY
   if (!key) return null
 
@@ -201,6 +213,18 @@ async function fetchWindyRaw(lat: string, lng: string): Promise<WindyRaw | null>
     console.error('[liveConditions] Windy lançou exceção:', err)
     return null
   }
+}
+
+// Caminho reativo — usado por fetchWindy/fetchWindyHourlySeries (pedido real de usuário):
+// lê o cache primeiro, só cai pra chamada ao vivo se não tiver nada válido. Com o cron
+// proativo (refresh-windy-cache.ts) rodando a cada 2h e o TTL bem mais largo que isso, o
+// caminho "sem cache" aqui deve ser raro em operação normal — fica como rede de segurança
+// pra quando o cron falhar/atrasar, não como caminho principal de consumo de cota.
+async function fetchWindyRaw(lat: string, lng: string): Promise<WindyRaw | null> {
+  const cacheKey = `windy:${lat}:${lng}`
+  const cached = await getCachedWindyRaw(cacheKey)
+  if (cached) return cached
+  return fetchAndCacheWindyRaw(lat, lng)
 }
 
 // Suaviza sobre uma pequena janela de instantes vizinhos ao redor de `wi`/`wIdx` (raio 1 —
