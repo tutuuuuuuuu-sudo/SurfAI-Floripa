@@ -1,8 +1,6 @@
 export const config = { runtime: 'edge' }
 
 import { fetchHourlyForecast } from './_hourlyForecast.js'
-import { fetchWindyHourlySeries } from './_liveConditions.js'
-import { calculateSurfScore, applyDirectionalExposure } from './_scoreEngine.js'
 
 const ALLOWED_ORIGIN = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 const CORS = {
@@ -58,10 +56,7 @@ export default async function handler(req: Request) {
   if (!isPremium) return json({ error: 'Premium required' }, 403)
 
   try {
-    const [hourly, windySeries] = await Promise.all([
-      fetchHourlyForecast(lat!, lng!, 2),
-      fetchWindyHourlySeries(lat!, lng!),
-    ])
+    const hourly = await fetchHourlyForecast(lat!, lng!, 2)
     if (!hourly) return json({ error: 'Dados indisponíveis' }, 503)
 
     // _hourlyForecast.ts busca os horários com timezone=America/Sao_Paulo explícito;
@@ -69,16 +64,14 @@ export default async function handler(req: Request) {
     const today = todaySP()
     const nowHour = nowHourSP()
 
-    // A Windy cobre hoje hora a hora (mesmo modelo usado pela nota principal) — quando ela
-    // tem um ponto pra uma hora, usa ele em vez do Open-Meteo. Sem isso, "agora" (Windy, via
-    // fetchLiveConditions/surf.ts) e "daqui a 1h" (só Open-Meteo aqui) podiam vir de dois
-    // modelos com direção de swell bem diferente pro mesmo ponto, e como a altura exposta
-    // depende muito dessa direção, a troca de fonte de uma hora pra outra criava uma queda
-    // fisicamente impossível (achado 24/ago/2026: 1.4m "agora" caindo pra 0.4m já na hora
-    // seguinte, Morro das Pedras — ver comentário em _liveConditions.ts).
-    const windyByHour = new Map(
-      (windySeries ?? []).filter(p => p.date === today).map(p => [p.hour, p])
-    )
+    // Fonte única pra toda hora, incluindo "agora": _hourlyForecast.ts (Open-Meteo,
+    // ecmwf_wam) — a mesma fonte que surf.ts usa via fetchLiveConditions desde 28/ago/2026.
+    // Antes disso, esse trecho misturava um ponto da Windy pra "agora" com Open-Meteo pras
+    // horas seguintes (pra bater com a nota principal, que na época vinha da Windy) — virou
+    // desnecessário (e arriscado de novo) depois que a fonte principal trocou pra Open-Meteo:
+    // manter os dois misturados reintroduziria a mesma queda fisicamente impossível entre
+    // horas que a mistura tinha sido criada pra evitar (achado original 24/ago/2026, Morro
+    // das Pedras: 1.4m "agora" caindo pra 0.4m já na hora seguinte, duas fontes divergindo).
 
     // Filtra apenas as horas de hoje, a partir da hora atual
     const slots: HourlySlot[] = []
@@ -87,19 +80,7 @@ export default async function handler(req: Request) {
       const hour = parseInt(t.slice(11, 13), 10)
       if (date !== today) return
 
-      const windyPoint = windyByHour.get(hour)
-      const reading = windyPoint
-        ? {
-            waveHeight: applyDirectionalExposure(windyPoint.waveHeight, windyPoint.swellDirection, orientation),
-            windSpeed: windyPoint.windSpeed,
-            windDirection: windyPoint.windDir,
-            swellPeriod: windyPoint.swellPeriod,
-            score: calculateSurfScore(
-              applyDirectionalExposure(windyPoint.waveHeight, windyPoint.swellDirection, orientation),
-              windyPoint.windSpeed, windyPoint.swellPeriod, windyPoint.windDir, orientation
-            ),
-          }
-        : hourly.readHour(i, orientation)
+      const reading = hourly.readHour(i, orientation)
       if (!reading) return
 
       slots.push({

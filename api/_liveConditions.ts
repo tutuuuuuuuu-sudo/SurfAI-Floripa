@@ -1,6 +1,5 @@
 // Cascata de fontes de condição de surf em tempo real — fonte única usada por surf.ts (nota
-// principal exibida na Home/SpotDetails) e por hourly.ts (pra alinhar o slot "agora" da
-// Melhor Janela do Dia com a MESMA fonte, não uma leitura de modelo diferente).
+// principal exibida na Home/SpotDetails).
 // Prefixo _ indica que não é um handler HTTP — não será exposto como endpoint pelo Vercel.
 
 const DIRS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
@@ -47,25 +46,33 @@ function windowIndices(idx: number, len: number, radius: number): number[] {
   return out
 }
 
-// Correção de viés do modelo bruto (achado 27-28/ago/2026): tanto a Windy (modelo
-// gfsWave) quanto o Open-Meteo (modelo padrão) usam o GFS como base, que sistematicamente
-// mostra altura de onda menor que o ECMWF (modelo que Windy.com, Surfline, Surfguru e
-// Waves usam pra exibir ao usuário) pro litoral de Floripa — não é um bug de leitura
-// nosso, é a diferença real entre os dois institutos de meteorologia. Confirmado
-// comparando as 14 praias monitoradas contra os 4 concorrentes num mesmo instante
-// (27/ago/2026): em média, nosso valor bruto (ANTES do desconto de exposição
-// direcional) saía em ~54% do que os concorrentes mostravam — fator de correção de
-// ~1,85 pra alinhar a média.
+// Correção de viés do modelo bruto — histórico:
 //
-// Aplicado aqui, sobre o valor bruto, ANTES de applyDirectionalExposure (api/_scoreEngine.ts)
-// — as duas correções são de natureza diferente (uma corrige viés de modelo climático, a
-// outra corrige geometria de praia) e não devem ser misturadas num único número: se depois
-// dessa correção ainda sobrar gap contra os concorrentes, o próximo passo é reavaliar
-// applyDirectionalExposure separadamente, com dado novo, não inflar esse fator aqui.
+// 27/ago/2026: descoberto que tanto a Windy (modelo gfsWave) quanto o Open-Meteo (modelo
+// padrão) usam o GFS como base, que mostra altura de onda menor que o ECMWF (modelo que
+// Windy.com, Surfline, Surfguru e Waves usam pra exibir ao usuário) pro litoral de Floripa.
+// Uma comparação pontual (uma praia, um instante) sugeriu ~46% de subestimativa, e um fator
+// fixo de ×1.85 foi aplicado sobre TODAS as fontes da cascata, antes de applyDirectionalExposure.
 //
-// **Isso é uma estimativa de partida, não uma constante definitiva** — veio de UMA
-// comparação pontual (um dia, um horário), não de uma média de semanas. Precisa ser
-// revisto periodicamente conforme mais comparações forem feitas.
+// 28/ago/2026: medindo as 14 praias de uma vez (não mais uma amostra única), esse fator fixo
+// se provou errado de dois jeitos ao mesmo tempo — achado com o app já em produção com o
+// ×1.85 ativo, comparado praia a praia contra Windy/Surfline/Surfguru/Waves:
+//   1. O viés real do modelo bruto não é ~46%, varia de -37% a +24% dependendo da praia e do
+//      swell do momento (média medida: ~17%) — não existe fator fixo que sirva pras duas pontas.
+//   2. Pior ainda: onde o swell bate bem alinhado com a orientação da praia,
+//      applyDirectionalExposure quase não desconta nada (fator perto de 1.0), e a correção
+//      passa inteira — resultado: praias com swell bem-alinhado estouravam pra 200%+ do que
+//      os concorrentes mostravam, enquanto praias com swell de lado (fator baixo, desconto já
+//      grande) ficavam por acaso perto do certo. As duas correções (viés de modelo + geometria
+//      de praia) empilhadas descontroladamente.
+//
+// A correção de raiz não é ajustar esse número de novo — é pedir o modelo certo direto na
+// fonte. Open-Meteo aceita `models=ecmwf_wam` (o MESMO modelo que Windy.com/Surfline/Surfguru
+// mostram), então fetchOpenMeteo() abaixo passou a pedir isso e NÃO aplica mais essa correção
+// — não precisa, já está no modelo certo. A Windy (fetchWindy) não vende ECMWF em nenhum
+// plano, e o Stormglass também segue de classe GFS — essas duas continuam GFS-based e viraram
+// fallback raro (só quando o Open-Meteo falha), então mantêm a correção abaixo. **1.85 segue
+// sendo uma estimativa de partida pra essas duas fontes, não uma constante definitiva.**
 const MODEL_BIAS_CORRECTION = 1.85
 
 function applyModelBiasCorrection(waveHeight: number): number {
@@ -169,10 +176,7 @@ async function setCachedWindyRaw(cacheKey: string, raw: WindyRaw): Promise<void>
   }
 }
 
-// Chamada crua à Windy, compartilhada entre fetchWindy (só "agora") e
-// fetchWindyHourlySeries (a previsão hora a hora inteira) — a API já devolve a série
-// completa num único POST, então extrair só o índice mais próximo (como fetchWindy fazia
-// sozinho antes) descartava o resto sem necessidade.
+// Chamada crua à Windy, usada por fetchWindy (fallback de "agora", ver fetchLiveConditions).
 //
 // Faz a chamada ao vivo à Windy e grava no cache, sem checar se já existe uma entrada
 // válida antes — usado tanto pelo caminho reativo (fetchWindyRaw, quando o cache expirou)
@@ -240,7 +244,7 @@ export async function fetchAndCacheWindyRaw(lat: string, lng: string): Promise<W
   }
 }
 
-// Caminho reativo — usado por fetchWindy/fetchWindyHourlySeries (pedido real de usuário):
+// Caminho reativo — usado por fetchWindy (pedido real de usuário):
 // lê o cache primeiro, só cai pra chamada ao vivo se não tiver nada válido. Com o cron
 // proativo (refresh-windy-cache.ts) rodando a cada 2h e o TTL bem mais largo que isso, o
 // caminho "sem cache" aqui deve ser raro em operação normal — fica como rede de segurança
@@ -304,44 +308,6 @@ async function fetchWindy(lat: string, lng: string): Promise<LiveConditions | nu
   return point
 }
 
-export interface WindyHourPoint extends LiveConditions {
-  date: string  // "AAAA-MM-DD" no fuso de Floripa
-  hour: number  // 0-23 no fuso de Floripa
-}
-
-// Série hora a hora completa da Windy (não só "agora") — usada por hourly.ts pra manter a
-// Melhor Janela do Dia na MESMA fonte em todas as horas, não só na hora atual. Sem isso,
-// "agora" vinha da Windy (fetchWindy acima) enquanto as próximas horas vinham só do
-// Open-Meteo (_hourlyForecast.ts) — dois modelos diferentes podem divergir bastante na
-// direção do swell num mesmo ponto/instante, e como a altura exposta depende fortemente
-// dessa direção (applyDirectionalExposure), a troca de fonte de uma hora pra outra podia
-// criar uma queda impossível fisicamente (achado 24/ago/2026, reportado pelo usuário: 1.4m
-// "agora" caindo pra 0.4m já na hora seguinte, no Morro das Pedras — Windy tinha o swell
-// vindo de E, Open-Meteo tinha o MESMO swell vindo de SSE pro mesmo ponto/instante).
-export async function fetchWindyHourlySeries(lat: string, lng: string): Promise<WindyHourPoint[] | null> {
-  const raw = await fetchWindyRaw(lat, lng)
-  if (!raw) return null
-
-  const fmt = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hour12: false,
-  })
-
-  const points: WindyHourPoint[] = []
-  raw.ts.forEach((t, i) => {
-    const ms = t > 1e11 ? t : t * 1000
-    const parts = fmt.formatToParts(new Date(ms))
-    const get = (type: string) => parts.find(p => p.type === type)?.value ?? ''
-    const date = `${get('year')}-${get('month')}-${get('day')}`
-    const hour = parseInt(get('hour'), 10) % 24
-
-    const wIdx = nearestIndexForMs(ms, raw.windTs)
-    const point = extractWindyPoint(raw, i, wIdx)
-    if (point) points.push({ ...point, date, hour })
-  })
-
-  return points.length > 0 ? points : null
-}
-
 function formatTimeBrasilia(isoString: string): string {
   const timePart = isoString.split('T')[1]
   return timePart ? timePart.substring(0, 5) : ''
@@ -349,8 +315,13 @@ function formatTimeBrasilia(isoString: string): string {
 
 async function fetchOpenMeteo(lat: string, lng: string): Promise<LiveConditions | null> {
   try {
+    // models=ecmwf_wam (achado 28/ago/2026): pede o modelo ECMWF direto, o mesmo que
+    // Windy.com/Surfline/Surfguru/Waves mostram — em vez do modelo padrão da Open-Meteo
+    // (classe GFS, sistematicamente mais baixo pro litoral de Floripa, ver comentário de
+    // MODEL_BIAS_CORRECTION acima). Por isso NÃO aplica mais applyModelBiasCorrection aqui:
+    // pedir o modelo certo resolve o viés na raiz, sem precisar de multiplicador nenhum.
     const [marineRes, weatherRes] = await Promise.all([
-      fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}&current=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,swell_wave_direction,sea_surface_temperature&length_unit=metric`),
+      fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}&current=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,swell_wave_direction,sea_surface_temperature&length_unit=metric&models=ecmwf_wam`),
       fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=wind_speed_10m,wind_direction_10m&daily=sunrise,sunset&wind_speed_unit=kmh&timezone=America%2FSao_Paulo`),
     ])
     if (!marineRes.ok || !weatherRes.ok) return null
@@ -369,7 +340,7 @@ async function fetchOpenMeteo(lat: string, lng: string): Promise<LiveConditions 
     if (waveHeightBruto < 0.1 || Number.isNaN(waveHeightBruto)) return null
 
     return {
-      waveHeight: applyModelBiasCorrection(waveHeightBruto),
+      waveHeight: Number(waveHeightBruto.toFixed(1)),
       swellPeriod: Math.round(marine.current?.swell_wave_period ?? marine.current?.wave_period ?? 8),
       swellDirection: degToDir(marine.current?.swell_wave_direction ?? marine.current?.wave_direction ?? 180),
       windSpeed: Math.round(weather.current?.wind_speed_10m ?? 0),
@@ -428,20 +399,35 @@ async function fetchStormglass(lat: string, lng: string): Promise<LiveConditions
   }
 }
 
-// Mesma cascata que já era usada só dentro de surf.ts: Windy (melhor qualidade) →
-// Open-Meteo (gratuito) → Stormglass (fallback). Loga qual fonte respondeu de fato (mesmo
-// padrão de callChatCascade em surf-chat.ts) — sem isso não dava pra saber, só pelos
-// números, se a Windy estava mesmo respondendo ou se o app rodava só no fallback
-// silenciosamente (achado 24/ago/2026 investigando altura de onda divergente do Surfline).
+// Cascata: Open-Meteo (ecmwf_wam) → Windy (fallback) → Stormglass (fallback). Invertida em
+// 28/ago/2026 — Open-Meteo virou principal por pedir o modelo ECMWF direto (o mesmo que os
+// concorrentes mostram, ver comentário de MODEL_BIAS_CORRECTION acima), enquanto a Windy não
+// vende ECMWF em nenhum plano. Windy/Stormglass ficam como rede de segurança pra quando o
+// Open-Meteo falhar — o cron de refresh-windy-cache.ts continua rodando pra manter esse
+// fallback pronto, mesmo recebendo bem menos tráfego agora que não é mais o caminho principal.
+//
+// Nota de risco (decisão do usuário, 28/ago/2026): o tier gratuito da Open-Meteo proíbe uso
+// comercial ("apps com assinatura ou anúncio" é citado explicitamente nos termos deles) — o
+// app já usava a Open-Meteo como fallback antes disso, e a Windy free tier também é rotulada
+// "Testing, não para produção" pela própria Windy, então nenhuma das duas fontes gratuitas
+// era 100% aderente aos termos mesmo antes dessa mudança. Virar fonte principal aumenta o
+// volume nessa situação, não cria uma categoria de risco nova. Decisão consciente: sem
+// orçamento agora pro tier pago (Open-Meteo Standard, ~R$150/mês), aceitar o risco
+// operacional (chave podendo ser bloqueada sem aviso) em troca de dados corretos hoje.
+//
+// Loga qual fonte respondeu de fato (mesmo padrão de callChatCascade em surf-chat.ts) — sem
+// isso não dava pra saber, só pelos números, se a fonte principal estava mesmo respondendo ou
+// se o app rodava só no fallback silenciosamente (achado 24/ago/2026 investigando altura de
+// onda divergente do Surfline).
 export async function fetchLiveConditions(lat: string, lng: string): Promise<LiveConditions | null> {
-  const windy = await fetchWindy(lat, lng)
-  if (windy) { console.log('[liveConditions] Fonte: windy'); return windy }
-
   const openMeteo = await fetchOpenMeteo(lat, lng)
-  if (openMeteo) { console.log('[liveConditions] Fonte: open-meteo (windy falhou)'); return openMeteo }
+  if (openMeteo) { console.log('[liveConditions] Fonte: open-meteo (ecmwf_wam)'); return openMeteo }
+
+  const windy = await fetchWindy(lat, lng)
+  if (windy) { console.log('[liveConditions] Fonte: windy (open-meteo falhou)'); return windy }
 
   const stormglass = await fetchStormglass(lat, lng)
-  if (stormglass) { console.log('[liveConditions] Fonte: stormglass (windy e open-meteo falharam)'); return stormglass }
+  if (stormglass) { console.log('[liveConditions] Fonte: stormglass (open-meteo e windy falharam)'); return stormglass }
 
   console.error('[liveConditions] Todas as fontes falharam')
   return null

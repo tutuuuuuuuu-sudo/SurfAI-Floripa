@@ -62,10 +62,13 @@ export async function fetchHourlyForecast(
   forecastDays: number
 ): Promise<HourlyForecast | null> {
   const [marineRes, weatherRes] = await Promise.all([
+    // models=ecmwf_wam (28/ago/2026): mesmo modelo pedido em _liveConditions.ts fetchOpenMeteo
+    // — pra "agora", hora a hora e os 14 dias baterem na mesma fonte (ver comentário de
+    // MODEL_BIAS_CORRECTION em _liveConditions.ts pro histórico completo).
     fetch(
       `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}` +
       `&hourly=wave_height,wave_period,swell_wave_height,swell_wave_period,swell_wave_direction` +
-      `&length_unit=metric&timezone=America%2FSao_Paulo&forecast_days=${forecastDays}`
+      `&length_unit=metric&timezone=America%2FSao_Paulo&forecast_days=${forecastDays}&models=ecmwf_wam`
     ),
     // daily=sunrise,sunset na MESMA chamada que já busca vento/temperatura hora a hora —
     // sem round-trip extra pro nascer/pôr do sol.
