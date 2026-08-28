@@ -47,6 +47,31 @@ function windowIndices(idx: number, len: number, radius: number): number[] {
   return out
 }
 
+// Correção de viés do modelo bruto (achado 27-28/ago/2026): tanto a Windy (modelo
+// gfsWave) quanto o Open-Meteo (modelo padrão) usam o GFS como base, que sistematicamente
+// mostra altura de onda menor que o ECMWF (modelo que Windy.com, Surfline, Surfguru e
+// Waves usam pra exibir ao usuário) pro litoral de Floripa — não é um bug de leitura
+// nosso, é a diferença real entre os dois institutos de meteorologia. Confirmado
+// comparando as 14 praias monitoradas contra os 4 concorrentes num mesmo instante
+// (27/ago/2026): em média, nosso valor bruto (ANTES do desconto de exposição
+// direcional) saía em ~54% do que os concorrentes mostravam — fator de correção de
+// ~1,85 pra alinhar a média.
+//
+// Aplicado aqui, sobre o valor bruto, ANTES de applyDirectionalExposure (api/_scoreEngine.ts)
+// — as duas correções são de natureza diferente (uma corrige viés de modelo climático, a
+// outra corrige geometria de praia) e não devem ser misturadas num único número: se depois
+// dessa correção ainda sobrar gap contra os concorrentes, o próximo passo é reavaliar
+// applyDirectionalExposure separadamente, com dado novo, não inflar esse fator aqui.
+//
+// **Isso é uma estimativa de partida, não uma constante definitiva** — veio de UMA
+// comparação pontual (um dia, um horário), não de uma média de semanas. Precisa ser
+// revisto periodicamente conforme mais comparações forem feitas.
+const MODEL_BIAS_CORRECTION = 1.85
+
+function applyModelBiasCorrection(waveHeight: number): number {
+  return Number((waveHeight * MODEL_BIAS_CORRECTION).toFixed(1))
+}
+
 export interface LiveConditions {
   waveHeight: number
   swellPeriod: number
@@ -259,7 +284,7 @@ function extractWindyPoint(raw: WindyRaw, wi: number, wIdx: number): LiveConditi
   const waterTemperature = tempSamples.length ? Math.round(mean(tempSamples) - 273.15) : null
 
   return {
-    waveHeight: Number(finalH.toFixed(1)),
+    waveHeight: applyModelBiasCorrection(finalH),
     swellPeriod: Math.round(sP),
     swellDirection: degToDir(sD),
     windSpeed: windSpeedKmh,
@@ -340,11 +365,11 @@ async function fetchOpenMeteo(lat: string, lng: string): Promise<LiveConditions 
     // o componente de swell, sempre menor ou igual ao total. A prioridade estava invertida
     // (achado 24/ago/2026, mesmo problema do fetchWindy acima): preferia o componente menor
     // em vez do total real.
-    const waveHeight = Number((marine.current?.wave_height ?? marine.current?.swell_wave_height ?? 0).toFixed(1))
-    if (waveHeight < 0.1 || Number.isNaN(waveHeight)) return null
+    const waveHeightBruto = marine.current?.wave_height ?? marine.current?.swell_wave_height ?? 0
+    if (waveHeightBruto < 0.1 || Number.isNaN(waveHeightBruto)) return null
 
     return {
-      waveHeight,
+      waveHeight: applyModelBiasCorrection(waveHeightBruto),
       swellPeriod: Math.round(marine.current?.swell_wave_period ?? marine.current?.wave_period ?? 8),
       swellDirection: degToDir(marine.current?.swell_wave_direction ?? marine.current?.wave_direction ?? 180),
       windSpeed: Math.round(weather.current?.wind_speed_10m ?? 0),
@@ -391,7 +416,7 @@ async function fetchStormglass(lat: string, lng: string): Promise<LiveConditions
 
     const windSpd = pick('windSpeed') // m/s
     return {
-      waveHeight: Number(wH.toFixed(1)),
+      waveHeight: applyModelBiasCorrection(wH),
       swellPeriod: Math.round(pick('swellPeriod') ?? pick('wavePeriod') ?? 8),
       swellDirection: degToDir(pick('swellDirection') ?? pick('waveDirection') ?? 90),
       windSpeed: Math.round((windSpd ?? 0) * 3.6),
