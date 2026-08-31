@@ -168,25 +168,25 @@ export default function Home() {
       </header>
 
       <main className="container mx-auto px-4 py-6 pb-24 space-y-6">
-        <div className="flex items-center justify-between" style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s ease' }}>
-          <div className="flex items-center gap-2 text-sm text-foreground/75">
-            <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-            <span>Atualizado às {(lastUpdated ?? new Date()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2" style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s ease' }}>
+          <div className="flex items-center gap-2 text-sm text-foreground/75 min-w-0">
+            <div className="h-2 w-2 rounded-full bg-primary animate-pulse flex-shrink-0" />
+            <span className="truncate">Atualizado às {(lastUpdated ?? new Date()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
             {topSpot?.weatherCondition && (() => {
               const WeatherIcon = WEATHER_ICONS[topSpot.weatherCondition.icon]
               return (
                 <>
-                  <span className="text-foreground/30">·</span>
-                  <WeatherIcon className="h-4 w-4" />
-                  <span>{topSpot.weatherCondition.label}</span>
+                  <span className="text-foreground/30 flex-shrink-0">·</span>
+                  <WeatherIcon className="h-4 w-4 flex-shrink-0" />
+                  <span className="flex-shrink-0">{topSpot.weatherCondition.label}</span>
                 </>
               )
             })()}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={() => navigate('/compare')}
-              className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full border border-border bg-card/60 text-foreground/85 hover:border-primary/30 hover:text-primary transition-colors"
+              className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full border border-border bg-card/60 text-foreground/85 hover:border-primary/30 hover:text-primary transition-colors whitespace-nowrap"
             >
               <GitCompareArrows className="h-4 w-4" />Comparar praias
             </button>
