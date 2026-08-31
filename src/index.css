@@ -169,6 +169,18 @@
     }
 }
 
+/* iOS Safari dá zoom automático na tela ao focar um campo com fonte abaixo de 16px, e o
+   zoom fica preso até o usuário "tirar" manualmente (achado 31/ago/2026, reportado pelo
+   usuário: botão de enviar do chat some ao digitar, mesmo comportamento em outras telas
+   com input). Os 11 campos de texto/textarea do app usam text-sm (14px) do Tailwind, que
+   perderia pra uma regra dentro de @layer base (utilities do Tailwind sempre vencem layers
+   de base na cascata) — por isso essa regra fica FORA de qualquer @layer, o que garante
+   prioridade sobre as classes utilitárias sem precisar de !important nem mexer campo por
+   campo. */
+input, textarea, select {
+  font-size: 16px;
+}
+
 /* ── Animações globais ─────────────────────────────────────────────────────── */
 @keyframes fadeIn      { from { opacity: 0 }                              to { opacity: 1 } }
 @keyframes slideUp     { from { opacity: 0; transform: translateY(20px) } to { opacity: 1; transform: translateY(0) } }

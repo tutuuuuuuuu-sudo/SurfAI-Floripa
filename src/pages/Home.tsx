@@ -169,15 +169,15 @@ export default function Home() {
 
       <main className="container mx-auto px-4 py-6 pb-24 space-y-6">
         <div className="flex items-center justify-between" style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s ease' }}>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 text-sm text-foreground/75">
             <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
             <span>Atualizado às {(lastUpdated ?? new Date()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
             {topSpot?.weatherCondition && (() => {
               const WeatherIcon = WEATHER_ICONS[topSpot.weatherCondition.icon]
               return (
                 <>
-                  <span className="text-muted-foreground/40">·</span>
-                  <WeatherIcon className="h-3.5 w-3.5" />
+                  <span className="text-foreground/30">·</span>
+                  <WeatherIcon className="h-4 w-4" />
                   <span>{topSpot.weatherCondition.label}</span>
                 </>
               )
@@ -186,9 +186,9 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => navigate('/compare')}
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-border text-muted-foreground hover:border-primary/30 hover:text-primary transition-colors"
+              className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full border border-border bg-card/60 text-foreground/85 hover:border-primary/30 hover:text-primary transition-colors"
             >
-              <GitCompareArrows className="h-3.5 w-3.5" />Comparar praias
+              <GitCompareArrows className="h-4 w-4" />Comparar praias
             </button>
             <NotificationPanel spots={allSpots} favorites={favorites} isPremium={isPremium} />
           </div>

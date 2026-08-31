@@ -19,6 +19,21 @@ interface Props {
 const mapsUrl = (lat: number, lng: number) => `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`
 const wazeUrl = (lat: number, lng: number) => `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`
 
+// Praia com múltiplos picos tem UMA coordenada "principal" cadastrada (às vezes é a de um
+// pico específico, ex: Campeche → Lomba do Sabão, ver surfData.ts) — mandar o usuário pro
+// Maps/Waze com essa coordenada sem dizer qual pico é gera confusão real (reportado pelo
+// usuário 31/ago/2026: Surfline sugeriu Campeche, o pino caiu na Lomba, sem indicação
+// nenhuma de que existiam outros picos como Palanque ou Principal). `subRegions[].bestNow`
+// já vem calculado em surfData.ts (mesmo dado que PicosSection.tsx usa na página da praia)
+// — aqui só reaproveita: se a praia tem sub-picos, navega pro pico com melhor match agora,
+// não pra coordenada genérica da praia, e mostra o nome dele.
+function bestPicoFor(beachId: string, spots: BeachCondition[]): { lat: number; lng: number; picoName: string | null } | null {
+  const spot = spots.find(s => s.id === beachId)
+  if (!spot?.subRegions?.length) return null
+  const best = spot.subRegions.find(s => s.bestNow) ?? spot.subRegions[0]
+  return { lat: best.lat, lng: best.lng, picoName: best.name }
+}
+
 function getPosition(): Promise<GeolocationPosition> {
   return new Promise((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -135,6 +150,7 @@ export function GeoFinderCard({ spots, isPremium }: Props) {
         {status === 'result' && result && (() => {
           const recInfo = getRatingInfo(result.recommended.score)
           const recColor = getScoreColor(result.recommended.score)
+          const recPico = bestPicoFor(result.recommended.id, spots)
           const goToRecommended = () => {
             track('spot_opened', { spot: result.recommended.name, source: 'geo_finder' })
             navigate(`/spot/${result.recommended.id}`)
@@ -150,6 +166,9 @@ export function GeoFinderCard({ spots, isPremium }: Props) {
                       <div className="flex-1">
                         <div className="font-semibold text-sm">{result.recommended.name}</div>
                         <div className="text-xs text-muted-foreground mt-0.5">{result.recommended.distanceKm.toFixed(1)}km de você</div>
+                        {recPico?.picoName && (
+                          <div className="text-xs text-primary mt-0.5">Pico: {recPico.picoName}</div>
+                        )}
                       </div>
                       <div className="text-right flex-shrink-0">
                         <div className="text-xl font-bold" style={{ color: recColor }}>{result.recommended.score.toFixed(1)}</div>
@@ -157,7 +176,7 @@ export function GeoFinderCard({ spots, isPremium }: Props) {
                       </div>
                     </div>
                   </button>
-                  <NavButtons lat={result.recommended.lat} lng={result.recommended.lng} />
+                  <NavButtons lat={recPico?.lat ?? result.recommended.lat} lng={recPico?.lng ?? result.recommended.lng} />
                 </div>
                 {!result.recommendedIsGood && (
                   <p className="text-xs text-muted-foreground px-0.5">
@@ -173,6 +192,7 @@ export function GeoFinderCard({ spots, isPremium }: Props) {
           // veredito em português simples explicando a troca.
           const nearInfo = getRatingInfo(result.nearest.score)
           const nearColor = getScoreColor(result.nearest.score)
+          const nearPico = bestPicoFor(result.nearest.id, spots)
           const goToNearest = () => {
             track('spot_opened', { spot: result.nearest.name, source: 'geo_finder' })
             navigate(`/spot/${result.nearest.id}`)
@@ -189,22 +209,28 @@ export function GeoFinderCard({ spots, isPremium }: Props) {
                     <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Mais perto</div>
                     <div className="text-sm font-semibold leading-tight">{result.nearest.name}</div>
                     <div className="text-xs text-muted-foreground mt-0.5">{result.nearest.distanceKm.toFixed(1)}km de você</div>
+                    {nearPico?.picoName && (
+                      <div className="text-[10px] text-primary mt-0.5">Pico: {nearPico.picoName}</div>
+                    )}
                     <div className="text-base font-bold mt-1.5" style={{ color: nearColor }}>
                       {result.nearest.score.toFixed(1)} <span className="text-[10px] font-bold">{nearInfo.label}</span>
                     </div>
                   </button>
-                  <NavButtons lat={result.nearest.lat} lng={result.nearest.lng} />
+                  <NavButtons lat={nearPico?.lat ?? result.nearest.lat} lng={nearPico?.lng ?? result.nearest.lng} />
                 </div>
                 <div className="rounded-xl border-2 border-primary/50 bg-primary/5 hover:bg-primary/10 transition-colors overflow-hidden">
                   <button className="w-full text-left p-3" onClick={goToRecommended}>
                     <div className="text-[10px] font-semibold text-primary uppercase tracking-wide mb-1.5">Vale o desvio</div>
                     <div className="text-sm font-semibold leading-tight">{result.recommended.name}</div>
                     <div className="text-xs text-muted-foreground mt-0.5">{result.recommended.distanceKm.toFixed(1)}km de você</div>
+                    {recPico?.picoName && (
+                      <div className="text-[10px] text-primary mt-0.5">Pico: {recPico.picoName}</div>
+                    )}
                     <div className="text-base font-bold mt-1.5" style={{ color: recColor }}>
                       {result.recommended.score.toFixed(1)} <span className="text-[10px] font-bold">{recInfo.label}</span>
                     </div>
                   </button>
-                  <NavButtons lat={result.recommended.lat} lng={result.recommended.lng} />
+                  <NavButtons lat={recPico?.lat ?? result.recommended.lat} lng={recPico?.lng ?? result.recommended.lng} />
                 </div>
               </div>
               <p className="text-xs text-muted-foreground px-0.5">

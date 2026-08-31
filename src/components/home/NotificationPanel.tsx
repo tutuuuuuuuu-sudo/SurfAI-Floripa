@@ -71,15 +71,15 @@ export function NotificationPanel({ spots, favorites, isPremium }: Props) {
   if (!open) return (
     <button
       onClick={() => setOpen(true)}
-      className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-full border transition-colors ${
+      className={`flex items-center gap-2 text-sm px-3 py-1.5 rounded-full border transition-colors ${
         settings.enabled && permission === 'granted'
           ? 'border-primary/40 bg-primary/10 text-primary'
-          : 'border-border text-muted-foreground hover:border-primary/30'
+          : 'border-border bg-card/60 text-foreground/85 hover:border-primary/30'
       }`}
     >
       {settings.enabled && permission === 'granted'
-        ? <><Bell className="h-3.5 w-3.5" />Alertas ativos</>
-        : <><BellOff className="h-3.5 w-3.5" />Alertas</>
+        ? <><Bell className="h-4 w-4" />Alertas ativos</>
+        : <><BellOff className="h-4 w-4" />Alertas</>
       }
     </button>
   )
