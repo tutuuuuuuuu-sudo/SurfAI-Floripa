@@ -167,9 +167,11 @@ export default function ForecastPage() {
                   const label = getScoreLabel(day.score)
                   const isToday = idx === 0
                   return (
-                    <div
+                    <button
                       key={day.date}
-                      className={`flex items-center justify-between p-3 rounded-xl border transition-all ${isToday ? 'bg-primary/5 border-primary/20' : 'border-border/40'}`}
+                      type="button"
+                      onClick={() => currentSpot && navigate(`/forecast/${currentSpot.id}/day/${idx}`)}
+                      className={`w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all hover:border-primary/40 hover:bg-muted/10 ${isToday ? 'bg-primary/5 border-primary/20' : 'border-border/40'}`}
                       style={{ animation: `slideUp 0.3s ${idx * 0.05}s ease-out both` }}
                     >
                       <div className="min-w-[70px]">
@@ -202,7 +204,7 @@ export default function ForecastPage() {
                           ))}
                         </div>
                       </div>
-                    </div>
+                    </button>
                   )
                 })}
               </div>

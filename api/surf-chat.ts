@@ -19,6 +19,9 @@ import { verifyToken, isPremiumUser } from './_auth.js'
 import { callGeminiChat, type ChatTurn, type GeminiResult } from './_gemini.js'
 import { callGroqChat, callOpenRouterChat } from './_llmProviders.js'
 import { createPersistentRateLimiterWithCount, hasPromptInjection } from './_httpUtils.js'
+import { fetchHourlyForecast } from './_hourlyForecast.js'
+import { BEACH_REGISTRY } from './_beachRegistry.js'
+import { todaySP } from '../src/lib/timeSP.js'
 
 // Cascata de provedores: tenta o Gemini primeiro (melhor qualidade), cai pro Groq se
 // falhar/esgotar cota, cai pro OpenRouter se o Groq também falhar. Groq sozinho (free tier,
@@ -121,6 +124,49 @@ async function fetchUserContext(supabaseUrl: string, serviceKey: string, userId:
   }
 }
 
+// Resumo compacto da previsão dos próximos dias, pras 14 praias — achado 31/ago/2026, pedido
+// do usuário: o chat só recebia condição de AGORA (spotsContext, montado no handler a partir
+// de body.spots), então negava ou inventava quando perguntado sobre amanhã/depois. Só 2 dias
+// à frente (não os 14 completos do Forecast.tsx) pra manter o prompt enxuto e a resposta
+// rápida — pergunta sobre uma semana à frente ainda fica sem esse dado, mas a regra de
+// "nunca invente dado" (ver systemContext abaixo) já cobre esse caso, evita chute.
+// Roda em paralelo com fetchUserContext no handler, não em série — Open-Meteo é rápido e sem
+// cota apertada (ao contrário do Gemini), 14 praias × 2 chamadas cada em paralelo custa a
+// mesma latência de UMA chamada, não a soma.
+const FORECAST_LOOKAHEAD_DAYS = 3 // hoje (descartado abaixo) + amanhã + depois de amanhã
+
+async function buildForecastSummary(): Promise<string> {
+  const today = todaySP()
+  const perBeach = await Promise.all(
+    BEACH_REGISTRY.map(async (beach) => {
+      const hourly = await fetchHourlyForecast(String(beach.lat), String(beach.lng), FORECAST_LOOKAHEAD_DAYS)
+      if (!hourly) return null
+
+      const byDate = new Map<string, { min: number; max: number; bestScore: number }>()
+      hourly.times.forEach((t, i) => {
+        const date = t.slice(0, 10)
+        if (date === today) return // hoje já está em "condições atuais", não repete aqui
+        const reading = hourly.readHour(i, beach.orientation)
+        if (!reading) return
+        const entry = byDate.get(date) ?? { min: Infinity, max: -Infinity, bestScore: 0 }
+        entry.min = Math.min(entry.min, reading.waveHeight)
+        entry.max = Math.max(entry.max, reading.waveHeight)
+        entry.bestScore = Math.max(entry.bestScore, reading.score)
+        byDate.set(date, entry)
+      })
+
+      const days = Array.from(byDate.values()).slice(0, FORECAST_LOOKAHEAD_DAYS - 1)
+      if (days.length === 0) return null
+      const parts = days.map((d, i) =>
+        `${i === 0 ? 'amanhã' : 'depois de amanhã'} ${d.min.toFixed(1)}-${d.max.toFixed(1)}m (nota até ${d.bestScore.toFixed(1)})`
+      )
+      return `${beach.name}: ${parts.join(', ')}`
+    })
+  )
+
+  return perBeach.filter((r): r is string => r !== null).join('\n')
+}
+
 async function saveMessages(supabaseUrl: string, serviceKey: string, userId: string, userMessage: string, assistantReply: string) {
   try {
     await fetch(`${supabaseUrl}/rest/v1/chat_messages`, {
@@ -182,7 +228,10 @@ export default async function handler(req: Request) {
     return json({ reply: 'Isso não parece uma pergunta sobre surf ou praias de Floripa — manda de outro jeito que eu te ajudo!' })
   }
 
-  const { skill, favoriteNames, history } = await fetchUserContext(supabaseUrl, serviceKey, userId)
+  const [{ skill, favoriteNames, history }, forecastSummary] = await Promise.all([
+    fetchUserContext(supabaseUrl, serviceKey, userId),
+    buildForecastSummary(),
+  ])
   const userLevel = sanitizeName(body.userLevel ?? skill ?? '')
 
   // Teto de 20, não 6 — achado testando ao vivo (23/ago/2026): cortar em 6 fazia o chat negar
@@ -205,6 +254,10 @@ ${favoriteNames.length ? `Praias favoritas dele: ${favoriteNames.join(', ')}.` :
 Condições atuais das praias (dados reais de agora, use quando fizer sentido pra pergunta):
 ${spotsContext || 'Sem dados de condições disponíveis no momento.'}
 
+Previsão de amanhã e depois de amanhã (faixa de altura de onda e a melhor nota possível em
+cada dia — não é hora a hora, é a previsão do dia inteiro resumida):
+${forecastSummary || 'Sem previsão dos próximos dias disponível no momento.'}
+
 Regras:
 - Avalie CADA mensagem nova pelo próprio conteúdo, não pelo padrão das mensagens anteriores.
   Se a mensagem atual for sobre surf, praia ou o app (ex: "e o Campeche, como tá?"), responda
@@ -222,8 +275,8 @@ Regras:
   Responda no mesmo tom, em poucas palavras, antes de seguir pro surf se fizer sentido.
 - Respostas curtas e diretas, sem metáfora forçada nem floreio poético — como um amigo
   surfista experiente respondendo rápido, não um texto literário.
-- Nunca invente dado que não foi passado acima (ex: não chute previsão de dias futuros que
-  não estão na lista de condições).
+- Nunca invente dado que não foi passado acima — pra previsão além de depois de amanhã (a
+  lista de previsão só cobre 2 dias à frente), diga que ainda não tem esse dado, não chute.
 - Se perguntarem de onde vêm os dados/previsão (ex: "que modelo vocês usam", "tem fonte
   específica"), responda só que é modelo meteorológico internacional (ECMWF), calibrado pro
   litoral de Floripa — NUNCA cite nomes de instituição, satélite ou boia específicos além

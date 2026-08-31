@@ -144,13 +144,20 @@ export function BestWindowWidget({ lat, lng, orientation, current }: Props) {
 
         {/* Gráfico de barras horário */}
         <div>
-          <p className="text-xs text-muted-foreground mb-2">Nota hora a hora de hoje — toque numa barra pra ver o detalhe:</p>
+          <p className="text-xs text-muted-foreground mb-2">
+            Nota hora a hora de hoje — toque numa barra pra ver o detalhe. Horário noturno
+            (18h&ndash;6h) em cinza, ninguém surfa de noite.
+          </p>
           <div className="flex items-end gap-0.5">
             {slots.map(slot => {
               const info = getRatingInfo(slot.score)
               const heightPct = Math.max(8, (slot.score / 10) * 100)
               const isPast = slot.hour < nowHour
               const isCurrent = slot.hour === nowHour
+              // 18h-6h é noite (ninguém surfa) — pedido do usuário 31/ago/2026: cinza fixo
+              // nessas horas deixa o gráfico mais fácil de ler de cara, sem competir com a
+              // faixa que realmente importa pra decisão (horário de luz do dia).
+              const isNight = slot.hour >= 18 || slot.hour < 6
               const showLabel = isCurrent || slot.hour % 4 === 0
               const isSelected = selectedHour === slot.hour
               return (
@@ -159,15 +166,16 @@ export function BestWindowWidget({ lat, lng, orientation, current }: Props) {
                   type="button"
                   onClick={() => setSelectedHour(isSelected ? null : slot.hour)}
                   className="flex-1 flex flex-col items-center gap-0.5 bg-transparent border-0 p-0 cursor-pointer"
-                  title={`${slot.label} · ${info.label} (${slot.score.toFixed(1)}) · ${slot.waveHeight.toFixed(1)}m de onda · vento ${slot.windSpeed}km/h ${slot.windDirection} · período ${slot.swellPeriod}s`}
+                  title={`${slot.label} · ${isNight ? 'Fora do horário de surf' : info.label} (${slot.score.toFixed(1)}) · ${slot.waveHeight.toFixed(1)}m de onda · vento ${slot.windSpeed}km/h ${slot.windDirection} · período ${slot.swellPeriod}s`}
                 >
                   {/* Altura em % só resolve com um pai de altura fixa em px — daí o wrapper abaixo */}
                   <div className="w-full flex items-end" style={{ height: '40px' }}>
                     <div
-                      className={`w-full rounded-sm transition-all ${isPast ? 'opacity-30' : ''} ${slot.isPeak ? 'ring-1 ring-offset-1 ring-current' : ''} ${isSelected ? 'ring-2 ring-primary ring-offset-1' : ''}`}
+                      className={`w-full rounded-sm transition-all ${isPast ? 'opacity-30' : ''} ${slot.isPeak && !isNight ? 'ring-1 ring-offset-1 ring-current' : ''} ${isSelected ? 'ring-2 ring-primary ring-offset-1' : ''}`}
                       style={{
                         height: `${heightPct}%`,
-                        backgroundColor: isPast ? 'var(--muted-foreground)' : info.scoreColor,
+                        backgroundColor: isNight ? 'var(--muted-foreground)' : isPast ? 'var(--muted-foreground)' : info.scoreColor,
+                        opacity: isNight && !isPast ? 0.4 : undefined,
                       }}
                     />
                   </div>

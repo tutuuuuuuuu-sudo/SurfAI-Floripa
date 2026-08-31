@@ -24,6 +24,7 @@ const NavigationPage = lazy(() => import('./pages/Navigation'))
 const PremiumPage = lazy(() => import('./pages/Premium'))
 const ComparePage = lazy(() => import('./pages/Compare'))
 const ForecastPage = lazy(() => import('./pages/Forecast'))
+const ForecastDayPage = lazy(() => import('./pages/ForecastDay'))
 const SurfLog = lazy(() => import('./pages/SurfLog'))
 const ContentStudio = lazy(() => import('./pages/ContentStudio'))
 
@@ -99,6 +100,7 @@ function AppRoutes() {
           <Route path="/compare" element={<ProtectedRoute><ComparePage /></ProtectedRoute>} />
           <Route path="/forecast" element={<ProtectedRoute><ForecastPage /></ProtectedRoute>} />
           <Route path="/forecast/:id" element={<ProtectedRoute><ForecastPage /></ProtectedRoute>} />
+          <Route path="/forecast/:id/day/:dayIndex" element={<ProtectedRoute><ForecastDayPage /></ProtectedRoute>} />
           <Route path="/surf-log" element={<ProtectedRoute><SurfLog /></ProtectedRoute>} />
           <Route path="/content-studio" element={<ProtectedRoute><ContentStudio /></ProtectedRoute>} />
           <Route path="/privacy" element={<Privacy />} />
