@@ -135,36 +135,99 @@ async function fetchUserContext(supabaseUrl: string, serviceKey: string, userId:
 // mesma latência de UMA chamada, não a soma.
 const FORECAST_LOOKAHEAD_DAYS = 3 // hoje (descartado abaixo) + amanhã + depois de amanhã
 
-async function buildForecastSummary(): Promise<string> {
+// Cache do resumo (Supabase, mesma tabela/padrão de _liveConditions.ts) — achado 02/set/2026:
+// essa função batia 14 praias × 3 chamadas Open-Meteo (42 no total) EM TODA mensagem do chat,
+// não só quando o usuário perguntava sobre dias futuros. Sob esse volume a Open-Meteo às vezes
+// devolvia corpo não-JSON pra alguma das 42 chamadas, e isso derrubava o Promise.all inteiro —
+// o chat falhava com "Não consegui responder agora" mesmo em pergunta sem nada a ver com
+// previsão. Resumo muda pouco de uma mensagem pra outra (é por dia, não por hora), então cache
+// de 30min já resolve a maior parte da repetição sem deixar o dado velho.
+const FORECAST_SUMMARY_CACHE_KEY = 'chat:forecast-summary'
+const FORECAST_SUMMARY_CACHE_TTL_MS = 30 * 60 * 1000
+
+async function getCachedForecastSummary(supabaseUrl: string, serviceKey: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/live_conditions_cache?cache_key=eq.${encodeURIComponent(FORECAST_SUMMARY_CACHE_KEY)}&select=payload,fetched_at`,
+      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
+    )
+    if (!res.ok) return null
+    const rows = await res.json() as { payload: { summary: string }; fetched_at: string }[]
+    const row = rows[0]
+    if (!row) return null
+    if (Date.now() - new Date(row.fetched_at).getTime() > FORECAST_SUMMARY_CACHE_TTL_MS) return null
+    return row.payload.summary
+  } catch (err) {
+    console.error('[surf-chat] cache do resumo de previsão GET lançou exceção:', err)
+    return null
+  }
+}
+
+async function setCachedForecastSummary(supabaseUrl: string, serviceKey: string, summary: string): Promise<void> {
+  try {
+    await fetch(`${supabaseUrl}/rest/v1/live_conditions_cache`, {
+      method: 'POST',
+      headers: {
+        apikey: serviceKey, Authorization: `Bearer ${serviceKey}`,
+        'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates',
+      },
+      body: JSON.stringify({
+        cache_key: FORECAST_SUMMARY_CACHE_KEY,
+        payload: { summary },
+        fetched_at: new Date().toISOString(),
+      }),
+    })
+  } catch (err) {
+    console.error('[surf-chat] cache do resumo de previsão SET lançou exceção:', err)
+  }
+}
+
+async function buildForecastSummaryUncached(): Promise<string> {
   const today = todaySP()
   const perBeach = await Promise.all(
     BEACH_REGISTRY.map(async (beach) => {
-      const hourly = await fetchHourlyForecast(String(beach.lat), String(beach.lng), FORECAST_LOOKAHEAD_DAYS)
-      if (!hourly) return null
+      // try/catch por praia: uma chamada malformada da Open-Meteo não pode derrubar o
+      // resumo inteiro, só perde a previsão dessa praia específica.
+      try {
+        const hourly = await fetchHourlyForecast(String(beach.lat), String(beach.lng), FORECAST_LOOKAHEAD_DAYS)
+        if (!hourly) return null
 
-      const byDate = new Map<string, { min: number; max: number; bestScore: number }>()
-      hourly.times.forEach((t, i) => {
-        const date = t.slice(0, 10)
-        if (date === today) return // hoje já está em "condições atuais", não repete aqui
-        const reading = hourly.readHour(i, beach.orientation)
-        if (!reading) return
-        const entry = byDate.get(date) ?? { min: Infinity, max: -Infinity, bestScore: 0 }
-        entry.min = Math.min(entry.min, reading.waveHeight)
-        entry.max = Math.max(entry.max, reading.waveHeight)
-        entry.bestScore = Math.max(entry.bestScore, reading.score)
-        byDate.set(date, entry)
-      })
+        const byDate = new Map<string, { min: number; max: number; bestScore: number }>()
+        hourly.times.forEach((t, i) => {
+          const date = t.slice(0, 10)
+          if (date === today) return // hoje já está em "condições atuais", não repete aqui
+          const reading = hourly.readHour(i, beach.orientation)
+          if (!reading) return
+          const entry = byDate.get(date) ?? { min: Infinity, max: -Infinity, bestScore: 0 }
+          entry.min = Math.min(entry.min, reading.waveHeight)
+          entry.max = Math.max(entry.max, reading.waveHeight)
+          entry.bestScore = Math.max(entry.bestScore, reading.score)
+          byDate.set(date, entry)
+        })
 
-      const days = Array.from(byDate.values()).slice(0, FORECAST_LOOKAHEAD_DAYS - 1)
-      if (days.length === 0) return null
-      const parts = days.map((d, i) =>
-        `${i === 0 ? 'amanhã' : 'depois de amanhã'} ${d.min.toFixed(1)}-${d.max.toFixed(1)}m (nota até ${d.bestScore.toFixed(1)})`
-      )
-      return `${beach.name}: ${parts.join(', ')}`
+        const days = Array.from(byDate.values()).slice(0, FORECAST_LOOKAHEAD_DAYS - 1)
+        if (days.length === 0) return null
+        const parts = days.map((d, i) =>
+          `${i === 0 ? 'amanhã' : 'depois de amanhã'} ${d.min.toFixed(1)}-${d.max.toFixed(1)}m (nota até ${d.bestScore.toFixed(1)})`
+        )
+        return `${beach.name}: ${parts.join(', ')}`
+      } catch (err) {
+        console.error(`[surf-chat] previsão de dias futuros falhou pra ${beach.name}:`, err)
+        return null
+      }
     })
   )
 
   return perBeach.filter((r): r is string => r !== null).join('\n')
+}
+
+async function buildForecastSummary(supabaseUrl: string, serviceKey: string): Promise<string> {
+  const cached = await getCachedForecastSummary(supabaseUrl, serviceKey)
+  if (cached !== null) return cached
+
+  const summary = await buildForecastSummaryUncached()
+  await setCachedForecastSummary(supabaseUrl, serviceKey, summary)
+  return summary
 }
 
 async function saveMessages(supabaseUrl: string, serviceKey: string, userId: string, userMessage: string, assistantReply: string) {
@@ -230,7 +293,7 @@ export default async function handler(req: Request) {
 
   const [{ skill, favoriteNames, history }, forecastSummary] = await Promise.all([
     fetchUserContext(supabaseUrl, serviceKey, userId),
-    buildForecastSummary(),
+    buildForecastSummary(supabaseUrl, serviceKey),
   ])
   const userLevel = sanitizeName(body.userLevel ?? skill ?? '')
 
