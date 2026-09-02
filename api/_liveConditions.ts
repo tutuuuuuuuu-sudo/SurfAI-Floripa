@@ -207,11 +207,13 @@ export async function fetchAndCacheWindyRaw(lat: string, lng: string): Promise<W
         // isso a Windy retornava 400 "levels must be an array") — só a chamada de vento
         // abaixo tinha esse campo antes.
         body: JSON.stringify({ lat: parseFloat(lat), lon: parseFloat(lng), model: 'gfsWave', parameters: ['waves', 'swell1'], levels: ['surface'], key }),
+        signal: AbortSignal.timeout(8000),
       }),
       fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ lat: parseFloat(lat), lon: parseFloat(lng), model: 'gfs', parameters: ['wind', 'temp'], levels: ['surface'], key }),
+        signal: AbortSignal.timeout(8000),
       }),
     ])
     if (!waveRes.ok || !windRes.ok) {
@@ -324,10 +326,14 @@ async function fetchOpenMeteo(lat: string, lng: string): Promise<LiveConditions 
     // Surfguru/Waves mostram — ver comentário de MODEL_BIAS_CORRECTION acima, por isso NÃO
     // aplica applyModelBiasCorrection aqui), mas período/direção de swell e temperatura da
     // água continuam vindo do modelo padrão (blend com mais parâmetros calculados).
+    // Achado 02/set/2026: nenhuma chamada da cascata tinha timeout — se a Open-Meteo (fonte
+    // principal) travasse, ela sozinha consumia os 25s de orçamento da função edge inteira,
+    // sem nem chegar a tentar Windy/Stormglass (fallback nunca acionado a tempo). Timeout
+    // aqui deixa a cascata cair pra próxima fonte em vez de travar a resposta inteira.
     const [marineRes, marineEcmwfRes, weatherRes] = await Promise.all([
-      fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}&current=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,swell_wave_direction,sea_surface_temperature&length_unit=metric`),
-      fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}&current=wave_height&length_unit=metric&models=ecmwf_wam`),
-      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=wind_speed_10m,wind_direction_10m&daily=sunrise,sunset&wind_speed_unit=kmh&timezone=America%2FSao_Paulo`),
+      fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}&current=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,swell_wave_direction,sea_surface_temperature&length_unit=metric`, { signal: AbortSignal.timeout(8000) }),
+      fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}&current=wave_height&length_unit=metric&models=ecmwf_wam`, { signal: AbortSignal.timeout(8000) }),
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=wind_speed_10m,wind_direction_10m&daily=sunrise,sunset&wind_speed_unit=kmh&timezone=America%2FSao_Paulo`, { signal: AbortSignal.timeout(8000) }),
     ])
     if (!marineRes.ok || !marineEcmwfRes.ok || !weatherRes.ok) return null
 
@@ -369,7 +375,7 @@ async function fetchStormglass(lat: string, lng: string): Promise<LiveConditions
     const params = 'waveHeight,wavePeriod,waveDirection,swellHeight,swellPeriod,swellDirection,windSpeed,windDirection,waterTemperature'
     const res = await fetch(
       `https://api.stormglass.io/v2/weather/point?lat=${lat}&lng=${lng}&params=${params}`,
-      { headers: { Authorization: key } }
+      { headers: { Authorization: key }, signal: AbortSignal.timeout(6000) }
     )
     interface StormglassHour { time: string; [key: string]: Record<string, number> | string }
     const data = await res.json() as { hours?: StormglassHour[] }

@@ -61,11 +61,16 @@ export async function fetchHourlyForecast(
   lng: string,
   forecastDays: number
 ): Promise<HourlyForecast | null> {
+  // Timeout em cada chamada (achado 02/set/2026, mesmo padrão de _liveConditions.ts): sem
+  // isso, uma Open-Meteo lenta/travada podia segurar a resposta até o limite da função edge
+  // inteira. Aqui é ainda mais sensível — buildForecastSummary (surf-chat.ts) chama isso pra
+  // 14 praias em paralelo, então uma trava aqui atrasa o resumo inteiro, não só uma praia.
   const [marineRes, marineEcmwfRes, weatherRes] = await Promise.all([
     fetch(
       `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}` +
       `&hourly=wave_height,wave_period,swell_wave_height,swell_wave_period,swell_wave_direction` +
-      `&length_unit=metric&timezone=America%2FSao_Paulo&forecast_days=${forecastDays}`
+      `&length_unit=metric&timezone=America%2FSao_Paulo&forecast_days=${forecastDays}`,
+      { signal: AbortSignal.timeout(8000) }
     ),
     // models=ecmwf_wam (28/ago/2026, ver comentário de MODEL_BIAS_CORRECTION em
     // _liveConditions.ts pro histórico completo): pede a altura de onda do modelo ECMWF
@@ -76,14 +81,16 @@ export async function fetchHourlyForecast(
     fetch(
       `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}` +
       `&hourly=wave_height&length_unit=metric&timezone=America%2FSao_Paulo` +
-      `&forecast_days=${forecastDays}&models=ecmwf_wam`
+      `&forecast_days=${forecastDays}&models=ecmwf_wam`,
+      { signal: AbortSignal.timeout(8000) }
     ),
     // daily=sunrise,sunset na MESMA chamada que já busca vento/temperatura hora a hora —
     // sem round-trip extra pro nascer/pôr do sol.
     fetch(
       `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
       `&hourly=wind_speed_10m,wind_direction_10m,temperature_2m&daily=sunrise,sunset` +
-      `&wind_speed_unit=kmh&timezone=America%2FSao_Paulo&forecast_days=${forecastDays}`
+      `&wind_speed_unit=kmh&timezone=America%2FSao_Paulo&forecast_days=${forecastDays}`,
+      { signal: AbortSignal.timeout(8000) }
     ),
   ])
 

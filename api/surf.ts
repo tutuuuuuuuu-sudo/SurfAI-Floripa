@@ -102,7 +102,7 @@ export default async function handler(req: Request) {
     let sunrise = result.sunrise ?? '', sunset = result.sunset ?? ''
     if (!sunrise || !sunset) {
       try {
-        const sunRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=sunrise,sunset&wind_speed_unit=kmh&timezone=America%2FSao_Paulo`)
+        const sunRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=sunrise,sunset&wind_speed_unit=kmh&timezone=America%2FSao_Paulo`, { signal: AbortSignal.timeout(5000) })
         const sunData = await sunRes.json() as { daily?: { sunrise?: string[]; sunset?: string[] } }
         sunrise = formatTimeBrasilia(sunData.daily?.sunrise?.[0] ?? '')
         sunset = formatTimeBrasilia(sunData.daily?.sunset?.[0] ?? '')
