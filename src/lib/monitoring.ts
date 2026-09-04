@@ -1,5 +1,13 @@
 import * as Sentry from '@sentry/react'
-import posthog from 'posthog-js'
+
+// posthog-js (~11% do bundle principal) só é baixado sob demanda, depois do primeiro
+// render — analytics não precisa bloquear a tela inicial. Promise cacheada garante uma
+// única chamada de import() mesmo com identifyUser/resetUser/track disparando em sequência.
+let posthogPromise: Promise<typeof import('posthog-js').default> | null = null
+export function getPosthog() {
+  if (!posthogPromise) posthogPromise = import('posthog-js').then(m => m.default)
+  return posthogPromise
+}
 
 export function initMonitoring() {
   // Sentry — captura erros em produção
@@ -24,24 +32,26 @@ export function initMonitoring() {
   const posthogKey = import.meta.env.VITE_POSTHOG_KEY
   const analyticsConsent = (() => { try { return localStorage.getItem('analytics_consent') } catch { return null } })()
   if (posthogKey && analyticsConsent !== 'declined') {
-    posthog.init(posthogKey, {
-      api_host: import.meta.env.VITE_POSTHOG_HOST ?? 'https://us.i.posthog.com',
-      person_profiles: 'identified_only',
-      capture_pageview: false,
-      capture_pageleave: true,
-      autocapture: false,
+    getPosthog().then(posthog => {
+      posthog.init(posthogKey, {
+        api_host: import.meta.env.VITE_POSTHOG_HOST ?? 'https://us.i.posthog.com',
+        person_profiles: 'identified_only',
+        capture_pageview: false,
+        capture_pageleave: true,
+        autocapture: false,
+      })
+      if (analyticsConsent === null) {
+        // Consentimento ainda não dado — coleta anonimamente até o usuário decidir
+        posthog.opt_in_capturing()
+      }
     })
-    if (analyticsConsent === null) {
-      // Consentimento ainda não dado — coleta anonimamente até o usuário decidir
-      posthog.opt_in_capturing()
-    }
   }
 }
 
 // Identifica o usuário no PostHog e Sentry após login
 export function identifyUser(id: string, email: string, name?: string) {
   if (import.meta.env.VITE_POSTHOG_KEY) {
-    posthog.identify(id, { email, name: name ?? '' })
+    getPosthog().then(posthog => posthog.identify(id, { email, name: name ?? '' }))
   }
   if (import.meta.env.VITE_SENTRY_DSN) {
     Sentry.setUser({ id, email })
@@ -50,14 +60,14 @@ export function identifyUser(id: string, email: string, name?: string) {
 
 // Remove identidade ao fazer logout
 export function resetUser() {
-  if (import.meta.env.VITE_POSTHOG_KEY) posthog.reset()
+  if (import.meta.env.VITE_POSTHOG_KEY) getPosthog().then(posthog => posthog.reset())
   if (import.meta.env.VITE_SENTRY_DSN) Sentry.setUser(null)
 }
 
 // Rastreia evento customizado
 export function track(event: string, properties?: Record<string, unknown>) {
   if (import.meta.env.VITE_POSTHOG_KEY) {
-    posthog.capture(event, properties)
+    getPosthog().then(posthog => posthog.capture(event, properties))
   }
 }
 

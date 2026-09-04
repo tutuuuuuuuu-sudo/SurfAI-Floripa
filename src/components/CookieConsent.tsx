@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Shield } from 'lucide-react'
-import posthog from 'posthog-js'
+import { getPosthog } from '@/lib/monitoring'
 
 const CONSENT_KEY = 'analytics_consent'
 
@@ -33,9 +33,9 @@ export function CookieConsent() {
     setVisible(false)
     // window.posthog nunca existe de verdade (posthog-js é importado como módulo,
     // nunca anexado em window) — o optional chaining fazia no-op silencioso e o
-    // rastreamento continuava rodando mesmo depois de recusado. Usa o singleton
-    // real do módulo, o mesmo que monitoring.ts inicializa.
-    posthog.opt_out_capturing()
+    // rastreamento continuava rodando mesmo depois de recusado. Usa o mesmo
+    // singleton lazy que monitoring.ts inicializa (getPosthog), não uma cópia própria.
+    getPosthog().then(posthog => posthog.opt_out_capturing())
   }
 
   if (!visible) return null
