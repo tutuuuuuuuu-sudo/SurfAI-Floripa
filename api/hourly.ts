@@ -1,0 +1,127 @@
+export const config = { runtime: 'edge' }
+
+import { fetchHourlyForecast } from './_hourlyForecast.js'
+
+const ALLOWED_ORIGIN = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
+const CORS = {
+  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
+function json(data: unknown, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...CORS },
+  })
+}
+
+import { verifyPremiumToken } from './_auth.js'
+import { isValidCoord, createRateLimiter } from './_httpUtils.js'
+import { todaySP, nowHourSP } from '../src/lib/timeSP.js'
+import { computeGoldenWindow, explainWindowEnd } from './_goldenWindow.js'
+
+// Rate limit por IP: 60 req/min
+const checkHourlyRateLimit = createRateLimiter(60)
+
+export interface HourlySlot {
+  hour: number        // 0-23
+  label: string       // "06h", "07h", etc.
+  score: number
+  waveHeight: number
+  windSpeed: number
+  windDirection: string
+  swellPeriod: number
+  isPeak: boolean     // true = melhor janela do dia
+}
+
+export default async function handler(req: Request) {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: CORS })
+  if (req.method !== 'GET') return json({ error: 'Method not allowed' }, 405)
+
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown'
+  if (!checkHourlyRateLimit(ip)) {
+    return json({ error: 'Too Many Requests' }, 429)
+  }
+
+  const url = new URL(req.url)
+  const lat = url.searchParams.get('lat')
+  const lng = url.searchParams.get('lng')
+  const orientation = parseInt(url.searchParams.get('orientation') ?? '90', 10)
+
+  if (!isValidCoord(lat, lng)) return json({ error: 'lat/lng inválidos' }, 400)
+
+  const token = req.headers.get('Authorization')?.replace('Bearer ', '').trim() ?? ''
+  const isPremium = await verifyPremiumToken(token)
+  if (!isPremium) return json({ error: 'Premium required' }, 403)
+
+  try {
+    const hourly = await fetchHourlyForecast(lat!, lng!, 2)
+    if (!hourly) return json({ error: 'Dados indisponíveis' }, 503)
+
+    // _hourlyForecast.ts busca os horários com timezone=America/Sao_Paulo explícito;
+    // usar o fuso do runtime (UTC no edge) aqui causaria filtro/comparação errados.
+    const today = todaySP()
+    const nowHour = nowHourSP()
+
+    // Fonte única pra toda hora, incluindo "agora": _hourlyForecast.ts (Open-Meteo,
+    // ecmwf_wam) — a mesma fonte que surf.ts usa via fetchLiveConditions desde 28/ago/2026.
+    // Antes disso, esse trecho misturava um ponto da Windy pra "agora" com Open-Meteo pras
+    // horas seguintes (pra bater com a nota principal, que na época vinha da Windy) — virou
+    // desnecessário (e arriscado de novo) depois que a fonte principal trocou pra Open-Meteo:
+    // manter os dois misturados reintroduziria a mesma queda fisicamente impossível entre
+    // horas que a mistura tinha sido criada pra evitar (achado original 24/ago/2026, Morro
+    // das Pedras: 1.4m "agora" caindo pra 0.4m já na hora seguinte, duas fontes divergindo).
+
+    // Filtra apenas as horas de hoje, a partir da hora atual
+    const slots: HourlySlot[] = []
+    hourly.times.forEach((t, i) => {
+      const date = t.slice(0, 10)
+      const hour = parseInt(t.slice(11, 13), 10)
+      if (date !== today) return
+
+      const reading = hourly.readHour(i, orientation)
+      if (!reading) return
+
+      slots.push({
+        hour, label: `${String(hour).padStart(2, '0')}h`, score: reading.score,
+        waveHeight: reading.waveHeight, windSpeed: reading.windSpeed,
+        windDirection: reading.windDirection, swellPeriod: reading.swellPeriod, isPeak: false,
+      })
+    })
+
+    if (slots.length === 0) return json({ error: 'Sem dados horários' }, 503)
+
+    const { sunriseHour, sunsetHour } = hourly
+
+    // Marca a melhor janela (score mais alto)
+    const peakScore = Math.max(...slots.map(s => s.score))
+    const peakIdx = slots.findIndex(s => s.score === peakScore)
+    if (peakIdx >= 0) slots[peakIdx].isPeak = true
+
+    // Melhor janela futura (a partir de agora), restrita à luz do dia — sem isso o cálculo
+    // podia recomendar "melhor janela: 21h às 23h" (achado 24/ago/2026, reportado pelo
+    // usuário). Se não sobrar nenhuma hora de luz do dia à frente (ex: já é noite), cai de
+    // volta pra todas as horas futuras em vez de quebrar sem sugestão nenhuma.
+    const futureSlots = slots.filter(s => s.hour >= nowHour)
+    const daylightFutureSlots = futureSlots.filter(s =>
+      (sunriseHour === null || s.hour >= sunriseHour) && (sunsetHour === null || s.hour <= sunsetHour)
+    )
+    const candidateSlots = daylightFutureSlots.length > 0 ? daylightFutureSlots : futureSlots
+    const bestFuture = candidateSlots.reduce((best, s) => s.score > best.score ? s : best, candidateSlots[0] ?? slots[0])
+
+    // Janela de Ouro: intervalo (não só a hora de pico) + frase explicando o fim dela
+    const goldenWindow = computeGoldenWindow(futureSlots, bestFuture.hour, sunriseHour, sunsetHour)
+    const windowExplanation = goldenWindow ? explainWindowEnd(futureSlots, goldenWindow.endIdx) : null
+
+    return json({
+      slots,
+      bestWindow: bestFuture,
+      window: goldenWindow ? { startHour: goldenWindow.startHour, endHour: goldenWindow.endHour } : null,
+      windowExplanation,
+      isPremium: true,
+    })
+  } catch {
+    return json({ error: 'Erro interno' }, 500)
+  }
+}

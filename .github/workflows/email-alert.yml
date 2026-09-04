@@ -1,0 +1,25 @@
+name: Email Alert — Condições de Surf
+
+on:
+  schedule:
+    # 6h e 15h horário de Brasília (BRT = UTC-3)
+    - cron: '0 9 * * *'
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  send-alert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chamar endpoint de email-alert
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L \
+            -H "x-agent-secret: ${{ secrets.AGENT_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/email-alert")
+          echo "Status HTTP: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "email-alert retornou status $STATUS"
+            exit 1
+          fi
