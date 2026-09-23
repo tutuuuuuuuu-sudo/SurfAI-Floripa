@@ -24,7 +24,7 @@ import { track } from '@/lib/monitoring'
 import { getScoreColor, getThemeGradient } from '@/lib/rating'
 import { getSavedNotificationSettings, checkAndNotifyGoodConditions } from '@/lib/notifications'
 import { isTainhaSeasonActive } from '@/lib/tainha'
-import { isOnboardingDone } from '@/lib/onboarding'
+import { isOnboardingDone, syncOnboardingDoneFromServer } from '@/lib/onboarding'
 import {
   Waves, TrendingUp, MapPin, Heart, Settings,
   Crown, Sparkles, Flame, Fish, GitCompareArrows,
@@ -81,6 +81,15 @@ export default function Home() {
 
     return () => clearTimeout(t)
   }, [allSpots])
+
+  // localStorage é por navegador — se essa conta já completou o onboarding em
+  // outro dispositivo, confirma no Supabase antes de exibir o quiz de novo aqui.
+  useEffect(() => {
+    if (!user || !showOnboarding) return
+    syncOnboardingDoneFromServer(user.id).then(done => {
+      if (done) setShowOnboarding(false)
+    })
+  }, [user, showOnboarding])
 
   const userName = user ? getUserDisplayName(user) : 'Surfista'
   const userInitial = userName.charAt(0).toUpperCase()

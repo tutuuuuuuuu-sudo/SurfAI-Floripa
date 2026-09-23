@@ -5,9 +5,10 @@ import { AppLogo } from '@/components/AppLogo'
 import { Anchor, Zap, TrendingUp, Sun, Moon, Crown, MapPin } from 'lucide-react'
 import { toggleFavorite } from '@/lib/favorites'
 import { useSurfData } from '@/contexts/SurfDataContext'
+import { useAuth } from '@/contexts/AuthContext'
 import { getScoreColor } from '@/lib/rating'
 import { captureError } from '@/lib/monitoring'
-import { markOnboardingDone } from '@/lib/onboarding'
+import { markOnboardingDone, markOnboardingDoneRemote } from '@/lib/onboarding'
 import { useBodyScrollLock } from '@/hooks/use-body-scroll-lock'
 
 type SkillLevel = 'Iniciante' | 'Intermediário' | 'Avançado'
@@ -32,6 +33,7 @@ interface Props {
 export function OnboardingModal({ onDone }: Props) {
   const navigate = useNavigate()
   const { conditions } = useSurfData()
+  const { user } = useAuth()
   useBodyScrollLock(true)
   const [step, setStep] = useState(1)
   const [level, setLevel] = useState<SkillLevel | null>(null)
@@ -51,6 +53,7 @@ export function OnboardingModal({ onDone }: Props) {
       }
     } catch { /* favorito falhou ou modo privado — segue para gravar onboarding_done mesmo assim */ }
     markOnboardingDone()
+    if (user) markOnboardingDoneRemote(user.id)
     // Alguns navegadores (Safari em certos modos) aceitam o setItem sem lançar erro, mas não persistem de verdade.
     try {
       if (localStorage.getItem('onboarding_done') !== '1') {
