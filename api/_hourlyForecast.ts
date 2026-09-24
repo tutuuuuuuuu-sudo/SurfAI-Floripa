@@ -11,6 +11,7 @@ export function degreesToDir(deg: number): string {
 export interface HourReading {
   waveHeight: number
   swellPeriod: number
+  swellDirection: string
   windSpeed: number
   windDirection: string
   temperature: number
@@ -114,6 +115,7 @@ export async function fetchHourlyForecast(
     // 24/set/2026 (mesma correção nos dois, pro mesmo motivo do achado de 22/ago/2026
     // de manter Home e Previsão consistentes: ver comentário em surf.ts).
     const waveHeight = rawWaveHeight
+    const swellDirection = degreesToDir(marine.hourly?.swell_wave_direction?.[idx] ?? 180)
     const swellPeriod = Math.round(
       marine.hourly?.swell_wave_period?.[idx] ?? marine.hourly?.wave_period?.[idx] ?? 10
     )
@@ -121,7 +123,7 @@ export async function fetchHourlyForecast(
     const windDirection = degreesToDir(weather.hourly?.wind_direction_10m?.[idx] ?? 0)
     const temperature = Math.round(weather.hourly?.temperature_2m?.[idx] ?? 24)
     const score = calculateSurfScore(waveHeight, windSpeed, swellPeriod, windDirection, orientation)
-    return { waveHeight, swellPeriod, windSpeed, windDirection, temperature, score }
+    return { waveHeight, swellPeriod, swellDirection, windSpeed, windDirection, temperature, score }
   }
 
   return { times, sunriseHour, sunsetHour, readHour }

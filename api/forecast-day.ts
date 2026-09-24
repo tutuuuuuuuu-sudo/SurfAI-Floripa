@@ -5,6 +5,7 @@ export const config = { runtime: 'edge' }
 // clicar num card agora abre uma página com a evolução hora a hora daquele dia específico,
 // não só o resumo que já aparecia no card.
 import { fetchHourlyForecast, type HourReading } from './_hourlyForecast.js'
+import { fetchTideData } from './_tide.js'
 
 const ALLOWED_ORIGIN = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 
@@ -64,7 +65,15 @@ export default async function handler(req: Request) {
   }
 
   try {
-    const hourly = await fetchHourlyForecast(lat!, lng!, dayIndex + 1)
+    // Maré em paralelo com o forecast de onda/vento — são fontes independentes, não precisa
+    // esperar uma pra pedir a outra. Maré é astronômica (sol/lua), não depende do tempo como
+    // onda/vento, então o Open-Meteo prevê com confiança bem além de 14 dias (testado ao vivo
+    // em 24/set/2026: retorna dado consistente até pelo menos 16 dias à frente) — sem o mesmo
+    // risco de incerteza que onda/vento teriam essa distância.
+    const [hourly, tide] = await Promise.all([
+      fetchHourlyForecast(lat!, lng!, dayIndex + 1),
+      fetchTideData(dayIndex + 1),
+    ])
     if (!hourly) return json({ error: 'Dados meteorológicos indisponíveis' }, 503)
 
     const startIdx = dayIndex * 24
@@ -90,12 +99,24 @@ export default async function handler(req: Request) {
     const best = (surfableHours.length > 0 ? surfableHours : hours)
       .reduce((a, b) => (b.score > a.score ? b : a))
 
+    // Recorta só as horas de maré que batem com a data desse dia — casa por string de data
+    // em vez de confiar em dayIndex*24 puro, pra não desalinhar se a resposta da maré algum
+    // dia vier com fuso/offset diferente do forecast de onda/vento.
+    let tideHeights: number[] | null = null
+    if (tide) {
+      const dayIndices = tide.times
+        .map((t, i) => (t.slice(0, 10) === date ? i : -1))
+        .filter(i => i >= 0)
+      if (dayIndices.length >= 20) tideHeights = dayIndices.map(i => tide.heights[i])
+    }
+
     return json({
       date, dayName, dayIndex,
       hours,
       best,
       sunriseHour: hourly.sunriseHour,
       sunsetHour: hourly.sunsetHour,
+      tideHeights,
     })
   } catch {
     return json({ error: 'Erro interno' }, 500)

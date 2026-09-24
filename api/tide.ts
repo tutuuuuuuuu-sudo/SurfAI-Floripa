@@ -1,6 +1,7 @@
 export const config = { runtime: 'edge' }
 
 import { createRateLimiter } from './_httpUtils.js'
+import { fetchTideData } from './_tide.js'
 
 const ALLOWED_ORIGIN = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 
@@ -40,25 +41,6 @@ async function fetchWaterTemp(): Promise<number> {
   } catch { /* fallback */ }
 
   return SEASONAL_TEMP[new Date().getMonth()]
-}
-
-async function fetchTideData(): Promise<{ heights: number[]; times: string[] } | null> {
-  try {
-    const res = await fetch(
-      'https://marine-api.open-meteo.com/v1/marine?' +
-      'latitude=-27.62&longitude=-48.48' +
-      '&hourly=sea_level_height_msl' +
-      '&timezone=America%2FSao_Paulo&forecast_days=2',
-      { signal: AbortSignal.timeout(8000) }
-    )
-    if (!res.ok) return null
-    const data = await res.json() as {
-      error?: string
-      hourly?: { sea_level_height_msl: number[]; time: string[] }
-    }
-    if (data.error || !data.hourly?.sea_level_height_msl) return null
-    return { heights: data.hourly.sea_level_height_msl, times: data.hourly.time }
-  } catch { return null }
 }
 
 // ── Rate limiting simples por IP ──────────────────────────────────────────────

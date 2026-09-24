@@ -3,11 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ArrowLeft, Waves, Wind, Calendar } from 'lucide-react'
+import { ArrowLeft, Waves, Wind, Calendar, Droplets } from 'lucide-react'
 import { useSurfData } from '@/contexts/SurfDataContext'
 import { supabase } from '@/lib/supabase'
 import { getRatingInfo } from '@/lib/rating'
 import { PremiumUpsellBanner } from '@/components/PremiumUpsellBanner'
+import { WindCompass } from '@/components/spot/WindCompass'
+import { DayTideChart } from '@/components/spot/DayTideChart'
 
 interface DayHour {
   hour: number
@@ -15,6 +17,7 @@ interface DayHour {
   windSpeed: number
   windDirection: string
   swellPeriod: number
+  swellDirection: string
   temperature: number
   score: number
 }
@@ -27,6 +30,7 @@ interface DayDetail {
   best: DayHour
   sunriseHour: number | null
   sunsetHour: number | null
+  tideHeights: number[] | null
 }
 
 export default function ForecastDayPage() {
@@ -138,13 +142,15 @@ export default function ForecastDayPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-xs text-muted-foreground mb-2">
-                    Toque numa barra pra ver o detalhe. Horário noturno (18h&ndash;6h) em cinza, ninguém surfa de noite.
+                    Toque numa barra pra ver o detalhe. Horário noturno (depois das {String(data.sunsetHour ?? 18).padStart(2, '0')}h, antes das {String(data.sunriseHour ?? 6).padStart(2, '0')}h) em cinza, ninguém surfa de noite.
                   </p>
                   <div className="flex items-end gap-0.5">
                     {data.hours.map(hour => {
                       const info = getRatingInfo(hour.score)
                       const heightPct = Math.max(8, (hour.score / 10) * 100)
-                      const isNight = hour.hour >= 18 || hour.hour < 6
+                      // Usa pôr/nascer do sol reais (fallback 18h/6h) — antes era limiar fixo
+                      // em 18h e cortava a última hora de luz real do dia (achado 24/set/2026).
+                      const isNight = hour.hour > (data.sunsetHour ?? 18) || hour.hour < (data.sunriseHour ?? 6)
                       const showLabel = hour.hour % 4 === 0
                       const isSelected = selectedHour === hour.hour
                       const isBest = hour.hour === data.best.hour
@@ -183,7 +189,7 @@ export default function ForecastDayPage() {
                         <div>
                           <span className="text-sm font-bold" style={{ color: selInfo.scoreColor }}>{fmtHour(sel.hour)} · {selInfo.label}</span>
                           <div className="text-xs text-muted-foreground mt-0.5">
-                            {sel.waveHeight.toFixed(1)}m de onda · vento {sel.windSpeed}km/h {sel.windDirection} · período {sel.swellPeriod}s
+                            {sel.waveHeight.toFixed(1)}m de onda ({sel.swellDirection}) · vento {sel.windSpeed}km/h {sel.windDirection} · período {sel.swellPeriod}s
                           </div>
                         </div>
                         <div className="text-xl font-bold flex-shrink-0" style={{ color: selInfo.scoreColor }}>{sel.score.toFixed(1)}</div>
@@ -210,6 +216,54 @@ export default function ForecastDayPage() {
                   <div className="font-bold">{data.best.swellPeriod}s</div>
                 </div>
               </div>
+
+              {/* Vento (bússola) e ondulação do melhor momento do dia — mesmo padrão visual
+                  de SpotDetails.tsx, pedido do usuário 24/set/2026 pra dar o mesmo nível de
+                  detalhe que a aba "Agora" já tem, só que pra qualquer um dos 14 dias. */}
+              <div className="grid grid-cols-2 gap-3">
+                <Card className="overflow-hidden">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-center gap-1.5 text-primary">
+                      <Waves className="h-4 w-4" />
+                      <span className="text-sm font-semibold">Ondulação</span>
+                    </div>
+                    <div className="text-2xl font-bold">{data.best.waveHeight.toFixed(1)}m</div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">Período</div>
+                      <div className="text-sm font-bold">{data.best.swellPeriod}s</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">Direção do Swell</div>
+                      <div className="text-sm font-bold">{data.best.swellDirection}</div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="overflow-hidden">
+                  <CardContent className="p-4 flex flex-col items-center justify-center gap-2">
+                    <div className="flex items-center gap-1.5 text-accent self-start">
+                      <Wind className="h-4 w-4" />
+                      <span className="text-sm font-semibold">Vento</span>
+                    </div>
+                    <WindCompass direction={data.best.windDirection} speed={data.best.windSpeed} />
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Maré do dia — só renderiza se a fonte tiver dado suficiente pra esse dia
+                  específico (ver comentário em api/forecast-day.ts sobre o alcance real). */}
+              {data.tideHeights && (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Droplets className="h-4 w-4 text-primary" />
+                      Maré de {data.dayName.toLowerCase() === 'hoje' ? 'hoje' : data.dayName}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <DayTideChart heights={data.tideHeights} />
+                  </CardContent>
+                </Card>
+              )}
             </>
           )
         })()}

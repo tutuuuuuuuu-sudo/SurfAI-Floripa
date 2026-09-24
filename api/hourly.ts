@@ -119,6 +119,8 @@ export default async function handler(req: Request) {
       bestWindow: bestFuture,
       window: goldenWindow ? { startHour: goldenWindow.startHour, endHour: goldenWindow.endHour } : null,
       windowExplanation,
+      sunriseHour,
+      sunsetHour,
       isPremium: true,
     })
   } catch {

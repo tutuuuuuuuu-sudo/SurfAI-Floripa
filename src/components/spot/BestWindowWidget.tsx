@@ -22,6 +22,8 @@ interface HourlyResponse {
   bestWindow: HourlySlot
   window: { startHour: number; endHour: number } | null
   windowExplanation: string | null
+  sunriseHour: number | null
+  sunsetHour: number | null
 }
 
 interface Props {
@@ -87,7 +89,7 @@ export function BestWindowWidget({ lat, lng, orientation, current }: Props) {
   // condições estão mudando rápido (ver comentário na prop `current` acima).
   const slots = data.slots.map(s => s.hour === nowHour ? { ...s, ...current } : s)
   const bestWindow = data.bestWindow.hour === nowHour ? { ...data.bestWindow, ...current } : data.bestWindow
-  const { window: goldenWindow, windowExplanation } = data
+  const { window: goldenWindow, windowExplanation, sunriseHour, sunsetHour } = data
   const best = getRatingInfo(bestWindow.score)
   const isBestNow = bestWindow.hour === nowHour
   const fmtHour = (h: number) => `${String(h).padStart(2, '0')}h`
@@ -146,7 +148,7 @@ export function BestWindowWidget({ lat, lng, orientation, current }: Props) {
         <div>
           <p className="text-xs text-muted-foreground mb-2">
             Nota hora a hora de hoje — toque numa barra pra ver o detalhe. Horário noturno
-            (18h&ndash;6h) em cinza, ninguém surfa de noite.
+            (depois das {String((sunsetHour ?? 18)).padStart(2, '0')}h, antes das {String((sunriseHour ?? 6)).padStart(2, '0')}h) em cinza, ninguém surfa de noite.
           </p>
           <div className="flex items-end gap-0.5">
             {slots.map(slot => {
@@ -154,10 +156,13 @@ export function BestWindowWidget({ lat, lng, orientation, current }: Props) {
               const heightPct = Math.max(8, (slot.score / 10) * 100)
               const isPast = slot.hour < nowHour
               const isCurrent = slot.hour === nowHour
-              // 18h-6h é noite (ninguém surfa) — pedido do usuário 31/ago/2026: cinza fixo
-              // nessas horas deixa o gráfico mais fácil de ler de cara, sem competir com a
-              // faixa que realmente importa pra decisão (horário de luz do dia).
-              const isNight = slot.hour >= 18 || slot.hour < 6
+              // Fora da luz do dia é noite (ninguém surfa) — pedido do usuário 31/ago/2026:
+              // cinza fixo nessas horas deixa o gráfico mais fácil de ler de cara, sem
+              // competir com a faixa que realmente importa pra decisão. Usa o pôr/nascer do
+              // sol reais (com fallback 18h/6h só se a API não mandar o dado) — antes disso
+              // era um limiar fixo em 18h, então às vezes cortava a última hora de luz real
+              // do dia (achado 24/set/2026: sol se pondo 18:01, gráfico já cinza às 18h).
+              const isNight = slot.hour > (sunsetHour ?? 18) || slot.hour < (sunriseHour ?? 6)
               const showLabel = isCurrent || slot.hour % 4 === 0
               const isSelected = selectedHour === slot.hour
               return (
