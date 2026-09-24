@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
-import { analyzeConditions, BeachCondition } from '@/lib/surfData'
+import { analyzeConditions, BeachCondition, formatWaveRange, formatWaveRangeFeet } from '@/lib/surfData'
 import { useSurfData } from '@/contexts/SurfDataContext'
 import { getWeatherForecast, WeatherForecast, FREE_DAYS } from '@/lib/weatherData'
 import { isFavorite, toggleFavorite } from '@/lib/favorites'
@@ -364,7 +364,7 @@ export default function SpotDetails() {
           <div className="grid grid-cols-4 gap-2">
             <div className="flex flex-col items-center gap-1 bg-muted/20 rounded-xl p-2.5">
               <Waves className="h-4 w-4 text-primary"/>
-              <div className="text-base font-bold">{usesFeet ? metersToFeet(spot.waveHeight) : `${spot.waveHeight.toFixed(1)}m`}</div>
+              <div className="text-base font-bold">{usesFeet ? formatWaveRangeFeet(spot.waveHeight) : formatWaveRange(spot.waveHeight)}</div>
               <div className="text-xs text-muted-foreground text-center">Ondas</div>
             </div>
             <div className="flex flex-col items-center gap-1 bg-muted/20 rounded-xl p-2.5">
@@ -508,7 +508,7 @@ export default function SpotDetails() {
                   </div>
                   <div className="flex items-end gap-2">
                     <div className="text-3xl font-bold">
-                      {usesFeet ? metersToFeet(spot.waveHeight) : `${spot.waveHeight.toFixed(1)}m`}
+                      {usesFeet ? formatWaveRangeFeet(spot.waveHeight) : formatWaveRange(spot.waveHeight)}
                     </div>
                     <button
                       onClick={() => setUsesFeet(!usesFeet)}

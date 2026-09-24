@@ -1,6 +1,5 @@
 export const config = { runtime: 'edge' }
 
-import { applyDirectionalExposure } from './_scoreEngine.js'
 import { createRateLimiter } from './_httpUtils.js'
 import { fetchLiveConditions } from './_liveConditions.js'
 
@@ -69,7 +68,6 @@ export default async function handler(req: Request) {
   const url = new URL(req.url)
   const lat = url.searchParams.get('lat')
   const lng = url.searchParams.get('lng')
-  const orientation = parseInt(url.searchParams.get('orientation') ?? '90')
 
   if (!isValidCoord(lat, lng)) {
     return new Response(JSON.stringify({ error: 'lat/lng inválidos' }), {
@@ -109,10 +107,18 @@ export default async function handler(req: Request) {
       } catch { /* sunrise/sunset não crítico */ }
     }
 
-    const exposedWaveHeight = applyDirectionalExposure(result.waveHeight, result.swellDirection, orientation)
-
+    // Achado 24/set/2026: comparamos as 14 praias contra Surf-Forecast/Waves.com.br/
+    // Surfguru no mesmo instante — o valor CRU do ecmwf_wam já batia de perto com os
+    // concorrentes quase toda praia; era a applyDirectionalExposure() (calibrada quando
+    // a fonte de dado ainda era ruim, antes de 28/ago) que estava cortando 40-70% da
+    // altura sem motivo, principalmente nas praias viradas mais pro Norte/Nordeste
+    // (Moçambique, Barra da Lagoa, Santinho chegavam a mostrar menos da metade do real).
+    // Removida daqui — não substituída por outra fórmula geométrica. Onde existe abrigo
+    // real e comprovado (ex: Canal da Barra, ver `exposicao: 0.65` em BEACHES em
+    // surfData.ts), o ajuste já vive no sistema de SUB-PICO (getSubRegionMatch), que é
+    // específico daquele pico, não da praia inteira — não duplicar aqui.
     return new Response(JSON.stringify({
-      waveHeight: exposedWaveHeight,
+      waveHeight: result.waveHeight,
       swellPeriod: result.swellPeriod,
       swellDirection: result.swellDirection,
       windSpeed: result.windSpeed,

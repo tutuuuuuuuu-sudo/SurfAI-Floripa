@@ -1,7 +1,7 @@
 // Busca de previsão hora a hora (Open-Meteo) — fonte única usada por forecast.ts e hourly.ts.
 // Prefixo _ indica que não é um handler HTTP — não será exposto como endpoint pelo Vercel.
 
-import { calculateSurfScore, applyDirectionalExposure } from './_scoreEngine.js'
+import { calculateSurfScore } from './_scoreEngine.js'
 
 export function degreesToDir(deg: number): string {
   const dirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
@@ -110,11 +110,10 @@ export async function fetchHourlyForecast(
     const rawWaveHeight = Number(
       (marineEcmwf.hourly?.wave_height?.[idx] ?? marine.hourly?.wave_height?.[idx] ?? marine.hourly?.swell_wave_height?.[idx] ?? 1.0).toFixed(1)
     )
-    const swellDirection = degreesToDir(marine.hourly?.swell_wave_direction?.[idx] ?? 180)
-    // Mesma correção de exposição direcional aplicada em surf.ts — sem isso, a mesma
-    // praia no mesmo instante podia mostrar nota diferente na Home vs na Previsão
-    // (achado crítico da auditoria de 22/ago/2026).
-    const waveHeight = applyDirectionalExposure(rawWaveHeight, swellDirection, orientation)
+    // Sem applyDirectionalExposure aqui — removida de surf.ts e daqui juntas em
+    // 24/set/2026 (mesma correção nos dois, pro mesmo motivo do achado de 22/ago/2026
+    // de manter Home e Previsão consistentes: ver comentário em surf.ts).
+    const waveHeight = rawWaveHeight
     const swellPeriod = Math.round(
       marine.hourly?.swell_wave_period?.[idx] ?? marine.hourly?.wave_period?.[idx] ?? 10
     )

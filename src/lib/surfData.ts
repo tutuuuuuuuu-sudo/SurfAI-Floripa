@@ -188,6 +188,16 @@ export interface SubRegionMatch {
 // isso o multiplicador de altura desses picos continua modesto (a ilha FILTRA energia, não
 // aumenta — a altura menor é esperada e correta), mas a QUALIDADE nesse dia específico
 // supera os vizinhos "ampla", que só ganham em tamanho, não em forma/organização da onda.
+// Faixa usada tanto aqui (por sub-pico) quanto em formatWaveRange (praia inteira) —±15%,
+// não é mais margem de erro de leitura, é uma faixa "intermediárias a séries" no estilo dos
+// concorrentes (achado 24/set/2026: comparando o Campeche do dia contra Waves.com.br
+// 1.3-1.5m e Surfguru 1.5-1.6m pra uma leitura crua de 1.56m, ±15% foi o que mais bateu —
+// bem mais estreito que a diferença "onda média vs onda de série" da oceanografia pura
+// (que chegaria a ±50-60%), porque essas fontes já mostram uma faixa de previsão, não a
+// variação real onda a onda de uma sessão).
+const WAVE_RANGE_LOW = 0.85
+const WAVE_RANGE_HIGH = 1.15
+
 export function getSubRegionMatch(
   swellDirections: string[] | undefined,
   swellDirection: string,
@@ -206,8 +216,8 @@ export function getSubRegionMatch(
     : (minDiff === 0 ? 1.05 : minDiff === 1 ? 1.00 : minDiff === 2 ? 0.95 : minDiff <= 4 ? 0.88 : 0.80)) * exposicao
 
   const waveEst = waveHeight * mult
-  const waveMin = (waveEst * 0.95).toFixed(1)
-  const waveMax = (waveEst * 1.05).toFixed(1)
+  const waveMin = (waveEst * WAVE_RANGE_LOW).toFixed(1)
+  const waveMax = (waveEst * WAVE_RANGE_HIGH).toFixed(1)
 
   const match = classicDay
     ? 'Dia clássico'
@@ -223,13 +233,21 @@ export function getSubRegionMatch(
   return { minDiff, waveMin, waveMax, match, matchCls }
 }
 
-// Formata a altura de onda como faixa (±5%, mesmo cálculo de getSubRegionMatch acima) em
-// vez de um número único e preciso — a leitura de onda em si já tem margem de erro, um
-// número fixo tipo "0.8m" passa uma precisão que o dado não tem de verdade.
+// Formata a altura de onda como faixa (±15%, mesma WAVE_RANGE_LOW/HIGH de getSubRegionMatch
+// acima) em vez de um número único — estilo Surfline/Waves.com.br/Surfguru, que também
+// mostram faixa em vez de um valor cravado (achado 24/set/2026, a pedido do usuário).
 export function formatWaveRange(waveHeight: number): string {
-  const min = (waveHeight * 0.95).toFixed(1)
-  const max = (waveHeight * 1.05).toFixed(1)
+  const min = (waveHeight * WAVE_RANGE_LOW).toFixed(1)
+  const max = (waveHeight * WAVE_RANGE_HIGH).toFixed(1)
   return min === max ? `${min}m` : `${min}–${max}m`
+}
+
+// Mesma faixa de formatWaveRange, em pés — pra tela que deixa o usuário trocar a unidade
+// (SpotDetails.tsx).
+export function formatWaveRangeFeet(waveHeight: number): string {
+  const min = (waveHeight * WAVE_RANGE_LOW * 3.281).toFixed(1)
+  const max = (waveHeight * WAVE_RANGE_HIGH * 3.281).toFixed(1)
+  return min === max ? `${min}ft` : `${min}–${max}ft`
 }
 
 // Empate de direção (minDiff igual) entre um pico `estreita` e um `ampla` é resolvido a
@@ -316,7 +334,16 @@ const BEACHES: BeachDefinition[] = [
     ], bestTimeWindow: '06h - 09h' },
   { id: 'lagoinha-leste', name: 'Lagoinha do Leste', region: 'Sul' as const,
     lat: -27.7732103, lng: -48.4863806, // Lagoinha do Leste — início da trilha (Praia das Pacas)
-    orientation: 180, bestTimeWindow: 'Dia todo (acesso por trilha)', hikeAccess: true },
+    orientation: 180,
+    subRegions: [
+      // Pesquisa de 24/set/2026 (Surf-Forecast, floripasurf.com.br, WannaSurf — confiança média,
+      // sem nome de surfista consagrado como "Gravatá"/"Galheta"): o costão do lado onde chega a
+      // trilha do Pântano do Sul recebe swell de S; o resto da praia (banco aberto) recebe SE/E.
+      // Coordenadas iguais à da praia inteira — nenhuma fonte deu coordenada por canto, e ainda
+      // não confirmamos no Google Maps onde cada um começa/termina (pendência real, não erro).
+      { id: 'costao-direito', name: 'Costão Direito', lat: -27.7732103, lng: -48.4863806, swellDirections: ['S'] },
+      { id: 'praia-aberta', name: 'Praia Aberta', lat: -27.7732103, lng: -48.4863806, swellDirections: ['SE', 'E'] },
+    ], bestTimeWindow: 'Dia todo (acesso por trilha)', hikeAccess: true },
   { id: 'acores', name: 'Açores', region: 'Sul' as const,
     lat: -27.7837144, lng: -48.5236746, // Praia dos Açores — bem na areia
     orientation: 120,
