@@ -286,7 +286,7 @@ const BEACHES: BeachDefinition[] = [
     lat: -27.697703, lng: -48.4898603, // Campeche — Lomba do Sabão (bem na areia)
     orientation: 90,
     subRegions: [
-      { id: 'lomba-sabao', name: 'Lomba do Sabão', lat: -27.6974, lng: -48.4899, swellDirections: ['E', 'SE'] },
+      { id: 'lomba-sabao', name: 'Lomba do Sabão', lat: -27.6974, lng: -48.4899, swellDirections: ['E', 'SE'], exposicao: 1.1 },
       { id: 'palanque', name: 'Palanque', lat: -27.6929, lng: -48.4870, swellDirections: ['S', 'SSE', 'SE', 'E'] },
       { id: 'principal', name: 'Principal', lat: -27.6893, lng: -48.4825, swellDirections: ['SE', 'SSE'], tolerance: 'estreita', idealPeriodMin: 12 },
     ], bestTimeWindow: '06h - 09h' },

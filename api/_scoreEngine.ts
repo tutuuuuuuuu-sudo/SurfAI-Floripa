@@ -20,18 +20,34 @@ export interface ScoreBreakdown {
 // Existe separado (em vez de só retornar o número) pra que a UI que EXPLICA a nota pro
 // usuário (ScoreExplainer.tsx) use os mesmos três números que compõem a nota de verdade,
 // em vez de recalcular uma aproximação própria que pode não bater com o total.
-// Pesos revistos em 28/ago/2026, a pedido explícito do usuário (founder, surfista local):
-// tamanho de onda sozinho não faz um mar bom em Floripa — pode estar grande e mal-encaixado,
-// ou com vento forte destruindo a forma. O usuário estimou a proporção real (não é medição,
-// é julgamento de quem surfa a região): ~50% tamanho, ~30% vento, ~20% período/formato do
-// swell. As faixas abaixo foram calibradas pra bater com essa proporção (raio de variação de
-// cada componente: onda 6.0 pontos ≈ 54%, vento 3.0 ≈ 27%, período 2.2 ≈ 20% — aproximação,
-// não exata, difícil bater 50/30/20 perfeito com um piso fixo de onda em 4.0).
 //
-// Os limiares de waveBase também foram multiplicados por 1.85 nesta mesma sessão, pra
-// acompanhar a correção de viés do modelo bruto (ver MODEL_BIAS_CORRECTION em
-// _liveConditions.ts) — sem isso, a mesma condição real de mar passaria a cair numa faixa
-// mais alta só porque o número de entrada mudou de escala, não porque o mar ficou melhor.
+// Recalibração completa em 23-24/set/2026, a pedido explícito do usuário (founder, surfista
+// local, mora no Campeche) — motivo: "Floripa funciona com mar pequeno" — o design de
+// 28/ago (50% onda / 30% vento / 20% período) tratava tamanho de onda como o fator dominante,
+// mas em Floripa o vento (e, secundariamente, o período) é o que decide se um mar pequeno é
+// uma sessão excelente ou intragável, já que o tamanho quase nunca sai da faixa 0.3-1.5m.
+//
+// Achado crítico durante essa sessão: os limiares antigos de waveBase (4.63, 3.70, 2.78...)
+// eram exatamente os valores reais (2.5, 2.0, 1.5...) × 1.85 — herança da correção de viés
+// de modelo de 27-28/ago (ver MODEL_BIAS_CORRECTION em _liveConditions.ts). Só que em
+// 28/ago/2026 a FONTE PRINCIPAL de dados (fetchOpenMeteo, modelo ecmwf_wam, usada em ~todo
+// request) parou de aplicar essa correção — o comentário no próprio arquivo diz "NÃO aplica
+// applyModelBiasCorrection aqui" — mas ninguém reverteu os limiares aqui. Resultado: pro
+// caminho normal (quase sempre), uma onda REAL de 1.0m chegava aqui como 1.0 (sem inflar),
+// mas a tabela esperava 1.85 pra representar esse mesmo 1.0m — a nota saía sistematicamente
+// baixa demais. As tabelas abaixo já são calibradas direto em metros REAIS (sem qualquer
+// multiplicador), compatível com o que fetchOpenMeteo entrega hoje. Windy/Stormglass
+// (fallback raro) continuam aplicando ×1.85 no arquivo de dados, mas ali o propósito é outro
+// — normalizar a leitura GFS pra equivaler à leitura ECMWF, não inflar pra combinar com uma
+// tabela de score específica. Não precisa de ajuste aqui por causa disso.
+//
+// As faixas de onda, vento e período foram validadas contra 2 cenários reais descritos pelo
+// usuário (0.75m + vento terral calmo + período 9-10s = nota 8; 0.6m nas mesmas condições =
+// nota 7) e contra dado real de 30 dias (Open-Meteo Marine, Campeche e Naufragados): período
+// acima de 11s não ocorreu nenhuma vez no mês, por isso o bônus máximo de período fica em
+// 11s+, não em 16s+ como antes (mesma lógica nunca ocorreria de verdade). O vento passou a
+// ter 3 curvas distintas (terral/offshore, lateral, maral/onshore) em vez de uma penalidade
+// única — vento fraco e favorável agora SOMA pontos de verdade, não só deixa de descontar.
 export function explainSurfScore(
   waveHeight: number,
   windSpeed: number,
@@ -39,22 +55,25 @@ export function explainSurfScore(
   windDir: string,
   beachOrientation: number
 ): ScoreBreakdown {
-  // Base de score pela altura da onda (limiares × 1.85 — ver comentário acima)
+  // Base de score pela altura da onda, em metros reais (ver comentário acima — sem
+  // multiplicador, compatível com o que a fonte principal de dados entrega hoje)
   let waveBase: number
-  if (waveHeight >= 4.63) waveBase = 10
-  else if (waveHeight >= 3.70) waveBase = 9.5
-  else if (waveHeight >= 2.78) waveBase = 9.0
-  else if (waveHeight >= 2.22) waveBase = 8.5
-  else if (waveHeight >= 1.85) waveBase = 8.0
-  else if (waveHeight >= 1.48) waveBase = 7.5
-  else if (waveHeight >= 1.11) waveBase = 7.0
-  else if (waveHeight >= 0.93) waveBase = 6.5
-  else if (waveHeight >= 0.74) waveBase = 5.5
-  else waveBase = 4.0
+  if (waveHeight >= 2.5) waveBase = 10
+  else if (waveHeight >= 2.2) waveBase = 9.5
+  else if (waveHeight >= 1.8) waveBase = 9.0
+  else if (waveHeight >= 1.5) waveBase = 8.5
+  else if (waveHeight >= 1.2) waveBase = 8.0
+  else if (waveHeight >= 1.0) waveBase = 7.5
+  else if (waveHeight >= 0.85) waveBase = 7.0
+  else if (waveHeight >= 0.7) waveBase = 6.0
+  else if (waveHeight >= 0.6) waveBase = 5.0
+  else if (waveHeight >= 0.5) waveBase = 4.0
+  else if (waveHeight >= 0.3) waveBase = 3.0
+  else waveBase = 2.0
 
-  // Penalização pelo vento considerando a orientação da praia (faixa reduzida de 4.0 pra
-  // 3.0 de amplitude máxima, pra abrir espaço pro peso maior do período — ver comentário
-  // acima sobre a proporção 50/30/20)
+  // Ajuste pelo vento considerando a orientação da praia — 3 curvas diferentes, porque um
+  // terral moderado-forte ainda mantém a onda em pé (o pior que faz é acelerar a onda), um
+  // maral (onshore, bate de frente) bagunça a onda mesmo fraco, e o lateral fica no meio.
   const offshoreDir = (beachOrientation + 180) % 360
   let angleDiff = Math.abs((WIND_DEG[windDir] ?? 0) - offshoreDir)
   if (angleDiff > 180) angleDiff = 360 - angleDiff
@@ -62,29 +81,27 @@ export function explainSurfScore(
   let windPenalty: number
   let windQuality: ScoreBreakdown['windQuality']
   if (angleDiff <= 45) {
-    // Offshore — vento saindo do mar, deixa ondas limpas
+    // Offshore/terral — vento saindo do mar, mantém a onda organizada até ficar forte de verdade
     windQuality = 'offshore'
-    windPenalty = windSpeed <= 10 ? 0 : windSpeed <= 15 ? -0.2 : windSpeed <= 20 ? -0.6 : -1.1
+    windPenalty = windSpeed <= 3 ? 1.5 : windSpeed <= 10 ? 1.2 : windSpeed <= 15 ? 1.0 : windSpeed <= 20 ? -0.4 : -1.0
   } else if (angleDiff <= 90) {
-    // Lateral
+    // Lateral — fraco quase não atrapalha, só pesa de verdade quando fica forte
     windQuality = 'lateral'
-    windPenalty = windSpeed <= 10 ? -0.4 : windSpeed <= 15 ? -0.8 : windSpeed <= 20 ? -1.4 : -1.9
+    windPenalty = windSpeed <= 5 ? 1.3 : windSpeed <= 10 ? 1.0 : windSpeed <= 15 ? -0.5 : windSpeed <= 20 ? -1.0 : -1.5
   } else {
-    // Onshore — vento bagunçando as ondas
+    // Onshore/maral — bate de frente e bagunça a onda mesmo em velocidade baixa
     windQuality = 'onshore'
-    windPenalty = windSpeed <= 10 ? -0.8 : windSpeed <= 15 ? -1.5 : windSpeed <= 20 ? -2.3 : -3.0
+    windPenalty = windSpeed <= 3 ? 1.0 : windSpeed <= 5 ? 0 : windSpeed <= 10 ? -0.8 : windSpeed <= 15 ? -1.5 : windSpeed <= 20 ? -2.3 : -3.0
   }
 
-  // Ajuste pelo período do swell (faixa ampliada de 1.1 pra 2.2 de amplitude — dobrou o peso
-  // relativo do período, pra chegar mais perto dos ~20% que o usuário pediu)
+  // Ajuste pelo período do swell, comprimido pra faixa que realmente acontece em Floripa —
+  // dado real de 30 dias mostrou 0% de ocorrência acima de 11s (ver comentário acima)
   let periodAdjust: number
-  if (swellPeriod >= 16) periodAdjust = 1.0
-  else if (swellPeriod >= 14) periodAdjust = 0.6
-  else if (swellPeriod >= 12) periodAdjust = 0.4
-  else if (swellPeriod >= 10) periodAdjust = 0
-  else if (swellPeriod >= 8) periodAdjust = -0.4
-  else if (swellPeriod >= 7) periodAdjust = -0.8
-  else periodAdjust = -1.2
+  if (swellPeriod >= 11) periodAdjust = 1.4
+  else if (swellPeriod >= 9) periodAdjust = 1.1
+  else if (swellPeriod >= 7) periodAdjust = 0.8
+  else if (swellPeriod >= 4) periodAdjust = 0.3
+  else periodAdjust = -0.5
 
   const total = Math.min(10, Math.max(1, Number((waveBase + windPenalty + periodAdjust).toFixed(1))))
   return { waveBase, windPenalty, windQuality, periodAdjust, total }

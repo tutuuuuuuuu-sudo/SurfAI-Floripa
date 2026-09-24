@@ -5,9 +5,9 @@ import { calculateSurfScore, applyDirectionalExposure, explainSurfScore } from '
 describe('explainSurfScore', () => {
   it('a soma dos três componentes bate exatamente com calculateSurfScore (mesmos inputs)', () => {
     const cases: [number, number, number, string, number][] = [
-      [4.63, 5, 16, 'W', 90],
-      [1.85, 12, 9, 'S', 90],
-      [0.74, 21, 7, 'SSE', 90],
+      [2.5, 5, 11, 'W', 90],
+      [1.0, 12, 9, 'S', 90],
+      [0.4, 21, 7, 'SSE', 90],
       [1.30, 24, 7, 'S', 180],
     ]
     for (const args of cases) {
@@ -45,29 +45,31 @@ describe('calculateSurfScore', () => {
   // ── Altura de onda ───────────────────────────────────────────────────────────
 
   it('ondas 2.5m+ com condições ideais retorna 10', () => {
-    // Praia orientação 90° (leste), vento W (offshore), vento leve, período longo.
-    // Entrada em 5.0 (não 2.5) pra representar a mesma onda real depois da correção de
-    // viés de modelo de 28/ago/2026 (MODEL_BIAS_CORRECTION em _liveConditions.ts) — o
-    // valor que chega aqui já vem multiplicado por ~1.85 antes de entrar nessa função.
-    const score = calculateSurfScore(5.0, 5, 16, 'W', 90)
+    // Praia orientação 90° (leste), vento W (offshore), vento leve, período bom.
+    // Valores em metros reais — desde 28/ago/2026 a fonte principal (fetchOpenMeteo,
+    // modelo ecmwf_wam) não infla mais o valor por MODEL_BIAS_CORRECTION, então o
+    // waveHeight que chega aqui já é o metro real, sem multiplicador (ver comentário
+    // no topo de explainSurfScore).
+    const score = calculateSurfScore(2.5, 5, 16, 'W', 90)
     expect(score).toBe(10)
   })
 
-  it('ondas 1.0m retorna base 8.0 com condições neutras', () => {
-    // Período 10s (neutro), vento offshore leve. Entrada em 1.85 (não 1.0) — mesmo motivo
-    // do teste acima, é o limiar exato de waveBase=8.0 na escala pós-correção.
-    const score = calculateSurfScore(1.85, 5, 10, 'W', 90)
-    expect(score).toBe(8)
+  it('ondas 1.2m produz waveBase 8.0', () => {
+    // Testa o waveBase isolado (não o total) porque, com vento/período agora somando
+    // pontos de verdade em vez de só neutralizar, não existe mais uma combinação
+    // "neutra" de vento+período pra isolar a contribuição da onda via total.
+    const breakdown = explainSurfScore(1.2, 5, 10, 'W', 90)
+    expect(breakdown.waveBase).toBe(8.0)
   })
 
-  it('ondas muito pequenas (0.3m) penaliza bastante', () => {
-    const score = calculateSurfScore(0.56, 5, 10, 'W', 90)
-    expect(score).toBeLessThan(5)
+  it('ondas muito pequenas (0.3m) com vento e período ruins penaliza bastante', () => {
+    const score = calculateSurfScore(0.3, 25, 3, 'E', 90)
+    expect(score).toBeLessThan(3)
   })
 
   // ── Vento offshore / onshore ─────────────────────────────────────────────────
 
-  it('vento offshore leve não penaliza', () => {
+  it('vento offshore leve soma pontos (não só deixa de penalizar)', () => {
     // Praia leste (90°), offshore é W (270°)
     const scoreOffshore = calculateSurfScore(1.0, 8, 10, 'W', 90)
     const scoreOnshore  = calculateSurfScore(1.0, 8, 10, 'E', 90)
