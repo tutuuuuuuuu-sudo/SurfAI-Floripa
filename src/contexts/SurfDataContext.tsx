@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState, useCallback, ReactNode } from 'react'
-import { fetchCurrentConditions, getCurrentConditions, BeachCondition } from '@/lib/surfData'
+import { fetchCurrentConditions, getCurrentConditions, isConditionsFetchPending, BeachCondition } from '@/lib/surfData'
 
 interface SurfDataContextType {
   conditions: BeachCondition[]
@@ -18,6 +18,9 @@ const SurfDataContext = createContext<SurfDataContextType>({
 })
 
 const REFRESH_INTERVAL = 15 * 60 * 1000
+// Quando a fonte de dados está lenta, a Home recebe só parte das praias (ou o cache
+// anterior) e a busca completa segue em segundo plano — tenta de novo nesse intervalo
+const PENDING_RETRY_DELAY = 10 * 1000
 
 export function SurfDataProvider({ children }: { children: ReactNode }) {
   const [conditions, setConditions] = useState<BeachCondition[]>(() => getCurrentConditions())
@@ -25,6 +28,7 @@ export function SurfDataProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(conditions.length > 0 ? new Date() : null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Ref (não state) porque `load` só é criada uma vez e fica presa no setInterval
   // do efeito abaixo — se dependesse de `conditions` via closure, o setInterval
   // ficaria travado no valor de conditions do momento da montagem pra sempre.
@@ -32,6 +36,7 @@ export function SurfDataProvider({ children }: { children: ReactNode }) {
   useEffect(() => { conditionsRef.current = conditions }, [conditions])
 
   const load = useCallback(async () => {
+    if (retryRef.current) { clearTimeout(retryRef.current); retryRef.current = null }
     try {
       const data = await fetchCurrentConditions()
       setConditions(data)
@@ -44,6 +49,7 @@ export function SurfDataProvider({ children }: { children: ReactNode }) {
       setError(conditionsRef.current.length === 0)
     } finally {
       setLoading(false)
+      if (isConditionsFetchPending()) retryRef.current = setTimeout(load, PENDING_RETRY_DELAY)
     }
   }, [])
 
@@ -52,6 +58,7 @@ export function SurfDataProvider({ children }: { children: ReactNode }) {
     intervalRef.current = setInterval(load, REFRESH_INTERVAL)
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
+      if (retryRef.current) clearTimeout(retryRef.current)
     }
   }, [])
 

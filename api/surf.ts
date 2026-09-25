@@ -127,7 +127,14 @@ export default async function handler(req: Request) {
       sunrise,
       sunset,
       weatherCondition,
-    }), { headers: corsHeaders })
+    }), {
+      // Cache compartilhado na Vercel (só respostas de sucesso): o 1º usuário busca nas
+      // fontes externas, os próximos 10min recebem direto do cache — e se a fonte ficar
+      // lenta/fora, serve o último dado bom por até 30min em vez de fazer o app esperar.
+      // Usa Vercel-CDN-Cache-Control porque o vercel.json força "no-store" no
+      // Cache-Control de /api/* (esse continua valendo pro navegador).
+      headers: { ...corsHeaders, 'Vercel-CDN-Cache-Control': 'max-age=600, stale-while-revalidate=1800' },
+    })
   } catch {
     return new Response(JSON.stringify({ error: 'Erro interno' }), { status: 500, headers: corsHeaders })
   }

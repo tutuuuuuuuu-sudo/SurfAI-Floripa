@@ -450,17 +450,24 @@ const conditionsState: {
   // Promise em andamento — qualquer chamada concurrent espera essa promise ao invés de
   // disparar um novo fetch. Elimina a race condition de múltiplos useEffect simultâneos.
   inflight: Promise<BeachCondition[]> | null
-} = { data: null, fetchedAt: 0, inflight: null }
+  // Busca completa (sem o teto de tempo) — continua rodando depois que o teto estoura,
+  // pra próxima chamada reaproveitar em vez de começar tudo do zero.
+  background: Promise<BeachCondition[]> | null
+} = { data: null, fetchedAt: 0, inflight: null, background: null }
 
-async function _doFetchConditions(): Promise<BeachCondition[]> {
-  const [tideData, realWaterTemp] = await Promise.all([
-    fetchRealTideData(),
-    getRealWaterTemp(),
-  ])
-  const tideInfo = tideData
-    ? getTideFromData(tideData.heights, tideData.times)
-    : { height: getTideHeight(), state: getTide() }
-  const tide = tideInfo.state
+export const TOTAL_BEACHES = BEACHES.length
+
+// `partial` recebe cada lote assim que ele termina — se o teto de tempo estourar no
+// meio, fetchCurrentConditions ainda consegue mostrar as praias que já chegaram.
+async function _doFetchConditions(partial: BeachCondition[]): Promise<BeachCondition[]> {
+  // Maré e temperatura da água rodam em paralelo com o 1º lote de praias, em vez de
+  // segurar todas as praias até terminarem (a maré sozinha pode levar até 10s).
+  const shared = Promise.all([fetchRealTideData(), getRealWaterTemp()]).then(([tideData, realWaterTemp]) => ({
+    tideInfo: tideData
+      ? getTideFromData(tideData.heights, tideData.times)
+      : { height: getTideHeight(), state: getTide() },
+    realWaterTemp,
+  }))
 
   // Limita concorrência a 5 praias por vez para não exceder os limites do Vercel Free
   const BATCH_SIZE = 5
@@ -470,7 +477,11 @@ async function _doFetchConditions(): Promise<BeachCondition[]> {
     const batch = BEACHES.slice(i, i + BATCH_SIZE)
     const batchResults = await Promise.allSettled(
       batch.map(async (beach) => {
-        const windyData = await getWindyForecast(beach.lat, beach.lng, beach.orientation)
+        const [windyData, { tideInfo, realWaterTemp }] = await Promise.all([
+          getWindyForecast(beach.lat, beach.lng, beach.orientation),
+          shared,
+        ])
+        const tide = tideInfo.state
 
         const waveHeight = Number((windyData?.waveHeight ?? 1.0).toFixed(1))
         const windSpeed = Math.round(windyData?.windSpeed ?? 12)
@@ -518,11 +529,26 @@ async function _doFetchConditions(): Promise<BeachCondition[]> {
       })
     )
     allResults.push(...batchResults)
+    for (const r of batchResults) if (r.status === 'fulfilled') partial.push(r.value)
   }
 
   return allResults
     .filter((r): r is PromiseFulfilledResult<BeachCondition> => r.status === 'fulfilled')
     .map(r => r.value)
+}
+
+function startBackgroundFetch(partial: BeachCondition[]): Promise<BeachCondition[]> {
+  const full: Promise<BeachCondition[]> = _doFetchConditions(partial)
+    .then(conditions => {
+      conditionsState.data = conditions
+      conditionsState.fetchedAt = Date.now()
+      return conditions
+    })
+    .finally(() => {
+      if (conditionsState.background === full) conditionsState.background = null
+    })
+  conditionsState.background = full
+  return full
 }
 
 export async function fetchCurrentConditions(): Promise<BeachCondition[]> {
@@ -536,24 +562,41 @@ export async function fetchCurrentConditions(): Promise<BeachCondition[]> {
   // Já há um fetch em andamento — espera ele terminar em vez de disparar outro
   if (conditionsState.inflight) return conditionsState.inflight
 
-  const timeout = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error('fetchCurrentConditions timeout')), 15000)
-  )
+  // Se uma busca anterior estourou o teto mas ainda está rodando, espera ela em vez de
+  // disparar outra (o `partial` dela já não importa — quem estava esperando já recebeu)
+  const partial: BeachCondition[] = []
+  const full = conditionsState.background ?? startBackgroundFetch(partial)
 
-  conditionsState.inflight = Promise.race([_doFetchConditions(), timeout]).then(conditions => {
-    conditionsState.data = conditions
-    conditionsState.fetchedAt = Date.now()
-    conditionsState.inflight = null
-    return conditions
-  }).catch(() => {
-    conditionsState.inflight = null
-    // Em timeout, retorna dados do cache anterior se disponíveis em vez de lançar erro
-    if (conditionsState.data && conditionsState.data.length > 0) return conditionsState.data
-    throw new Error('fetchCurrentConditions timeout')
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeout = new Promise<'timeout'>(resolve => {
+    timer = setTimeout(() => resolve('timeout'), 15000)
   })
+
+  conditionsState.inflight = (async () => {
+    try {
+      const result = await Promise.race([full, timeout])
+      if (result !== 'timeout') return result
+    } catch {
+      // falha total da busca — cai nos fallbacks abaixo
+    } finally {
+      clearTimeout(timer)
+      conditionsState.inflight = null
+    }
+    // Teto estourou (fonte de dados lenta): antes descartava tudo e a Home mostrava só
+    // "Erro ao carregar as condições" (visto em produção 25/set/2026). Agora prefere o
+    // cache anterior completo; sem cache, mostra as praias que já chegaram — a busca
+    // continua em segundo plano e o SurfDataContext completa o resto logo depois.
+    if (conditionsState.data && conditionsState.data.length > 0) return conditionsState.data
+    if (partial.length > 0) return [...partial]
+    throw new Error('fetchCurrentConditions timeout')
+  })()
 
   return conditionsState.inflight
 }
+
+// true enquanto uma busca que estourou o teto de tempo ainda roda em segundo plano —
+// sinal pro SurfDataContext tentar de novo em breve pra completar as praias que faltaram
+export function isConditionsFetchPending(): boolean { return conditionsState.background !== null }
 
 export function getCurrentConditions(): BeachCondition[] { return conditionsState.data ?? [] }
 export function getTopSpots(limit = 3): BeachCondition[] { return getCurrentConditions().sort((a, b) => b.score - a.score).slice(0, limit) }

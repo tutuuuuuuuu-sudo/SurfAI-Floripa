@@ -22,10 +22,10 @@ export interface WindyForecastData {
 const cache: Record<string, { data: WindyForecastData; time: number }> = {}
 const CACHE_DURATION = 15 * 60 * 1000
 
-async function fetchWithRetry(url: string, maxAttempts = 3): Promise<Response | null> {
+async function fetchWithRetry(url: string, maxAttempts = 3, timeoutMs = 8000): Promise<Response | null> {
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(8000) })
+      const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) })
       if (res.ok) return res
       if (res.status >= 400 && res.status < 500) return null // client error — don't retry
     } catch {
@@ -114,7 +114,9 @@ export async function getRealTide(): Promise<{
 
 export async function getRealWaterTemp(): Promise<number> {
   try {
-    const res = await fetchWithRetry('/api/tide?type=temp')
+    // Sem retry e com prazo curto: é só a temperatura da água e já existe fallback
+    // sazonal logo abaixo — não pode segurar o carregamento das praias (25/set/2026)
+    const res = await fetchWithRetry('/api/tide?type=temp', 1, 4000)
     if (res) {
       const data = await res.json() as { temp?: number }
       if (typeof data.temp === 'number') return data.temp
