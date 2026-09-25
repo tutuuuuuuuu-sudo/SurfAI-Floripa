@@ -61,8 +61,9 @@ src/
 │   └── NotFound.tsx           # 404
 ├── components/
 │   ├── spot/                  # Componentes de SpotDetails (extraídos)
-│   │   ├── WindCompass.tsx    # Rosa dos ventos: lado MAR/TERRA da praia + seta animada colorida por terral/lateral/maral
-│   │   ├── TideChart.tsx      # Gráfico de maré interativo com modal expansível
+│   │   ├── WindCompass.tsx    # Rosa dos ventos clássica (estrela 16 pontas, anel graduado) + seta animada colorida por terral/lateral/maral
+│   │   ├── TideChart.tsx      # Maré da aba Agora — usa DayTideChart (arrastável, marcador "agora")
+│   │   ├── DayTideChart.tsx   # Maré do dia arrastável, mesmo estilo da DayCurve (hora/nível/enchendo-secando)
 │   │   ├── CommentsSection.tsx# Relatos da comunidade via Supabase
 │   │   ├── ScoreExplainer.tsx # Modal de breakdown do score (onda/período/vento)
 │   │   ├── DayCurve.tsx       # "Linha do dia": nota hora a hora como onda contínua + arco do sol, arrastável (ForecastDay)
@@ -98,7 +99,7 @@ src/
 │   ├── comments.ts            # getComments(), addComment() via Supabase
 │   ├── notifications.ts       # Alertas de condições boas
 │   ├── tainha.ts              # isTainhaSeasonActive() — temporada de tainha (sazonalidade)
-│   ├── directions.ts          # directionName('ESE') → 'entre leste e sudeste'; windEffect() terral/lateral/maral (classificação vem de classifyWind em _scoreEngine)
+│   ├── directions.ts          # directionName('ESE') → 'leste sudeste'; windEffect() terral/lateral/maral (classificação vem de classifyWind em _scoreEngine)
 │   ├── weatherApi.ts          # getWindyForecast() — Open-Meteo Marine via Vercel API
 │   ├── weatherData.ts         # getRealWaterTemp() — temperatura real da água
 │   └── utils.ts               # cn() para classes Tailwind

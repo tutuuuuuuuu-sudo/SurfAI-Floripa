@@ -1,27 +1,26 @@
 import { classifyWind } from '../../api/_scoreEngine'
 
 // Significado das siglas de direção (padrão internacional em inglês, o mesmo que Windguru/
-// Surfguru usam — N, E=leste, S, W=oeste). A sigla continua aparecendo e o nome vem ao lado
-// (pedido do usuário 25/set/2026: "ESE" sozinho não diz nada pra quem não conhece).
-// As 8 principais têm nome direto; as intermediárias dizem entre quais duas elas ficam,
-// mais fácil de entender que o nome técnico ("lés-sudeste").
+// Surfguru usam — N, E=leste, S, W=oeste). A sigla continua aparecendo e o nome vem ao lado,
+// no formato que o usuário pediu em 25/set/2026: "NNW · norte noroeste" (as duas direções
+// que formam a sigla, sem "entre x e y").
 const DIRECTION_NAMES: Record<string, string> = {
   N: 'norte',
-  NNE: 'entre norte e nordeste',
+  NNE: 'norte nordeste',
   NE: 'nordeste',
-  ENE: 'entre leste e nordeste',
+  ENE: 'leste nordeste',
   E: 'leste',
-  ESE: 'entre leste e sudeste',
+  ESE: 'leste sudeste',
   SE: 'sudeste',
-  SSE: 'entre sul e sudeste',
+  SSE: 'sul sudeste',
   S: 'sul',
-  SSW: 'entre sul e sudoeste',
+  SSW: 'sul sudoeste',
   SW: 'sudoeste',
-  WSW: 'entre oeste e sudoeste',
+  WSW: 'oeste sudoeste',
   W: 'oeste',
-  WNW: 'entre oeste e noroeste',
+  WNW: 'oeste noroeste',
   NW: 'noroeste',
-  NNW: 'entre norte e noroeste',
+  NNW: 'norte noroeste',
 }
 
 export function directionName(code: string): string {

@@ -165,6 +165,7 @@ export function BestWindowWidget({ lat, lng, orientation, current }: Props) {
                   sunriseHour={sunriseHour}
                   sunsetHour={sunsetHour}
                   nowHour={nowHour}
+                  goodWindow={goldenWindow ? { from: goldenWindow.startHour, to: goldenWindow.endHour } : null}
                   onSelect={setSelectedHour}
                 />
               </div>

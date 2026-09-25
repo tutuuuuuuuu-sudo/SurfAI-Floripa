@@ -1,5 +1,6 @@
 import { useId, useMemo, useRef } from 'react'
 import { getRatingInfo } from '@/lib/rating'
+import { smoothPath } from '@/lib/chartPath'
 
 // "Linha do dia" da página de detalhe de um dia da previsão (ForecastDay.tsx): a nota hora a
 // hora desenhada como uma onda contínua, pintada pela cor da nota em cada hora, com o arco do
@@ -21,6 +22,8 @@ interface DayCurveProps {
   onSelect: (hour: number) => void
   // Só na curva de HOJE (BestWindowWidget): marca "agora" e apaga as horas que já passaram
   nowHour?: number
+  // Janela boa (api/_goldenWindow.ts) — vira uma faixa na cor da melhor hora logo abaixo da curva
+  goodWindow?: { from: number; to: number } | null
 }
 
 const VW = 360
@@ -32,7 +35,7 @@ const TOP = 52        // nota 10 encosta aqui
 const BOTTOM = 150    // nota 0 encosta aqui
 const TICK_Y = 168
 
-export function DayCurve({ hours, selectedHour, bestHour, sunriseHour, sunsetHour, onSelect, nowHour }: DayCurveProps) {
+export function DayCurve({ hours, selectedHour, bestHour, sunriseHour, sunsetHour, onSelect, nowHour, goodWindow }: DayCurveProps) {
   const uid = useId().replace(/:/g, '')
   const svgRef = useRef<SVGSVGElement>(null)
   const dragging = useRef(false)
@@ -49,14 +52,7 @@ export function DayCurve({ hours, selectedHour, bestHour, sunriseHour, sunsetHou
     const y = (score: number) => BOTTOM - (Math.max(0, Math.min(10, score)) / 10) * (BOTTOM - TOP)
     const pts = hours.map(h => ({ x: x(h.hour), y: y(h.score) }))
 
-    // Catmull-Rom → Bézier: curva suave passando exatamente por cada hora
-    let line = pts.length ? `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}` : ''
-    for (let i = 0; i < pts.length - 1; i++) {
-      const p0 = pts[i - 1] ?? pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] ?? p2
-      const c1x = p1.x + (p2.x - p0.x) / 6, c1y = p1.y + (p2.y - p0.y) / 6
-      const c2x = p2.x - (p3.x - p1.x) / 6, c2y = p2.y - (p3.y - p1.y) / 6
-      line += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`
-    }
+    const line = smoothPath(pts)
     const area = pts.length
       ? `${line} L ${pts[pts.length - 1].x.toFixed(1)} ${BOTTOM} L ${pts[0].x.toFixed(1)} ${BOTTOM} Z`
       : ''
@@ -156,8 +152,10 @@ export function DayCurve({ hours, selectedHour, bestHour, sunriseHour, sunsetHou
 
       {/* Arco do sol */}
       <path d={arcPath} fill="none" stroke="var(--muted-foreground)" strokeOpacity="0.35" strokeWidth="1" strokeDasharray="2 4" />
-      <text x={sx} y={ARC_BASE + 10} textAnchor="middle" fontSize="8" fill="var(--muted-foreground)">{fmt(sunrise)}</text>
-      <text x={ex} y={ARC_BASE + 10} textAnchor="middle" fontSize="8" fill="var(--muted-foreground)">{fmt(sunset)}</text>
+      {/* Horário do nascer/pôr ao lado de cada ponta do arco — antes ficava logo abaixo
+          da ponta e a linha da curva passava por cima quando a nota estava alta */}
+      <text x={sx - 5} y={ARC_BASE + 2} textAnchor="end" fontSize="8.5" fill="var(--muted-foreground)">{fmt(sunrise)}</text>
+      <text x={ex + 5} y={ARC_BASE + 2} textAnchor="start" fontSize="8.5" fill="var(--muted-foreground)">{fmt(sunset)}</text>
       {sunVisible && (
         <g style={{ transform: `translate(${sunX}px, ${sunY}px)`, transition: 'transform 0.25s ease-out' }}>
           <circle r="10" fill="var(--rating-fair)" opacity="0.18" />
@@ -183,6 +181,16 @@ export function DayCurve({ hours, selectedHour, bestHour, sunriseHour, sunsetHou
         style={{ animation: 'drawLine 1.1s ease-out both' }}
       />
       <line x1={PAD_L} x2={VW - PAD_R} y1={BOTTOM} y2={BOTTOM} stroke="var(--border)" strokeWidth="1" />
+      {goodWindow && best && (
+        <rect
+          x={geo.x(goodWindow.from) - 3}
+          y={BOTTOM + 2}
+          width={Math.max(6, geo.x(goodWindow.to) - geo.x(goodWindow.from) + 6)}
+          height="4"
+          rx="2"
+          fill={getRatingInfo(best.score).scoreColor}
+        />
+      )}
 
       {/* Melhor hora (quando não é a selecionada) */}
       {best && best.hour !== selectedHour && (

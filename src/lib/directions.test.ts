@@ -4,8 +4,8 @@ import { directionName, windEffect } from './directions'
 describe('directionName', () => {
   it('traduz siglas principais e intermediárias', () => {
     expect(directionName('SE')).toBe('sudeste')
-    expect(directionName('ESE')).toBe('entre leste e sudeste')
-    expect(directionName('NNW')).toBe('entre norte e noroeste')
+    expect(directionName('ESE')).toBe('leste sudeste')
+    expect(directionName('NNW')).toBe('norte noroeste')
     expect(directionName('w')).toBe('oeste')
   })
   it('devolve a própria sigla se não reconhecer', () => {

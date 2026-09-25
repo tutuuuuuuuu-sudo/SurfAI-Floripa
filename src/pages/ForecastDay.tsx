@@ -15,6 +15,7 @@ import { PremiumUpsellBanner } from '@/components/PremiumUpsellBanner'
 import { WindCompass } from '@/components/spot/WindCompass'
 import { DayTideChart } from '@/components/spot/DayTideChart'
 import { DayCurve } from '@/components/spot/DayCurve'
+import { computeGoldenWindow } from '../../api/_goldenWindow'
 
 interface DayHour {
   hour: number
@@ -112,15 +113,16 @@ export default function ForecastDayPage() {
     const daylight = data.hours.filter(h => isDay(h.hour))
     const pool = daylight.length > 0 ? daylight : data.hours
 
-    // Janela boa: horas de luz vizinhas da melhor hora que ficam a até 0.5 da nota dela
-    const byHour = new Map(data.hours.map(h => [h.hour, h]))
-    let from = data.best.hour, to = data.best.hour
-    while (byHour.get(from - 1) && isDay(from - 1) && byHour.get(from - 1)!.score >= data.best.score - 0.5) from--
-    while (byHour.get(to + 1) && isDay(to + 1) && byHour.get(to + 1)!.score >= data.best.score - 0.5) to++
+    // Janela boa: mesma regra da Melhor Janela do Dia (api/_goldenWindow.ts) — horas
+    // vizinhas na mesma cor da melhor hora, dentro da luz do dia
+    const gw = computeGoldenWindow(
+      data.hours.map(h => ({ ...h, label: fmtHour(h.hour) })),
+      data.best.hour, data.sunriseHour, data.sunsetHour
+    )
 
     const waves = pool.map(h => h.waveHeight), winds = pool.map(h => h.windSpeed)
     return {
-      window: { from, to },
+      window: gw ? { from: gw.startHour, to: gw.endHour } : null,
       waveMin: Math.min(...waves), waveMax: Math.max(...waves),
       windMin: Math.min(...winds), windMax: Math.max(...winds),
     }
@@ -248,7 +250,7 @@ export default function ForecastDayPage() {
                   )}
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  {view.window.to > view.window.from && (
+                  {view.window && view.window.to > view.window.from && (
                     <>Janela boa: <span className="font-semibold text-foreground">{fmtHour(view.window.from)} às {fmtHour(view.window.to)}</span> · </>
                   )}
                   <span className="tabular-nums">no dia, onda de {view.waveMin.toFixed(1)} a {view.waveMax.toFixed(1)}m e vento de {view.windMin} a {view.windMax}km/h</span>
@@ -263,6 +265,7 @@ export default function ForecastDayPage() {
                   sunriseHour={data.sunriseHour}
                   sunsetHour={data.sunsetHour}
                   onSelect={setSelectedHour}
+                  goodWindow={view.window}
                 />
               </div>
 
@@ -283,7 +286,7 @@ export default function ForecastDayPage() {
                     {swellDeg !== undefined && (
                       <ArrowUp className="h-3.5 w-3.5 text-primary transition-transform duration-300" style={{ transform: `rotate(${swellDeg + 180}deg)` }} />
                     )}
-                    <span>swell <span className="font-semibold text-foreground">{sel.swellDirection}</span> · {directionName(sel.swellDirection)}</span>
+                    <span>swell <span className="font-semibold text-foreground">{sel.swellDirection}</span> {directionName(sel.swellDirection)}</span>
                   </div>
                 </div>
                 <div className="rounded-2xl border border-border/40 bg-card p-3.5">
@@ -321,7 +324,7 @@ export default function ForecastDayPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <DayTideChart heights={data.tideHeights} markerHour={sel.hour} />
+                  <DayTideChart heights={data.tideHeights} selectedHour={sel.hour} onSelect={setSelectedHour} />
                 </CardContent>
               </Card>
             )}

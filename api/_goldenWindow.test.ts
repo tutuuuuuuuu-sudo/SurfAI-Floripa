@@ -14,12 +14,33 @@ function slot(hour: number, score: number, opts: Partial<WindowSlot> = {}): Wind
 }
 
 describe('computeGoldenWindow', () => {
-  it('expande para as horas vizinhas contíguas que também são BOM ou melhor', () => {
+  it('expande só pelas horas vizinhas na mesma cor da melhor hora', () => {
     const slots = [
-      slot(6, 4.0), slot(7, 6.0), slot(8, 7.5), slot(9, 6.5), slot(10, 3.5),
+      slot(6, 4.0), slot(7, 7.1), slot(8, 7.5), slot(9, 7.2), slot(10, 6.5),
     ]
     const window = computeGoldenWindow(slots, 8)
     expect(window).toEqual({ startHour: 7, endHour: 9, startIdx: 1, endIdx: 3 })
+  })
+
+  it('não estica a janela EXCELENTE por horas que já caíram pra BOM (caso do usuário, 25/set/2026)', () => {
+    // Excelente até 12h, depois 5.5-5.8 (BOM) até 15h com vento entrando
+    const slots = [
+      slot(10, 7.6), slot(11, 7.4), slot(12, 7.0), slot(13, 5.8), slot(14, 5.5), slot(15, 5.6), slot(16, 4.2),
+    ]
+    const window = computeGoldenWindow(slots, 10)
+    expect(window?.endHour).toBe(12)
+  })
+
+  it('inclui vizinha quase empatada mesmo de cor diferente (8.6 ÉPICO ao lado de 8.4)', () => {
+    const slots = [slot(8, 8.4), slot(9, 8.6), slot(10, 7.9)]
+    const window = computeGoldenWindow(slots, 9)
+    expect(window).toEqual({ startHour: 8, endHour: 9, startIdx: 0, endIdx: 1 })
+  })
+
+  it('janela de dia BOM continua podendo ser longa (tudo verde)', () => {
+    const slots = [slot(7, 5.6), slot(8, 6.2), slot(9, 5.9), slot(10, 5.5)]
+    const window = computeGoldenWindow(slots, 8)
+    expect(window).toEqual({ startHour: 7, endHour: 10, startIdx: 0, endIdx: 3 })
   })
 
   it('retorna um intervalo de uma hora só quando os vizinhos não são bons', () => {
