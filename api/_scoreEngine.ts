@@ -48,6 +48,18 @@ export interface ScoreBreakdown {
 // 11s+, não em 16s+ como antes (mesma lógica nunca ocorreria de verdade). O vento passou a
 // ter 3 curvas distintas (terral/offshore, lateral, maral/onshore) em vez de uma penalidade
 // única — vento fraco e favorável agora SOMA pontos de verdade, não só deixa de descontar.
+// Terral (offshore), lateral ou maral (onshore) — fonte única dessa classificação, usada
+// pela nota logo abaixo E pela UI (rosa dos ventos, textos de análise). `beachOrientation` é
+// pra onde a praia "olha" (o mar); o terral vem do lado oposto, da terra.
+export function classifyWind(windDir: string, beachOrientation: number): ScoreBreakdown['windQuality'] {
+  const offshoreDir = (beachOrientation + 180) % 360
+  let angleDiff = Math.abs((WIND_DEG[windDir] ?? 0) - offshoreDir)
+  if (angleDiff > 180) angleDiff = 360 - angleDiff
+  if (angleDiff <= 45) return 'offshore'
+  if (angleDiff <= 90) return 'lateral'
+  return 'onshore'
+}
+
 export function explainSurfScore(
   waveHeight: number,
   windSpeed: number,
@@ -74,23 +86,16 @@ export function explainSurfScore(
   // Ajuste pelo vento considerando a orientação da praia — 3 curvas diferentes, porque um
   // terral moderado-forte ainda mantém a onda em pé (o pior que faz é acelerar a onda), um
   // maral (onshore, bate de frente) bagunça a onda mesmo fraco, e o lateral fica no meio.
-  const offshoreDir = (beachOrientation + 180) % 360
-  let angleDiff = Math.abs((WIND_DEG[windDir] ?? 0) - offshoreDir)
-  if (angleDiff > 180) angleDiff = 360 - angleDiff
-
+  const windQuality = classifyWind(windDir, beachOrientation)
   let windPenalty: number
-  let windQuality: ScoreBreakdown['windQuality']
-  if (angleDiff <= 45) {
+  if (windQuality === 'offshore') {
     // Offshore/terral — vento saindo do mar, mantém a onda organizada até ficar forte de verdade
-    windQuality = 'offshore'
     windPenalty = windSpeed <= 3 ? 1.5 : windSpeed <= 10 ? 1.2 : windSpeed <= 15 ? 1.0 : windSpeed <= 20 ? -0.4 : -1.0
-  } else if (angleDiff <= 90) {
+  } else if (windQuality === 'lateral') {
     // Lateral — fraco quase não atrapalha, só pesa de verdade quando fica forte
-    windQuality = 'lateral'
     windPenalty = windSpeed <= 5 ? 1.3 : windSpeed <= 10 ? 1.0 : windSpeed <= 15 ? -0.5 : windSpeed <= 20 ? -1.0 : -1.5
   } else {
     // Onshore/maral — bate de frente e bagunça a onda mesmo em velocidade baixa
-    windQuality = 'onshore'
     windPenalty = windSpeed <= 3 ? 1.0 : windSpeed <= 5 ? 0 : windSpeed <= 10 ? -0.8 : windSpeed <= 15 ? -1.5 : windSpeed <= 20 ? -2.3 : -3.0
   }
 

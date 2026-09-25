@@ -61,7 +61,7 @@ src/
 │   └── NotFound.tsx           # 404
 ├── components/
 │   ├── spot/                  # Componentes de SpotDetails (extraídos)
-│   │   ├── WindCompass.tsx    # Bússola SVG com seta de direção do vento
+│   │   ├── WindCompass.tsx    # Rosa dos ventos: lado MAR/TERRA da praia + seta animada colorida por terral/lateral/maral
 │   │   ├── TideChart.tsx      # Gráfico de maré interativo com modal expansível
 │   │   ├── CommentsSection.tsx# Relatos da comunidade via Supabase
 │   │   ├── ScoreExplainer.tsx # Modal de breakdown do score (onda/período/vento)
@@ -98,6 +98,7 @@ src/
 │   ├── comments.ts            # getComments(), addComment() via Supabase
 │   ├── notifications.ts       # Alertas de condições boas
 │   ├── tainha.ts              # isTainhaSeasonActive() — temporada de tainha (sazonalidade)
+│   ├── directions.ts          # directionName('ESE') → 'entre leste e sudeste'; windEffect() terral/lateral/maral (classificação vem de classifyWind em _scoreEngine)
 │   ├── weatherApi.ts          # getWindyForecast() — Open-Meteo Marine via Vercel API
 │   ├── weatherData.ts         # getRealWaterTemp() — temperatura real da água
 │   └── utils.ts               # cn() para classes Tailwind

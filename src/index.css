@@ -188,6 +188,8 @@ input, textarea, select {
 @keyframes slideInRight{ from { opacity: 0; transform: translateX(16px) } to { opacity: 1; transform: translateX(0) } }
 /* Traço de SVG se desenhando (precisa pathLength=1 + stroke-dasharray=1) — curva do dia em DayCurve.tsx */
 @keyframes drawLine    { from { stroke-dashoffset: 1 } to { stroke-dashoffset: 0 } }
+/* Riscos correndo pela seta do vento (WindCompass.tsx) */
+@keyframes windFlow    { from { stroke-dashoffset: 12 } to { stroke-dashoffset: 0 } }
 /* Sobe da base da tela por inteiro — painéis full-screen tipo o chat do Surf AI, diferente
    do slideUp acima (deslocamento sutil de 20px usado em reveals de conteúdo). */
 @keyframes slideUpSheet { from { transform: translateY(100%) } to { transform: translateY(0) } }

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { MapPin, Star, Navigation, ChevronRight } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { BeachCondition, getSubRegionMatch } from '@/lib/surfData'
+import { directionName } from '@/lib/directions'
 
 export const PicosSection = ({ spot }: { spot: BeachCondition }) => {
   const [selectedId, setSelectedId] = useState<string|null>(null)
@@ -75,9 +76,9 @@ export const PicosSection = ({ spot }: { spot: BeachCondition }) => {
                   </div>
                   <div className="text-xs text-muted-foreground bg-background/40 rounded-lg p-2 mb-2">
                     {pico.minDiff===0
-                      ? `Swell de ${spot.swellDirection} é ideal para este pico.`
+                      ? `Swell de ${spot.swellDirection} (${directionName(spot.swellDirection)}) é ideal para este pico.`
                       : pico.minDiff<=2
-                      ? `Swell de ${spot.swellDirection} funciona bem. Ideal: ${pico.idealDirs.join(' ou ')}.`
+                      ? `Swell de ${spot.swellDirection} (${directionName(spot.swellDirection)}) funciona bem. Ideal: ${pico.idealDirs.join(' ou ')}.`
                       : `Melhor com swell de ${pico.idealDirs.join(', ')}.`}
                   </div>
                   <div className="grid grid-cols-2 gap-2">

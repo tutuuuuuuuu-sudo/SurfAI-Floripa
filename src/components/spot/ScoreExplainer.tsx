@@ -5,9 +5,9 @@ import { explainSurfScore } from '../../../api/_scoreEngine'
 import { useBodyScrollLock } from '@/hooks/use-body-scroll-lock'
 
 const WIND_QUALITY_LABEL: Record<string, string> = {
-  offshore: 'offshore, deixa a onda limpa',
-  lateral: 'lateral',
-  onshore: 'onshore, bagunça a onda',
+  offshore: 'terral, deixa a onda lisa',
+  lateral: 'lateral, mexe um pouco a onda',
+  onshore: 'maral, bagunça a onda',
 }
 
 const fmtSigned = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(n).toFixed(1)}`

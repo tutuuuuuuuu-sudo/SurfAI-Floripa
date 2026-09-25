@@ -19,6 +19,8 @@ interface DayCurveProps {
   sunriseHour: number | null
   sunsetHour: number | null
   onSelect: (hour: number) => void
+  // Só na curva de HOJE (BestWindowWidget): marca "agora" e apaga as horas que já passaram
+  nowHour?: number
 }
 
 const VW = 360
@@ -30,7 +32,7 @@ const TOP = 52        // nota 10 encosta aqui
 const BOTTOM = 150    // nota 0 encosta aqui
 const TICK_Y = 168
 
-export function DayCurve({ hours, selectedHour, bestHour, sunriseHour, sunsetHour, onSelect }: DayCurveProps) {
+export function DayCurve({ hours, selectedHour, bestHour, sunriseHour, sunsetHour, onSelect, nowHour }: DayCurveProps) {
   const uid = useId().replace(/:/g, '')
   const svgRef = useRef<SVGSVGElement>(null)
   const dragging = useRef(false)
@@ -84,8 +86,9 @@ export function DayCurve({ hours, selectedHour, bestHour, sunriseHour, sunsetHou
   const runs: { left: number; width: number; fill: string; opacity: number }[] = []
   for (const band of geo.bands) {
     const night = isNight(band.hour)
-    const fill = night ? 'var(--muted-foreground)' : getRatingInfo(band.score).scoreColor
-    const opacity = night ? 0.14 : band.hour === selectedHour ? 0.7 : 0.4
+    const past = nowHour !== undefined && band.hour < nowHour
+    const fill = night || past ? 'var(--muted-foreground)' : getRatingInfo(band.score).scoreColor
+    const opacity = night || past ? 0.14 : band.hour === selectedHour ? 0.7 : 0.4
     const prev = runs[runs.length - 1]
     if (prev && prev.fill === fill && prev.opacity === opacity) prev.width = band.left + band.width - prev.left
     else runs.push({ left: band.left, width: band.width, fill, opacity })
@@ -195,8 +198,16 @@ export function DayCurve({ hours, selectedHour, bestHour, sunriseHour, sunsetHou
         <circle r="5" fill={selInfo.scoreColor} stroke="var(--background)" strokeWidth="2" />
       </g>
 
-      {/* Horas */}
-      {hours.filter(h => h.hour % 6 === 0 || h.hour === geo.last).map(h => (
+      {/* Agora */}
+      {nowHour !== undefined && nowHour >= geo.first && nowHour <= geo.last && (
+        <g>
+          <line x1={geo.x(nowHour)} x2={geo.x(nowHour)} y1={BOTTOM} y2={BOTTOM + 5} stroke="var(--foreground)" strokeWidth="2" />
+          <text x={geo.x(nowHour)} y={TICK_Y} textAnchor="middle" fontSize="9" fontWeight="700" fill="var(--foreground)">agora</text>
+        </g>
+      )}
+
+      {/* Horas (esconde a que ficaria em cima do "agora") */}
+      {hours.filter(h => (h.hour % 6 === 0 || h.hour === geo.last) && (nowHour === undefined || Math.abs(geo.x(h.hour) - geo.x(nowHour)) > 22)).map(h => (
         <text key={h.hour} x={geo.x(h.hour)} y={TICK_Y} textAnchor={h.hour === geo.first ? 'start' : h.hour === geo.last ? 'end' : 'middle'} fontSize="9" fill="var(--muted-foreground)">
           {fmt(h.hour)}
         </text>

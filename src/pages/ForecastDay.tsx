@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase'
 import { getRatingInfo } from '@/lib/rating'
 import { usePremium } from '@/lib/premium'
 import { formatWaveRange, WIND_DEG } from '@/lib/surfData'
+import { directionName } from '@/lib/directions'
 import { getWeatherForecast, WeatherForecast, FREE_DAYS } from '@/lib/weatherData'
 import { PremiumUpsellBanner } from '@/components/PremiumUpsellBanner'
 import { WindCompass } from '@/components/spot/WindCompass'
@@ -282,7 +283,7 @@ export default function ForecastDayPage() {
                     {swellDeg !== undefined && (
                       <ArrowUp className="h-3.5 w-3.5 text-primary transition-transform duration-300" style={{ transform: `rotate(${swellDeg + 180}deg)` }} />
                     )}
-                    swell de {sel.swellDirection}
+                    <span>swell <span className="font-semibold text-foreground">{sel.swellDirection}</span> · {directionName(sel.swellDirection)}</span>
                   </div>
                 </div>
                 <div className="rounded-2xl border border-border/40 bg-card p-3.5">
@@ -305,7 +306,7 @@ export default function ForecastDayPage() {
               <div className="rounded-2xl border border-border/40 bg-card p-3.5 flex flex-col">
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Wind className="h-3.5 w-3.5 text-accent" />Vento às {fmtHour(sel.hour)}</div>
                 <div className="flex-1 flex items-center justify-center py-2">
-                  <WindCompass direction={sel.windDirection} speed={sel.windSpeed} />
+                  <WindCompass direction={sel.windDirection} speed={sel.windSpeed} orientation={spot._beachOrientation} />
                 </div>
               </div>
             </section>

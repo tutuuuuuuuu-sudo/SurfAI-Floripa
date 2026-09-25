@@ -23,6 +23,7 @@ import { toast } from 'sonner'
 import { getRatingInfo } from '@/lib/rating'
 import { supabase } from '@/lib/supabase'
 import { WindCompass, formatWindDirection } from '@/components/spot/WindCompass'
+import { directionName } from '@/lib/directions'
 import { TideChart } from '@/components/spot/TideChart'
 import { CommentsSection } from '@/components/spot/CommentsSection'
 import { ScoreExplainer } from '@/components/spot/ScoreExplainer'
@@ -533,6 +534,7 @@ export default function SpotDetails() {
                   <div>
                     <div className="text-xs text-muted-foreground">Direção do Swell</div>
                     <div className="text-base font-semibold">{spot.swellDirection}</div>
+                    <div className="text-xs text-muted-foreground">{directionName(spot.swellDirection)}</div>
                   </div>
                 </CardContent>
               </Card>
@@ -543,7 +545,7 @@ export default function SpotDetails() {
                     <Wind className="h-4 w-4"/>
                     <span className="text-sm font-semibold">Vento</span>
                   </div>
-                  <WindCompass direction={spot.windDirection} speed={Math.round(spot.windSpeed)}/>
+                  <WindCompass direction={spot.windDirection} speed={Math.round(spot.windSpeed)} orientation={spot._beachOrientation}/>
                   <AnimatedProgress value={Math.min(spot.windSpeed * 2.5, 100)}/>
                 </CardContent>
               </Card>

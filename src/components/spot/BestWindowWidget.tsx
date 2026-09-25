@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Clock, Crown, Waves, Wind, Zap } from 'lucide-react'
+import { Clock, Crown, MoveHorizontal, Waves, Wind, Zap } from 'lucide-react'
 import { getRatingInfo } from '@/lib/rating'
 import { supabase } from '@/lib/supabase'
 import { nowHourSP } from '@/lib/timeSP'
+import { DayCurve } from '@/components/spot/DayCurve'
+import { windEffect, WIND_EFFECT_INFO } from '@/lib/directions'
 
 interface HourlySlot {
   hour: number
@@ -144,70 +146,46 @@ export function BestWindowWidget({ lat, lng, orientation, current }: Props) {
           </div>
         </div>
 
-        {/* Gráfico de barras horário */}
-        <div>
-          <p className="text-xs text-muted-foreground mb-2">
-            Nota hora a hora de hoje — toque numa barra pra ver o detalhe.
-          </p>
-          <div className="flex items-end gap-0.5">
-            {slots.map(slot => {
-              const info = getRatingInfo(slot.score)
-              const heightPct = Math.max(8, (slot.score / 10) * 100)
-              const isPast = slot.hour < nowHour
-              const isCurrent = slot.hour === nowHour
-              // Fora da luz do dia é noite (ninguém surfa) — pedido do usuário 31/ago/2026:
-              // cinza fixo nessas horas deixa o gráfico mais fácil de ler de cara, sem
-              // competir com a faixa que realmente importa pra decisão. Usa o pôr/nascer do
-              // sol reais (com fallback 18h/6h só se a API não mandar o dado) — antes disso
-              // era um limiar fixo em 18h, então às vezes cortava a última hora de luz real
-              // do dia (achado 24/set/2026: sol se pondo 18:01, gráfico já cinza às 18h).
-              const isNight = slot.hour > (sunsetHour ?? 18) || slot.hour < (sunriseHour ?? 6)
-              const showLabel = isCurrent || slot.hour % 4 === 0
-              const isSelected = selectedHour === slot.hour
-              return (
-                <button
-                  key={slot.hour}
-                  type="button"
-                  onClick={() => setSelectedHour(isSelected ? null : slot.hour)}
-                  className="flex-1 flex flex-col items-center gap-0.5 bg-transparent border-0 p-0 cursor-pointer"
-                  title={`${slot.label} · ${isNight ? 'Fora do horário de surf' : info.label} (${slot.score.toFixed(1)}) · ${slot.waveHeight.toFixed(1)}m de onda · vento ${slot.windSpeed}km/h ${slot.windDirection} · período ${slot.swellPeriod}s`}
-                >
-                  {/* Altura em % só resolve com um pai de altura fixa em px — daí o wrapper abaixo */}
-                  <div className="w-full flex items-end" style={{ height: '40px' }}>
-                    <div
-                      className={`w-full rounded-sm transition-all ${isPast ? 'opacity-30' : ''} ${slot.isPeak && !isNight ? 'ring-1 ring-offset-1 ring-current' : ''} ${isSelected ? 'ring-2 ring-primary ring-offset-1' : ''}`}
-                      style={{
-                        height: `${heightPct}%`,
-                        backgroundColor: isNight ? 'var(--muted-foreground)' : isPast ? 'var(--muted-foreground)' : info.scoreColor,
-                        opacity: isNight && !isPast ? 0.4 : undefined,
-                      }}
-                    />
-                  </div>
-                  <span className={`text-[9px] h-3 leading-3 ${isCurrent ? 'font-bold text-foreground' : 'text-muted-foreground'}`}>
-                    {showLabel ? (isCurrent ? 'agr' : `${String(slot.hour).padStart(2, '0')}h`) : ''}
+        {/* Curva do dia (mesma DayCurve da página de previsão de um dia, ForecastDay.tsx —
+            trocou as barras em 25/set/2026 a pedido do usuário). Abre na hora atual;
+            arrastar mostra o detalhe de qualquer hora logo abaixo. */}
+        {(() => {
+          const selHour = selectedHour ?? (slots.some(s => s.hour === nowHour) ? nowHour : bestWindow.hour)
+          const sel = slots.find(s => s.hour === selHour) ?? slots[0]
+          if (!sel) return null
+          const selInfo = getRatingInfo(sel.score)
+          const isNow = sel.hour === nowHour
+          return (
+            <div>
+              <div className="-mx-2">
+                <DayCurve
+                  hours={slots}
+                  selectedHour={sel.hour}
+                  bestHour={bestWindow.hour}
+                  sunriseHour={sunriseHour}
+                  sunsetHour={sunsetHour}
+                  nowHour={nowHour}
+                  onSelect={setSelectedHour}
+                />
+              </div>
+              <p className="mt-1 flex items-center justify-center gap-1 text-[11px] text-muted-foreground">
+                <MoveHorizontal className="h-3.5 w-3.5" />Arraste pela curva pra ver cada hora
+              </p>
+              <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-muted/20 px-3 py-2.5">
+                <div className="min-w-0">
+                  <span className={`text-sm font-bold ${selInfo.color}`}>
+                    {isNow ? 'Agora' : fmtHour(sel.hour)} · {selInfo.label}
                   </span>
-                </button>
-              )
-            })}
-          </div>
-
-          {selectedHour !== null && (() => {
-            const sel = slots.find(s => s.hour === selectedHour)
-            if (!sel) return null
-            const selInfo = getRatingInfo(sel.score)
-            return (
-              <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-muted/20 px-3 py-2" style={{ animation: 'slideUp 0.15s ease-out' }}>
-                <div>
-                  <span className={`text-sm font-bold ${selInfo.color}`}>{fmtHour(sel.hour)} · {selInfo.label}</span>
-                  <div className="text-xs text-muted-foreground mt-0.5">
-                    {sel.waveHeight.toFixed(1)}m de onda · vento {sel.windSpeed}km/h {sel.windDirection} · período {sel.swellPeriod}s
+                  <div key={sel.hour} className="text-xs text-muted-foreground mt-0.5" style={{ animation: 'fadeIn 0.2s ease-out' }}>
+                    {sel.waveHeight.toFixed(1)}m de onda · vento {sel.windSpeed}km/h {sel.windDirection}
+                    {' '}({WIND_EFFECT_INFO[windEffect(sel.windDirection, orientation)].label.toLowerCase()}) · período {sel.swellPeriod}s
                   </div>
                 </div>
-                <div className={`text-xl font-bold flex-shrink-0 ${selInfo.color}`}>{sel.score.toFixed(1)}</div>
+                <div className={`text-xl font-bold tabular-nums flex-shrink-0 ${selInfo.color}`}>{sel.score.toFixed(1)}</div>
               </div>
-            )
-          })()}
-        </div>
+            </div>
+          )
+        })()}
 
       </CardContent>
     </Card>
