@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /settings
+Disallow: /profile
+Disallow: /favorites
+Disallow: /surf-log
+Disallow: /content-studio
+Disallow: /compare
+Disallow: /forecast
+Disallow: /navigation
+
+Sitemap: https://www.surfaifloripa.com.br/sitemap.xml

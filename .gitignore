@@ -95,4 +95,20 @@ coverage/
 # Lasy internal config (sensitive data)
 .lasy/
 
+# Chaves/secrets gerados localmente (nunca commitar)
+vapid-keys.txt
+*-keys.txt
 
+
+
+# Lasy internal
+.claude
+.lasy
+
+# Rascunhos de conteúdo/marketing (imagens geradas, fontes baixadas) — não versionar
+.content-drafts/
+.vercel
+.env*
+
+# Export gerado para auditoria via Gemini (scripts/export-gemini-audit.sh)
+.gemini-audit/
