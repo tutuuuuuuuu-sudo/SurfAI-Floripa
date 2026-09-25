@@ -4,12 +4,6 @@ import { getRatingInfo } from '@/lib/rating'
 import { explainSurfScore } from '../../../api/_scoreEngine'
 import { useBodyScrollLock } from '@/hooks/use-body-scroll-lock'
 
-const WIND_QUALITY_LABEL: Record<string, string> = {
-  offshore: 'terral, deixa a onda lisa',
-  lateral: 'lateral, mexe um pouco a onda',
-  onshore: 'maral, bagunça a onda',
-}
-
 const fmtSigned = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(n).toFixed(1)}`
 const adjustColor = (n: number) => n < 0 ? 'text-rating-poor' : n > 0 ? 'text-rating-good' : 'text-muted-foreground'
 
@@ -56,7 +50,7 @@ export const ScoreExplainer = ({ spot, onClose }: { spot: BeachCondition, onClos
                 <span className={`text-sm font-bold ${adjustColor(breakdown.windPenalty)}`}>{fmtSigned(breakdown.windPenalty)}</span>
               </div>
               <div className="text-xs text-muted-foreground mt-0.5">
-                {Math.round(spot.windSpeed)}km/h {spot.windDirection} · {WIND_QUALITY_LABEL[breakdown.windQuality]}
+                {Math.round(spot.windSpeed)}km/h {spot.windDirection}
               </div>
             </div>
           </div>

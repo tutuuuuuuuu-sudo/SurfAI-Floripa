@@ -309,7 +309,7 @@ export default function ForecastDayPage() {
               <div className="rounded-2xl border border-border/40 bg-card p-3.5 flex flex-col">
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Wind className="h-3.5 w-3.5 text-accent" />Vento às {fmtHour(sel.hour)}</div>
                 <div className="flex-1 flex items-center justify-center py-2">
-                  <WindCompass direction={sel.windDirection} speed={sel.windSpeed} orientation={spot._beachOrientation} />
+                  <WindCompass direction={sel.windDirection} speed={sel.windSpeed} />
                 </div>
               </div>
             </section>

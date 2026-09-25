@@ -545,7 +545,7 @@ export default function SpotDetails() {
                     <Wind className="h-4 w-4"/>
                     <span className="text-sm font-semibold">Vento</span>
                   </div>
-                  <WindCompass direction={spot.windDirection} speed={Math.round(spot.windSpeed)} orientation={spot._beachOrientation}/>
+                  <WindCompass direction={spot.windDirection} speed={Math.round(spot.windSpeed)}/>
                   <AnimatedProgress value={Math.min(spot.windSpeed * 2.5, 100)}/>
                 </CardContent>
               </Card>

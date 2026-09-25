@@ -6,7 +6,6 @@ import { getRatingInfo } from '@/lib/rating'
 import { supabase } from '@/lib/supabase'
 import { nowHourSP } from '@/lib/timeSP'
 import { DayCurve } from '@/components/spot/DayCurve'
-import { windEffect, WIND_EFFECT_INFO } from '@/lib/directions'
 
 interface HourlySlot {
   hour: number
@@ -178,8 +177,7 @@ export function BestWindowWidget({ lat, lng, orientation, current }: Props) {
                     {isNow ? 'Agora' : fmtHour(sel.hour)} · {selInfo.label}
                   </span>
                   <div key={sel.hour} className="text-xs text-muted-foreground mt-0.5" style={{ animation: 'fadeIn 0.2s ease-out' }}>
-                    {sel.waveHeight.toFixed(1)}m de onda · vento {sel.windSpeed}km/h {sel.windDirection}
-                    {' '}({WIND_EFFECT_INFO[windEffect(sel.windDirection, orientation)].label.toLowerCase()}) · período {sel.swellPeriod}s
+                    {sel.waveHeight.toFixed(1)}m de onda · vento {sel.windSpeed}km/h {sel.windDirection} · período {sel.swellPeriod}s
                   </div>
                 </div>
                 <div className={`text-xl font-bold tabular-nums flex-shrink-0 ${selInfo.color}`}>{sel.score.toFixed(1)}</div>

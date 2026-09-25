@@ -1,5 +1,5 @@
 import { WIND_DEG } from '@/lib/surfData'
-import { directionName, windEffect, WIND_EFFECT_INFO } from '@/lib/directions'
+import { directionName } from '@/lib/directions'
 
 export const getWindDirectionCode = (d: string) => d.split(' ')[0]
 export const formatWindDirection = (d: string) => ({ code: getWindDirectionCode(d), name: directionName(getWindDirectionCode(d)) })
@@ -11,8 +11,8 @@ export const directionToDegrees = (d: string): number => WIND_DEG[getWindDirecti
 // rosa dos ventos". Esta é uma rosa clássica: estrela de 16 pontas com faces claro/escuro
 // (relevo), anel graduado a cada 10°, 8 direções em português (L/O, SE/SO...). A direção de
 // onde o vento VEM acende no anel; a seta atravessa a rosa até pra onde ele vai, com riscos
-// correndo na velocidade do vento, na cor do efeito na praia (terral/lateral/maral) quando a
-// orientação da praia é conhecida.
+// correndo na velocidade do vento, na cor da força do vento. (Rótulo terral/lateral/maral
+// chegou a existir aqui e foi removido a pedido do usuário no mesmo dia — só direção.)
 const C = 85
 const pt = (deg: number, r: number) => {
   const rad = (deg * Math.PI) / 180
@@ -32,15 +32,12 @@ const LABELS: [number, string, boolean][] = [
   [180, 'S', true], [225, 'SO', false], [270, 'O', true], [315, 'NO', false],
 ]
 
-export const WindCompass = ({ direction, speed, orientation }: { direction: string, speed: number, orientation?: number }) => {
+export const WindCompass = ({ direction, speed }: { direction: string, speed: number }) => {
   // WIND_DEG guarda a direção de onde o vento VEM (convenção meteorológica padrão —
   // "vento de nordeste" = vem do NE). A seta vai de lá até o lado oposto, pra onde ele sopra.
   const fromDeg = directionToDegrees(direction)
   const code = getWindDirectionCode(direction).toUpperCase()
-  const effect = orientation !== undefined ? windEffect(code, orientation) : null
-  const effectInfo = effect ? WIND_EFFECT_INFO[effect] : null
-  const color = effectInfo?.color
-    ?? (speed <= 10 ? 'var(--rating-good)' : speed <= 20 ? 'var(--rating-fair)' : 'var(--rating-poor)')
+  const color = speed <= 10 ? 'var(--rating-good)' : speed <= 20 ? 'var(--rating-fair)' : 'var(--rating-poor)'
 
   const tail = pt(fromDeg, 50)
   const head = pt(fromDeg + 180, 52)
@@ -58,7 +55,7 @@ export const WindCompass = ({ direction, speed, orientation }: { direction: stri
 
   return (
     <div className="flex flex-col items-center gap-2">
-      <svg width="164" height="164" viewBox="0 0 170 170" role="img" aria-label={`Vento ${code}, ${directionName(code)}, ${speed}km/h${effectInfo ? `, ${effectInfo.label.toLowerCase()}` : ''}`}>
+      <svg width="164" height="164" viewBox="0 0 170 170" role="img" aria-label={`Vento ${code}, ${directionName(code)}, ${speed}km/h`}>
         {/* Mostrador */}
         <circle cx={C} cy={C} r={RING + 12} fill="var(--muted)" fillOpacity="0.25" />
         <circle cx={C} cy={C} r={RING} fill="var(--card)" stroke="var(--muted-foreground)" strokeOpacity="0.55" strokeWidth="1.2" />
@@ -117,14 +114,6 @@ export const WindCompass = ({ direction, speed, orientation }: { direction: stri
       <div className="text-center leading-tight">
         <div className="text-lg font-bold tabular-nums">{speed}<span className="text-xs font-semibold text-muted-foreground"> km/h</span></div>
         <div className="text-xs text-muted-foreground mt-0.5">vento <span className="font-semibold text-foreground">{code}</span> {directionName(code)}</div>
-        {effectInfo && (
-          <>
-            <div className={`mt-2 inline-flex items-center rounded-full border border-current/40 px-2.5 py-0.5 text-xs font-bold ${effectInfo.textCls}`}>
-              {effectInfo.label}
-            </div>
-            <div className="mt-1 text-[11px] text-muted-foreground">{effectInfo.hint}</div>
-          </>
-        )}
       </div>
     </div>
   )

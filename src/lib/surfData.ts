@@ -288,9 +288,9 @@ function getWindAnalysis(windDir: string, windSpeed: number, beachOrientation: n
   const offshoreDir = (beachOrientation + 180) % 360
   let diff = Math.abs(windDeg - offshoreDir)
   if (diff > 180) diff = 360 - diff
-  if (diff <= 45) return `Vento terral (${windDir}) de ${windSpeed}km/h deixando o mar liso e organizado. `
-  if (diff <= 90) return `Vento lateral (${windDir}) de ${windSpeed}km/h, pode atrapalhar um pouco. `
-  return `Vento maral (${windDir}) de ${windSpeed}km/h bagunçando as ondas. `
+  if (diff <= 45) return `Vento ${windDir} de ${windSpeed}km/h deixando o mar liso e organizado. `
+  if (diff <= 90) return `Vento ${windDir} de ${windSpeed}km/h, pode atrapalhar um pouco. `
+  return `Vento ${windDir} de ${windSpeed}km/h bagunçando as ondas. `
 }
 
 interface BeachDefinition {
