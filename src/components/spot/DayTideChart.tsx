@@ -5,9 +5,10 @@ import { useMemo } from 'react'
 // só a curva do dia inteiro com os picos de maré alta/baixa marcados.
 interface DayTideChartProps {
   heights: number[] // horas do dia (index 0 = 00h), pelo menos ~20 valores
+  markerHour?: number // hora escolhida na curva do dia (ForecastDay.tsx) — marca na maré também
 }
 
-export function DayTideChart({ heights }: DayTideChartProps) {
+export function DayTideChart({ heights, markerHour }: DayTideChartProps) {
   const chart = useMemo(() => {
     const points: { hour: number; height: number }[] = []
     for (let h = 0; h <= 24; h += 0.25) {
@@ -84,6 +85,12 @@ export function DayTideChart({ heights }: DayTideChartProps) {
             {h === 24 ? '00h' : `${h}h`}
           </text>
         ))}
+        {markerHour !== undefined && heights[markerHour] !== undefined && (
+          <g style={{ transform: `translateX(${chart.xScale(markerHour)}px)`, transition: 'transform 0.2s ease-out' }}>
+            <line x1="0" x2="0" y1={chart.padding.top - 6} y2={chart.chartHeight + chart.padding.top} stroke="var(--foreground)" strokeOpacity="0.35" strokeWidth="1" strokeDasharray="3 3" />
+            <circle cx="0" cy={chart.yScale(heights[markerHour])} r="4.5" fill="var(--color-primary)" stroke="var(--background)" strokeWidth="2" style={{ transition: 'cy 0.2s ease-out' }} />
+          </g>
+        )}
       </svg>
     </div>
   )

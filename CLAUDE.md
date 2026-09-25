@@ -49,6 +49,7 @@ src/
 │   ├── Favorites.tsx          # Picos favoritados pelo usuário
 │   ├── Compare.tsx            # Comparação lado a lado de picos (premium)
 │   ├── Forecast.tsx           # Previsão 14 dias (premium) — rotas /forecast, /forecast/:id. Histórico de 30 dias é feature separada, direto em SpotDetails.tsx via score_snapshots
+│   ├── ForecastDay.tsx        # Detalhe de 1 dia da previsão (/forecast/:id/day/:dayIndex) — curva do dia arrastável (DayCurve), faixa de dias, condições da hora escolhida
 │   ├── SurfLog.tsx            # Diário de sessões do usuário
 │   ├── ContentStudio.tsx      # Gerador de posts pras redes sociais do Surf AI (uso interno, só admin)
 │   ├── Premium.tsx            # Página de upgrade/assinatura
@@ -64,6 +65,7 @@ src/
 │   │   ├── TideChart.tsx      # Gráfico de maré interativo com modal expansível
 │   │   ├── CommentsSection.tsx# Relatos da comunidade via Supabase
 │   │   ├── ScoreExplainer.tsx # Modal de breakdown do score (onda/período/vento)
+│   │   ├── DayCurve.tsx       # "Linha do dia": nota hora a hora como onda contínua + arco do sol, arrastável (ForecastDay)
 │   │   └── PicosSection.tsx   # Sub-regiões com matching de swell + links Maps/Waze
 │   ├── landing/               # Componentes de Landing (extraídos)
 │   │   ├── LandingComponents.tsx  # useReveal, Reveal, OceanWaves, AppMockup3D, etc

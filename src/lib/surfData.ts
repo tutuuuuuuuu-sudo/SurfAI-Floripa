@@ -211,8 +211,15 @@ export function getSubRegionMatch(
   const narrow = tolerance === 'estreita'
   const classicDay = narrow && minDiff === 0 && (idealPeriodMin === undefined || (swellPeriod ?? 0) >= idealPeriodMin)
 
+  // Curva `estreita` suavizada em 25/set/2026: antes 1 passo de direção (22.5°) já cortava
+  // 45% (×0.55) — com swell de ESE a Principal do Campeche (SE/SSE) caía pra 0.6-0.8m
+  // enquanto o Riozinho (SE/ESE), vizinho de areia a ~350m, mostrava 1.0-1.4m. Diferença
+  // física real entre os dois existe, mas não desse tamanho (achado do usuário, surfista
+  // local). O pico estreito continua perdendo mais que o `ampla` fora da direção ideal,
+  // só que de forma gradual; a exigência maior dele segue aparecendo no rótulo ("Swell
+  // bom"/"Swell ruim") e no "Dia clássico", não só na altura.
   const mult = (narrow
-    ? (minDiff === 0 ? 1.0 : minDiff === 1 ? 0.55 : minDiff === 2 ? 0.4 : 0.3)
+    ? (minDiff === 0 ? 1.0 : minDiff === 1 ? 0.85 : minDiff === 2 ? 0.7 : 0.55)
     : (minDiff === 0 ? 1.05 : minDiff === 1 ? 1.00 : minDiff === 2 ? 0.95 : minDiff <= 4 ? 0.88 : 0.80)) * exposicao
 
   const waveEst = waveHeight * mult

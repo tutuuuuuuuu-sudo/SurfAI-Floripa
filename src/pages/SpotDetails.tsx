@@ -16,7 +16,7 @@ import {
   ArrowLeft, Waves, Wind, Navigation,
   TrendingUp, Compass, AlertCircle, Thermometer,
   Heart, Calendar, Sun, ChevronDown, Clock,
-  Share2, MessageCircle, Lock, Crown, Droplets, GitCompareArrows
+  Share2, MessageCircle, Lock, Crown, Droplets, GitCompareArrows, ChevronRight
 } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { toast } from 'sonner'
@@ -81,7 +81,7 @@ const ShareButton = ({ spot }: { spot: BeachCondition }) => {
 }
 
 const ForecastCard = ({
-  day, index, isPremium, usesFeet, freeDays, onUpgrade
+  day, index, isPremium, usesFeet, freeDays, onUpgrade, onOpen
 }: {
   day: WeatherForecast
   index: number
@@ -89,6 +89,7 @@ const ForecastCard = ({
   usesFeet: boolean
   freeDays: number
   onUpgrade: () => void
+  onOpen: () => void
 }) => {
   const isLocked = index >= freeDays && !isPremium
   const isToday = index === 0
@@ -108,10 +109,14 @@ const ForecastCard = ({
     )
   }
 
+  // Clicável: abre o detalhe hora a hora desse dia direto daqui, sem precisar passar pela
+  // aba Previsão do menu inferior e achar a praia de novo (pedido do usuário 25/set/2026)
   return (
-    <div
-      className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${
-        isToday ? 'bg-primary/8 border-primary/30 shadow-sm' : 'bg-card border-border/40 hover:border-primary/20'
+    <button
+      type="button"
+      onClick={onOpen}
+      className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all cursor-pointer active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+        isToday ? 'bg-primary/8 border-primary/30 shadow-sm hover:border-primary/50' : 'bg-card border-border/40 hover:border-primary/40'
       }`}
       style={{animation:`fadeIn 0.4s ${index*0.05}s ease-out both`}}
     >
@@ -141,7 +146,10 @@ const ForecastCard = ({
           <span className="text-xs font-semibold">{day.temperature}°C</span>
         </div>
       </div>
-    </div>
+      <div className="flex items-center gap-0.5 text-[10px] font-semibold text-primary">
+        Ver dia<ChevronRight className="h-3 w-3"/>
+      </div>
+    </button>
   )
 }
 
@@ -664,6 +672,7 @@ export default function SpotDetails() {
                       usesFeet={usesFeet}
                       freeDays={FREE_DAYS}
                       onUpgrade={() => navigate('/premium')}
+                      onOpen={() => navigate(`/forecast/${spot.id}/day/${index}`)}
                     />
                   ))}
                 </div>

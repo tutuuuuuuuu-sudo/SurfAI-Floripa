@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { degreesToWindDir, WIND_DEG } from './surfData'
+import { degreesToWindDir, WIND_DEG, getSubRegionMatch } from './surfData'
 
 describe('degreesToWindDir', () => {
   it('0° = N', () => expect(degreesToWindDir(0)).toBe('N'))
@@ -27,5 +27,18 @@ describe('WIND_DEG map', () => {
     dirs.forEach(d => {
       expect(degreesToWindDir(WIND_DEG[d])).toBe(d)
     })
+  })
+})
+
+describe('getSubRegionMatch — pico estreito fora da direção ideal', () => {
+  it('1 passo de direção não derruba mais a altura pela metade (Principal x Riozinho, 25/set/2026)', () => {
+    // Principal (SE/SSE) com swell de ESE, vizinho do Riozinho (SE/ESE) que pega em cheio
+    const principal = getSubRegionMatch(['SE', 'SSE'], 'ESE', 1.27, 'estreita', 1.0, 9, 12)
+    const riozinho = getSubRegionMatch(['SE', 'ESE'], 'ESE', 1.2, 'estreita', 1.0, 9, 10)
+    expect(principal.minDiff).toBe(1)
+    expect(Number(principal.waveMax)).toBeGreaterThanOrEqual(1.2)
+    // Continua um pouco menor que o vizinho alinhado com o swell
+    expect(Number(principal.waveMax)).toBeLessThan(Number(riozinho.waveMax))
+    expect(principal.match).toBe('Swell bom')
   })
 })

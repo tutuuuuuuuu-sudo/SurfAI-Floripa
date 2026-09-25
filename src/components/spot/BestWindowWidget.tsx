@@ -147,8 +147,7 @@ export function BestWindowWidget({ lat, lng, orientation, current }: Props) {
         {/* Gráfico de barras horário */}
         <div>
           <p className="text-xs text-muted-foreground mb-2">
-            Nota hora a hora de hoje — toque numa barra pra ver o detalhe. Horário noturno
-            (depois das {String((sunsetHour ?? 18)).padStart(2, '0')}h, antes das {String((sunriseHour ?? 6)).padStart(2, '0')}h) em cinza, ninguém surfa de noite.
+            Nota hora a hora de hoje — toque numa barra pra ver o detalhe.
           </p>
           <div className="flex items-end gap-0.5">
             {slots.map(slot => {
