@@ -174,6 +174,13 @@ api/
 - `api/surf-chat.ts` exige `Authorization: Bearer <supabase_token>`, verifica premium, aplica
   rate limit persistido (40 msgs/usuário/dia) e usa `callGeminiChat` (multi-turn, em
   `api/_gemini.ts`) com histórico salvo em `chat_messages` (Supabase, RLS por usuário).
+- Contexto do chat (25/set/2026): condições de agora + **previsão de 7 dias** das 14 praias
+  (`api/_chatForecast.ts`: onda, melhor horário via `_goldenWindow`, vento sigla+nome, maré
+  enchendo/secando, período; horários de maré alta/baixa), cache 1h no Supabase
+  (`live_conditions_cache`, chave `chat:forecast-week-v2`). Memória: últimas 6 mensagens.
+  Prioridade ao falar de uma praia: onda → maré → vento (direção+velocidade) → melhor horário.
+  Toda resposta passa por `cleanChatReply` (`api/_chatText.ts`) — tira asterisco/markdown/
+  travessão no código, não depende do modelo obedecer. Não usar terral/maral/lateral.
 - **Cota do Gemini**: conta ainda está no Free Tier do Google AI Studio — **20 chamadas por
   dia, TOTAL, pra todo o app** (relatório antigo + content-agent + daily-report + chat, tudo
   na mesma cota). Usuário está ciente e decidiu não ativar cobrança por enquanto (23/ago/2026).
