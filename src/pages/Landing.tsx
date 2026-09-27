@@ -14,7 +14,7 @@ import {
   ChatPreviewMockup, GeoFinderMockup, GoldenWindowMockup,
 } from '@/components/landing/LandingComponents'
 import { AppScrollShowcase } from '@/components/landing/AppScrollShowcase'
-import { WaveScrollHero } from '@/components/landing/WaveScrollHero'
+import { Hero } from '@/components/landing/Hero'
 import { BeachDirectory } from '@/components/landing/BeachDirectory'
 import {
   FAQS, STATS,
@@ -41,7 +41,7 @@ export default function Landing() {
 
       {/* NAV */}
       <nav className="sticky top-0 z-50 backdrop-blur-xl border-b"
-        style={{ background: 'oklch(var(--background) / 0.88)', borderColor: 'oklch(1 0 0 / 0.06)' }}>
+        style={{ background: 'color-mix(in oklch, var(--background) 88%, transparent)', borderColor: 'color-mix(in oklch, var(--foreground) 6%, transparent)' }}>
         <div className="container mx-auto px-5 py-3 flex items-center justify-between max-w-6xl">
           <div className="flex items-center gap-2.5">
             <AppLogo size={34} variant="full" />
@@ -56,7 +56,7 @@ export default function Landing() {
             </Button>
             <Button size="sm" asChild
               className="text-sm font-bold px-4 bg-primary hover:bg-primary/90"
-              style={{ boxShadow: '0 0 16px oklch(0.6 0.16 200 / 0.25)' }}>
+              style={{ boxShadow: '0 0 16px color-mix(in oklch, var(--primary) 25%, transparent)' }}>
               <Link to="/login">
                 Começar grátis
                 <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
@@ -66,8 +66,8 @@ export default function Landing() {
         </div>
       </nav>
 
-      {/* HERO — vídeo real de onda quebrando, scroll controla o avanço */}
-      <WaveScrollHero>
+      {/* HERO — foto aérea fixa, dissolve no fundo da página (sem vídeo) */}
+      <Hero>
         <div className="mx-auto flex max-w-2xl flex-col items-center gap-3 sm:gap-4">
           <div className="flex flex-wrap justify-center gap-2" style={{ animation: 'fadeIn 0.6s ease both' }}>
             <Badge variant="outline" className="border-primary/40 text-primary bg-black/30 px-3 py-1 text-xs font-semibold backdrop-blur-md">
@@ -141,7 +141,7 @@ export default function Landing() {
             </Button>
           </div>
         </div>
-      </WaveScrollHero>
+      </Hero>
 
       {/* O APP RODANDO — celular fixo, conteúdo troca conforme rola o scroll */}
       <section className="py-16 border-t border-border/30 relative z-10">
@@ -164,15 +164,15 @@ export default function Landing() {
       <section className="py-20 border-t border-border/30 relative z-10">
         <div className="container mx-auto px-5 max-w-5xl">
           <Reveal className="text-center mb-14">
-            <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 mb-4 px-4 py-1">
-              <Sparkles className="h-3 w-3 mr-1.5" />
-              Novidades
+            <Badge className="bg-rating-fair/15 text-rating-fair border-rating-fair/30 mb-4 px-4 py-1">
+              <Crown className="h-3 w-3 mr-1.5" />
+              Premium
             </Badge>
             <h2 className="text-3xl md:text-4xl font-black mb-4">
               3 jeitos de decidir na hora.
             </h2>
             <p className="text-foreground/70 max-w-md mx-auto">
-              Chega de ficar rolando tela tentando adivinhar. A IA já faz a leitura pra você.
+              Chega de ficar rolando tela tentando adivinhar. Essas 3 ferramentas são exclusivas do Premium.
             </p>
           </Reveal>
 
@@ -180,6 +180,7 @@ export default function Landing() {
             <Reveal delay={0} className="md:col-span-2">
               <div className="group relative grid md:grid-cols-2 gap-6 items-center overflow-hidden rounded-2xl p-6 md:p-8 bg-primary/10 border border-primary/35 transition-transform duration-300 hover:-translate-y-1"
                 style={{ boxShadow: '0 4px 32px color-mix(in oklch, var(--primary) 20%, transparent)' }}>
+                <Crown className="absolute top-4 right-4 z-10 h-4 w-4 text-primary/50" />
                 <div className="relative z-10">
                   <div className="h-12 w-12 rounded-2xl flex items-center justify-center mb-4 bg-primary/20 border border-primary/45"
                     style={{ boxShadow: '0 0 24px color-mix(in oklch, var(--primary) 40%, transparent)' }}>
@@ -187,8 +188,8 @@ export default function Landing() {
                   </div>
                   <h3 className="font-black text-xl md:text-2xl mb-2">Converse com o Surf AI</h3>
                   <p className="text-sm text-foreground/70 leading-relaxed">
-                    Pergunta o que quiser sobre qualquer uma das {BEACH_COUNT} praias, sobre as condições agora ou sobre o app —
-                    a IA responde na hora, com dado real, sem enrolação.
+                    Pergunta o que quiser sobre qualquer uma das {BEACH_COUNT} praias ou sobre as condições de agora.
+                    A IA responde na hora, com o dado real do momento.
                   </p>
                 </div>
                 <div className="relative z-10"><ChatPreviewMockup /></div>
@@ -199,14 +200,15 @@ export default function Landing() {
             <Reveal delay={0.1}>
               <div className="group relative h-full flex flex-col overflow-hidden rounded-2xl p-6 bg-rating-good/[0.09] border border-rating-good/35 transition-transform duration-300 hover:-translate-y-1"
                 style={{ boxShadow: '0 4px 24px oklch(0 0 0 / 0.12)' }}>
+                <Crown className="absolute top-4 right-4 z-10 h-4 w-4 text-rating-good/50" />
                 <div className="relative z-10 h-11 w-11 rounded-xl flex items-center justify-center mb-4 bg-rating-good/20 border border-rating-good/45"
                   style={{ boxShadow: '0 0 20px color-mix(in oklch, var(--rating-good) 40%, transparent)' }}>
                   <Compass className="h-5 w-5 text-rating-good" />
                 </div>
                 <h3 className="relative z-10 font-bold text-lg mb-2">Bora Surfar?</h3>
                 <p className="relative z-10 text-sm text-foreground/70 leading-relaxed mb-4">
-                  Compartilha sua localização por um instante (não guardamos nada) e o Surf AI compara a praia mais perto
-                  com a que está com a melhor condição por perto — e te diz se vale rodar mais um pouco.
+                  Compartilha sua localização por um instante (não guardamos nada). O Surf AI compara a praia mais perto
+                  com a que está com a melhor condição por perto e diz se vale rodar mais um pouco.
                 </p>
                 <div className="relative z-10 mt-auto"><GeoFinderMockup /></div>
                 <div className="absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-rating-good/15 blur-2xl pointer-events-none" />
@@ -216,13 +218,14 @@ export default function Landing() {
             <Reveal delay={0.2}>
               <div className="group relative h-full flex flex-col overflow-hidden rounded-2xl p-6 bg-rating-epic/[0.09] border border-rating-epic/35 transition-transform duration-300 hover:-translate-y-1"
                 style={{ boxShadow: '0 4px 24px oklch(0 0 0 / 0.12)' }}>
+                <Crown className="absolute top-4 right-4 z-10 h-4 w-4 text-rating-epic/50" />
                 <div className="relative z-10 h-11 w-11 rounded-xl flex items-center justify-center mb-4 bg-rating-epic/20 border border-rating-epic/45"
                   style={{ boxShadow: '0 0 20px color-mix(in oklch, var(--rating-epic) 40%, transparent)' }}>
                   <Clock className="h-5 w-5 text-rating-epic" />
                 </div>
                 <h3 className="relative z-10 font-bold text-lg mb-2">Melhor Janela do Dia</h3>
                 <p className="relative z-10 text-sm text-foreground/70 leading-relaxed mb-4">
-                  Nota hora a hora de cada pico — saiba exatamente a janela certa pra sair de casa, sem chutar.
+                  Nota hora a hora de cada pico, pra você saber exatamente a janela certa pra sair de casa.
                 </p>
                 <div className="relative z-10 mt-auto"><GoldenWindowMockup /></div>
                 <div className="absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-rating-epic/15 blur-2xl pointer-events-none" />
@@ -252,7 +255,12 @@ export default function Landing() {
 
       {/* STATS */}
       <section className="py-10 relative z-10"
-        style={{ borderTop: '1px solid oklch(1 0 0 / 0.06)', borderBottom: '1px solid oklch(1 0 0 / 0.06)', background: 'oklch(1 0 0 / 0.015)', backdropFilter: 'blur(20px)' }}>
+        style={{
+          borderTop: '1px solid color-mix(in oklch, var(--foreground) 6%, transparent)',
+          borderBottom: '1px solid color-mix(in oklch, var(--foreground) 6%, transparent)',
+          background: 'color-mix(in oklch, var(--foreground) 1.5%, transparent)',
+          backdropFilter: 'blur(20px)',
+        }}>
         <div className="container mx-auto px-5 max-w-5xl">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {STATS.map(({ value, suffix, label }) => (
@@ -269,7 +277,7 @@ export default function Landing() {
       <section className="py-20 border-t border-border/30 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none select-none opacity-[0.025]"
           style={{
-            backgroundImage: 'linear-gradient(oklch(0.6 0.2 210) 1px, transparent 1px), linear-gradient(90deg, oklch(0.6 0.2 210) 1px, transparent 1px)',
+            backgroundImage: 'linear-gradient(var(--primary) 1px, transparent 1px), linear-gradient(90deg, var(--primary) 1px, transparent 1px)',
             backgroundSize: '40px 40px',
           }} />
         <div className="container mx-auto px-5 max-w-5xl relative">
@@ -286,7 +294,7 @@ export default function Landing() {
           <div className="grid md:grid-cols-3 gap-6 relative">
             {[
               { step: '01', icon: Droplets, title: 'Dados em tempo real', desc: 'Coletamos dados de ondas, vento e maré de múltiplas fontes meteorológicas a cada 15 minutos, o dia inteiro.', hue: 220 },
-              { step: '02', icon: Zap, title: 'IA calcula a nota', desc: 'Nossa IA analisa todos os parâmetros e gera uma nota de 0 a 10 considerando o seu nível de surf.', hue: 195 },
+              { step: '02', icon: Zap, title: 'IA calcula a nota', desc: 'Nossa IA junta altura, período e vento de cada praia e calcula uma nota de 0 a 10 em tempo real.', hue: 195 },
               { step: '03', icon: TrendingUp, title: 'Você decide em segundos', desc: 'Veja a nota, compare praias e tome a melhor decisão, sem desperdício de tempo ou gasolina.', hue: 155 },
             ].map(({ step, icon: Icon, title, desc, hue }, i) => (
               <Reveal key={step} delay={i * 0.15}>
@@ -295,7 +303,7 @@ export default function Landing() {
                     background: `oklch(0.6 0.18 ${hue} / 0.07)`,
                     border: `1px solid oklch(0.6 0.18 ${hue} / 0.25)`,
                     backdropFilter: 'blur(16px)',
-                    boxShadow: '0 4px 24px oklch(0 0 0 / 0.15), inset 0 1px 0 oklch(1 0 0 / 0.06)',
+                    boxShadow: '0 4px 24px oklch(0 0 0 / 0.15), inset 0 1px 0 color-mix(in oklch, var(--foreground) 6%, transparent)',
                   }}>
                   <span className="pointer-events-none select-none absolute -top-3 -right-1 font-black leading-none"
                     style={{ fontSize: '6.5rem', color: `oklch(0.6 0.18 ${hue} / 0.12)` }}>
@@ -369,7 +377,7 @@ export default function Landing() {
                 </div>
                 <div>
                   <h3 className="font-bold text-base mb-1.5">Histórico de condições</h3>
-                  <p className="text-sm text-foreground/60 leading-relaxed">30 dias de ondas e vento por praia — saiba se hoje é dia bom antes de sair de casa.</p>
+                  <p className="text-sm text-foreground/60 leading-relaxed">Veja se hoje está acima ou abaixo da média dos últimos 30 dias.</p>
                 </div>
                 <div className="absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-rating-fair/10 blur-2xl pointer-events-none" />
               </div>
@@ -398,7 +406,7 @@ export default function Landing() {
           <Reveal className="mt-14 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button size="lg" asChild
               className="font-bold px-8 h-12 text-sm bg-primary hover:bg-primary/90"
-              style={{ boxShadow: '0 0 32px oklch(0.6 0.16 200 / 0.4)' }}>
+              style={{ boxShadow: '0 0 32px color-mix(in oklch, var(--primary) 40%, transparent)' }}>
               <Link to="/login">
                 Criar conta grátis
                 <ArrowRight className="h-4 w-4 ml-2" />
@@ -406,7 +414,7 @@ export default function Landing() {
             </Button>
             <Button size="lg" variant="outline" asChild
               className="font-bold px-8 h-12 text-sm"
-              style={{ borderColor: 'oklch(0.65 0.18 50 / 0.4)', color: 'oklch(0.7 0.15 50)' }}>
+              style={{ borderColor: 'color-mix(in oklch, var(--rating-fair) 40%, transparent)', color: 'var(--rating-fair)' }}>
               <Link to="/login?plan=premium">
                 <Crown className="h-4 w-4 mr-2" />
                 Ver Premium
@@ -433,7 +441,7 @@ export default function Landing() {
                 O Surf AI funciona igual a um app de verdade, sem ocupar espaço da loja. Acesse pelo Safari ou Chrome e adicione à tela inicial em segundos.
               </p>
               <Button asChild className="font-bold bg-primary hover:bg-primary/90"
-                style={{ boxShadow: '0 0 20px oklch(0.6 0.16 200 / 0.3)' }}>
+                style={{ boxShadow: '0 0 20px color-mix(in oklch, var(--primary) 30%, transparent)' }}>
                 <Link to="/login">
                   Acessar agora
                   <ArrowRight className="h-4 w-4 ml-2" />
@@ -444,16 +452,16 @@ export default function Landing() {
             <div className="flex flex-col gap-4">
               {[
                 { step: '1', title: 'Abra no seu navegador', desc: 'Digite surfaifloripa.com.br no Safari (iPhone) ou Chrome (Android)', icon: Waves },
-                { step: '2', title: 'Toque em "Adicionar à Tela de Início"', desc: 'iPhone: toque no ícone de compartilhar ⬆️ na barra debaixo do Safari, role e toque em "Adicionar à Tela de Início". Android: toque nos 3 pontinhos ⋮ no canto superior do Chrome e toque em "Adicionar à tela inicial"', icon: Smartphone },
+                { step: '2', title: 'Toque em "Adicionar à Tela de Início"', desc: 'iPhone: toque no ícone de compartilhar (a seta pra cima) na barra debaixo do Safari, role e toque em "Adicionar à Tela de Início". Android: toque nos 3 pontinhos no canto superior do Chrome e toque em "Adicionar à tela inicial"', icon: Smartphone },
                 { step: '3', title: 'Pronto, é isso!', desc: 'O ícone aparece na tela inicial e abre em tela cheia, sem barra de endereço', icon: CheckCircle2 },
               ].map(({ step, title, desc, icon: Icon }, i) => (
                 <Reveal key={step} delay={i * 0.12}>
                   <div className="flex items-center gap-4 rounded-xl p-4 transition-transform duration-200 hover:scale-[1.01]"
                     style={{
-                      background: 'oklch(1 0 0 / 0.025)',
-                      border: '1px solid oklch(1 0 0 / 0.08)',
+                      background: 'color-mix(in oklch, var(--foreground) 2.5%, transparent)',
+                      border: '1px solid color-mix(in oklch, var(--foreground) 8%, transparent)',
                       backdropFilter: 'blur(12px)',
-                      boxShadow: '0 2px 16px oklch(0 0 0 / 0.12), inset 0 1px 0 oklch(1 0 0 / 0.05)',
+                      boxShadow: '0 2px 16px oklch(0 0 0 / 0.12), inset 0 1px 0 color-mix(in oklch, var(--foreground) 5%, transparent)',
                     }}>
                     <div className="h-10 w-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-sm font-black text-primary flex-shrink-0">
                       {step}
@@ -474,7 +482,7 @@ export default function Landing() {
       {/* PREÇO — mensal e anual juntos, um bloco só (antes existiam 2 desconectados) */}
       <section id="pricing" className="py-20 relative border-t border-border/30">
         <div className="absolute inset-0 pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse 50% 40% at 50% 50%, oklch(0.55 0.18 60 / 0.04), transparent)' }} />
+          style={{ background: 'radial-gradient(ellipse 50% 40% at 50% 50%, color-mix(in oklch, var(--rating-fair) 4%, transparent), transparent)' }} />
         <div className="container mx-auto px-5 max-w-4xl relative">
           <Reveal className="text-center mb-12">
             <Badge className="bg-rating-fair/15 text-rating-fair border-rating-fair/30 mb-4">
@@ -493,10 +501,10 @@ export default function Landing() {
             <Reveal className="space-y-2.5">
               {[
                 { icon: Sparkles, title: 'Chat com o Surf AI' },
-                { icon: Compass, title: 'Bora Surfar — a praia certa perto de você' },
+                { icon: Compass, title: 'Bora Surfar, a praia certa perto de você' },
                 { icon: Clock, title: 'Melhor janela do dia, hora a hora' },
                 { icon: BarChart3, title: 'Previsão 14 dias completa' },
-                { icon: Bell, title: 'Alertas quando seu spot estiver épico' },
+                { icon: Bell, title: 'Alertas na nota que você escolher, praia por praia' },
                 { icon: TrendingUp, title: 'Histórico completo de condições' },
                 { icon: Scale, title: 'Comparação entre praias' },
                 { icon: Shield, title: 'Experiência 100% sem anúncios' },
@@ -514,7 +522,7 @@ export default function Landing() {
             <div className="grid grid-cols-2 gap-3">
               <Reveal delay={0.1}>
                 <div className="h-full rounded-2xl p-5 flex flex-col items-center text-center gap-1"
-                  style={{ background: 'oklch(1 0 0 / 0.03)', border: '1px solid oklch(1 0 0 / 0.1)' }}>
+                  style={{ background: 'color-mix(in oklch, var(--foreground) 3%, transparent)', border: '1px solid color-mix(in oklch, var(--foreground) 10%, transparent)' }}>
                   <div className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Mensal</div>
                   <div className="text-3xl font-black text-foreground leading-none">R$16<span className="text-lg">,90</span></div>
                   <div className="text-xs text-muted-foreground mb-3">por mês</div>
@@ -526,9 +534,9 @@ export default function Landing() {
               <Reveal delay={0.2}>
                 <div className="h-full rounded-2xl p-5 flex flex-col items-center text-center gap-1 relative overflow-hidden"
                   style={{
-                    background: 'linear-gradient(135deg, oklch(0.7 0.18 60 / 0.15), oklch(0.6 0.22 50 / 0.1))',
-                    border: '1px solid oklch(0.65 0.18 50 / 0.4)',
-                    boxShadow: '0 0 24px oklch(0.6 0.18 60 / 0.2)',
+                    background: 'color-mix(in oklch, var(--rating-fair) 13%, transparent)',
+                    border: '1px solid color-mix(in oklch, var(--rating-fair) 40%, transparent)',
+                    boxShadow: '0 0 24px color-mix(in oklch, var(--rating-fair) 20%, transparent)',
                   }}>
                   <Badge className="absolute -top-0.5 right-2 bg-rating-fair text-[9px] px-1.5 py-0 h-4 text-background">-26%</Badge>
                   <div className="text-xs text-rating-fair uppercase tracking-widest mb-1 font-semibold">Anual</div>
@@ -536,7 +544,7 @@ export default function Landing() {
                   <div className="text-xs text-muted-foreground mb-3">por mês · R$149,90/ano</div>
                   <Button asChild size="sm"
                     className="w-full font-semibold"
-                    style={{ background: 'linear-gradient(135deg, oklch(0.7 0.18 60), oklch(0.6 0.22 50))', color: 'oklch(0.1 0.02 240)' }}>
+                    style={{ background: 'var(--rating-fair)', color: 'oklch(0.1 0.02 240)' }}>
                     <Link to="/login?plan=premium">Assinar</Link>
                   </Button>
                 </div>
@@ -545,7 +553,7 @@ export default function Landing() {
           </div>
 
           <Reveal className="flex flex-wrap items-center justify-center gap-6">
-            {['Pagamento seguro', 'Sem fidelidade', 'Cancele quando quiser'].map(t => (
+            {['Pagamento seguro', 'Sem cobrança automática', 'Você decide se renova'].map(t => (
               <span key={t} className="flex items-center gap-1 text-xs text-muted-foreground">
                 <CheckCircle2 className="h-3 w-3 text-rating-good" />{t}
               </span>
@@ -578,10 +586,10 @@ export default function Landing() {
           <Reveal>
             <div className="rounded-3xl p-10 md:p-14 relative overflow-hidden"
               style={{
-                background: 'oklch(1 0 0 / 0.025)',
-                border: '1px solid oklch(0.6 0.2 210 / 0.25)',
+                background: 'color-mix(in oklch, var(--foreground) 2.5%, transparent)',
+                border: '1px solid color-mix(in oklch, var(--primary) 25%, transparent)',
                 backdropFilter: 'blur(24px)',
-                boxShadow: '0 8px 64px oklch(0 0 0 / 0.4), 0 0 120px oklch(0.6 0.2 210 / 0.12), inset 0 1px 0 oklch(1 0 0 / 0.1)',
+                boxShadow: '0 8px 64px oklch(0 0 0 / 0.4), 0 0 120px color-mix(in oklch, var(--primary) 12%, transparent), inset 0 1px 0 color-mix(in oklch, var(--foreground) 10%, transparent)',
               }}>
               <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full pointer-events-none"
                 style={{ background: 'radial-gradient(circle, oklch(0.6 0.16 200 / 0.12), transparent)' }} />
@@ -592,18 +600,13 @@ export default function Landing() {
                   <AppLogo size={56} variant="icon" />
                 </div>
                 <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-6 text-xs font-semibold"
-                  style={{ background: 'oklch(0.6 0.2 210 / 0.12)', border: '1px solid oklch(0.6 0.2 210 / 0.3)', color: 'oklch(0.75 0.15 200)' }}>
+                  style={{ background: 'color-mix(in oklch, var(--primary) 12%, transparent)', border: '1px solid color-mix(in oklch, var(--primary) 30%, transparent)', color: 'var(--primary)' }}>
                   <div className="h-1.5 w-1.5 rounded-full bg-rating-good animate-pulse" />
                   {BEACH_COUNT} praias monitoradas agora
                 </div>
                 <h2 className="text-3xl md:text-5xl font-black mb-4 leading-tight">
                   Sua próxima sessão épica<br />
-                  <span className="text-transparent bg-clip-text"
-                    style={{
-                      backgroundImage: 'linear-gradient(135deg, oklch(0.75 0.16 200), oklch(0.5 0.2 220))',
-                    }}>
-                    começa aqui.
-                  </span>
+                  <span className="text-primary">começa aqui.</span>
                 </h2>
                 <p className="text-muted-foreground mb-8 leading-relaxed text-base max-w-md mx-auto">
                   Dados reais de {BEACH_COUNT} praias, chat com IA e alertas personalizados.
@@ -613,8 +616,8 @@ export default function Landing() {
                   <Button size="lg" asChild
                     className="font-bold px-10 h-12 text-base relative overflow-hidden group"
                     style={{
-                      background: 'oklch(0.6 0.2 210)',
-                      boxShadow: '0 0 40px oklch(0.6 0.2 210 / 0.6), 0 0 80px oklch(0.6 0.2 210 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.15)',
+                      background: 'var(--primary)',
+                      boxShadow: '0 0 40px color-mix(in oklch, var(--primary) 60%, transparent), 0 0 80px color-mix(in oklch, var(--primary) 20%, transparent), inset 0 1px 0 color-mix(in oklch, var(--foreground) 15%, transparent)',
                     }}>
                     <Link to="/login">
                       Criar conta grátis
@@ -623,7 +626,7 @@ export default function Landing() {
                   </Button>
                   <Button size="lg" variant="outline" asChild
                     className="font-bold px-8 h-12"
-                    style={{ borderColor: 'oklch(0.65 0.18 50 / 0.4)', color: 'oklch(0.7 0.15 50)' }}>
+                    style={{ borderColor: 'color-mix(in oklch, var(--rating-fair) 40%, transparent)', color: 'var(--rating-fair)' }}>
                     <Link to="/login?plan=premium">
                       <Crown className="h-4 w-4 mr-2" />
                       Ver plano Premium
@@ -638,13 +641,16 @@ export default function Landing() {
 
       {/* FOOTER */}
       <footer className="py-8"
-        style={{ borderTop: '1px solid oklch(1 0 0 / 0.06)', background: 'oklch(1 0 0 / 0.015)', backdropFilter: 'blur(20px)' }}>
+        style={{ borderTop: '1px solid color-mix(in oklch, var(--foreground) 6%, transparent)', background: 'color-mix(in oklch, var(--foreground) 1.5%, transparent)', backdropFilter: 'blur(20px)' }}>
         <div className="container mx-auto px-5 max-w-5xl flex flex-col md:flex-row items-center justify-between gap-4">
           <AppLogo size={30} variant="full" />
           <div className="text-xs text-muted-foreground text-center">
-            Florianópolis, SC · Dados atualizados a cada 15 minutos · Feito com 🤙 para surfistas
+            Florianópolis, SC · Dados atualizados a cada 15 minutos · Feito por surfistas, para surfistas
           </div>
           <div className="flex items-center gap-3">
+            <Link to="/terms" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+              Termos de Uso
+            </Link>
             <Link to="/privacy" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
               Privacidade
             </Link>

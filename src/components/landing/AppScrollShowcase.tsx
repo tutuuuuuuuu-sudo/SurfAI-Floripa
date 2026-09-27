@@ -65,7 +65,7 @@ export function AppScrollShowcase() {
               style={{
                 borderColor: '#2c2c2c',
                 background: '#0d0d0d',
-                boxShadow: '0 24px 60px oklch(0 0 0 / 0.45), 0 0 0 1px oklch(1 0 0 / 0.06), 0 0 60px oklch(0.6 0.16 200 / 0.1)',
+                boxShadow: '0 24px 60px oklch(0 0 0 / 0.45), 0 0 0 1px color-mix(in oklch, var(--foreground) 6%, transparent), 0 0 60px color-mix(in oklch, var(--primary) 10%, transparent)',
               }}>
               {/* aspect-ratio aqui (não na moldura externa) pra bater exatamente com os
                   prints 390×844 — antes a proporção ficava na moldura, que soma borda+padding,
@@ -75,16 +75,16 @@ export function AppScrollShowcase() {
                   que isso faz o canto interno "estourar" pra fora do canto externo na
                   diagonal (achado 24/ago/2026, visível nos 4 cantos do celular). */}
               <div className="relative aspect-[390/844] w-full overflow-hidden rounded-[25px]" style={{ background: '#0d0d0d' }}>
-                <img src={step.image} alt={step.title} className="absolute inset-0 h-full w-full object-cover" />
+                <img src={step.image} alt={step.title} width={390} height={844} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
               </div>
             </div>
             <div className="flex h-11 w-11 items-center justify-center rounded-xl"
               style={{
-                background: 'oklch(0.6 0.16 200 / 0.15)',
-                border: '1px solid oklch(0.6 0.16 200 / 0.4)',
-                boxShadow: '0 0 20px oklch(0.6 0.16 200 / 0.3)',
+                background: 'color-mix(in oklch, var(--primary) 15%, transparent)',
+                border: '1px solid color-mix(in oklch, var(--primary) 40%, transparent)',
+                boxShadow: '0 0 20px color-mix(in oklch, var(--primary) 30%, transparent)',
               }}>
-              <step.icon className="h-5 w-5" style={{ color: 'oklch(0.6 0.16 200)' }} />
+              <step.icon className="h-5 w-5" style={{ color: 'var(--primary)' }} />
             </div>
             <h3 className="text-xl font-black">{step.title}</h3>
             <p className="max-w-xs text-sm text-foreground/70">{step.desc}</p>
@@ -101,13 +101,13 @@ export function AppScrollShowcase() {
         </div>
 
         <div className="relative flex flex-col pl-6">
-          <div className="absolute left-0 top-0 h-full w-px bg-white/8" />
+          <div className="absolute left-0 top-0 h-full w-px" style={{ background: 'color-mix(in oklch, var(--foreground) 8%, transparent)' }} />
           <div className="absolute left-0 w-px transition-all duration-500 ease-out"
             style={{
               top: `${(active / STEPS.length) * 100}%`,
               height: `${(1 / STEPS.length) * 100}%`,
-              background: 'oklch(0.6 0.16 200)',
-              boxShadow: '0 0 12px oklch(0.6 0.16 200 / 0.6)',
+              background: 'var(--primary)',
+              boxShadow: '0 0 12px color-mix(in oklch, var(--primary) 60%, transparent)',
             }} />
           {STEPS.map((step, i) => (
             <div
@@ -115,18 +115,18 @@ export function AppScrollShowcase() {
               ref={(el) => { refs.current[i] = el }}
               className="relative flex min-h-[45vh] flex-col justify-center gap-3 rounded-2xl py-8 pl-5 pr-4 transition-all duration-300 md:min-h-[55vh]"
               style={{
-                background: active === i ? 'oklch(0.6 0.16 200 / 0.06)' : 'transparent',
+                background: active === i ? 'color-mix(in oklch, var(--primary) 6%, transparent)' : 'transparent',
                 transform: active === i ? 'translateX(4px)' : 'translateX(0)',
               }}
             >
               <div className="flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300"
                 style={{
-                  background: active === i ? 'oklch(0.6 0.16 200 / 0.15)' : 'oklch(1 0 0 / 0.04)',
-                  border: `1px solid ${active === i ? 'oklch(0.6 0.16 200 / 0.4)' : 'oklch(1 0 0 / 0.08)'}`,
-                  boxShadow: active === i ? '0 0 20px oklch(0.6 0.16 200 / 0.35)' : 'none',
+                  background: active === i ? 'color-mix(in oklch, var(--primary) 15%, transparent)' : 'color-mix(in oklch, var(--foreground) 4%, transparent)',
+                  border: `1px solid ${active === i ? 'color-mix(in oklch, var(--primary) 40%, transparent)' : 'color-mix(in oklch, var(--foreground) 8%, transparent)'}`,
+                  boxShadow: active === i ? '0 0 20px color-mix(in oklch, var(--primary) 35%, transparent)' : 'none',
                   transform: active === i ? 'scale(1.08)' : 'scale(1)',
                 }}>
-                <step.icon className="h-4.5 w-4.5 transition-colors duration-300" style={{ color: active === i ? 'oklch(0.6 0.16 200)' : 'oklch(0.7 0.02 240)' }} />
+                <step.icon className="h-4.5 w-4.5 transition-colors duration-300" style={{ color: active === i ? 'var(--primary)' : 'var(--muted-foreground)' }} />
               </div>
               <h3 className="text-lg font-black transition-opacity duration-300 sm:text-xl md:text-2xl" style={{ opacity: active === i ? 1 : 0.35 }}>
                 {step.title}
@@ -148,7 +148,7 @@ function PhoneFrame({ active }: { active: number }) {
       style={{
         borderColor: '#2c2c2c',
         background: '#0d0d0d',
-        boxShadow: '0 24px 60px oklch(0 0 0 / 0.45), 0 0 0 1px oklch(1 0 0 / 0.06), 0 0 80px oklch(0.6 0.16 200 / 0.08)',
+        boxShadow: '0 24px 60px oklch(0 0 0 / 0.45), 0 0 0 1px color-mix(in oklch, var(--foreground) 6%, transparent), 0 0 80px color-mix(in oklch, var(--primary) 8%, transparent)',
       }}>
       {/* Raio interno = raio externo menos borda+padding em cada breakpoint (28-8=20,
           36-11=25, 44-12=32) — mesmo ajuste do card mobile empilhado acima. */}
@@ -158,6 +158,10 @@ function PhoneFrame({ active }: { active: number }) {
             key={step.title}
             src={step.image}
             alt={step.title}
+            width={390}
+            height={844}
+            loading="lazy"
+            decoding="async"
             className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
             style={{ opacity: active === i ? 1 : 0 }}
           />

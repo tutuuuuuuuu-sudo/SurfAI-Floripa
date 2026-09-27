@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { ChevronDown, Crown, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { getRatingInfo } from '@/lib/rating'
 
 // ── Hook: animação de entrada no scroll ─────────────────────────────────────
 
@@ -68,10 +69,10 @@ export function FAQItem({ q, a }: { q: string; a: string }) {
   return (
     <div className="rounded-2xl overflow-hidden transition-all duration-200"
       style={{
-        background: 'oklch(1 0 0 / 0.02)',
-        border: '1px solid oklch(1 0 0 / 0.07)',
+        background: 'color-mix(in oklch, var(--foreground) 2%, transparent)',
+        border: '1px solid color-mix(in oklch, var(--foreground) 7%, transparent)',
         backdropFilter: 'blur(12px)',
-        boxShadow: '0 2px 16px oklch(0 0 0 / 0.1), inset 0 1px 0 oklch(1 0 0 / 0.05)',
+        boxShadow: '0 2px 16px oklch(0 0 0 / 0.1), inset 0 1px 0 color-mix(in oklch, var(--foreground) 5%, transparent)',
       }}>
       <button onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between p-5 text-left hover:bg-card/60 transition-colors"
@@ -95,7 +96,7 @@ export function FAQItem({ q, a }: { q: string; a: string }) {
 export function ChatPreviewMockup() {
   return (
     <div className="rounded-2xl p-4 space-y-2.5"
-      style={{ background: 'oklch(1 0 0 / 0.03)', border: '1px solid oklch(1 0 0 / 0.08)' }}>
+      style={{ background: 'color-mix(in oklch, var(--foreground) 3%, transparent)', border: '1px solid color-mix(in oklch, var(--foreground) 8%, transparent)' }}>
       <div className="flex justify-end">
         <div className="max-w-[85%] rounded-2xl rounded-br-sm px-3.5 py-2 text-xs font-medium bg-primary text-primary-foreground">
           e a Joaquina, tá surfável?
@@ -103,7 +104,7 @@ export function ChatPreviewMockup() {
       </div>
       <div className="flex justify-start">
         <div className="max-w-[90%] rounded-2xl rounded-bl-sm px-3.5 py-2 text-xs leading-relaxed bg-card border border-border/50">
-          Tá com 1.4m e período de 9s — boa pra intermediário. Vento ainda calmo, deve piorar depois do meio-dia.
+          Tá com 1.4m e período de 9s, boa pra intermediário. Vento ainda calmo, deve piorar depois do meio-dia.
         </div>
       </div>
     </div>
@@ -115,19 +116,23 @@ export function ChatPreviewMockup() {
 // dado estático só pra ilustrar a decisão.
 
 export function GeoFinderMockup() {
+  // Rótulo e cor vêm de getRatingInfo() — fonte única do app. Antes estavam
+  // escritos à mão aqui e ficaram errados quando as faixas de nota mudaram.
+  const near = getRatingInfo(5.8)
+  const far = getRatingInfo(8.3)
   return (
     <div className="grid grid-cols-2 gap-2">
       <div className="rounded-xl border border-border/40 p-3 text-left">
         <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Mais perto</div>
         <div className="text-sm font-semibold leading-tight">Campeche</div>
         <div className="text-xs text-muted-foreground mt-0.5">1.2km de você</div>
-        <div className="text-base font-bold mt-1.5 text-rating-fair">5.8 <span className="text-[10px] font-bold">REGULAR</span></div>
+        <div className={`text-base font-bold mt-1.5 ${near.color}`}>5.8 <span className="text-[10px] font-bold">{near.label}</span></div>
       </div>
       <div className="rounded-xl border-2 border-primary/50 bg-primary/5 p-3 text-left">
         <div className="text-[10px] font-semibold text-primary uppercase tracking-wide mb-1.5">Vale o desvio</div>
         <div className="text-sm font-semibold leading-tight">Joaquina</div>
         <div className="text-xs text-muted-foreground mt-0.5">4.6km de você</div>
-        <div className="text-base font-bold mt-1.5 text-rating-epic">8.3 <span className="text-[10px] font-bold">ÉPICO</span></div>
+        <div className={`text-base font-bold mt-1.5 ${far.color}`}>8.3 <span className="text-[10px] font-bold">{far.label}</span></div>
       </div>
     </div>
   )
@@ -141,14 +146,14 @@ const WINDOW_BARS = [20, 30, 35, 45, 55, 70, 85, 95, 90, 65, 40, 25]
 export function GoldenWindowMockup() {
   return (
     <div className="rounded-2xl p-4"
-      style={{ background: 'oklch(1 0 0 / 0.03)', border: '1px solid oklch(1 0 0 / 0.08)' }}>
-      <div className="text-xs font-bold text-rating-epic mb-3">Janela boa agora — vai até 15h</div>
+      style={{ background: 'color-mix(in oklch, var(--foreground) 3%, transparent)', border: '1px solid color-mix(in oklch, var(--foreground) 8%, transparent)' }}>
+      <div className="text-xs font-bold text-rating-epic mb-3">Janela boa agora, vai até 15h</div>
       <div className="flex items-end gap-1" style={{ height: '48px' }}>
         {WINDOW_BARS.map((h, i) => (
           <div key={i} className="flex-1 rounded-sm"
             style={{
               height: `${h}%`,
-              background: h >= 85 ? 'oklch(0.75 0.18 145)' : h >= 55 ? 'oklch(0.8 0.16 95)' : 'oklch(0.6 0.02 240 / 0.3)',
+              background: h >= 85 ? 'var(--rating-good)' : h >= 55 ? 'var(--rating-fair)' : 'color-mix(in oklch, var(--foreground) 30%, transparent)',
             }} />
         ))}
       </div>
@@ -171,14 +176,16 @@ export function FloatingCTA({ onFree, onPremium }: { onFree: () => void; onPremi
   // "acertava" depois de rolar past ela, quando já não fazia mais sentido nenhum. Um
   // listener de scroll comum reavalia a cada evento de rolagem, não só na entrada.
   //
-  // Escondido nos "Mais Recursos" e no FAQ: testado ao vivo em 24/ago/2026, o pill fixo
-  // (sem reservar espaço no fluxo da página) cobria o texto dos cards de feature e, mais
-  // grave, cobria por cima o item "Posso cancelar quando quiser?" do FAQ, impedindo o
-  // clique nele. As duas seções já têm CTA própria logo abaixo/dentro delas, então sumir
-  // o flutuante ali não perde conversão -- só evita competir com clique real.
+  // Escondido nos "Mais Recursos", no FAQ e no preço: testado ao vivo em 24/ago/2026, o
+  // pill fixo (sem reservar espaço no fluxo da página) cobria o texto dos cards de feature
+  // e, mais grave, cobria por cima o item "Posso cancelar quando quiser?" do FAQ, impedindo
+  // o clique nele. A seção de preço (#pricing) tinha o mesmo problema com os botões
+  // "Assinar" dos planos, achado só depois (27/set/2026). Todas já têm CTA própria
+  // logo abaixo/dentro delas, então sumir o flutuante ali não perde conversão -- só evita
+  // competir com clique real.
   useEffect(() => {
     const CTA_BAND_PX = 90 // altura aproximada do pill + respiro
-    const CONFLICT_SECTION_IDS = ['feature-highlights', 'faq']
+    const CONFLICT_SECTION_IDS = ['feature-highlights', 'faq', 'pricing']
 
     const onScroll = () => {
       const overlapsConflictSection = CONFLICT_SECTION_IDS.some((id) => {
@@ -201,9 +208,9 @@ export function FloatingCTA({ onFree, onPremium }: { onFree: () => void; onPremi
         <Button size="lg" onClick={onPremium}
           className="font-bold px-8 h-12 text-sm shadow-2xl rounded-full"
           style={{
-            background: 'linear-gradient(135deg, oklch(0.7 0.18 60), oklch(0.6 0.22 50))',
+            background: 'var(--rating-fair)',
             color: 'oklch(0.1 0.02 240)',
-            boxShadow: '0 0 32px oklch(0.6 0.18 60 / 0.5), 0 8px 24px rgba(0,0,0,0.4)',
+            boxShadow: '0 0 32px color-mix(in oklch, var(--rating-fair) 50%, transparent), 0 8px 24px rgba(0,0,0,0.4)',
           }}>
           <Crown className="h-4 w-4 mr-2" />
           Assinar Premium · a partir de R$ 12,49/mês
@@ -211,7 +218,7 @@ export function FloatingCTA({ onFree, onPremium }: { onFree: () => void; onPremi
       ) : (
         <Button size="lg" onClick={onFree}
           className="font-bold px-8 h-12 text-sm shadow-2xl bg-primary hover:bg-primary/90 rounded-full"
-          style={{ boxShadow: '0 0 32px oklch(0.6 0.16 200 / 0.5), 0 8px 24px rgba(0,0,0,0.4)' }}>
+          style={{ boxShadow: '0 0 32px color-mix(in oklch, var(--primary) 50%, transparent), 0 8px 24px rgba(0,0,0,0.4)' }}>
           Criar conta grátis
           <ArrowRight className="h-4 w-4 ml-2" />
         </Button>
