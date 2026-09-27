@@ -215,6 +215,12 @@ input, textarea, select {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+/* Zoom bem lento e sutil na foto do hero da Landing — dá vida sem parecer vídeo
+   nem gerar peso extra (é só CSS). prefers-reduced-motion acima já neutraliza. */
+@keyframes heroZoom {
+  from { transform: scale(1); }
+  to { transform: scale(1.06); }
+}
 .animate-spin-slow { animation: spin-slow 6s linear infinite; }
 .crown-ring { background: conic-gradient(from 0deg, transparent, var(--color-rating-fair), transparent 35%); }
 
