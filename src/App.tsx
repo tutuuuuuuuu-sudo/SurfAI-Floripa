@@ -8,6 +8,7 @@ import Landing from './pages/Landing'
 import LoginPage from './pages/LoginPage'
 import NotFound from './pages/NotFound'
 import Privacy from './pages/Privacy'
+import Terms from './pages/Terms'
 import ResetPassword from './pages/ResetPassword'
 import { BottomNav } from './components/BottomNav'
 import { CookieConsent } from './components/CookieConsent'
@@ -104,6 +105,7 @@ function AppRoutes() {
           <Route path="/surf-log" element={<ProtectedRoute><SurfLog /></ProtectedRoute>} />
           <Route path="/content-studio" element={<ProtectedRoute><ContentStudio /></ProtectedRoute>} />
           <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

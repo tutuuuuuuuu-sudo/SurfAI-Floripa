@@ -1,30 +1,38 @@
-import * as Sentry from '@sentry/react'
-
-// posthog-js (~11% do bundle principal) só é baixado sob demanda, depois do primeiro
-// render — analytics não precisa bloquear a tela inicial. Promise cacheada garante uma
-// única chamada de import() mesmo com identifyUser/resetUser/track disparando em sequência.
+// Sentry (~44KB comprimidos em produção — só aparece no build da Vercel, não no local,
+// porque só entra quando VITE_SENTRY_DSN existe) e posthog-js (~11% do bundle principal)
+// só são baixados sob demanda, depois do primeiro render — nenhum dos dois precisa
+// bloquear a tela inicial. Promise cacheada garante uma única chamada de import() mesmo
+// com identifyUser/resetUser/track/captureError disparando em sequência.
 let posthogPromise: Promise<typeof import('posthog-js').default> | null = null
 export function getPosthog() {
   if (!posthogPromise) posthogPromise = import('posthog-js').then(m => m.default)
   return posthogPromise
 }
 
+let sentryPromise: Promise<typeof import('@sentry/react')> | null = null
+function getSentry() {
+  if (!sentryPromise) sentryPromise = import('@sentry/react')
+  return sentryPromise
+}
+
 export function initMonitoring() {
   // Sentry — captura erros em produção
   const sentryDsn = import.meta.env.VITE_SENTRY_DSN
   if (sentryDsn) {
-    Sentry.init({
-      dsn: sentryDsn,
-      environment: import.meta.env.MODE,
-      release: import.meta.env.VITE_SENTRY_RELEASE ?? 'surf-ai@dev',
-      tracesSampleRate: 0.2,
-      replaysSessionSampleRate: 0,
-      integrations: [Sentry.browserTracingIntegration()],
-      beforeSend(event) {
-        const url = event.request?.url ?? ''
-        if (url.includes('chrome-extension') || url.includes('moz-extension')) return null
-        return event
-      },
+    getSentry().then(Sentry => {
+      Sentry.init({
+        dsn: sentryDsn,
+        environment: import.meta.env.MODE,
+        release: import.meta.env.VITE_SENTRY_RELEASE ?? 'surf-ai@dev',
+        tracesSampleRate: 0.2,
+        replaysSessionSampleRate: 0,
+        integrations: [Sentry.browserTracingIntegration()],
+        beforeSend(event) {
+          const url = event.request?.url ?? ''
+          if (url.includes('chrome-extension') || url.includes('moz-extension')) return null
+          return event
+        },
+      })
     })
   }
 
@@ -54,14 +62,14 @@ export function identifyUser(id: string, email: string, name?: string) {
     getPosthog().then(posthog => posthog.identify(id, { email, name: name ?? '' }))
   }
   if (import.meta.env.VITE_SENTRY_DSN) {
-    Sentry.setUser({ id, email })
+    getSentry().then(Sentry => Sentry.setUser({ id, email }))
   }
 }
 
 // Remove identidade ao fazer logout
 export function resetUser() {
   if (import.meta.env.VITE_POSTHOG_KEY) getPosthog().then(posthog => posthog.reset())
-  if (import.meta.env.VITE_SENTRY_DSN) Sentry.setUser(null)
+  if (import.meta.env.VITE_SENTRY_DSN) getSentry().then(Sentry => Sentry.setUser(null))
 }
 
 // Rastreia evento customizado
@@ -74,8 +82,10 @@ export function track(event: string, properties?: Record<string, unknown>) {
 // Captura erro avulso
 export function captureError(error: unknown, context?: Record<string, string>) {
   if (!import.meta.env.VITE_SENTRY_DSN) return
-  Sentry.withScope(scope => {
-    if (context) scope.setExtras(context)
-    Sentry.captureException(error)
+  getSentry().then(Sentry => {
+    Sentry.withScope(scope => {
+      if (context) scope.setExtras(context)
+      Sentry.captureException(error)
+    })
   })
 }

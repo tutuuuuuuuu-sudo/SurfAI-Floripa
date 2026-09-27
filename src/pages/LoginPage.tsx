@@ -197,11 +197,15 @@ export default function LoginPage() {
                 className="mt-0.5 w-4 h-4 accent-white flex-shrink-0"
               />
               <span className="text-xs text-white/70 leading-relaxed">
-                Li e aceito a{' '}
+                Li e aceito os{' '}
+                <Link to="/terms" target="_blank" className="text-white underline underline-offset-2">
+                  Termos de Uso
+                </Link>
+                {' '}e a{' '}
                 <Link to="/privacy" target="_blank" className="text-white underline underline-offset-2">
                   Política de Privacidade
                 </Link>
-                {' '}e concordo com o tratamento dos meus dados conforme a LGPD.
+                {', '}e concordo com o tratamento dos meus dados conforme a LGPD.
               </span>
             </label>
           )}

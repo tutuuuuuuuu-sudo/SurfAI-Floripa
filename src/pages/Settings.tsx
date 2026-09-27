@@ -386,6 +386,10 @@ export default function Settings() {
             <p className="text-xs text-muted-foreground">
               Seus dados são armazenados de forma segura e nunca compartilhados com terceiros.
             </p>
+            <Button variant="outline" className="w-full" onClick={() => navigate('/terms')}>
+              <Shield className="h-4 w-4 mr-2" />
+              Termos de Uso
+            </Button>
             <Button variant="outline" className="w-full" onClick={() => navigate('/privacy')}>
               <Shield className="h-4 w-4 mr-2" />
               Política de Privacidade
