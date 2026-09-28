@@ -12,7 +12,7 @@ import aerialBg from '@/assets/landing/aerial-floripa.jpg'
 // na tela por uma faixa extra de rolagem depois dela já ter sumido).
 export function Hero({ children }: { children: ReactNode }) {
   return (
-    <div className="relative w-full overflow-hidden" style={{ minHeight: 'clamp(600px, 84svh, 820px)', background: 'var(--background)' }}>
+    <div className="relative w-full overflow-hidden" style={{ height: 'clamp(560px, 82vh, 820px)', background: 'var(--background)' }}>
       <div className="absolute inset-0"
         style={{
           maskImage: 'linear-gradient(to bottom, black 0%, black 68%, transparent 92%)',
@@ -27,8 +27,8 @@ export function Hero({ children }: { children: ReactNode }) {
           className="h-full w-full object-cover"
           style={{ animation: 'heroZoom 26s ease-in-out infinite alternate' }}
         />
-        {/* Escurecimento da foto (.hero-scrim em index.css) — mais forte onde fica o texto */}
-        <div className="hero-scrim absolute inset-0" />
+        <div className="absolute inset-0"
+          style={{ background: 'linear-gradient(180deg, rgba(6,12,16,.62) 0%, rgba(6,12,16,.32) 42%, rgba(6,12,16,.18) 76%, transparent 100%)' }} />
       </div>
 
       {/* recorte em onda — separa a foto do conteúdo abaixo, em vez de um corte reto */}
@@ -37,7 +37,7 @@ export function Hero({ children }: { children: ReactNode }) {
         <path d="M0,64 C 220,120 380,10 620,58 C 860,106 1040,14 1440,70 L1440,160 L0,160 Z" fill="var(--background)" />
       </svg>
 
-      <div className="relative z-10 flex min-h-[inherit] flex-col items-center justify-center px-5 pb-24 pt-10 text-center">
+      <div className="relative z-10 flex h-full flex-col items-center justify-center px-5 pb-16 pt-6 text-center">
         {children}
       </div>
     </div>
