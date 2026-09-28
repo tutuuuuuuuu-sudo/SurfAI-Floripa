@@ -1,31 +1,67 @@
-import { useNavigate, Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
-  Waves, Zap, Bell, BarChart3, Clock, Shield,
-  ArrowRight, CheckCircle2, TrendingUp,
-  MapPin, Crown, ChevronRight, Droplets,
-  Smartphone, Sparkles, Compass, Scale,
+  Bell, BarChart3, Clock, Shield, ArrowRight, CheckCircle2, TrendingUp,
+  MapPin, Crown, Sparkles, Compass, Scale,
 } from 'lucide-react'
 import { AppLogo } from '@/components/AppLogo'
-import {
-  AnimatedNumber,
-  FAQItem, Reveal, FloatingCTA,
-  ChatPreviewMockup, GeoFinderMockup, GoldenWindowMockup,
-} from '@/components/landing/LandingComponents'
+import { FAQItem, Reveal, GeoFinderMockup } from '@/components/landing/LandingComponents'
 import { AppScrollShowcase } from '@/components/landing/AppScrollShowcase'
 import { Hero } from '@/components/landing/Hero'
-import { BeachDirectory } from '@/components/landing/BeachDirectory'
-import {
-  FAQS, STATS,
-} from '@/components/landing/landingData'
+import { IslandMap } from '@/components/landing/IslandMap'
+import { DayCurveDemo } from '@/components/landing/DayCurveDemo'
+import { ChatDemo } from '@/components/landing/ChatDemo'
+import { FAQS } from '@/components/landing/landingData'
 import { BEACH_DIRECTORY } from '@/lib/beachDirectory'
+import { useSurfData } from '@/contexts/SurfDataContext'
+import { getRatingInfo } from '@/lib/rating'
+
+// Landing "juntada" (28/set/2026): a estrutura e o visual da landing anterior (foto da ilha,
+// vitrine com prints do app, cartões de preço, animações de entrada) com as peças vivas da v2
+// que o usuário aprovou — mapa da ilha com as praias acesas (+ fotos das regiões), curva de
+// amanhã pra arrastar e o chat de exemplo. A v2 inteira ("só dado") foi rejeitada por ser fria
+// e sem emoção (ver memória feedback_landing_needs_emotion). Saíram da antiga: números fracos
+// ("24/7", "3 regiões"), "Como funciona" 01/02/03, "Mais recursos", seção de instalação (virou
+// pergunta do FAQ), exemplos falsos (janela em barras, chat velho) e o botão flutuante que
+// cobria conteúdo (o menu do topo já fica preso na tela com "Começar grátis").
+// Argumento central da copy, nas palavras do usuário: nenhuma outra plataforma mostra TODAS
+// as praias de Floripa com uma nota de 0 a 10, incluindo os picos de cada praia.
 
 const BEACH_COUNT = BEACH_DIRECTORY.length
+const GOOD_BARS = getRatingInfo(5.5).bars
+
+// Prova ao vivo no topo, discreta: quantas praias estão boas agora (some enquanto carrega)
+function LiveNowChip() {
+  const { conditions, loading } = useSurfData()
+  if (loading || conditions.length === 0) return null
+  const good = conditions.filter(c => getRatingInfo(c.score).bars >= GOOD_BARS).length
+  const best = [...conditions].sort((a, b) => b.score - a.score)[0]
+  return (
+    <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/35 px-3.5 py-1.5 text-xs font-semibold text-white/90 backdrop-blur-md"
+      style={{ animation: 'fadeIn 0.6s ease both' }}>
+      <span className="relative flex h-2 w-2">
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rating-good opacity-60" />
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-rating-good" />
+      </span>
+      Agora: {good === 0 ? 'mar fraco na ilha' : `mar bom em ${good} ${good === 1 ? 'praia' : 'praias'}`} · melhor: {best.name} {best.score.toFixed(1)}
+    </div>
+  )
+}
+
+function SectionHead({ badge, title, children, center = true }: { badge: React.ReactNode; title: React.ReactNode; children?: React.ReactNode; center?: boolean }) {
+  return (
+    <Reveal className={center ? 'text-center mb-10' : 'mb-8'}>
+      {badge}
+      <h2 className="text-3xl md:text-4xl font-black mb-4 text-balance">{title}</h2>
+      {children && <p className={`text-foreground/70 max-w-xl ${center ? 'mx-auto' : ''}`}>{children}</p>}
+    </Reveal>
+  )
+}
+
+const pill = 'border-primary/30 text-primary bg-primary/5 mb-4 px-4 py-1'
 
 export default function Landing() {
-  const navigate = useNavigate()
-
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-clip relative">
 
@@ -50,12 +86,10 @@ export default function Landing() {
             </Badge>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild
-              className="text-sm text-foreground/85 hover:text-foreground">
+            <Button variant="ghost" size="sm" asChild className="text-sm text-foreground/85 hover:text-foreground">
               <Link to="/login">Entrar</Link>
             </Button>
-            <Button size="sm" asChild
-              className="text-sm font-bold px-4 bg-primary hover:bg-primary/90"
+            <Button size="sm" asChild className="text-sm font-bold px-4 bg-primary hover:bg-primary/90"
               style={{ boxShadow: '0 0 16px color-mix(in oklch, var(--primary) 25%, transparent)' }}>
               <Link to="/login">
                 Começar grátis
@@ -66,64 +100,41 @@ export default function Landing() {
         </div>
       </nav>
 
-      {/* HERO — foto aérea fixa, dissolve no fundo da página (sem vídeo) */}
+      {/* HERO — foto aérea da ilha + promessa */}
       <Hero>
-        <div className="mx-auto flex max-w-2xl flex-col items-center gap-3 sm:gap-4">
-          <div className="flex flex-wrap justify-center gap-2" style={{ animation: 'fadeIn 0.6s ease both' }}>
-            <Badge variant="outline" className="border-primary/40 text-primary bg-black/30 px-3 py-1 text-xs font-semibold backdrop-blur-md">
-              <Sparkles className="h-3 w-3 mr-1.5 fill-current" />
-              Chat com IA
-            </Badge>
-            <Badge variant="outline" className="border-rating-good/40 text-rating-good bg-black/30 px-3 py-1 text-xs font-semibold backdrop-blur-md">
-              <Waves className="h-3 w-3 mr-1.5" />
-              Dados em tempo real
-            </Badge>
-          </div>
+        <div className="mx-auto flex max-w-2xl flex-col items-center gap-4 sm:gap-5">
+          <LiveNowChip />
 
-          <h1 className="text-5xl md:text-6xl font-black leading-[1.05] tracking-tight text-white overflow-hidden"
+          <h1 className="text-[2.6rem] md:text-6xl font-black leading-[1.05] tracking-tight text-white overflow-hidden text-balance"
             style={{ textShadow: '0 2px 24px oklch(0 0 0 / 0.4)' }}>
             <span className="block" style={{ animation: 'textReveal 0.7s ease 0.1s both' }}>
-              O surf de{' '}
-              <span className="relative inline-block">
-                <span className="text-transparent bg-clip-text"
-                  style={{
-                    backgroundImage: 'linear-gradient(135deg, oklch(0.75 0.16 200), oklch(0.6 0.2 200))',
-                  }}>
-                  Floripa
-                </span>
-              </span>
+              Saiba onde o mar está bom
             </span>
-            <span className="block" style={{ animation: 'textReveal 0.7s ease 0.25s both' }}>
-              na palma da mão.
+            <span className="block text-[color-mix(in_oklch,var(--primary)_55%,white)]" style={{ animation: 'textReveal 0.7s ease 0.25s both' }}>
+              antes de sair de casa.
             </span>
           </h1>
+
           <p className="text-lg text-white/90 max-w-lg leading-relaxed"
             style={{ animation: 'fadeIn 0.7s ease 0.4s both', textShadow: '0 2px 10px oklch(0 0 0 / 0.85), 0 1px 3px oklch(0 0 0 / 0.9)' }}>
-            Pergunta pro Surf AI, veja a nota de {BEACH_COUNT} praias e receba alertas:
-            tudo que você precisa para não perder a melhor sessão da semana.
+            O Surf AI acompanha as {BEACH_COUNT} praias de Floripa, pico por pico, e dá uma nota de 0 a 10
+            pro mar de agora e dos próximos 14 dias.
           </p>
 
-          <div className="inline-flex items-center gap-2 rounded-full px-6 py-2.5 text-base sm:text-lg font-black text-white backdrop-blur-md"
+          <div className="inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm sm:text-base font-bold text-white backdrop-blur-md"
             style={{
               animation: 'fadeIn 0.7s ease 0.45s both',
-              background: 'oklch(0.6 0.16 200 / 0.28)',
-              border: '1.5px solid oklch(0.7 0.16 200 / 0.7)',
-              boxShadow: '0 0 32px oklch(0.6 0.16 200 / 0.4), inset 0 1px 0 oklch(1 0 0 / 0.15)',
+              background: 'color-mix(in oklch, var(--primary) 26%, transparent)',
+              border: '1.5px solid color-mix(in oklch, var(--primary) 65%, transparent)',
             }}>
-            Feito por surfistas,{' '}
-            <span className="text-transparent bg-clip-text"
-              style={{ backgroundImage: 'linear-gradient(135deg, oklch(0.85 0.16 200), oklch(0.9 0.14 160))' }}>
-              para surfistas.
-            </span>
+            <MapPin className="h-4 w-4" />
+            Feito só pra Floripa, pico por pico.
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3" style={{ animation: 'slideUp 0.6s ease 0.5s both' }}>
+          <div className="flex w-full flex-col sm:w-auto sm:flex-row gap-3" style={{ animation: 'slideUp 0.6s ease 0.5s both' }}>
             <Button size="lg" asChild
-              className="text-base font-bold px-8 h-12 flex-1 sm:flex-none relative overflow-hidden group"
-              style={{
-                background: 'oklch(0.6 0.2 210)',
-                boxShadow: '0 0 40px oklch(0.6 0.2 210 / 0.5), 0 0 80px oklch(0.6 0.2 210 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.15)',
-              }}>
+              className="text-base font-bold px-8 h-12 relative overflow-hidden group bg-primary hover:bg-primary/90"
+              style={{ boxShadow: '0 0 40px color-mix(in oklch, var(--primary) 45%, transparent)' }}>
               <Link to="/login">
                 <span className="relative z-10 flex items-center gap-2">
                   Criar conta grátis
@@ -132,382 +143,131 @@ export default function Landing() {
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild
-              className="text-base font-bold px-8 h-12 flex-1 sm:flex-none text-white border-white/40 hover:bg-white/10"
-              style={{ background: 'oklch(1 0 0 / 0.06)', backdropFilter: 'blur(12px)' }}>
-              <Link to="/login?plan=premium">
+              className="text-base font-bold px-8 h-12 text-white border-white/40 hover:bg-black/50 hover:text-white"
+              style={{ background: 'oklch(0.14 0.02 230 / 0.55)', backdropFilter: 'blur(12px)' }}>
+              <a href="#pricing">
                 <Crown className="h-4 w-4 mr-2 text-rating-fair" />
-                Ver Premium
-              </Link>
+                Ver planos
+              </a>
             </Button>
           </div>
         </div>
       </Hero>
 
-      {/* O APP RODANDO — celular fixo, conteúdo troca conforme rola o scroll */}
+      {/* O APP POR DENTRO — prints reais do app de hoje */}
       <section className="py-16 border-t border-border/30 relative z-10">
         <div className="container mx-auto px-5 max-w-5xl">
-          <Reveal className="text-center mb-4 md:mb-10">
-            <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 mb-4 px-4 py-1">
-              Rola pra ver
-            </Badge>
-            <h2 className="text-2xl md:text-4xl font-black">
-              Veja como é usar o Surf AI.
-            </h2>
-          </Reveal>
+          <SectionHead badge={<Badge variant="outline" className={pill}>O app por dentro</Badge>}
+            title="Tudo pra decidir se vale sair de casa.">
+            A nota de cada praia, a previsão hora a hora, o vento, a maré e o caminho até o pico, num lugar só.
+          </SectionHead>
           <AppScrollShowcase />
         </div>
       </section>
 
-      {/* 3 JEITOS DE DECIDIR NA HORA — chat, Bora Surfar e melhor janela do dia, os 3
-          recursos de IA/decisão mais fortes do produto e que a landing nunca mostrou
-          antes. Chat vem primeiro e maior de propósito: é o principal hoje. */}
+      {/* A ILHA INTEIRA — mapa ao vivo + fotos das regiões + picos */}
+      <section id="ilha" className="py-20 border-t border-border/30 relative z-10">
+        <div className="container mx-auto px-5 max-w-3xl">
+          <SectionHead badge={<Badge variant="outline" className={pill}>{BEACH_COUNT} praias · pico por pico</Badge>}
+            title="A ilha inteira, agora.">
+            Cada ponto é uma praia, na cor da nota deste momento. Escolha uma região ou toque numa praia
+            pra ver onda, vento, maré e os picos que o Surf AI acompanha.
+          </SectionHead>
+          <IslandMap />
+        </div>
+      </section>
+
+      {/* AMANHÃ — curva real pra arrastar */}
+      <section id="amanha" className="py-20 border-t border-border/30 relative z-10">
+        <div className="container mx-auto px-5 max-w-2xl">
+          <SectionHead badge={<Badge variant="outline" className={pill}><Clock className="h-3 w-3 mr-1.5" />Previsão</Badge>}
+            title="Amanhã, hora a hora.">
+            Arraste pela curva. Essa é a previsão real de amanhã, com a nota de cada hora, a onda, a maré e o vento.
+          </SectionHead>
+          <DayCurveDemo />
+        </div>
+      </section>
+
+      {/* CHAT — conversa de exemplo com dado real */}
+      <section id="chat" className="py-20 border-t border-border/30 relative z-10">
+        <div className="container mx-auto px-5 max-w-2xl">
+          <SectionHead badge={<Badge className="bg-rating-fair/15 text-rating-fair border-rating-fair/30 mb-4 px-4 py-1"><Crown className="h-3 w-3 mr-1.5" />Premium</Badge>}
+            title="Pergunte ao Surf AI.">
+            Em vez de interpretar tabela, pergunte do jeito que você falaria com um amigo que conhece o mar.
+            Ele responde com as condições de agora e a previsão da semana.
+          </SectionHead>
+          <ChatDemo />
+        </div>
+      </section>
+
+      {/* MAIS NO PREMIUM */}
       <section className="py-20 border-t border-border/30 relative z-10">
         <div className="container mx-auto px-5 max-w-5xl">
-          <Reveal className="text-center mb-14">
-            <Badge className="bg-rating-fair/15 text-rating-fair border-rating-fair/30 mb-4 px-4 py-1">
-              <Crown className="h-3 w-3 mr-1.5" />
-              Premium
-            </Badge>
-            <h2 className="text-3xl md:text-4xl font-black mb-4">
-              3 jeitos de decidir na hora.
-            </h2>
-            <p className="text-foreground/70 max-w-md mx-auto">
-              Chega de ficar rolando tela tentando adivinhar. Essas 3 ferramentas são exclusivas do Premium.
-            </p>
-          </Reveal>
+          <SectionHead badge={<Badge className="bg-rating-fair/15 text-rating-fair border-rating-fair/30 mb-4 px-4 py-1"><Crown className="h-3 w-3 mr-1.5" />Premium</Badge>}
+            title="E ainda tem mais.">
+            Ferramentas pra quem não quer perder nenhum dia bom.
+          </SectionHead>
 
-          <div className="grid md:grid-cols-2 gap-6 mb-6">
-            <Reveal delay={0} className="md:col-span-2">
-              <div className="group relative grid md:grid-cols-2 gap-6 items-center overflow-hidden rounded-2xl p-6 md:p-8 bg-primary/10 border border-primary/35 transition-transform duration-300 hover:-translate-y-1"
-                style={{ boxShadow: '0 4px 32px color-mix(in oklch, var(--primary) 20%, transparent)' }}>
-                <Crown className="absolute top-4 right-4 z-10 h-4 w-4 text-primary/50" />
-                <div className="relative z-10">
-                  <div className="h-12 w-12 rounded-2xl flex items-center justify-center mb-4 bg-primary/20 border border-primary/45"
-                    style={{ boxShadow: '0 0 24px color-mix(in oklch, var(--primary) 40%, transparent)' }}>
-                    <Sparkles className="h-6 w-6 text-primary" />
-                  </div>
-                  <h3 className="font-black text-xl md:text-2xl mb-2">Converse com o Surf AI</h3>
-                  <p className="text-sm text-foreground/70 leading-relaxed">
-                    Pergunta o que quiser sobre qualquer uma das {BEACH_COUNT} praias ou sobre as condições de agora.
-                    A IA responde na hora, com o dado real do momento.
-                  </p>
-                </div>
-                <div className="relative z-10"><ChatPreviewMockup /></div>
-                <div className="absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-primary/15 blur-3xl pointer-events-none" />
-              </div>
-            </Reveal>
-
-            <Reveal delay={0.1}>
-              <div className="group relative h-full flex flex-col overflow-hidden rounded-2xl p-6 bg-rating-good/[0.09] border border-rating-good/35 transition-transform duration-300 hover:-translate-y-1"
-                style={{ boxShadow: '0 4px 24px oklch(0 0 0 / 0.12)' }}>
-                <Crown className="absolute top-4 right-4 z-10 h-4 w-4 text-rating-good/50" />
-                <div className="relative z-10 h-11 w-11 rounded-xl flex items-center justify-center mb-4 bg-rating-good/20 border border-rating-good/45"
-                  style={{ boxShadow: '0 0 20px color-mix(in oklch, var(--rating-good) 40%, transparent)' }}>
+          <div className="grid md:grid-cols-3 gap-6">
+            <Reveal delay={0}>
+              <div className="group relative h-full flex flex-col overflow-hidden rounded-2xl p-6 bg-rating-good/[0.09] border border-rating-good/35 transition-transform duration-300 hover:-translate-y-1">
+                <div className="h-11 w-11 rounded-xl flex items-center justify-center mb-4 bg-rating-good/20 border border-rating-good/45">
                   <Compass className="h-5 w-5 text-rating-good" />
                 </div>
-                <h3 className="relative z-10 font-bold text-lg mb-2">Bora Surfar?</h3>
-                <p className="relative z-10 text-sm text-foreground/70 leading-relaxed mb-4">
-                  Compartilha sua localização por um instante (não guardamos nada). O Surf AI compara a praia mais perto
-                  com a que está com a melhor condição por perto e diz se vale rodar mais um pouco.
+                <h3 className="font-bold text-lg mb-2">Bora Surfar</h3>
+                <p className="text-sm text-foreground/70 leading-relaxed mb-4">
+                  Compartilhe sua localização por um instante (não guardamos nada) e o Surf AI compara a praia mais perto
+                  com a que está melhor por perto, pra você saber se vale rodar mais um pouco.
                 </p>
-                <div className="relative z-10 mt-auto"><GeoFinderMockup /></div>
-                <div className="absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-rating-good/15 blur-2xl pointer-events-none" />
-              </div>
-            </Reveal>
-
-            <Reveal delay={0.2}>
-              <div className="group relative h-full flex flex-col overflow-hidden rounded-2xl p-6 bg-rating-epic/[0.09] border border-rating-epic/35 transition-transform duration-300 hover:-translate-y-1"
-                style={{ boxShadow: '0 4px 24px oklch(0 0 0 / 0.12)' }}>
-                <Crown className="absolute top-4 right-4 z-10 h-4 w-4 text-rating-epic/50" />
-                <div className="relative z-10 h-11 w-11 rounded-xl flex items-center justify-center mb-4 bg-rating-epic/20 border border-rating-epic/45"
-                  style={{ boxShadow: '0 0 20px color-mix(in oklch, var(--rating-epic) 40%, transparent)' }}>
-                  <Clock className="h-5 w-5 text-rating-epic" />
-                </div>
-                <h3 className="relative z-10 font-bold text-lg mb-2">Melhor Janela do Dia</h3>
-                <p className="relative z-10 text-sm text-foreground/70 leading-relaxed mb-4">
-                  Nota hora a hora de cada pico, pra você saber exatamente a janela certa pra sair de casa.
-                </p>
-                <div className="relative z-10 mt-auto"><GoldenWindowMockup /></div>
-                <div className="absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-rating-epic/15 blur-2xl pointer-events-none" />
-              </div>
-            </Reveal>
-          </div>
-        </div>
-      </section>
-
-      {/* TODAS AS PRAIAS — prova social honesta: cobertura real, sem depoimento inventado */}
-      <section className="py-20 border-t border-border/30 relative z-10">
-        <div className="container mx-auto px-5 max-w-4xl">
-          <Reveal className="text-center mb-10">
-            <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 mb-4 px-4 py-1">
-              Cobertura real
-            </Badge>
-            <h2 className="text-3xl md:text-4xl font-black mb-4">
-              {BEACH_COUNT} praias. A ilha inteira.
-            </h2>
-            <p className="text-foreground/70 max-w-md mx-auto">
-              Do Santinho ao Naufragados, ponta a ponta da ilha. Cada pico monitorado com nome e localização reais.
-            </p>
-          </Reveal>
-          <BeachDirectory />
-        </div>
-      </section>
-
-      {/* STATS */}
-      <section className="py-10 relative z-10"
-        style={{
-          borderTop: '1px solid color-mix(in oklch, var(--foreground) 6%, transparent)',
-          borderBottom: '1px solid color-mix(in oklch, var(--foreground) 6%, transparent)',
-          background: 'color-mix(in oklch, var(--foreground) 1.5%, transparent)',
-          backdropFilter: 'blur(20px)',
-        }}>
-        <div className="container mx-auto px-5 max-w-5xl">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {STATS.map(({ value, suffix, label }) => (
-              <div key={label} className="text-center">
-                <AnimatedNumber value={value} suffix={suffix} />
-                <div className="text-sm text-muted-foreground mt-1 font-medium">{label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* COMO FUNCIONA */}
-      <section className="py-20 border-t border-border/30 relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none select-none opacity-[0.025]"
-          style={{
-            backgroundImage: 'linear-gradient(var(--primary) 1px, transparent 1px), linear-gradient(90deg, var(--primary) 1px, transparent 1px)',
-            backgroundSize: '40px 40px',
-          }} />
-        <div className="container mx-auto px-5 max-w-5xl relative">
-          <Reveal className="text-center mb-14">
-            <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 mb-4 px-4 py-1">
-              Como funciona
-            </Badge>
-            <h2 className="text-3xl md:text-4xl font-black mb-4">
-              Enquanto você lê isso, tem gente<br />surfando na praia certa.
-            </h2>
-            <p className="text-foreground/70 max-w-md mx-auto">Em menos de 1 minuto você sabe se vale sair de casa: sem chute, sem grupo de WhatsApp, sem frustração.</p>
-          </Reveal>
-
-          <div className="grid md:grid-cols-3 gap-6 relative">
-            {[
-              { step: '01', icon: Droplets, title: 'Dados em tempo real', desc: 'Coletamos dados de ondas, vento e maré de múltiplas fontes meteorológicas a cada 15 minutos, o dia inteiro.', hue: 220 },
-              { step: '02', icon: Zap, title: 'IA calcula a nota', desc: 'Nossa IA junta altura, período e vento de cada praia e calcula uma nota de 0 a 10 em tempo real.', hue: 195 },
-              { step: '03', icon: TrendingUp, title: 'Você decide em segundos', desc: 'Veja a nota, compare praias e tome a melhor decisão, sem desperdício de tempo ou gasolina.', hue: 155 },
-            ].map(({ step, icon: Icon, title, desc, hue }, i) => (
-              <Reveal key={step} delay={i * 0.15}>
-                <div className="relative flex flex-col h-full rounded-2xl p-6 overflow-hidden"
-                  style={{
-                    background: `oklch(0.6 0.18 ${hue} / 0.07)`,
-                    border: `1px solid oklch(0.6 0.18 ${hue} / 0.25)`,
-                    backdropFilter: 'blur(16px)',
-                    boxShadow: '0 4px 24px oklch(0 0 0 / 0.15), inset 0 1px 0 color-mix(in oklch, var(--foreground) 6%, transparent)',
-                  }}>
-                  <span className="pointer-events-none select-none absolute -top-3 -right-1 font-black leading-none"
-                    style={{ fontSize: '6.5rem', color: `oklch(0.6 0.18 ${hue} / 0.12)` }}>
-                    {step}
-                  </span>
-                  <div className="relative z-10 h-14 w-14 rounded-2xl flex items-center justify-center mb-5"
-                    style={{
-                      background: `oklch(0.6 0.18 ${hue} / 0.15)`,
-                      border: `1px solid oklch(0.6 0.18 ${hue} / 0.45)`,
-                      boxShadow: `0 0 28px oklch(0.6 0.18 ${hue} / 0.3)`,
-                    }}>
-                    <Icon className="h-6 w-6" style={{ color: `oklch(0.6 0.18 ${hue})` }} />
-                  </div>
-                  <h3 className="relative z-10 font-bold text-lg mb-2">{title}</h3>
-                  <p className="relative z-10 text-sm text-foreground/70 leading-relaxed">{desc}</p>
-                  {i < 2 && (
-                    <ChevronRight className="hidden md:block absolute -right-3 top-1/2 -translate-y-1/2 z-10 h-6 w-6"
-                      style={{ color: `oklch(0.6 0.18 ${hue} / 0.5)` }} />
-                  )}
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* MAIS RECURSOS — cada card usa uma cor do próprio sistema de rating do app */}
-      <section id="feature-highlights" className="py-20 border-t border-border/30">
-        <div className="container mx-auto px-5 max-w-5xl">
-          <Reveal className="text-center mb-14">
-            <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 mb-4 px-4 py-1">Funcionalidades</Badge>
-            <h2 className="text-3xl md:text-5xl font-black mb-4">
-              Pare de adivinhar.<br />Comece a surfar na hora certa.
-            </h2>
-            <p className="text-foreground/70 text-lg max-w-xl mx-auto">
-              E tem mais: histórico, diário de surf e cobertura completa da ilha.
-            </p>
-          </Reveal>
-
-          <div className="grid sm:grid-cols-3 gap-6">
-            <Reveal delay={0}>
-              <div className="group relative flex h-full flex-col gap-4 overflow-hidden rounded-2xl p-6 bg-rating-excellent/[0.06] border border-rating-excellent/25 transition-transform duration-300 hover:-translate-y-1"
-                style={{ boxShadow: '0 4px 24px oklch(0 0 0 / 0.12)' }}>
-                <div className="flex items-start justify-between">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-rating-excellent/15 border border-rating-excellent/30">
-                    <MapPin className="h-6 w-6 text-rating-excellent" />
-                  </div>
-                  <div className="text-right leading-none">
-                    <div className="text-3xl font-black text-rating-excellent">{BEACH_COUNT}</div>
-                    <div className="text-[10px] uppercase tracking-wider text-foreground/40">praias</div>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="font-bold text-base mb-1.5">{BEACH_COUNT} praias monitoradas</h3>
-                  <p className="text-sm text-foreground/60 leading-relaxed">Cobertura completa de Florianópolis, do Santinho ao Naufragados.</p>
-                </div>
-                <div className="absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-rating-excellent/10 blur-2xl pointer-events-none" />
+                <div className="mt-auto"><GeoFinderMockup /></div>
               </div>
             </Reveal>
             <Reveal delay={0.1}>
-              <div className="group relative flex h-full flex-col gap-4 overflow-hidden rounded-2xl p-6 bg-rating-fair/[0.06] border border-rating-fair/25 transition-transform duration-300 hover:-translate-y-1"
-                style={{ boxShadow: '0 4px 24px oklch(0 0 0 / 0.12)' }}>
-                <div className="flex items-start justify-between">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-rating-fair/15 border border-rating-fair/30">
-                    <Clock className="h-6 w-6 text-rating-fair" />
-                  </div>
-                  <div className="text-right leading-none">
-                    <div className="text-3xl font-black text-rating-fair">30</div>
-                    <div className="text-[10px] uppercase tracking-wider text-foreground/40">dias</div>
-                  </div>
+              <div className="group relative h-full flex flex-col overflow-hidden rounded-2xl p-6 bg-rating-excellent/[0.09] border border-rating-excellent/35 transition-transform duration-300 hover:-translate-y-1">
+                <div className="h-11 w-11 rounded-xl flex items-center justify-center mb-4 bg-rating-excellent/20 border border-rating-excellent/45">
+                  <Bell className="h-5 w-5 text-rating-excellent" />
                 </div>
-                <div>
-                  <h3 className="font-bold text-base mb-1.5">Histórico de condições</h3>
-                  <p className="text-sm text-foreground/60 leading-relaxed">Veja se hoje está acima ou abaixo da média dos últimos 30 dias.</p>
-                </div>
-                <div className="absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-rating-fair/10 blur-2xl pointer-events-none" />
+                <h3 className="font-bold text-lg mb-2">Alertas da sua praia</h3>
+                <p className="text-sm text-foreground/70 leading-relaxed">
+                  Escolha a nota mínima de cada praia e receba um aviso no celular quando o mar chegar lá.
+                  Você para de conferir a previsão toda hora.
+                </p>
               </div>
             </Reveal>
             <Reveal delay={0.2}>
-              <div className="group relative flex h-full flex-col gap-4 overflow-hidden rounded-2xl p-6 bg-rating-epic/[0.06] border border-rating-epic/25 transition-transform duration-300 hover:-translate-y-1"
-                style={{ boxShadow: '0 4px 24px oklch(0 0 0 / 0.12)' }}>
-                <div className="flex items-start justify-between">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-rating-epic/15 border border-rating-epic/30">
-                    <Waves className="h-6 w-6 text-rating-epic" />
-                  </div>
-                  <div className="text-right leading-none">
-                    <div className="text-3xl font-black text-rating-epic">∞</div>
-                    <div className="text-[10px] uppercase tracking-wider text-foreground/40">memórias</div>
-                  </div>
+              <div className="group relative h-full flex flex-col overflow-hidden rounded-2xl p-6 bg-rating-epic/[0.09] border border-rating-epic/35 transition-transform duration-300 hover:-translate-y-1">
+                <div className="h-11 w-11 rounded-xl flex items-center justify-center mb-4 bg-rating-epic/20 border border-rating-epic/45">
+                  <Scale className="h-5 w-5 text-rating-epic" />
                 </div>
-                <div>
-                  <h3 className="font-bold text-base mb-1.5">Diário de surf</h3>
-                  <p className="text-sm text-foreground/60 leading-relaxed">Registre suas sessões, notas e memórias no seu diário de surf pessoal.</p>
-                </div>
-                <div className="absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-rating-epic/10 blur-2xl pointer-events-none" />
+                <h3 className="font-bold text-lg mb-2">Compare e acompanhe</h3>
+                <p className="text-sm text-foreground/70 leading-relaxed">
+                  Coloque até 3 praias lado a lado e veja se o mar de hoje está acima ou abaixo da média dos últimos 30 dias.
+                </p>
               </div>
             </Reveal>
           </div>
-
-          <Reveal className="mt-14 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button size="lg" asChild
-              className="font-bold px-8 h-12 text-sm bg-primary hover:bg-primary/90"
-              style={{ boxShadow: '0 0 32px color-mix(in oklch, var(--primary) 40%, transparent)' }}>
-              <Link to="/login">
-                Criar conta grátis
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild
-              className="font-bold px-8 h-12 text-sm"
-              style={{ borderColor: 'color-mix(in oklch, var(--rating-fair) 40%, transparent)', color: 'var(--rating-fair)' }}>
-              <Link to="/login?plan=premium">
-                <Crown className="h-4 w-4 mr-2" />
-                Ver Premium
-              </Link>
-            </Button>
-          </Reveal>
         </div>
       </section>
 
-      {/* INSTALAÇÃO PWA */}
-      <section className="py-20 border-t border-border/30">
-        <div className="container mx-auto px-5 max-w-4xl">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <Reveal className="space-y-6">
-              <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 px-4 py-1">
-                <Smartphone className="h-3 w-3 mr-1.5" />
-                Funciona como app nativo
-              </Badge>
-              <h2 className="text-3xl md:text-4xl font-black">
-                Sem baixar nada.<br />
-                <span className="text-primary">Vai direto pra tela inicial.</span>
-              </h2>
-              <p className="text-foreground/70 leading-relaxed">
-                O Surf AI funciona igual a um app de verdade, sem ocupar espaço da loja. Acesse pelo Safari ou Chrome e adicione à tela inicial em segundos.
-              </p>
-              <Button asChild className="font-bold bg-primary hover:bg-primary/90"
-                style={{ boxShadow: '0 0 20px color-mix(in oklch, var(--primary) 30%, transparent)' }}>
-                <Link to="/login">
-                  Acessar agora
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </Link>
-              </Button>
-            </Reveal>
-
-            <div className="flex flex-col gap-4">
-              {[
-                { step: '1', title: 'Abra no seu navegador', desc: 'Digite surfaifloripa.com.br no Safari (iPhone) ou Chrome (Android)', icon: Waves },
-                { step: '2', title: 'Toque em "Adicionar à Tela de Início"', desc: 'iPhone: toque no ícone de compartilhar (a seta pra cima) na barra debaixo do Safari, role e toque em "Adicionar à Tela de Início". Android: toque nos 3 pontinhos no canto superior do Chrome e toque em "Adicionar à tela inicial"', icon: Smartphone },
-                { step: '3', title: 'Pronto, é isso!', desc: 'O ícone aparece na tela inicial e abre em tela cheia, sem barra de endereço', icon: CheckCircle2 },
-              ].map(({ step, title, desc, icon: Icon }, i) => (
-                <Reveal key={step} delay={i * 0.12}>
-                  <div className="flex items-center gap-4 rounded-xl p-4 transition-transform duration-200 hover:scale-[1.01]"
-                    style={{
-                      background: 'color-mix(in oklch, var(--foreground) 2.5%, transparent)',
-                      border: '1px solid color-mix(in oklch, var(--foreground) 8%, transparent)',
-                      backdropFilter: 'blur(12px)',
-                      boxShadow: '0 2px 16px oklch(0 0 0 / 0.12), inset 0 1px 0 color-mix(in oklch, var(--foreground) 5%, transparent)',
-                    }}>
-                    <div className="h-10 w-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-sm font-black text-primary flex-shrink-0">
-                      {step}
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold">{title}</div>
-                      <div className="text-xs text-muted-foreground">{desc}</div>
-                    </div>
-                    <Icon className="h-5 w-5 text-primary/30 ml-auto flex-shrink-0" />
-                  </div>
-                </Reveal>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* PREÇO — mensal e anual juntos, um bloco só (antes existiam 2 desconectados) */}
+      {/* PREÇO */}
       <section id="pricing" className="py-20 relative border-t border-border/30">
-        <div className="absolute inset-0 pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse 50% 40% at 50% 50%, color-mix(in oklch, var(--rating-fair) 4%, transparent), transparent)' }} />
         <div className="container mx-auto px-5 max-w-4xl relative">
-          <Reveal className="text-center mb-12">
-            <Badge className="bg-rating-fair/15 text-rating-fair border-rating-fair/30 mb-4">
-              <Crown className="h-3 w-3 mr-1.5" />Premium
-            </Badge>
-            <h2 className="text-3xl md:text-4xl font-black mb-3">
-              Leve seu surf ao<br />
-              <span className="text-rating-fair">próximo nível.</span>
-            </h2>
-            <p className="text-foreground/70 leading-relaxed max-w-md mx-auto">
-              Menos que o combustível de uma ida até a praia errada, e você nunca mais chega quando o mar está ruim.
-            </p>
-          </Reveal>
+          <SectionHead badge={<Badge className="bg-rating-fair/15 text-rating-fair border-rating-fair/30 mb-4"><Crown className="h-3 w-3 mr-1.5" />Premium</Badge>}
+            title={<>Mais dias bons<br /><span className="text-rating-fair">no mar.</span></>}>
+            O Premium libera os 14 dias de previsão, o chat com o Surf AI, os alertas e tudo o que você viu nesta página.
+            Custa menos que uma ida até a praia errada.
+          </SectionHead>
 
           <div className="grid md:grid-cols-2 gap-10 items-center mb-10">
             <Reveal className="space-y-2.5">
               {[
                 { icon: Sparkles, title: 'Chat com o Surf AI' },
-                { icon: Compass, title: 'Bora Surfar, a praia certa perto de você' },
-                { icon: Clock, title: 'Melhor janela do dia, hora a hora' },
-                { icon: BarChart3, title: 'Previsão 14 dias completa' },
+                { icon: BarChart3, title: 'Previsão de 14 dias, hora a hora' },
+                { icon: Clock, title: 'Melhor janela do dia' },
+                { icon: Compass, title: 'Bora Surfar, a praia boa mais perto de você' },
                 { icon: Bell, title: 'Alertas na nota que você escolher, praia por praia' },
-                { icon: TrendingUp, title: 'Histórico completo de condições' },
-                { icon: Scale, title: 'Comparação entre praias' },
-                { icon: Shield, title: 'Experiência 100% sem anúncios' },
+                { icon: TrendingUp, title: 'Histórico de 30 dias e comparação de praias' },
+                { icon: Shield, title: 'Sem anúncios' },
               ].map(({ icon: Icon, title }) => (
                 <div key={title} className="flex items-center gap-3">
                   <div className="h-6 w-6 rounded-lg bg-rating-fair/15 flex items-center justify-center flex-shrink-0">
@@ -518,14 +278,13 @@ export default function Landing() {
               ))}
             </Reveal>
 
-            {/* Dois planos lado a lado — mensal e anual, sem duplicar a mesma info em outro lugar da página */}
             <div className="grid grid-cols-2 gap-3">
               <Reveal delay={0.1}>
                 <div className="h-full rounded-2xl p-5 flex flex-col items-center text-center gap-1"
                   style={{ background: 'color-mix(in oklch, var(--foreground) 3%, transparent)', border: '1px solid color-mix(in oklch, var(--foreground) 10%, transparent)' }}>
                   <div className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Mensal</div>
                   <div className="text-3xl font-black text-foreground leading-none">R$16<span className="text-lg">,90</span></div>
-                  <div className="text-xs text-muted-foreground mb-3">por mês</div>
+                  <div className="text-xs text-muted-foreground mb-3">por 30 dias</div>
                   <Button asChild variant="outline" size="sm" className="w-full font-semibold">
                     <Link to="/login?plan=premium">Assinar</Link>
                   </Button>
@@ -542,8 +301,7 @@ export default function Landing() {
                   <div className="text-xs text-rating-fair uppercase tracking-widest mb-1 font-semibold">Anual</div>
                   <div className="text-3xl font-black text-rating-fair leading-none">R$12<span className="text-lg">,49</span></div>
                   <div className="text-xs text-muted-foreground mb-3">por mês · R$149,90/ano</div>
-                  <Button asChild size="sm"
-                    className="w-full font-semibold"
+                  <Button asChild size="sm" className="w-full font-semibold"
                     style={{ background: 'var(--rating-fair)', color: 'oklch(0.1 0.02 240)' }}>
                     <Link to="/login?plan=premium">Assinar</Link>
                   </Button>
@@ -552,122 +310,89 @@ export default function Landing() {
             </div>
           </div>
 
-          <Reveal className="flex flex-wrap items-center justify-center gap-6">
-            {['Pagamento seguro', 'Sem cobrança automática', 'Você decide se renova'].map(t => (
-              <span key={t} className="flex items-center gap-1 text-xs text-muted-foreground">
-                <CheckCircle2 className="h-3 w-3 text-rating-good" />{t}
-              </span>
-            ))}
+          <Reveal className="flex flex-col items-center gap-5">
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+              {['Pagamento único pelo Mercado Pago', 'Sem cobrança automática', 'Reembolso em até 7 dias'].map(t => (
+                <span key={t} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-rating-good" />{t}
+                </span>
+              ))}
+            </div>
+            <p className="text-sm text-muted-foreground text-center">
+              Quer conhecer antes? O plano grátis já mostra a nota das {BEACH_COUNT} praias e 3 dias de previsão.{' '}
+              <Link to="/login" className="font-semibold text-primary hover:underline">Criar conta grátis</Link>
+            </p>
           </Reveal>
         </div>
       </section>
 
-      {/* FAQ — objeções resolvidas logo depois do preço, antes do fechamento final */}
+      {/* FAQ */}
       <section id="faq" className="py-20 border-t border-border/30">
         <div className="container mx-auto px-5 max-w-2xl">
-          <Reveal className="text-center mb-14">
-            <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 mb-4 px-4 py-1">FAQ</Badge>
-            <h2 className="text-3xl md:text-4xl font-black mb-4">Ainda com dúvida?<br />A gente responde.</h2>
-            <p className="text-foreground/70">Perguntas que todo surfista faz antes de baixar.</p>
-          </Reveal>
+          <SectionHead badge={<Badge variant="outline" className={pill}>Dúvidas</Badge>}
+            title="Perguntas frequentes" />
           <div className="space-y-3">
             {FAQS.map(faq => <FAQItem key={faq.q} q={faq.q} a={faq.a} />)}
           </div>
         </div>
       </section>
 
-      {/* CTA FINAL — agora é o último bloco de conteúdo de verdade, logo antes do footer */}
+      {/* FECHAMENTO */}
       <section className="py-20 border-t border-border/30 relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full blur-[120px] opacity-20"
-            style={{ background: 'radial-gradient(ellipse, oklch(0.6 0.2 210), transparent 70%)' }} />
-        </div>
         <div className="container mx-auto px-5 max-w-2xl text-center relative">
           <Reveal>
             <div className="rounded-3xl p-10 md:p-14 relative overflow-hidden"
               style={{
                 background: 'color-mix(in oklch, var(--foreground) 2.5%, transparent)',
                 border: '1px solid color-mix(in oklch, var(--primary) 25%, transparent)',
-                backdropFilter: 'blur(24px)',
-                boxShadow: '0 8px 64px oklch(0 0 0 / 0.4), 0 0 120px color-mix(in oklch, var(--primary) 12%, transparent), inset 0 1px 0 color-mix(in oklch, var(--foreground) 10%, transparent)',
+                boxShadow: '0 8px 64px oklch(0 0 0 / 0.4), 0 0 120px color-mix(in oklch, var(--primary) 12%, transparent)',
               }}>
-              <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full pointer-events-none"
-                style={{ background: 'radial-gradient(circle, oklch(0.6 0.16 200 / 0.12), transparent)' }} />
-              <div className="absolute -bottom-12 -left-12 w-48 h-48 rounded-full pointer-events-none"
-                style={{ background: 'radial-gradient(circle, oklch(0.55 0.18 280 / 0.08), transparent)' }} />
-              <div className="relative">
-                <div className="flex justify-center mb-6">
-                  <AppLogo size={56} variant="icon" />
-                </div>
-                <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-6 text-xs font-semibold"
-                  style={{ background: 'color-mix(in oklch, var(--primary) 12%, transparent)', border: '1px solid color-mix(in oklch, var(--primary) 30%, transparent)', color: 'var(--primary)' }}>
-                  <div className="h-1.5 w-1.5 rounded-full bg-rating-good animate-pulse" />
-                  {BEACH_COUNT} praias monitoradas agora
-                </div>
-                <h2 className="text-3xl md:text-5xl font-black mb-4 leading-tight">
-                  Sua próxima sessão épica<br />
-                  <span className="text-primary">começa aqui.</span>
-                </h2>
-                <p className="text-muted-foreground mb-8 leading-relaxed text-base max-w-md mx-auto">
-                  Dados reais de {BEACH_COUNT} praias, chat com IA e alertas personalizados.
-                  Crie sua conta grátis em menos de 1 minuto.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
-                  <Button size="lg" asChild
-                    className="font-bold px-10 h-12 text-base relative overflow-hidden group"
-                    style={{
-                      background: 'var(--primary)',
-                      boxShadow: '0 0 40px color-mix(in oklch, var(--primary) 60%, transparent), 0 0 80px color-mix(in oklch, var(--primary) 20%, transparent), inset 0 1px 0 color-mix(in oklch, var(--foreground) 15%, transparent)',
-                    }}>
-                    <Link to="/login">
-                      Criar conta grátis
-                      <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                    </Link>
-                  </Button>
-                  <Button size="lg" variant="outline" asChild
-                    className="font-bold px-8 h-12"
-                    style={{ borderColor: 'color-mix(in oklch, var(--rating-fair) 40%, transparent)', color: 'var(--rating-fair)' }}>
-                    <Link to="/login?plan=premium">
-                      <Crown className="h-4 w-4 mr-2" />
-                      Ver plano Premium
-                    </Link>
-                  </Button>
-                </div>
+              <div className="flex justify-center mb-6">
+                <AppLogo size={56} variant="icon" />
+              </div>
+              <h2 className="text-3xl md:text-5xl font-black mb-4 leading-tight text-balance">
+                O próximo dia bom<br />
+                <span className="text-primary">já está na previsão.</span>
+              </h2>
+              <p className="text-muted-foreground mb-8 leading-relaxed text-base max-w-md mx-auto">
+                Crie sua conta grátis e veja agora como estão as {BEACH_COUNT} praias de Floripa.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button size="lg" asChild className="font-bold px-10 h-12 text-base group bg-primary hover:bg-primary/90"
+                  style={{ boxShadow: '0 0 40px color-mix(in oklch, var(--primary) 50%, transparent)' }}>
+                  <Link to="/login">
+                    Criar conta grátis
+                    <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                </Button>
+                <Button size="lg" variant="outline" asChild className="font-bold px-8 h-12"
+                  style={{ borderColor: 'color-mix(in oklch, var(--rating-fair) 40%, transparent)', color: 'var(--rating-fair)' }}>
+                  <a href="#pricing">
+                    <Crown className="h-4 w-4 mr-2" />
+                    Ver planos
+                  </a>
+                </Button>
               </div>
             </div>
           </Reveal>
         </div>
       </section>
 
-      {/* FOOTER */}
+      {/* RODAPÉ */}
       <footer className="py-8"
-        style={{ borderTop: '1px solid color-mix(in oklch, var(--foreground) 6%, transparent)', background: 'color-mix(in oklch, var(--foreground) 1.5%, transparent)', backdropFilter: 'blur(20px)' }}>
+        style={{ borderTop: '1px solid color-mix(in oklch, var(--foreground) 6%, transparent)' }}>
         <div className="container mx-auto px-5 max-w-5xl flex flex-col md:flex-row items-center justify-between gap-4">
           <AppLogo size={30} variant="full" />
           <div className="text-xs text-muted-foreground text-center">
-            Florianópolis, SC · Dados atualizados a cada 15 minutos · Feito por surfistas, para surfistas
+            Florianópolis, SC · Feito em Floripa, pra quem surfa em Floripa
           </div>
-          <div className="flex items-center gap-3">
-            <Link to="/terms" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-              Termos de Uso
-            </Link>
-            <Link to="/privacy" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-              Privacidade
-            </Link>
-            <Link to="/login" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-              Entrar
-            </Link>
-            <Button size="sm" variant="outline" asChild
-              className="text-xs border-primary/30 hover:bg-primary/5 hover:border-primary/50">
-              <Link to="/login">Começar grátis</Link>
-            </Button>
+          <div className="flex items-center gap-4">
+            <Link to="/privacy" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Privacidade</Link>
+            <Link to="/terms" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Termos de Uso</Link>
+            <Link to="/login" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Entrar</Link>
           </div>
         </div>
       </footer>
-
-      {/* CTA FLUTUANTE */}
-      <FloatingCTA onFree={() => navigate('/login')} onPremium={() => navigate('/login?plan=premium')} />
-
     </div>
   )
 }

@@ -4,12 +4,17 @@ import { useSurfData } from '@/contexts/SurfDataContext'
 import { getRatingInfo } from '@/lib/rating'
 import { formatWaveRange, type BeachCondition } from '@/lib/surfData'
 import { directionName } from '@/lib/directions'
+import { todaySP } from '@/lib/timeSP'
+import { computeGoldenWindow } from '../../../api/_goldenWindow'
 
 // "Pergunta pro Surf AI" (landing v2, 28/set/2026): conversa de exemplo no MESMO tom do chat
 // real (prioridade onda → maré → vento → horário, sem travessão, 2-4 frases — ver prompt em
 // api/surf-chat.ts). As respostas são montadas aqui com o dado real de agora, sem chamar a IA
 // (a cota do Gemini é pequena e o visitante nem tem conta) — por isso a legenda diz que é um
 // exemplo. Substituiu o ChatPreviewMockup antigo, com resposta fixa e travessão.
+// Na versão juntada (28/set/2026) a 3ª pergunta deixou de ser "tem praia boa pra iniciante?"
+// e passou a ser sobre um dia da semana que vem (a pedido do usuário, pra mostrar a previsão
+// de vários dias) — a resposta usa a previsão real daquele dia (api/landing-day.ts, day<=7).
 
 // Artigo de cada praia ("o Campeche", "a Joaquina", "os Açores") — sem isso as frases saíam
 // "eu iria na Novo Campeche". Naufragados se fala sem artigo ("em Naufragados").
@@ -18,9 +23,7 @@ const ARTICLE: Record<string, 'o' | 'a' | 'os' | ''> = {
   joaquina: 'a', mole: 'a', 'barra-lagoa': 'a', armacao: 'a', 'lagoinha-leste': 'a', solidao: 'a',
   acores: 'os', naufragados: '',
 }
-const IN: Record<string, string> = { o: 'no', a: 'na', os: 'nos', '': 'em' }
 const withArt = (b: BeachCondition) => { const a = ARTICLE[b.id] ?? ''; return a ? `${a} ${b.name}` : b.name }
-const inArt = (b: BeachCondition) => `${IN[ARTICLE[b.id] ?? '']} ${b.name}`
 
 // Faixa de onda escrita como o chat real escreve ("0.8 a 1.0m", sem traço)
 const wave = (h: number) => formatWaveRange(h).replace('–', ' a ')
@@ -35,7 +38,44 @@ function verdict(b: BeachCondition) {
   return 'hoje não compensa'
 }
 
-interface QA { q: string; a: (spots: BeachCondition[]) => string }
+interface FutureDay {
+  date: string
+  hours: { hour: number; score: number; waveHeight: number; windSpeed: number; windDirection: string; swellPeriod: number }[]
+  best: { hour: number; score: number; waveHeight: number; windSpeed: number; windDirection: string }
+  sunriseHour: number | null
+  sunsetHour: number | null
+  tideHeights: number[] | null
+}
+
+// Dia da pergunta sobre o futuro: o próximo sábado (ou domingo) entre 3 e 7 dias à frente —
+// fim de semana é quando a maioria planeja surfar. Se não cair nenhum, 5 dias à frente.
+const WEEKDAY_IN = ['no domingo', 'na segunda', 'na terça', 'na quarta', 'na quinta', 'na sexta', 'no sábado']
+function pickFutureDay(): { offset: number; weekday: number } {
+  const base = new Date(`${todaySP()}T12:00:00`)
+  const at = (d: number) => new Date(base.getTime() + d * 86_400_000).getDay()
+  for (const want of [6, 0]) {
+    for (let d = 3; d <= 7; d++) if (at(d) === want) return { offset: d, weekday: want }
+  }
+  return { offset: 5, weekday: at(5) }
+}
+const FUTURE = pickFutureDay()
+const fmtH = (h: number) => `${h}h`
+
+function futureAnswer(d: FutureDay): string {
+  const sunrise = d.sunriseHour ?? 6, sunset = d.sunsetHour ?? 18
+  const daylight = d.hours.filter(h => h.hour >= sunrise && h.hour <= sunset)
+  const waves = (daylight.length ? daylight : d.hours).map(h => h.waveHeight)
+  const range = `${Math.min(...waves).toFixed(1)} a ${Math.max(...waves).toFixed(1)}m`
+  const gw = computeGoldenWindow(d.hours.map(h => ({ ...h, label: fmtH(h.hour) })), d.best.hour, sunrise, sunset)
+  const when = gw && gw.endHour > gw.startHour ? `das ${fmtH(gw.startHour)} às ${fmtH(gw.endHour)}` : `por volta das ${fmtH(d.best.hour)}`
+  const t0 = d.tideHeights?.[d.best.hour], t1 = d.tideHeights?.[d.best.hour + 1]
+  const tide = t0 === undefined || t1 === undefined ? '' : t1 > t0 + 0.02 ? ', maré enchendo' : t1 < t0 - 0.02 ? ', maré secando' : ''
+  const info = getRatingInfo(d.best.score)
+  const close = info.bars >= 4 ? 'Se continuar assim, vale separar a manhã.' : info.bars >= GOOD_BARS ? 'Dá pra planejar.' : 'Por enquanto não promete muito, vale olhar de novo mais perto do dia.'
+  return `${WEEKDAY_IN[FUTURE.weekday].charAt(0).toUpperCase()}${WEEKDAY_IN[FUTURE.weekday].slice(1)} a Joaquina deve ter onda de ${range}. O melhor horário é ${when}, nota ${d.best.score.toFixed(1)}${tide} e vento ${d.best.windDirection} ${directionName(d.best.windDirection)} de ${Math.round(d.best.windSpeed)}km/h. ${close}`
+}
+
+interface QA { q: string; a: (spots: BeachCondition[], future: FutureDay | null) => string | null }
 
 const QUESTIONS: QA[] = [
   {
@@ -56,17 +96,8 @@ const QUESTIONS: QA[] = [
     },
   },
   {
-    q: 'Tem praia boa pra iniciante?',
-    a: spots => {
-      const easy = spots
-        .filter(s => getRatingInfo(s.score).bars >= GOOD_BARS && s.waveHeight <= 1.0 && s.windSpeed <= 15)
-        .sort((a, b) => b.score - a.score)[0]
-      if (easy) {
-        return `Pra começar eu iria ${inArt(easy)}: onda de ${wave(easy.waveHeight)}, mais tranquila, maré ${easy.tide.toLowerCase()} e ${wind(easy)}. Nota ${easy.score.toFixed(1)}. Fica no raso e aproveita.`
-      }
-      const smallest = [...spots].sort((a, b) => a.waveHeight - b.waveHeight)[0]
-      return `Hoje tá puxado pra iniciante: onde o mar tá bom, a onda passa de 1m ou o vento tá forte. A menor onda agora tá ${inArt(smallest)}, com ${wave(smallest.waveHeight)}. Se for, vai com alguém junto.`
-    },
+    q: `E ${WEEKDAY_IN[FUTURE.weekday]}, como vai estar a Joaquina?`,
+    a: (_spots, future) => (future ? futureAnswer(future) : null),
   },
 ]
 
@@ -74,13 +105,27 @@ export function ChatDemo() {
   const { conditions } = useSurfData()
   const [active, setActive] = useState(0)
   const [typing, setTyping] = useState(false)
+  const [future, setFuture] = useState<FutureDay | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const boxRef = useRef<HTMLDivElement>(null)
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current) }, [])
 
+  // Previsão real do dia da 3ª pergunta, buscada de antemão (cache de 1h na Vercel)
+  useEffect(() => {
+    let cancelled = false
+    fetch(`/api/landing-day?id=joaquina&day=${FUTURE.offset}`)
+      .then(r => (r.ok ? r.json() as Promise<FutureDay> : Promise.reject()))
+      .then(d => { if (!cancelled) setFuture(d) })
+      .catch(() => { /* sem o dado, a resposta fica "digitando" e a pergunta some abaixo */ })
+    return () => { cancelled = true }
+  }, [])
+
   const answer = useMemo(
-    () => (conditions.length > 0 ? QUESTIONS[active].a(conditions) : null),
-    [active, conditions]
+    () => (conditions.length > 0 ? QUESTIONS[active].a(conditions, future) : null),
+    [active, conditions, future]
   )
+
+  const reduceMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
   const ask = (i: number) => {
     if (i === active && !typing) return
@@ -88,20 +133,35 @@ export function ChatDemo() {
     setTyping(true)
     if (timer.current) clearTimeout(timer.current)
     // "digitando..." curtinho; sem animação pra quem pediu menos movimento
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-    timer.current = setTimeout(() => setTyping(false), reduce ? 0 : 900)
+    timer.current = setTimeout(() => setTyping(false), reduceMotion() ? 0 : 900)
   }
+
+  // A primeira resposta "digita" sozinha quando a conversa aparece na tela (uma vez só)
+  useEffect(() => {
+    const el = boxRef.current
+    if (!el || reduceMotion()) return
+    const obs = new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting) return
+      obs.disconnect()
+      setTyping(true)
+      timer.current = setTimeout(() => setTyping(false), 1100)
+    }, { threshold: 0.5 })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
+
+  const visibleQuestions = QUESTIONS.map((qa, i) => ({ qa, i })).filter(({ i }) => i !== 2 || future)
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-card p-4">
+      <div ref={boxRef} className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-card p-4">
         <div className="flex items-center gap-2 border-b border-border/60 pb-3">
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15">
             <Sparkles className="h-4 w-4 text-primary" />
           </span>
           <div className="leading-tight">
             <div className="text-sm font-bold">Surf AI</div>
-            <div className="text-[11px] text-muted-foreground">exemplo com o mar de agora</div>
+            <div className="text-[11px] text-muted-foreground">exemplo com a previsão real</div>
           </div>
         </div>
 
@@ -128,7 +188,7 @@ export function ChatDemo() {
       </div>
 
       <div className="flex flex-wrap gap-2" aria-label="Perguntas de exemplo">
-        {QUESTIONS.map((qa, i) => (
+        {visibleQuestions.map(({ qa, i }) => (
           <button
             key={qa.q}
             type="button"

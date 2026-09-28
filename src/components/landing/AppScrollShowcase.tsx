@@ -1,38 +1,40 @@
 import { useEffect, useRef, useState } from 'react'
-import { Waves, CalendarDays, GitCompareArrows, Navigation } from 'lucide-react'
-import scoreImg from '@/assets/landing/app-screens/score.png'
-import forecastImg from '@/assets/landing/app-screens/forecast.png'
-import compareImg from '@/assets/landing/app-screens/compare.png'
-import navigateImg from '@/assets/landing/app-screens/navigate.png'
+import { Waves, Clock, Compass, Navigation } from 'lucide-react'
+import scoreImg from '@/assets/landing/app-screens/score.webp'
+import forecastImg from '@/assets/landing/app-screens/forecast.webp'
+import windImg from '@/assets/landing/app-screens/wind.webp'
+import navigateImg from '@/assets/landing/app-screens/navigate.webp'
 
 const STEPS = [
   {
     image: scoreImg,
     icon: Waves,
-    title: 'Nota de IA em tempo real',
-    desc: 'Ondas, vento, maré e período viram uma nota de 0 a 10, atualizada a cada 15 minutos.',
+    title: 'A nota de cada praia, agora',
+    desc: 'Onda, período e vento de cada praia viram uma nota de 0 a 10, atualizada ao longo do dia. Você bate o olho e sabe se vale sair de casa.',
   },
   {
     image: forecastImg,
-    icon: CalendarDays,
-    title: 'Previsão de 14 dias',
-    desc: 'Planeje a semana inteira e descubra com antecedência qual vai ser o melhor dia pra surfar.',
+    icon: Clock,
+    title: 'O dia inteiro, hora a hora',
+    desc: 'Arraste pela curva e veja a nota de cada hora, com onda, vento e maré. No Premium, até 14 dias pra frente.',
   },
   {
-    image: compareImg,
-    icon: GitCompareArrows,
-    title: 'Compare picos lado a lado',
-    desc: 'Não sabe pra onde ir? Compare a nota, ondas e vento de até 3 praias ao mesmo tempo.',
+    image: windImg,
+    icon: Compass,
+    title: 'Vento e maré sem mistério',
+    desc: 'A rosa dos ventos mostra de onde o vento vem e com que força. A maré mostra quando enche e quando seca.',
   },
   {
     image: navigateImg,
     icon: Navigation,
-    title: 'Me leva ao pico',
-    desc: 'Um toque e o app já abre o caminho: Google Maps ou Waze, direto pro pico com a melhor condição agora.',
+    title: 'Da tela direto pro pico',
+    desc: 'Escolha a praia e o app abre o caminho no Google Maps ou no Waze, inclusive nas que têm acesso por trilha.',
   },
 ]
 
-// Screenshots reais do app rodando (capturados em ago/2026) — nunca trocar por UI recriada à mão.
+// Screenshots reais do app rodando (recapturados em 28/set/2026, 780x1688 = 2x de um celular de
+// 390px, WebP) — nunca trocar por UI recriada à mão. Os de ago/2026 mostravam a região "Leste",
+// que não existe mais; quando uma tela mudar de verdade no app, tirar o print de novo.
 export function AppScrollShowcase() {
   const [active, setActive] = useState(0)
   const refs = useRef<(HTMLDivElement | null)[]>([])
@@ -60,24 +62,9 @@ export function AppScrollShowcase() {
           pequeno demais pra ler numa tela de verdade). */}
       <div className="flex flex-col gap-14 sm:hidden">
         {STEPS.map((step) => (
-          <div key={step.title} className="flex flex-col items-center gap-5 text-center">
-            <div className="relative mx-auto w-full max-w-[280px] rounded-[36px] border-[5px] p-1.5"
-              style={{
-                borderColor: '#2c2c2c',
-                background: '#0d0d0d',
-                boxShadow: '0 24px 60px oklch(0 0 0 / 0.45), 0 0 0 1px color-mix(in oklch, var(--foreground) 6%, transparent), 0 0 60px color-mix(in oklch, var(--primary) 10%, transparent)',
-              }}>
-              {/* aspect-ratio aqui (não na moldura externa) pra bater exatamente com os
-                  prints 390×844 — antes a proporção ficava na moldura, que soma borda+padding,
-                  então a área interna real tinha uma proporção levemente diferente da imagem
-                  e o crop manual (top/height) desalinhava o conteúdo dentro do celular.
-                  Raio interno = raio externo (36px) menos borda+padding (11px) — raio maior
-                  que isso faz o canto interno "estourar" pra fora do canto externo na
-                  diagonal (achado 24/ago/2026, visível nos 4 cantos do celular). */}
-              <div className="relative aspect-[390/844] w-full overflow-hidden rounded-[25px]" style={{ background: '#0d0d0d' }}>
-                <img src={step.image} alt={step.title} width={390} height={844} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
-              </div>
-            </div>
+          <div key={step.title} className="flex flex-col items-center gap-4 text-center">
+            {/* Título e texto EM CIMA do print (antes vinham embaixo, e quem rolava lia o
+                título colado no print seguinte — achado na auditoria de 25/set/2026) */}
             <div className="flex h-11 w-11 items-center justify-center rounded-xl"
               style={{
                 background: 'color-mix(in oklch, var(--primary) 15%, transparent)',
@@ -88,6 +75,19 @@ export function AppScrollShowcase() {
             </div>
             <h3 className="text-xl font-black">{step.title}</h3>
             <p className="max-w-xs text-sm text-foreground/70">{step.desc}</p>
+            <div className="relative mx-auto mt-2 w-full max-w-[280px] rounded-[36px] border-[5px] p-1.5"
+              style={{
+                borderColor: '#2c2c2c',
+                background: '#0d0d0d',
+                boxShadow: '0 24px 60px oklch(0 0 0 / 0.45), 0 0 0 1px color-mix(in oklch, var(--foreground) 6%, transparent), 0 0 60px color-mix(in oklch, var(--primary) 10%, transparent)',
+              }}>
+              {/* aspect-ratio aqui (não na moldura externa) pra bater exatamente com os prints
+                  (proporção 390×844). Raio interno = raio externo (36px) menos borda+padding
+                  (11px) — maior que isso o canto interno "estoura" pra fora (24/ago/2026). */}
+              <div className="relative aspect-[390/844] w-full overflow-hidden rounded-[25px]" style={{ background: '#0d0d0d' }}>
+                <img src={step.image} alt={step.title} width={390} height={844} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
+              </div>
+            </div>
           </div>
         ))}
       </div>

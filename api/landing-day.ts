@@ -1,11 +1,12 @@
 export const config = { runtime: 'edge' }
 
-// Previsão de AMANHÃ, hora a hora, de uma praia pública — alimenta a demonstração da curva
-// do dia na landing (DayCurveDemo.tsx), que o visitante arrasta antes de ter conta. Sem login
-// de propósito, mas limitada: só amanhã (nunca os 14 dias, que são Premium) e só as praias
-// que já são abertas sem login no app (PUBLIC_SPOT_IDS + TEASER_SPOT_IDS em src/lib/publicSpots.ts).
-// Cache compartilhado de 1h na Vercel: a previsão de amanhã muda pouco dentro de uma hora,
-// então quase nenhum visitante dispara consulta na Open-Meteo.
+// Previsão hora a hora de UM dia de uma praia pública — alimenta as demonstrações da landing:
+// a curva de amanhã (DayCurveDemo.tsx, day=1) e a resposta do chat de exemplo sobre um dia da
+// semana que vem (ChatDemo.tsx, day até 7), que o visitante vê antes de ter conta. Sem login
+// de propósito, mas limitada: no máximo 7 dias à frente (os 14 completos são Premium) e só as
+// praias que já são abertas sem login no app (PUBLIC_SPOT_IDS + TEASER_SPOT_IDS em
+// src/lib/publicSpots.ts). Cache compartilhado de 1h na Vercel: a previsão muda pouco dentro
+// de uma hora, então quase nenhum visitante dispara consulta na Open-Meteo.
 import { buildDayDetail } from './_dayDetail.js'
 import { BEACH_REGISTRY } from './_beachRegistry.js'
 import { createRateLimiter } from './_httpUtils.js'
@@ -18,6 +19,7 @@ const CORS = {
 }
 const ALLOWED_IDS: readonly string[] = [...PUBLIC_SPOT_IDS, ...TEASER_SPOT_IDS]
 const checkRateLimit = createRateLimiter(30)
+const MAX_DAY = 7
 
 function json(data: unknown, status = 200, cache = false) {
   return new Response(JSON.stringify(data), {
@@ -37,13 +39,16 @@ export default async function handler(req: Request) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown'
   if (!checkRateLimit(ip)) return json({ error: 'Too Many Requests' }, 429)
 
-  const id = new URL(req.url).searchParams.get('id') ?? ''
+  const params = new URL(req.url).searchParams
+  const id = params.get('id') ?? ''
   if (!ALLOWED_IDS.includes(id)) return json({ error: 'Praia não disponível' }, 400)
+  const day = Number(params.get('day') ?? '1')
+  if (!Number.isInteger(day) || day < 1 || day > MAX_DAY) return json({ error: 'Dia não disponível' }, 400)
   const beach = BEACH_REGISTRY.find(b => b.id === id)
   if (!beach) return json({ error: 'Praia não disponível' }, 400)
 
   try {
-    const detail = await buildDayDetail(String(beach.lat), String(beach.lng), beach.orientation, 1)
+    const detail = await buildDayDetail(String(beach.lat), String(beach.lng), beach.orientation, day)
     if (!detail) return json({ error: 'Dados meteorológicos indisponíveis' }, 503)
     return json({ ...detail, beach: { id: beach.id, name: beach.name } }, 200, true)
   } catch {

@@ -256,3 +256,21 @@ input, textarea, select {
     oklch(0.14 0.02 230 / 0.35) 80%,
     transparent 100%);
 }
+
+/* Mapa da ilha na landing (IslandMap.tsx): cada praia acende em sequência, de norte a sul */
+@keyframes mapDotIn {
+  0%   { opacity: 0; transform: scale(0.2); }
+  70%  { opacity: 1; transform: scale(1.35); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.map-dot-in {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mapDotIn 0.55s ease-out both;
+}
+/* Base da foto da região fundindo no fundo do tema (texto legível no claro e no escuro) */
+.region-photo-fade {
+  background: linear-gradient(180deg, transparent 30%,
+    color-mix(in oklch, var(--color-background) 85%, transparent) 78%,
+    color-mix(in oklch, var(--color-background) 96%, transparent) 100%);
+}

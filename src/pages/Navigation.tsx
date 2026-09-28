@@ -214,7 +214,7 @@ export default function NavigationPage() {
 
       <main className="container mx-auto px-4 py-6 max-w-2xl space-y-4">
         <div className="text-center py-2">
-          <p className="text-sm text-muted-foreground">Escolha uma praia e te levamos até lá 🤙</p>
+          <p className="text-sm text-muted-foreground">Escolha uma praia e a gente abre o caminho até lá.</p>
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-1">

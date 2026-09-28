@@ -68,15 +68,14 @@ src/
 │   │   ├── ScoreExplainer.tsx # Modal de breakdown do score (onda/período/vento)
 │   │   ├── DayCurve.tsx       # "Linha do dia": nota hora a hora como onda contínua + arco do sol, arrastável (ForecastDay)
 │   │   └── PicosSection.tsx   # Sub-regiões com matching de swell + links Maps/Waze
-│   ├── landing/               # Landing v2 (28/set/2026) — peças vivas do app com dado real, nunca prints
+│   ├── landing/               # Landing "juntada" (28/set/2026): visual da antiga + peças vivas do app
 │   │   ├── Hero.tsx           # Foto aérea + recorte em onda (escurecimento em .hero-scrim, index.css)
-│   │   ├── LiveBulletin.tsx   # Topo "Boletim de agora": quantas praias estão boas + melhor praia (SurfDataContext)
-│   │   ├── IslandMap.tsx      # Contorno real da ilha (islandShape.ts, OpenStreetMap) com as 14 praias na cor da nota
+│   │   ├── AppScrollShowcase.tsx # Vitrine com prints REAIS do app (app-screens/*.webp, 2x) — retirar print quando a tela mudar
+│   │   ├── IslandMap.tsx      # Contorno real da ilha (islandShape.ts, OpenStreetMap) + 14 praias na cor da nota + fotos das regiões + picos
 │   │   ├── DayCurveDemo.tsx   # DayCurve real com a previsão de amanhã (api/landing-day.ts, sem login)
-│   │   ├── ChatDemo.tsx       # Conversa de exemplo montada com o mar de agora, no tom do chat real (sem chamar IA)
-│   │   ├── PlanCompare.tsx    # Grátis x Premium lado a lado (cada linha conferida com o app)
-│   │   ├── LandingComponents.tsx  # Reveal (animação de entrada) e FAQItem
-│   │   └── landingData.ts     # FAQS (instalação no celular virou a última pergunta)
+│   │   ├── ChatDemo.tsx       # Conversa de exemplo com dado real, no tom do chat (3ª pergunta = sábado, previsão real)
+│   │   ├── LandingComponents.tsx  # Reveal (animação de entrada), FAQItem, GeoFinderMockup (card Bora Surfar)
+│   │   └── landingData.ts     # FAQS (instalação no celular é a última pergunta)
 │   ├── home/                  # Componentes do Home
 │   │   ├── AdBanner.tsx       # Banner de anúncio / upgrade
 │   │   ├── NotificationPanel.tsx  # Painel de notificações
@@ -128,7 +127,7 @@ api/
 │                          Substituiu o antigo "Relatório do dia" automático em 23/ago/2026 (gastava
 │                          chamada de IA toda vez que qualquer Premium abria o app, mesmo sem pedir)
 ├── forecast.ts         # Forecast detalhado por pico
-├── landing-day.ts      # Amanhã hora a hora de uma praia aberta (publicSpots.ts), sem login, cache CDN 1h — demo da landing
+├── landing-day.ts      # Um dia (até 7 à frente) hora a hora de uma praia aberta (publicSpots.ts), sem login, cache CDN 1h — demos da landing
 ├── _dayDetail.ts       # Montagem do dia hora a hora (fonte única de forecast-day.ts e landing-day.ts)
 ├── create-payment.ts   # Cria preferência de pagamento no Mercado Pago
 ├── mp-webhook.ts       # Webhook do MP → atualiza subscriptions no Supabase
