@@ -245,3 +245,14 @@ input, textarea, select {
   scrollbar-width: none;
   &::-webkit-scrollbar { display: none; }
 }
+
+/* Escurecimento da foto do topo da landing (Hero.tsx). A foto é sempre clara (areia, espuma)
+   nos dois temas, então o escurecimento é fixo e mais forte no meio, onde fica o título —
+   antes (27/set/2026) o texto branco sumia em cima da areia no celular. */
+.hero-scrim {
+  background: linear-gradient(180deg,
+    oklch(0.14 0.02 230 / 0.78) 0%,
+    oklch(0.14 0.02 230 / 0.62) 45%,
+    oklch(0.14 0.02 230 / 0.35) 80%,
+    transparent 100%);
+}

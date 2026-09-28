@@ -5,6 +5,7 @@ export const config = { runtime: 'edge' }
 // normalmente é uma rota client-side e sempre mostraria o título genérico do app.
 // Usuários reais continuam recebendo a SPA normalmente (ver rewrite condicional no vercel.json).
 
+import { PUBLIC_SPOT_IDS, TEASER_SPOT_IDS } from '../src/lib/publicSpots.js'
 import { calculateSurfScore } from './_scoreEngine.js'
 import { getBeach } from './_beachRegistry.js'
 import { getRatingInfo } from '../src/lib/rating.js'
@@ -12,10 +13,10 @@ import { getRatingInfo } from '../src/lib/rating.js'
 const APP_URL = 'https://www.surfaifloripa.com.br'
 
 // Picos com página pública (vitrine total ou teaser) — união de PUBLIC_SPOT_IDS e
-// TEASER_SPOT_IDS em src/lib/surfData.ts. Bots recebem o mesmo tratamento nos dois
+// TEASER_SPOT_IDS (src/lib/publicSpots.ts). Bots recebem o mesmo tratamento nos dois
 // casos (meta tags com score real); a diferença vitrine/teaser só existe pro humano,
 // dentro de SpotDetails.tsx.
-const ALLOWED_IDS = ['joaquina', 'mole', 'campeche', 'novo-campeche', 'matadeiro', 'santinho']
+const ALLOWED_IDS: readonly string[] = [...PUBLIC_SPOT_IDS, ...TEASER_SPOT_IDS]
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')

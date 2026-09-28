@@ -13,7 +13,8 @@ import {
   FAQItem, Reveal, FloatingCTA,
   ChatPreviewMockup, GeoFinderMockup, GoldenWindowMockup,
 } from '@/components/landing/LandingComponents'
-import { AppScrollShowcase } from '@/components/landing/AppScrollShowcase'
+import { LiveBulletin } from '@/components/landing/LiveBulletin'
+import { DayCurveDemo } from '@/components/landing/DayCurveDemo'
 import { Hero } from '@/components/landing/Hero'
 import { BeachDirectory } from '@/components/landing/BeachDirectory'
 import {
@@ -67,94 +68,23 @@ export default function Landing() {
       </nav>
 
       {/* HERO — foto aérea fixa, dissolve no fundo da página (sem vídeo) */}
+      {/* TOPO — boletim do mar de agora (landing v2): dado real no lugar de slogan */}
       <Hero>
-        <div className="mx-auto flex max-w-2xl flex-col items-center gap-3 sm:gap-4">
-          <div className="flex flex-wrap justify-center gap-2" style={{ animation: 'fadeIn 0.6s ease both' }}>
-            <Badge variant="outline" className="border-primary/40 text-primary bg-black/30 px-3 py-1 text-xs font-semibold backdrop-blur-md">
-              <Sparkles className="h-3 w-3 mr-1.5 fill-current" />
-              Chat com IA
-            </Badge>
-            <Badge variant="outline" className="border-rating-good/40 text-rating-good bg-black/30 px-3 py-1 text-xs font-semibold backdrop-blur-md">
-              <Waves className="h-3 w-3 mr-1.5" />
-              Dados em tempo real
-            </Badge>
-          </div>
-
-          <h1 className="text-5xl md:text-6xl font-black leading-[1.05] tracking-tight text-white overflow-hidden"
-            style={{ textShadow: '0 2px 24px oklch(0 0 0 / 0.4)' }}>
-            <span className="block" style={{ animation: 'textReveal 0.7s ease 0.1s both' }}>
-              O surf de{' '}
-              <span className="relative inline-block">
-                <span className="text-transparent bg-clip-text"
-                  style={{
-                    backgroundImage: 'linear-gradient(135deg, oklch(0.75 0.16 200), oklch(0.6 0.2 200))',
-                  }}>
-                  Floripa
-                </span>
-              </span>
-            </span>
-            <span className="block" style={{ animation: 'textReveal 0.7s ease 0.25s both' }}>
-              na palma da mão.
-            </span>
-          </h1>
-          <p className="text-lg text-white/90 max-w-lg leading-relaxed"
-            style={{ animation: 'fadeIn 0.7s ease 0.4s both', textShadow: '0 2px 10px oklch(0 0 0 / 0.85), 0 1px 3px oklch(0 0 0 / 0.9)' }}>
-            Pergunta pro Surf AI, veja a nota de {BEACH_COUNT} praias e receba alertas:
-            tudo que você precisa para não perder a melhor sessão da semana.
-          </p>
-
-          <div className="inline-flex items-center gap-2 rounded-full px-6 py-2.5 text-base sm:text-lg font-black text-white backdrop-blur-md"
-            style={{
-              animation: 'fadeIn 0.7s ease 0.45s both',
-              background: 'oklch(0.6 0.16 200 / 0.28)',
-              border: '1.5px solid oklch(0.7 0.16 200 / 0.7)',
-              boxShadow: '0 0 32px oklch(0.6 0.16 200 / 0.4), inset 0 1px 0 oklch(1 0 0 / 0.15)',
-            }}>
-            Feito por surfistas,{' '}
-            <span className="text-transparent bg-clip-text"
-              style={{ backgroundImage: 'linear-gradient(135deg, oklch(0.85 0.16 200), oklch(0.9 0.14 160))' }}>
-              para surfistas.
-            </span>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-3" style={{ animation: 'slideUp 0.6s ease 0.5s both' }}>
-            <Button size="lg" asChild
-              className="text-base font-bold px-8 h-12 flex-1 sm:flex-none relative overflow-hidden group"
-              style={{
-                background: 'oklch(0.6 0.2 210)',
-                boxShadow: '0 0 40px oklch(0.6 0.2 210 / 0.5), 0 0 80px oklch(0.6 0.2 210 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.15)',
-              }}>
-              <Link to="/login">
-                <span className="relative z-10 flex items-center gap-2">
-                  Criar conta grátis
-                  <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                </span>
-              </Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild
-              className="text-base font-bold px-8 h-12 flex-1 sm:flex-none text-white border-white/40 hover:bg-white/10"
-              style={{ background: 'oklch(1 0 0 / 0.06)', backdropFilter: 'blur(12px)' }}>
-              <Link to="/login?plan=premium">
-                <Crown className="h-4 w-4 mr-2 text-rating-fair" />
-                Ver Premium
-              </Link>
-            </Button>
-          </div>
-        </div>
+        <LiveBulletin />
       </Hero>
 
-      {/* O APP RODANDO — celular fixo, conteúdo troca conforme rola o scroll */}
-      <section className="py-16 border-t border-border/30 relative z-10">
-        <div className="container mx-auto px-5 max-w-5xl">
-          <Reveal className="text-center mb-4 md:mb-10">
-            <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 mb-4 px-4 py-1">
-              Rola pra ver
-            </Badge>
-            <h2 className="text-2xl md:text-4xl font-black">
-              Veja como é usar o Surf AI.
-            </h2>
+      {/* O DIA NUMA CURVA — a curva real do app com a previsão de amanhã, pra arrastar.
+          Substituiu a vitrine de prints (AppScrollShowcase), que ficava desatualizada. */}
+      <section className="relative z-10 py-16">
+        <div className="container mx-auto flex max-w-2xl flex-col gap-6 px-5">
+          <Reveal className="flex flex-col gap-3">
+            <h2 className="text-3xl font-black leading-tight md:text-4xl">Amanhã, hora a hora.</h2>
+            <p className="max-w-lg text-foreground/70">
+              Arraste o dedo pela curva. Essa é a previsão real de amanhã, do jeito que aparece no app:
+              a nota de cada hora, a onda, a maré e o vento.
+            </p>
           </Reveal>
-          <AppScrollShowcase />
+          <DayCurveDemo />
         </div>
       </section>
 
