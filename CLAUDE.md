@@ -75,7 +75,7 @@ src/
 │   │   ├── ChatDemo.tsx       # Conversa de exemplo com dado real, no tom do chat (Lomba x Caldeirão; fim de semana no sul)
 │   │   ├── PremiumMorning.tsx # "Uma manhã com o Premium": linha do tempo alerta → Bora Surfar → comparação, com dado ao vivo
 │   │   ├── LandingComponents.tsx  # Reveal (animação de entrada), FAQItem, GeoFinderMockup (card Bora Surfar)
-│   │   │                      # (print único da nota em app-screens/score.webp, usado direto em Landing.tsx)
+│   │   │                      # (print único "hoje, hora a hora" em app-screens/today.webp, usado direto em Landing.tsx)
 │   │   └── landingData.ts     # FAQS (instalação no celular é a última pergunta)
 │   ├── home/                  # Componentes do Home
 │   │   ├── AdBanner.tsx       # Banner de anúncio / upgrade

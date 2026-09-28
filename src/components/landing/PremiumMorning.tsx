@@ -12,9 +12,9 @@ import { directionName } from '@/lib/directions'
 // cada passo mostra um pedaço do app com o dado de agora, sem card colorido de enfeite.
 
 const STEPS_BASE = [
-  { time: '05:40', icon: Bell, title: 'O alerta chega antes de você acordar', text: 'Você escolhe a nota mínima de cada praia. Quando o mar chega lá, o celular avisa. Nada de ficar abrindo previsão toda hora.' },
-  { time: '06:05', icon: Compass, title: 'Bora Surfar, na porta de casa', text: 'O app compara a praia mais perto de você com a melhor da região e diz se vale rodar mais um pouco.' },
-  { time: '06:10', icon: Scale, title: 'Dúvida entre duas? Lado a lado', text: 'Coloque até 3 praias lado a lado e compare nota, onda e vento. No app, ainda dá pra ver se hoje está acima da média dos últimos 30 dias.' },
+  { time: '05:40', icon: Bell, title: 'O mar ficou bom. Você fica sabendo primeiro.', text: 'Escolha a nota que te tira da cama em cada praia. Quando o mar chega lá, o celular vibra. Chega de descobrir às 10h que a manhã estava clássica.' },
+  { time: '06:05', icon: Compass, title: 'Na porta de casa: vou na mais perto ou na melhor?', text: 'O Bora Surfar compara a praia mais perto de você com a melhor da região e responde na hora se vale rodar mais uns quilômetros.' },
+  { time: '06:10', icon: Scale, title: 'Ainda em dúvida? Coloca lado a lado.', text: 'Até 3 praias na mesma tela, com nota, onda e vento. E ainda dá pra ver se o mar de hoje está acima da média do mês.' },
 ]
 
 function PushMock() {

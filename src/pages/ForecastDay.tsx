@@ -219,6 +219,10 @@ export default function ForecastDayPage() {
                 <p className="text-xs text-muted-foreground">
                   {(() => {
                     const d = new Date(data.date + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
+                    // Hoje/amanhã em destaque antes da data (29/set/2026: sem isso, o dia de hoje
+                    // aparecia só como "Terça-feira, 29 de setembro", igual a um dia qualquer)
+                    if (data.dayIndex === 0) return `Hoje · ${d}`
+                    if (data.dayIndex === 1) return `Amanhã · ${d}`
                     return d.charAt(0).toUpperCase() + d.slice(1)
                   })()}
                 </p>

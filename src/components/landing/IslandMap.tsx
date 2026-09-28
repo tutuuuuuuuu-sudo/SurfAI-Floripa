@@ -84,12 +84,21 @@ export function IslandMap() {
               </g>
             )
           })}
-          {selected && (
-            <text x={selected.pos.x - 18} y={selected.pos.y + 5} textAnchor="end" fontSize="19" fontWeight="700" fill="var(--foreground)"
-              paintOrder="stroke" stroke="var(--card)" strokeWidth="5">
-              {selected.name}
-            </text>
-          )}
+          {/* Nome da praia escolhida numa etiqueta acima do ponto, sempre dentro do desenho
+              (antes o nome ia pra esquerda do ponto e cortava na borda: "ampeche") */}
+          {selected && (() => {
+            const w = selected.name.length * 10.5 + 22
+            const minX = -14 + w / 2 + 2, maxX = ISLAND_VIEWBOX.width + 14 - w / 2 - 2
+            const cx = Math.min(Math.max(selected.pos.x, minX), maxX)
+            const above = selected.pos.y - 34 > 0
+            const cy = above ? selected.pos.y - 30 : selected.pos.y + 30
+            return (
+              <g style={{ animation: 'fadeIn 0.2s ease-out' }} pointerEvents="none">
+                <rect x={cx - w / 2} y={cy - 15} width={w} height={30} rx={15} fill="var(--card)" stroke="color-mix(in oklch, var(--foreground) 25%, transparent)" strokeWidth="1.5" />
+                <text x={cx} y={cy + 6} textAnchor="middle" fontSize="18" fontWeight="700" fill="var(--foreground)">{selected.name}</text>
+              </g>
+            )
+          })()}
         </svg>
 
         <ul className="flex flex-col" aria-label="Praias de norte a sul">

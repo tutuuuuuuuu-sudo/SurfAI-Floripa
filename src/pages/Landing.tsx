@@ -8,7 +8,7 @@ import {
 import { AppLogo } from '@/components/AppLogo'
 import { FAQItem, Reveal } from '@/components/landing/LandingComponents'
 import { PremiumMorning } from '@/components/landing/PremiumMorning'
-import scoreImg from '@/assets/landing/app-screens/score.webp'
+import todayImg from '@/assets/landing/app-screens/today.webp'
 import { Hero } from '@/components/landing/Hero'
 import { IslandMap } from '@/components/landing/IslandMap'
 import { DayCurveDemo } from '@/components/landing/DayCurveDemo'
@@ -150,9 +150,7 @@ export default function Landing() {
               </Badge>
             }
             title="A ilha inteira, agora.">
-            Este mapa é ao vivo. Cada ponto é uma das {BEACH_COUNT} praias de Floripa, pintada com a nota do mar
-            neste momento e atualizada ao longo do dia. Toque numa praia pra ver a onda, o vento, a maré e os picos
-            que o Surf AI acompanha nela.
+            As {BEACH_COUNT} praias que a gente monitora, na cor da nota do mar agora. Toque numa pra ver os detalhes.
           </SectionHead>
           <IslandMap />
         </div>
@@ -177,13 +175,13 @@ export default function Landing() {
             <Badge variant="outline" className={pill}><Waves className="h-3 w-3 mr-1.5" />Dentro do app</Badge>
             <h2 className="text-3xl md:text-4xl font-black mb-4 text-balance">A nota de cada praia, agora.</h2>
             <p className="text-foreground/70 mb-6">
-              Onda, período e vento de cada praia viram uma nota de 0 a 10. Você bate o olho e sabe se vale sair de casa.
+              Cada praia ganha uma nota de 0 a 10, hora a hora. Você vê quando o mar fica bom e quando piora, antes de sair de casa.
             </p>
             <ul className="space-y-3 text-sm">
               {[
-                { icon: Waves, text: 'Os picos de cada praia, com o que está melhor no momento' },
-                { icon: Clock, text: 'A comparação com a média dos últimos 30 dias' },
-                { icon: Navigation, text: 'Um toque e o Google Maps ou o Waze abre o caminho' },
+                { icon: Clock, text: 'A melhor hora do dia marcada na curva' },
+                { icon: Waves, text: 'Onda, período e maré da hora que você escolher' },
+                { icon: Navigation, text: 'A rosa dos ventos mostrando de onde vem o vento' },
               ].map(({ icon: Icon, text }) => (
                 <li key={text} className="flex items-start gap-3">
                   <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-primary/15"><Icon className="h-3.5 w-3.5 text-primary" /></span>
@@ -195,8 +193,8 @@ export default function Landing() {
           <Reveal delay={0.15}>
             <div className="relative mx-auto max-w-[340px] md:rotate-[2deg]">
               <div className="absolute -inset-6 rounded-[40px] bg-primary/15 blur-3xl" aria-hidden="true" />
-              <div className="relative aspect-[390/600] overflow-hidden rounded-[28px] border border-border/60 shadow-2xl">
-                <img src={scoreImg} alt="Tela do Surf AI com a nota da Joaquina" width={390} height={844} loading="lazy" decoding="async"
+              <div className="relative aspect-[390/760] overflow-hidden rounded-[28px] border border-border/60 shadow-2xl">
+                <img src={todayImg} alt="Tela do Surf AI com a nota de hoje do Campeche, hora a hora" width={390} height={844} loading="lazy" decoding="async"
                   className="h-full w-full object-cover object-top" />
               </div>
             </div>
@@ -220,8 +218,8 @@ export default function Landing() {
       <section className="py-20 border-t border-border/30 relative z-10">
         <div className="container mx-auto px-5 max-w-5xl">
           <SectionHead badge={<Badge className="bg-rating-fair/15 text-rating-fair border-rating-fair/30 mb-4 px-4 py-1"><Crown className="h-3 w-3 mr-1.5" />Premium</Badge>}
-            title="O Premium trabalha antes de você acordar.">
-            Uma manhã de surf com ele, do alerta no celular até a escolha da praia.
+            title="Enquanto você dorme, o Surf AI fica de olho no mar.">
+            Veja como é uma manhã com o Premium: o aviso chega, você escolhe a praia e cai na hora certa.
           </SectionHead>
           <PremiumMorning />
         </div>
