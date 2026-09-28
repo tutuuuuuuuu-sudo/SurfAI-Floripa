@@ -32,7 +32,7 @@ export function LiveBulletin() {
   const windDeg = best ? WIND_DEG[best.windDirection.toUpperCase()] : undefined
 
   return (
-    <div className="mx-auto flex w-full max-w-md flex-col items-center gap-5 text-center">
+    <div className="mx-auto flex w-full max-w-md flex-col items-center gap-5 text-center sm:max-w-2xl">
       <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-white/80">
         <span className="relative flex h-2 w-2">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rating-good opacity-60" />
@@ -45,7 +45,7 @@ export function LiveBulletin() {
         <h1 className="text-[2.6rem] font-black leading-[1.05] tracking-tight text-white text-balance sm:text-6xl">
           {headline(goodCount)}
         </h1>
-        <p className="text-base leading-relaxed text-white/90 sm:text-lg">
+        <p className="mx-auto max-w-md text-base leading-relaxed text-white/90 sm:max-w-lg sm:text-lg">
           {best && goodCount !== null && goodCount > 0
             ? <>A melhor agora é <strong className="font-bold text-white">{best.name}</strong>. A gente lê o mar das {TOTAL} praias da ilha o dia inteiro e te mostra onde vale ir.</>
             : <>A gente lê o mar das {TOTAL} praias da ilha o dia inteiro e te mostra onde vale ir, e quando.</>}
@@ -53,7 +53,7 @@ export function LiveBulletin() {
       </div>
 
       {/* Cartão do boletim — fundo sólido do tema pra ler bem sobre qualquer parte da foto */}
-      <div className="w-full rounded-2xl border border-border/60 bg-card/95 p-4 text-left shadow-2xl backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-2xl border border-border/60 bg-card/95 p-4 text-left shadow-2xl backdrop-blur-sm">
         {best && info ? (
           <>
             <div className="flex items-center justify-between gap-3">

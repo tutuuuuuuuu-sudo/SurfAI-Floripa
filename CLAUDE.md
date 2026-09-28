@@ -68,9 +68,15 @@ src/
 │   │   ├── ScoreExplainer.tsx # Modal de breakdown do score (onda/período/vento)
 │   │   ├── DayCurve.tsx       # "Linha do dia": nota hora a hora como onda contínua + arco do sol, arrastável (ForecastDay)
 │   │   └── PicosSection.tsx   # Sub-regiões com matching de swell + links Maps/Waze
-│   ├── landing/               # Componentes de Landing (extraídos)
-│   │   ├── LandingComponents.tsx  # useReveal, Reveal, OceanWaves, AppMockup3D, etc
-│   │   └── landingData.ts     # Arrays estáticos (TESTIMONIALS, FAQS, STATS, etc)
+│   ├── landing/               # Landing v2 (28/set/2026) — peças vivas do app com dado real, nunca prints
+│   │   ├── Hero.tsx           # Foto aérea + recorte em onda (escurecimento em .hero-scrim, index.css)
+│   │   ├── LiveBulletin.tsx   # Topo "Boletim de agora": quantas praias estão boas + melhor praia (SurfDataContext)
+│   │   ├── IslandMap.tsx      # Contorno real da ilha (islandShape.ts, OpenStreetMap) com as 14 praias na cor da nota
+│   │   ├── DayCurveDemo.tsx   # DayCurve real com a previsão de amanhã (api/landing-day.ts, sem login)
+│   │   ├── ChatDemo.tsx       # Conversa de exemplo montada com o mar de agora, no tom do chat real (sem chamar IA)
+│   │   ├── PlanCompare.tsx    # Grátis x Premium lado a lado (cada linha conferida com o app)
+│   │   ├── LandingComponents.tsx  # Reveal (animação de entrada) e FAQItem
+│   │   └── landingData.ts     # FAQS (instalação no celular virou a última pergunta)
 │   ├── home/                  # Componentes do Home
 │   │   ├── AdBanner.tsx       # Banner de anúncio / upgrade
 │   │   ├── NotificationPanel.tsx  # Painel de notificações
@@ -99,6 +105,7 @@ src/
 │   ├── comments.ts            # getComments(), addComment() via Supabase
 │   ├── notifications.ts       # Alertas de condições boas
 │   ├── tainha.ts              # isTainhaSeasonActive() — temporada de tainha (sazonalidade)
+│   ├── publicSpots.ts         # PUBLIC_SPOT_IDS/TEASER_SPOT_IDS sem imports (app, spot-meta.ts e landing-day.ts usam)
 │   ├── directions.ts          # directionName('ESE') → 'leste sudeste' (sigla + nome da direção; app mostra só direção, sem rótulo terral/maral — pedido do usuário 25/set/2026)
 │   ├── weatherApi.ts          # getWindyForecast() — Open-Meteo Marine via Vercel API
 │   ├── weatherData.ts         # getRealWaterTemp() — temperatura real da água
@@ -121,6 +128,8 @@ api/
 │                          Substituiu o antigo "Relatório do dia" automático em 23/ago/2026 (gastava
 │                          chamada de IA toda vez que qualquer Premium abria o app, mesmo sem pedir)
 ├── forecast.ts         # Forecast detalhado por pico
+├── landing-day.ts      # Amanhã hora a hora de uma praia aberta (publicSpots.ts), sem login, cache CDN 1h — demo da landing
+├── _dayDetail.ts       # Montagem do dia hora a hora (fonte única de forecast-day.ts e landing-day.ts)
 ├── create-payment.ts   # Cria preferência de pagamento no Mercado Pago
 ├── mp-webhook.ts       # Webhook do MP → atualiza subscriptions no Supabase
 ├── mp-ipn.ts           # IPN (notificação instantânea) do MP
