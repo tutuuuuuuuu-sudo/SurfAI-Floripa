@@ -5,6 +5,7 @@ import { useSurfData } from '@/contexts/SurfDataContext'
 import { getRatingInfo } from '@/lib/rating'
 import { formatWaveRange } from '@/lib/surfData'
 import { directionName } from '@/lib/directions'
+import { withArticle } from '@/lib/beachArticles'
 
 // "E ainda tem mais" contado como uma manhã de surf com o Premium (29/set/2026). O usuário
 // achou os 3 cards coloridos anteriores genéricos, "com cara de IA": aqui a estrutura é uma
@@ -30,7 +31,8 @@ function PushMock() {
       {best ? (
         <>
           <div className="mt-1.5 text-sm font-bold">
-            {best.name} chegou em <span style={{ color: getRatingInfo(best.score).scoreColor }}>{best.score.toFixed(1)}</span>
+            {(() => { const n = withArticle(best.id, best.name); return n.charAt(0).toUpperCase() + n.slice(1) })()} está com{' '}
+            <span style={{ color: getRatingInfo(best.score).scoreColor }}>{best.score.toFixed(1)}</span>
           </div>
           <div className="text-sm leading-snug text-muted-foreground">
             Onda de {formatWaveRange(best.waveHeight).replace('–', ' a ')}, vento {best.windDirection} {directionName(best.windDirection)} de {Math.round(best.windSpeed)}km/h. Bora?

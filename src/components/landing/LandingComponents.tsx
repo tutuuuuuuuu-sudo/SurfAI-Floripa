@@ -80,8 +80,8 @@ export function GeoFinderMockup() {
       </div>
       <div className="rounded-xl border-2 border-primary/50 bg-primary/5 p-3 text-left">
         <div className="text-[10px] font-semibold text-primary uppercase tracking-wide mb-1.5">Vale o desvio</div>
-        <div className="text-sm font-semibold leading-tight">Joaquina</div>
-        <div className="text-xs text-muted-foreground mt-0.5">4.6km de você</div>
+        <div className="text-sm font-semibold leading-tight">Matadeiro</div>
+        <div className="text-xs text-muted-foreground mt-0.5">6.2km de você</div>
         <div className={`text-base font-bold mt-1.5 ${far.color}`}>8.3 <span className="text-[10px] font-bold">{far.label}</span></div>
       </div>
     </div>

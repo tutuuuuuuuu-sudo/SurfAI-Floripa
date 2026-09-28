@@ -3,12 +3,13 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
   Bell, BarChart3, Clock, Shield, ArrowRight, CheckCircle2, TrendingUp,
-  MapPin, Crown, Sparkles, Compass, Waves, Navigation,
+  MapPin, Crown, Sparkles, Compass, Waves,
 } from 'lucide-react'
 import { AppLogo } from '@/components/AppLogo'
 import { FAQItem, Reveal } from '@/components/landing/LandingComponents'
 import { PremiumMorning } from '@/components/landing/PremiumMorning'
 import todayImg from '@/assets/landing/app-screens/today.webp'
+import { PhoneMock } from '@/components/landing/PhoneMock'
 import { Hero } from '@/components/landing/Hero'
 import { IslandMap } from '@/components/landing/IslandMap'
 import { DayCurveDemo } from '@/components/landing/DayCurveDemo'
@@ -149,8 +150,8 @@ export default function Landing() {
                 Mapa em tempo real
               </Badge>
             }
-            title="A ilha inteira, agora.">
-            As {BEACH_COUNT} praias que a gente monitora, na cor da nota do mar agora. Toque numa pra ver os detalhes.
+            title="A ilha inteira, de ponta a ponta.">
+            Do Santinho ao Naufragados, todas em tempo real. Toque numa praia e veja as condições de agora.
           </SectionHead>
           <IslandMap />
         </div>
@@ -174,30 +175,17 @@ export default function Landing() {
           <Reveal>
             <Badge variant="outline" className={pill}><Waves className="h-3 w-3 mr-1.5" />Dentro do app</Badge>
             <h2 className="text-3xl md:text-4xl font-black mb-4 text-balance">A nota de cada praia, agora.</h2>
-            <p className="text-foreground/70 mb-6">
+            <p className="text-foreground/70">
               Cada praia ganha uma nota de 0 a 10, hora a hora. Você vê quando o mar fica bom e quando piora, antes de sair de casa.
             </p>
-            <ul className="space-y-3 text-sm">
-              {[
-                { icon: Clock, text: 'A melhor hora do dia marcada na curva' },
-                { icon: Waves, text: 'Onda, período e maré da hora que você escolher' },
-                { icon: Navigation, text: 'A rosa dos ventos mostrando de onde vem o vento' },
-              ].map(({ icon: Icon, text }) => (
-                <li key={text} className="flex items-start gap-3">
-                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-primary/15"><Icon className="h-3.5 w-3.5 text-primary" /></span>
-                  <span className="text-foreground/85">{text}</span>
-                </li>
-              ))}
-            </ul>
           </Reveal>
           <Reveal delay={0.15}>
-            <div className="relative mx-auto max-w-[340px] md:rotate-[2deg]">
-              <div className="absolute -inset-6 rounded-[40px] bg-primary/15 blur-3xl" aria-hidden="true" />
-              <div className="relative aspect-[390/760] overflow-hidden rounded-[28px] border border-border/60 shadow-2xl">
+            <PhoneMock>
+              <div className="relative aspect-[390/720] w-full">
                 <img src={todayImg} alt="Tela do Surf AI com a nota de hoje do Campeche, hora a hora" width={390} height={844} loading="lazy" decoding="async"
-                  className="h-full w-full object-cover object-top" />
+                  className="absolute inset-0 h-full w-full object-cover object-top" />
               </div>
-            </div>
+            </PhoneMock>
           </Reveal>
         </div>
       </section>

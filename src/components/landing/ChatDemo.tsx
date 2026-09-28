@@ -4,6 +4,7 @@ import { useSurfData } from '@/contexts/SurfDataContext'
 import { getRatingInfo } from '@/lib/rating'
 import { formatWaveRange, getSubRegionMatch, type BeachCondition } from '@/lib/surfData'
 import { directionName } from '@/lib/directions'
+import { withArticle } from '@/lib/beachArticles'
 import { todaySP } from '@/lib/timeSP'
 import { computeGoldenWindow } from '../../../api/_goldenWindow'
 
@@ -17,14 +18,7 @@ import { computeGoldenWindow } from '../../../api/_goldenWindow'
 // PicosSection) e a 3ª fala do fim de semana no sul da ilha com a previsão real
 // (api/landing-day.ts só libera praias abertas; no Sul são Campeche e Matadeiro).
 
-// Artigo de cada praia ("o Campeche", "a Joaquina", "os Açores") — sem isso as frases saíam
-// "eu iria na Novo Campeche". Naufragados se fala sem artigo ("em Naufragados").
-const ARTICLE: Record<string, 'o' | 'a' | 'os' | ''> = {
-  campeche: 'o', 'novo-campeche': 'o', 'morro-pedras': 'o', matadeiro: 'o', mocambique: 'o', santinho: 'o',
-  joaquina: 'a', mole: 'a', 'barra-lagoa': 'a', armacao: 'a', 'lagoinha-leste': 'a', solidao: 'a',
-  acores: 'os', naufragados: '',
-}
-const withArt = (b: BeachCondition) => { const a = ARTICLE[b.id] ?? ''; return a ? `${a} ${b.name}` : b.name }
+const withArt = (b: BeachCondition) => withArticle(b.id, b.name)
 
 // Faixa de onda escrita como o chat real escreve ("0.8 a 1.0m", sem traço)
 const wave = (h: number) => formatWaveRange(h).replace('–', ' a ')
