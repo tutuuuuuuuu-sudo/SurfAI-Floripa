@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useSurfData } from '@/contexts/SurfDataContext'
+import { useEffect, useRef, useState } from 'react'
 import { getRatingInfo } from '@/lib/rating'
 import { formatWaveRange, type BeachCondition } from '@/lib/surfData'
 import { directionName } from '@/lib/directions'
-import { ISLAND_PATH, ISLAND_VIEWBOX, projectLatLng } from '@/components/landing/islandShape'
+import { ISLAND_PATH, ISLAND_VIEWBOX } from '@/components/landing/islandShape'
+import { useIslandBeaches, type IslandRatingSummary } from '@/components/landing/useIslandBeaches'
 
 // "A ilha inteira, agora": contorno real da ilha (OpenStreetMap) com as 14 praias acesas na cor
 // da nota deste momento e a lista de norte a sul. Cada praia mostra quantos picos o app
@@ -11,57 +11,50 @@ import { ISLAND_PATH, ISLAND_VIEWBOX, projectLatLng } from '@/components/landing
 // ficar aqui e saíram a pedido do usuário (29/set/2026): o mapa se explica sozinho, com o selo
 // de "tempo real" no título da seção (Landing.tsx).
 
-// Amostras de cada faixa pra legenda — só lê o rótulo/cor de getRatingInfo, sem repetir os cortes
-const LEGEND = [9, 7.5, 6, 4.5, 2].map(s => getRatingInfo(s))
+export function IslandSummary({ summary, className = '' }: { summary: IslandRatingSummary; className?: string }) {
+  if (summary.length === 0) return null
+  return (
+    <p className={`flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs ${className}`}>
+      <span className="font-semibold">Agora na ilha:</span>
+      {summary.map(s => (
+        <span key={s.label} className="inline-flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full" style={{ background: s.scoreColor }} />
+          {s.n} {s.label.toLowerCase()}
+        </span>
+      ))}
+    </p>
+  )
+}
 
-export function IslandMap() {
-  const { conditions } = useSurfData()
+// listOnly: só a lista de praias (na landing o mapa em si já aparece na transição do topo,
+// em cima da imagem de satélite — Hero.tsx — e não precisa repetir aqui embaixo)
+export function IslandMap({ listOnly = false }: { listOnly?: boolean }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const { beaches, summary } = useIslandBeaches()
 
   // Os pontos acendem de norte a sul quando o mapa entra na tela (uma vez só)
   const mapRef = useRef<HTMLDivElement>(null)
   const [lit, setLit] = useState(false)
   useEffect(() => {
     const el = mapRef.current
-    if (!el) return
+    if (!el || listOnly) return
     const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setLit(true); obs.disconnect() } }, { threshold: 0.3 })
     obs.observe(el)
     return () => obs.disconnect()
-  }, [])
-
-  const beaches = useMemo(
-    () => [...conditions].sort((a, b) => b.lat - a.lat).map(c => ({ ...c, pos: projectLatLng(c.lat, c.lng) })),
-    [conditions]
-  )
-  const summary = useMemo(() => {
-    const counts = new Map<string, number>()
-    for (const b of beaches) {
-      const label = getRatingInfo(b.score).label
-      counts.set(label, (counts.get(label) ?? 0) + 1)
-    }
-    return LEGEND.filter(l => counts.has(l.label)).map(l => ({ ...l, n: counts.get(l.label)! }))
-  }, [beaches])
+  }, [listOnly])
 
   const selected = beaches.find(b => b.id === selectedId) ?? null
   const pickBeach = (b: BeachCondition) => setSelectedId(prev => (prev === b.id ? null : b.id))
 
   return (
     <div className="flex flex-col gap-4">
-      {summary.length > 0 && (
-        <p className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-          <span className="font-semibold text-foreground">Agora na ilha:</span>
-          {summary.map(s => (
-            <span key={s.label} className="inline-flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full" style={{ background: s.scoreColor }} />
-              {s.n} {s.label.toLowerCase()}
-            </span>
-          ))}
-        </p>
-      )}
+      {!listOnly && <IslandSummary summary={summary} className="text-muted-foreground [&>span:first-child]:text-foreground" />}
 
       {/* Mapa + lista */}
-      <div ref={mapRef} className="grid grid-cols-[minmax(0,43%)_minmax(0,1fr)] gap-3 rounded-2xl border border-border/60 bg-card p-3 sm:grid-cols-[minmax(0,32%)_minmax(0,1fr)] sm:gap-6 sm:p-5">
-        <svg
+      <div ref={mapRef} className={listOnly
+        ? 'rounded-2xl border border-border/60 bg-card p-3 sm:p-5'
+        : 'grid grid-cols-[minmax(0,43%)_minmax(0,1fr)] gap-3 rounded-2xl border border-border/60 bg-card p-3 sm:grid-cols-[minmax(0,32%)_minmax(0,1fr)] sm:gap-6 sm:p-5'}>
+        {!listOnly && <svg
           viewBox={`-14 -8 ${ISLAND_VIEWBOX.width + 28} ${ISLAND_VIEWBOX.height + 16}`}
           className="h-auto w-full self-start"
           role="img"
@@ -99,9 +92,9 @@ export function IslandMap() {
               </g>
             )
           })()}
-        </svg>
+        </svg>}
 
-        <ul className="flex flex-col" aria-label="Praias de norte a sul">
+        <ul className={listOnly ? 'flex flex-col sm:block sm:columns-2 sm:gap-6' : 'flex flex-col'} aria-label="Praias de norte a sul">
           {beaches.length === 0 && Array.from({ length: 8 }, (_, i) => (
             <li key={i} className="my-1 h-7 animate-pulse rounded bg-muted" />
           ))}
@@ -110,7 +103,7 @@ export function IslandMap() {
             const active = b.id === selectedId
             const picos = b.subRegions ?? []
             return (
-              <li key={b.id}>
+              <li key={b.id} className="break-inside-avoid">
                 <button type="button" onClick={() => pickBeach(b)} aria-expanded={active}
                   className={`flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                     active ? 'bg-muted' : 'hover:bg-muted/60'
@@ -137,7 +130,7 @@ export function IslandMap() {
         </ul>
       </div>
 
-      <p className="text-[11px] text-muted-foreground/70">Contorno da ilha: © colaboradores do OpenStreetMap</p>
+      {!listOnly && <p className="text-[11px] text-muted-foreground/70">Contorno da ilha: © colaboradores do OpenStreetMap</p>}
     </div>
   )
 }

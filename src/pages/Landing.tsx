@@ -32,6 +32,8 @@ import { BEACH_DIRECTORY } from '@/lib/beachDirectory'
 // página; sai a vitrine de celular com rolagem; ilha sem fotos, explicada como mapa em tempo
 // real; um único print do app ("A nota de cada praia, agora") fora da moldura de celular;
 // perguntas novas no chat; "E ainda tem mais" virou uma manhã com o Premium; título do preço.
+// Plano D (29/set/2026): as ondas desenhadas da passagem saíram; rolando, a foto do topo vira a
+// ilha vista de satélite com as praias acesas (Hero.tsx), e a seção da ilha ficou só com a lista.
 
 const BEACH_COUNT = BEACH_DIRECTORY.length
 function SectionHead({ badge, title, children, center = true }: { badge: React.ReactNode; title: React.ReactNode; children?: React.ReactNode; center?: boolean }) {
@@ -85,10 +87,10 @@ export default function Landing() {
         </div>
       </nav>
 
-      {/* HERO — foto aérea da ilha + promessa */}
+      {/* HERO — foto aérea + promessa; rolando, vira a ilha vista de satélite (Hero.tsx) */}
       <Hero>
-        <div className="mx-auto flex max-w-2xl flex-col items-center gap-4 sm:gap-5">
-          <h1 className="text-[2.7rem] md:text-7xl font-black leading-[1.02] tracking-tight text-white overflow-hidden text-balance"
+        <div className="mx-auto flex max-w-2xl flex-col items-center gap-4 sm:gap-5 [@media(max-height:700px)]:gap-3">
+          <h1 className="text-[2.7rem] [@media(max-height:700px)]:text-[2.2rem] md:text-7xl font-black leading-[1.02] tracking-tight text-white overflow-hidden text-balance"
             style={{ textShadow: '0 4px 32px oklch(0 0 0 / 0.45)' }}>
             <span className="block" style={{ animation: 'textReveal 0.7s ease 0.1s both' }}>
               O surf de <span className="text-sea-gradient" style={{ textShadow: 'none', filter: 'drop-shadow(0 4px 18px oklch(0.6 0.18 210 / 0.55))' }}>Floripa</span>
@@ -98,7 +100,7 @@ export default function Landing() {
             </span>
           </h1>
 
-          <p className="text-lg text-white/90 max-w-lg leading-relaxed"
+          <p className="text-lg [@media(max-height:700px)]:text-base text-white/90 max-w-lg leading-relaxed"
             style={{ animation: 'fadeIn 0.7s ease 0.4s both', textShadow: '0 2px 10px oklch(0 0 0 / 0.85), 0 1px 3px oklch(0 0 0 / 0.9)' }}>
             O Surf AI acompanha as {BEACH_COUNT} praias de Floripa, pico por pico, e dá uma nota de 0 a 10
             pro mar de agora e dos próximos 14 dias.
@@ -137,23 +139,15 @@ export default function Landing() {
         </div>
       </Hero>
 
-      {/* A ILHA INTEIRA — mapa em tempo real */}
-      <section id="ilha" className="py-20 relative z-10">
+      {/* A ILHA INTEIRA — o mapa em si (satélite + praias acesas) é o fim da transição do topo
+          (Hero.tsx); aqui fica a lista de norte a sul com as condições de cada praia */}
+      <section id="ilha" className="pt-4 pb-20 relative z-10">
         <div className="container mx-auto px-5 max-w-3xl">
-          <SectionHead
-            badge={
-              <Badge variant="outline" className={pill}>
-                <span className="relative mr-2 flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rating-good opacity-60" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-rating-good" />
-                </span>
-                Mapa em tempo real
-              </Badge>
-            }
-            title="A ilha inteira, de ponta a ponta.">
-            Do Santinho ao Naufragados, todas em tempo real. Toque numa praia e veja as condições de agora.
-          </SectionHead>
-          <IslandMap />
+          <p className="mb-4 text-center text-sm text-foreground/70">Toque numa praia e veja as condições de agora.</p>
+          <IslandMap listOnly />
+          <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground/70">
+            Imagem de satélite: contém dados modificados do Copernicus Sentinel (2026), ESA. Contorno da ilha: © colaboradores do OpenStreetMap.
+          </p>
         </div>
       </section>
 

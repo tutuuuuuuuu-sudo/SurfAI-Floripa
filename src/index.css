@@ -268,16 +268,32 @@ input, textarea, select {
   transform-origin: center;
   animation: mapDotIn 0.55s ease-out both;
 }
-/* Base da foto da região fundindo no fundo do tema (texto legível no claro e no escuro) */
-.region-photo-fade {
-  background: linear-gradient(180deg, transparent 30%,
-    color-mix(in oklch, var(--color-background) 85%, transparent) 78%,
-    color-mix(in oklch, var(--color-background) 96%, transparent) 100%);
+/* Transição do topo da landing (Hero.tsx): foto → satélite → mapa. O palco é sempre escuro
+   (imagem de satélite) nos dois temas; só a saída de baixo funde na cor de fundo do tema. */
+.flyover-sea { background: oklch(0.2 0.045 245); }
+.flyover-dim { background: oklch(0.13 0.03 245); }
+/* Foto do topo se afastando: a borda vai ficando macia (mask-size encolhe com a rolagem) */
+.flyover-photo-mask {
+  mask-image: radial-gradient(closest-side, black 62%, transparent 100%);
+  -webkit-mask-image: radial-gradient(closest-side, black 62%, transparent 100%);
+  mask-position: center;
+  -webkit-mask-position: center;
+  mask-repeat: no-repeat;
+  -webkit-mask-repeat: no-repeat;
 }
-
-/* Ondas correndo no rodapé do topo da landing (Hero.tsx) */
-@keyframes heroWave { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-.hero-wave { animation: heroWave 20s linear infinite; will-change: transform; }
+/* Recorte nítido da Mole/Joaquina: borda esfumada pra não aparecer a emenda com o geral */
+.flyover-detail-mask {
+  mask-image: radial-gradient(closest-side, black 55%, transparent 100%);
+  -webkit-mask-image: radial-gradient(closest-side, black 55%, transparent 100%);
+}
+/* Bordas do satélite somem no mar do palco (telas muito largas passam do recorte) */
+.flyover-sat-edges {
+  mask-image: linear-gradient(90deg, transparent, black 4%, black 96%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, black 4%, black 96%, transparent);
+}
+.flyover-fade-bottom {
+  background: linear-gradient(180deg, transparent, var(--color-background));
+}
 
 /* Destaque do título da landing: degradê de mar forte (turquesa → azul), só no texto */
 .text-sea-gradient {
