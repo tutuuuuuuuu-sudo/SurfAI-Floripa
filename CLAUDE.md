@@ -69,12 +69,13 @@ src/
 │   │   ├── DayCurve.tsx       # "Linha do dia": nota hora a hora como onda contínua + arco do sol, arrastável (ForecastDay)
 │   │   └── PicosSection.tsx   # Sub-regiões com matching de swell + links Maps/Waze
 │   ├── landing/               # Landing "juntada" (28/set/2026): visual da antiga + peças vivas do app
-│   │   ├── Hero.tsx           # Foto aérea + recorte em onda (escurecimento em .hero-scrim, index.css)
-│   │   ├── AppScrollShowcase.tsx # Vitrine com prints REAIS do app (app-screens/*.webp, 2x) — retirar print quando a tela mudar
-│   │   ├── IslandMap.tsx      # Contorno real da ilha (islandShape.ts, OpenStreetMap) + 14 praias na cor da nota + fotos das regiões + picos
+│   │   ├── Hero.tsx           # Foto aérea + ondas animadas na passagem pra página (.hero-wave, .hero-scrim em index.css)
+│   │   ├── IslandMap.tsx      # Mapa em tempo real: contorno da ilha (islandShape.ts, OpenStreetMap) + 14 praias na cor da nota + picos de cada praia
 │   │   ├── DayCurveDemo.tsx   # DayCurve real com a previsão de amanhã (api/landing-day.ts, sem login)
-│   │   ├── ChatDemo.tsx       # Conversa de exemplo com dado real, no tom do chat (3ª pergunta = sábado, previsão real)
+│   │   ├── ChatDemo.tsx       # Conversa de exemplo com dado real, no tom do chat (Lomba x Caldeirão; fim de semana no sul)
+│   │   ├── PremiumMorning.tsx # "Uma manhã com o Premium": linha do tempo alerta → Bora Surfar → comparação, com dado ao vivo
 │   │   ├── LandingComponents.tsx  # Reveal (animação de entrada), FAQItem, GeoFinderMockup (card Bora Surfar)
+│   │   │                      # (print único da nota em app-screens/score.webp, usado direto em Landing.tsx)
 │   │   └── landingData.ts     # FAQS (instalação no celular é a última pergunta)
 │   ├── home/                  # Componentes do Home
 │   │   ├── AdBanner.tsx       # Banner de anúncio / upgrade

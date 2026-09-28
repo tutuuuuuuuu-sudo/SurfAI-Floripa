@@ -38,8 +38,8 @@ export function Hero({ children }: { children: ReactNode }) {
           repete a cada 1440 unidades, então deslizar metade da largura fecha o ciclo sem emenda. */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[150px] overflow-hidden sm:h-[180px]" aria-hidden="true">
         {[
-          { fill: 'color-mix(in oklch, var(--primary) 50%, var(--background))', dy: 18, dur: '19s', opacity: 0.9 },
-          { fill: 'color-mix(in oklch, white 80%, var(--primary))', dy: 52, dur: '13s', opacity: 0.55, reverse: true },
+          { fill: 'color-mix(in oklch, var(--primary) 50%, var(--background))', dy: 18, dur: '19s', opacity: 0.7 },
+          { fill: 'color-mix(in oklch, white 80%, var(--primary))', dy: 52, dur: '13s', opacity: 0.4, reverse: true },
           { fill: 'var(--background)', dy: 74, dur: '25s', opacity: 1 },
         ].map((w, i) => (
           <svg key={i} className="hero-wave absolute bottom-0 left-0 h-full w-[200%]" viewBox="0 0 2880 180" preserveAspectRatio="none"

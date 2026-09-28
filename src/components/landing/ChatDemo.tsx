@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Crown, Sparkles } from 'lucide-react'
 import { useSurfData } from '@/contexts/SurfDataContext'
 import { getRatingInfo } from '@/lib/rating'
-import { formatWaveRange, type BeachCondition } from '@/lib/surfData'
+import { formatWaveRange, getSubRegionMatch, type BeachCondition } from '@/lib/surfData'
 import { directionName } from '@/lib/directions'
 import { todaySP } from '@/lib/timeSP'
 import { computeGoldenWindow } from '../../../api/_goldenWindow'
@@ -12,9 +12,10 @@ import { computeGoldenWindow } from '../../../api/_goldenWindow'
 // api/surf-chat.ts). As respostas são montadas aqui com o dado real de agora, sem chamar a IA
 // (a cota do Gemini é pequena e o visitante nem tem conta) — por isso a legenda diz que é um
 // exemplo. Substituiu o ChatPreviewMockup antigo, com resposta fixa e travessão.
-// Na versão juntada (28/set/2026) a 3ª pergunta deixou de ser "tem praia boa pra iniciante?"
-// e passou a ser sobre um dia da semana que vem (a pedido do usuário, pra mostrar a previsão
-// de vários dias) — a resposta usa a previsão real daquele dia (api/landing-day.ts, day<=7).
+// Perguntas trocadas a pedido do usuário (29/set/2026): a 2ª compara dois picos de praias
+// diferentes ("Lomba ou Caldeirão?", usando o casamento de swell de cada pico, o mesmo de
+// PicosSection) e a 3ª fala do fim de semana no sul da ilha com a previsão real
+// (api/landing-day.ts só libera praias abertas; no Sul são Campeche e Matadeiro).
 
 // Artigo de cada praia ("o Campeche", "a Joaquina", "os Açores") — sem isso as frases saíam
 // "eu iria na Novo Campeche". Naufragados se fala sem artigo ("em Naufragados").
@@ -30,14 +31,6 @@ const wave = (h: number) => formatWaveRange(h).replace('–', ' a ')
 const wind = (b: BeachCondition) => `vento ${b.windDirection} ${directionName(b.windDirection)} de ${Math.round(b.windSpeed)}km/h`
 const GOOD_BARS = getRatingInfo(5.5).bars
 
-function verdict(b: BeachCondition) {
-  const bars = getRatingInfo(b.score).bars
-  if (bars >= 4) return 'vale muito a pena cair'
-  if (bars >= GOOD_BARS) return 'dá pra surfar de boa'
-  if (bars >= 2) return 'tá meio fraco, só se for perto de você'
-  return 'hoje não compensa'
-}
-
 interface FutureDay {
   date: string
   hours: { hour: number; score: number; waveHeight: number; windSpeed: number; windDirection: string; swellPeriod: number }[]
@@ -46,36 +39,54 @@ interface FutureDay {
   sunsetHour: number | null
   tideHeights: number[] | null
 }
+type Weekend = { day: 'sábado' | 'domingo'; beach: 'Campeche' | 'Matadeiro'; data: FutureDay }[]
 
-// Dia da pergunta sobre o futuro: o próximo sábado (ou domingo) entre 3 e 7 dias à frente —
-// fim de semana é quando a maioria planeja surfar. Se não cair nenhum, 5 dias à frente.
-const WEEKDAY_IN = ['no domingo', 'na segunda', 'na terça', 'na quarta', 'na quinta', 'na sexta', 'no sábado']
-function pickFutureDay(): { offset: number; weekday: number } {
+// Próximo sábado e domingo que caem de 1 a 7 dias à frente (o limite do landing-day)
+const WEEKEND_DAYS = (() => {
   const base = new Date(`${todaySP()}T12:00:00`)
-  const at = (d: number) => new Date(base.getTime() + d * 86_400_000).getDay()
-  for (const want of [6, 0]) {
-    for (let d = 3; d <= 7; d++) if (at(d) === want) return { offset: d, weekday: want }
+  const out: { offset: number; day: 'sábado' | 'domingo' }[] = []
+  for (let d = 1; d <= 7; d++) {
+    const w = new Date(base.getTime() + d * 86_400_000).getDay()
+    if (w === 6 && !out.some(o => o.day === 'sábado')) out.push({ offset: d, day: 'sábado' })
+    if (w === 0 && !out.some(o => o.day === 'domingo')) out.push({ offset: d, day: 'domingo' })
   }
-  return { offset: 5, weekday: at(5) }
-}
-const FUTURE = pickFutureDay()
+  return out.sort((x, y) => x.offset - y.offset)
+})()
+const SOUTH = [{ id: 'campeche', name: 'Campeche' as const }, { id: 'matadeiro', name: 'Matadeiro' as const }]
 const fmtH = (h: number) => `${h}h`
 
-function futureAnswer(d: FutureDay): string {
+function summarize(d: FutureDay) {
   const sunrise = d.sunriseHour ?? 6, sunset = d.sunsetHour ?? 18
   const daylight = d.hours.filter(h => h.hour >= sunrise && h.hour <= sunset)
   const waves = (daylight.length ? daylight : d.hours).map(h => h.waveHeight)
-  const range = `${Math.min(...waves).toFixed(1)} a ${Math.max(...waves).toFixed(1)}m`
   const gw = computeGoldenWindow(d.hours.map(h => ({ ...h, label: fmtH(h.hour) })), d.best.hour, sunrise, sunset)
-  const when = gw && gw.endHour > gw.startHour ? `das ${fmtH(gw.startHour)} às ${fmtH(gw.endHour)}` : `por volta das ${fmtH(d.best.hour)}`
-  const t0 = d.tideHeights?.[d.best.hour], t1 = d.tideHeights?.[d.best.hour + 1]
-  const tide = t0 === undefined || t1 === undefined ? '' : t1 > t0 + 0.02 ? ', maré enchendo' : t1 < t0 - 0.02 ? ', maré secando' : ''
-  const info = getRatingInfo(d.best.score)
-  const close = info.bars >= 4 ? 'Se continuar assim, vale separar a manhã.' : info.bars >= GOOD_BARS ? 'Dá pra planejar.' : 'Por enquanto não promete muito, vale olhar de novo mais perto do dia.'
-  return `${WEEKDAY_IN[FUTURE.weekday].charAt(0).toUpperCase()}${WEEKDAY_IN[FUTURE.weekday].slice(1)} a Joaquina deve ter onda de ${range}. O melhor horário é ${when}, nota ${d.best.score.toFixed(1)}${tide} e vento ${d.best.windDirection} ${directionName(d.best.windDirection)} de ${Math.round(d.best.windSpeed)}km/h. ${close}`
+  return {
+    range: `${Math.min(...waves).toFixed(1)} a ${Math.max(...waves).toFixed(1)}m`,
+    when: gw && gw.endHour > gw.startHour ? `das ${fmtH(gw.startHour)} às ${fmtH(gw.endHour)}` : `por volta das ${fmtH(d.best.hour)}`,
+    score: d.best.score,
+    wind: `${d.best.windDirection} ${directionName(d.best.windDirection)} de ${Math.round(d.best.windSpeed)}km/h`,
+  }
 }
 
-interface QA { q: string; a: (spots: BeachCondition[], future: FutureDay | null) => string | null }
+function weekendAnswer(w: Weekend): string | null {
+  if (w.length === 0) return null
+  const best = [...w].sort((a, b) => b.data.best.score - a.data.best.score)[0]
+  const b = summarize(best.data)
+  const others = w.filter(x => x !== best).map(x => `${x.beach} no ${x.day}, ${summarize(x.data).score.toFixed(1)}`)
+  const info = getRatingInfo(best.data.best.score)
+  const close = info.bars >= 4 ? 'Vale separar a manhã.' : info.bars >= GOOD_BARS ? 'Dá pra planejar.' : 'Por enquanto o sul não promete muito, vale olhar de novo mais perto do dia.'
+  return `No fim de semana o melhor do sul deve ser ${best.beach === 'Campeche' ? 'o Campeche' : 'o Matadeiro'} no ${best.day}: onda de ${b.range}, melhor ${b.when}, nota ${b.score.toFixed(1)}, com vento ${b.wind}. ${others.length ? `Pra comparar: ${others.join('; ')}. ` : ''}${close}`
+}
+
+// Casamento de swell de um pico (mesma conta de PicosSection)
+function picoRead(beach: BeachCondition | undefined, picoId: string) {
+  const sub = beach?.subRegions?.find(s => s.id === picoId)
+  if (!beach || !sub) return null
+  const m = getSubRegionMatch(sub.swellDirections, beach.swellDirection, beach.waveHeight, sub.tolerance, sub.exposicao, beach.swellPeriod, sub.idealPeriodMin)
+  return { beach, sub, m, mid: (Number(m.waveMin) + Number(m.waveMax)) / 2 }
+}
+
+interface QA { q: string; a: (spots: BeachCondition[], weekend: Weekend | null) => string | null }
 
 const QUESTIONS: QA[] = [
   {
@@ -88,16 +99,27 @@ const QUESTIONS: QA[] = [
     },
   },
   {
-    q: 'Como tá o Campeche?',
+    q: 'Tá melhor eu ir pra Lomba ou pro Caldeirão agora?',
     a: spots => {
-      const c = spots.find(s => s.id === 'campeche')
-      if (!c) return 'Agora não consegui ler o Campeche, tenta de novo daqui a pouco.'
-      return `O Campeche tá com onda de ${wave(c.waveHeight)}, maré ${c.tide.toLowerCase()} e ${wind(c)}. Nota ${c.score.toFixed(1)}, ${verdict(c)}.`
+      const lomba = picoRead(spots.find(s => s.id === 'campeche'), 'lomba-sabao')
+      const cald = picoRead(spots.find(s => s.id === 'armacao'), 'caldeirao')
+      if (!lomba || !cald) return null
+      // Melhor casamento de swell primeiro; empate decide pela nota da praia e depois pelo tamanho
+      const [win, lose] = [lomba, cald].sort((a, b) => a.m.minDiff - b.m.minDiff || b.beach.score - a.beach.score || b.mid - a.mid)
+      const nameOf = (x: typeof win) => (x === lomba ? 'Lomba' : 'Caldeirão')
+      const goTo = win === lomba ? 'pra Lomba' : 'pro Caldeirão'
+      const art = lose === lomba ? 'A' : 'O'
+      const swell = `${win.beach.swellDirection} ${directionName(win.beach.swellDirection)}`
+      // Quando o pico escolhido tem onda menor, explicar o motivo (o swell entra melhor nele)
+      const loseLine = lose.mid > win.mid
+        ? `${art} ${nameOf(lose)} até tá um pouco maior, ${lose.m.waveMin} a ${lose.m.waveMax}m, mas o swell pega pior lá.`
+        : `${art} ${nameOf(lose)} tá com ${lose.m.waveMin} a ${lose.m.waveMax}m.`
+      return `Agora eu iria ${goTo}: o swell de ${swell} entra melhor lá, com onda de ${win.m.waveMin} a ${win.m.waveMax}m e ${wind(win.beach)}. ${loseLine}`
     },
   },
   {
-    q: `E ${WEEKDAY_IN[FUTURE.weekday]}, como vai estar a Joaquina?`,
-    a: (_spots, future) => (future ? futureAnswer(future) : null),
+    q: 'E no fim de semana, como vão estar as praias do sul da ilha?',
+    a: (_spots, weekend) => (weekend ? weekendAnswer(weekend) : null),
   },
 ]
 
@@ -105,24 +127,30 @@ export function ChatDemo() {
   const { conditions } = useSurfData()
   const [active, setActive] = useState(0)
   const [typing, setTyping] = useState(false)
-  const [future, setFuture] = useState<FutureDay | null>(null)
+  const [weekend, setWeekend] = useState<Weekend | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const boxRef = useRef<HTMLDivElement>(null)
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current) }, [])
 
-  // Previsão real do dia da 3ª pergunta, buscada de antemão (cache de 1h na Vercel)
+  // Previsão real do fim de semana no sul (Campeche e Matadeiro), buscada de antemão (cache 1h)
   useEffect(() => {
     let cancelled = false
-    fetch(`/api/landing-day?id=joaquina&day=${FUTURE.offset}`)
-      .then(r => (r.ok ? r.json() as Promise<FutureDay> : Promise.reject()))
-      .then(d => { if (!cancelled) setFuture(d) })
-      .catch(() => { /* sem o dado, a resposta fica "digitando" e a pergunta some abaixo */ })
+    const jobs = WEEKEND_DAYS.flatMap(d => SOUTH.map(b =>
+      fetch(`/api/landing-day?id=${b.id}&day=${d.offset}`)
+        .then(r => (r.ok ? r.json() as Promise<FutureDay> : Promise.reject()))
+        .then(data => ({ day: d.day, beach: b.name, data }))
+    ))
+    Promise.allSettled(jobs).then(res => {
+      if (cancelled) return
+      const ok = res.flatMap(r => (r.status === 'fulfilled' ? [r.value] : []))
+      if (ok.length > 0) setWeekend(ok)
+    })
     return () => { cancelled = true }
   }, [])
 
   const answer = useMemo(
-    () => (conditions.length > 0 ? QUESTIONS[active].a(conditions, future) : null),
-    [active, conditions, future]
+    () => (conditions.length > 0 ? QUESTIONS[active].a(conditions, weekend) : null),
+    [active, conditions, weekend]
   )
 
   const reduceMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
@@ -150,7 +178,7 @@ export function ChatDemo() {
     return () => obs.disconnect()
   }, [])
 
-  const visibleQuestions = QUESTIONS.map((qa, i) => ({ qa, i })).filter(({ i }) => i !== 2 || future)
+  const visibleQuestions = QUESTIONS.map((qa, i) => ({ qa, i })).filter(({ qa, i }) => i === 0 || conditions.length === 0 || qa.a(conditions, weekend) !== null)
 
   return (
     <div className="flex flex-col gap-4">

@@ -3,19 +3,18 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
   Bell, BarChart3, Clock, Shield, ArrowRight, CheckCircle2, TrendingUp,
-  MapPin, Crown, Sparkles, Compass, Scale,
+  MapPin, Crown, Sparkles, Compass, Waves, Navigation,
 } from 'lucide-react'
 import { AppLogo } from '@/components/AppLogo'
-import { FAQItem, Reveal, GeoFinderMockup } from '@/components/landing/LandingComponents'
-import { AppScrollShowcase } from '@/components/landing/AppScrollShowcase'
+import { FAQItem, Reveal } from '@/components/landing/LandingComponents'
+import { PremiumMorning } from '@/components/landing/PremiumMorning'
+import scoreImg from '@/assets/landing/app-screens/score.webp'
 import { Hero } from '@/components/landing/Hero'
 import { IslandMap } from '@/components/landing/IslandMap'
 import { DayCurveDemo } from '@/components/landing/DayCurveDemo'
 import { ChatDemo } from '@/components/landing/ChatDemo'
 import { FAQS } from '@/components/landing/landingData'
 import { BEACH_DIRECTORY } from '@/lib/beachDirectory'
-import { useSurfData } from '@/contexts/SurfDataContext'
-import { getRatingInfo } from '@/lib/rating'
 
 // Landing "juntada" (28/set/2026): a estrutura e o visual da landing anterior (foto da ilha,
 // vitrine com prints do app, cartões de preço, animações de entrada) com as peças vivas da v2
@@ -27,28 +26,13 @@ import { getRatingInfo } from '@/lib/rating'
 // cobria conteúdo (o menu do topo já fica preso na tela com "Começar grátis").
 // Argumento central da copy, nas palavras do usuário: nenhuma outra plataforma mostra TODAS
 // as praias de Floripa com uma nota de 0 a 10, incluindo os picos de cada praia.
+// Ajustes de 29/set/2026 (pedido do usuário): título volta a "O surf de Floripa na palma da
+// mão" com destaque forte, sem o selo ao vivo no topo; ondas animadas na passagem da foto pra
+// página; sai a vitrine de celular com rolagem; ilha sem fotos, explicada como mapa em tempo
+// real; um único print do app ("A nota de cada praia, agora") fora da moldura de celular;
+// perguntas novas no chat; "E ainda tem mais" virou uma manhã com o Premium; título do preço.
 
 const BEACH_COUNT = BEACH_DIRECTORY.length
-const GOOD_BARS = getRatingInfo(5.5).bars
-
-// Prova ao vivo no topo, discreta: quantas praias estão boas agora (some enquanto carrega)
-function LiveNowChip() {
-  const { conditions, loading } = useSurfData()
-  if (loading || conditions.length === 0) return null
-  const good = conditions.filter(c => getRatingInfo(c.score).bars >= GOOD_BARS).length
-  const best = [...conditions].sort((a, b) => b.score - a.score)[0]
-  return (
-    <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/35 px-3.5 py-1.5 text-xs font-semibold text-white/90 backdrop-blur-md"
-      style={{ animation: 'fadeIn 0.6s ease both' }}>
-      <span className="relative flex h-2 w-2">
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rating-good opacity-60" />
-        <span className="relative inline-flex h-2 w-2 rounded-full bg-rating-good" />
-      </span>
-      Agora: {good === 0 ? 'mar fraco na ilha' : `mar bom em ${good} ${good === 1 ? 'praia' : 'praias'}`} · melhor: {best.name} {best.score.toFixed(1)}
-    </div>
-  )
-}
-
 function SectionHead({ badge, title, children, center = true }: { badge: React.ReactNode; title: React.ReactNode; children?: React.ReactNode; center?: boolean }) {
   return (
     <Reveal className={center ? 'text-center mb-10' : 'mb-8'}>
@@ -103,15 +87,13 @@ export default function Landing() {
       {/* HERO — foto aérea da ilha + promessa */}
       <Hero>
         <div className="mx-auto flex max-w-2xl flex-col items-center gap-4 sm:gap-5">
-          <LiveNowChip />
-
-          <h1 className="text-[2.6rem] md:text-6xl font-black leading-[1.05] tracking-tight text-white overflow-hidden text-balance"
-            style={{ textShadow: '0 2px 24px oklch(0 0 0 / 0.4)' }}>
+          <h1 className="text-[2.7rem] md:text-7xl font-black leading-[1.02] tracking-tight text-white overflow-hidden text-balance"
+            style={{ textShadow: '0 4px 32px oklch(0 0 0 / 0.45)' }}>
             <span className="block" style={{ animation: 'textReveal 0.7s ease 0.1s both' }}>
-              Saiba onde o mar está bom
+              O surf de <span className="text-sea-gradient" style={{ textShadow: 'none', filter: 'drop-shadow(0 4px 18px oklch(0.6 0.18 210 / 0.55))' }}>Floripa</span>
             </span>
-            <span className="block text-[color-mix(in_oklch,var(--primary)_55%,white)]" style={{ animation: 'textReveal 0.7s ease 0.25s both' }}>
-              antes de sair de casa.
+            <span className="block" style={{ animation: 'textReveal 0.7s ease 0.25s both' }}>
+              na palma da mão.
             </span>
           </h1>
 
@@ -154,24 +136,23 @@ export default function Landing() {
         </div>
       </Hero>
 
-      {/* O APP POR DENTRO — prints reais do app de hoje */}
-      <section className="py-16 border-t border-border/30 relative z-10">
-        <div className="container mx-auto px-5 max-w-5xl">
-          <SectionHead badge={<Badge variant="outline" className={pill}>O app por dentro</Badge>}
-            title="Tudo pra decidir se vale sair de casa.">
-            A nota de cada praia, a previsão hora a hora, o vento, a maré e o caminho até o pico, num lugar só.
-          </SectionHead>
-          <AppScrollShowcase />
-        </div>
-      </section>
-
-      {/* A ILHA INTEIRA — mapa ao vivo + fotos das regiões + picos */}
-      <section id="ilha" className="py-20 border-t border-border/30 relative z-10">
+      {/* A ILHA INTEIRA — mapa em tempo real */}
+      <section id="ilha" className="py-20 relative z-10">
         <div className="container mx-auto px-5 max-w-3xl">
-          <SectionHead badge={<Badge variant="outline" className={pill}>{BEACH_COUNT} praias · pico por pico</Badge>}
+          <SectionHead
+            badge={
+              <Badge variant="outline" className={pill}>
+                <span className="relative mr-2 flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rating-good opacity-60" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-rating-good" />
+                </span>
+                Mapa em tempo real
+              </Badge>
+            }
             title="A ilha inteira, agora.">
-            Cada ponto é uma praia, na cor da nota deste momento. Escolha uma região ou toque numa praia
-            pra ver onda, vento, maré e os picos que o Surf AI acompanha.
+            Este mapa é ao vivo. Cada ponto é uma das {BEACH_COUNT} praias de Floripa, pintada com a nota do mar
+            neste momento e atualizada ao longo do dia. Toque numa praia pra ver a onda, o vento, a maré e os picos
+            que o Surf AI acompanha nela.
           </SectionHead>
           <IslandMap />
         </div>
@@ -180,11 +161,46 @@ export default function Landing() {
       {/* AMANHÃ — curva real pra arrastar */}
       <section id="amanha" className="py-20 border-t border-border/30 relative z-10">
         <div className="container mx-auto px-5 max-w-2xl">
-          <SectionHead badge={<Badge variant="outline" className={pill}><Clock className="h-3 w-3 mr-1.5" />Previsão</Badge>}
-            title="Amanhã, hora a hora.">
-            Arraste pela curva. Essa é a previsão real de amanhã, com a nota de cada hora, a onda, a maré e o vento.
+          <SectionHead badge={<Badge variant="outline" className={pill}><Clock className="h-3 w-3 mr-1.5" />Previsão de amanhã</Badge>}
+            title="Escolha a hora certa de cair.">
+            Arraste o dedo pela curva: cada ponto é uma hora de amanhã, com a nota, a onda, a maré e o vento.
+            É a previsão de verdade, a mesma que aparece no app.
           </SectionHead>
           <DayCurveDemo />
+        </div>
+      </section>
+
+      {/* A NOTA DE CADA PRAIA — um print real do app, fora da moldura de celular */}
+      <section className="py-20 border-t border-border/30 relative z-10 overflow-hidden">
+        <div className="container mx-auto grid max-w-5xl items-center gap-12 px-5 md:grid-cols-2">
+          <Reveal>
+            <Badge variant="outline" className={pill}><Waves className="h-3 w-3 mr-1.5" />Dentro do app</Badge>
+            <h2 className="text-3xl md:text-4xl font-black mb-4 text-balance">A nota de cada praia, agora.</h2>
+            <p className="text-foreground/70 mb-6">
+              Onda, período e vento de cada praia viram uma nota de 0 a 10. Você bate o olho e sabe se vale sair de casa.
+            </p>
+            <ul className="space-y-3 text-sm">
+              {[
+                { icon: Waves, text: 'Os picos de cada praia, com o que está melhor no momento' },
+                { icon: Clock, text: 'A comparação com a média dos últimos 30 dias' },
+                { icon: Navigation, text: 'Um toque e o Google Maps ou o Waze abre o caminho' },
+              ].map(({ icon: Icon, text }) => (
+                <li key={text} className="flex items-start gap-3">
+                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-primary/15"><Icon className="h-3.5 w-3.5 text-primary" /></span>
+                  <span className="text-foreground/85">{text}</span>
+                </li>
+              ))}
+            </ul>
+          </Reveal>
+          <Reveal delay={0.15}>
+            <div className="relative mx-auto max-w-[340px] md:rotate-[2deg]">
+              <div className="absolute -inset-6 rounded-[40px] bg-primary/15 blur-3xl" aria-hidden="true" />
+              <div className="relative aspect-[390/600] overflow-hidden rounded-[28px] border border-border/60 shadow-2xl">
+                <img src={scoreImg} alt="Tela do Surf AI com a nota da Joaquina" width={390} height={844} loading="lazy" decoding="async"
+                  className="h-full w-full object-cover object-top" />
+              </div>
+            </div>
+          </Reveal>
         </div>
       </section>
 
@@ -193,59 +209,21 @@ export default function Landing() {
         <div className="container mx-auto px-5 max-w-2xl">
           <SectionHead badge={<Badge className="bg-rating-fair/15 text-rating-fair border-rating-fair/30 mb-4 px-4 py-1"><Crown className="h-3 w-3 mr-1.5" />Premium</Badge>}
             title="Pergunte ao Surf AI.">
-            Em vez de interpretar tabela, pergunte do jeito que você falaria com um amigo que conhece o mar.
-            Ele responde com as condições de agora e a previsão da semana.
+            Pergunte do jeito que você perguntaria no grupo do surf. O Surf AI conhece o mar de agora,
+            cada pico da ilha e a previsão da semana, e responde na hora.
           </SectionHead>
           <ChatDemo />
         </div>
       </section>
 
-      {/* MAIS NO PREMIUM */}
+      {/* MAIS NO PREMIUM — uma manhã de surf com ele */}
       <section className="py-20 border-t border-border/30 relative z-10">
         <div className="container mx-auto px-5 max-w-5xl">
           <SectionHead badge={<Badge className="bg-rating-fair/15 text-rating-fair border-rating-fair/30 mb-4 px-4 py-1"><Crown className="h-3 w-3 mr-1.5" />Premium</Badge>}
-            title="E ainda tem mais.">
-            Ferramentas pra quem não quer perder nenhum dia bom.
+            title="O Premium trabalha antes de você acordar.">
+            Uma manhã de surf com ele, do alerta no celular até a escolha da praia.
           </SectionHead>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            <Reveal delay={0}>
-              <div className="group relative h-full flex flex-col overflow-hidden rounded-2xl p-6 bg-rating-good/[0.09] border border-rating-good/35 transition-transform duration-300 hover:-translate-y-1">
-                <div className="h-11 w-11 rounded-xl flex items-center justify-center mb-4 bg-rating-good/20 border border-rating-good/45">
-                  <Compass className="h-5 w-5 text-rating-good" />
-                </div>
-                <h3 className="font-bold text-lg mb-2">Bora Surfar</h3>
-                <p className="text-sm text-foreground/70 leading-relaxed mb-4">
-                  Compartilhe sua localização por um instante (não guardamos nada) e o Surf AI compara a praia mais perto
-                  com a que está melhor por perto, pra você saber se vale rodar mais um pouco.
-                </p>
-                <div className="mt-auto"><GeoFinderMockup /></div>
-              </div>
-            </Reveal>
-            <Reveal delay={0.1}>
-              <div className="group relative h-full flex flex-col overflow-hidden rounded-2xl p-6 bg-rating-excellent/[0.09] border border-rating-excellent/35 transition-transform duration-300 hover:-translate-y-1">
-                <div className="h-11 w-11 rounded-xl flex items-center justify-center mb-4 bg-rating-excellent/20 border border-rating-excellent/45">
-                  <Bell className="h-5 w-5 text-rating-excellent" />
-                </div>
-                <h3 className="font-bold text-lg mb-2">Alertas da sua praia</h3>
-                <p className="text-sm text-foreground/70 leading-relaxed">
-                  Escolha a nota mínima de cada praia e receba um aviso no celular quando o mar chegar lá.
-                  Você para de conferir a previsão toda hora.
-                </p>
-              </div>
-            </Reveal>
-            <Reveal delay={0.2}>
-              <div className="group relative h-full flex flex-col overflow-hidden rounded-2xl p-6 bg-rating-epic/[0.09] border border-rating-epic/35 transition-transform duration-300 hover:-translate-y-1">
-                <div className="h-11 w-11 rounded-xl flex items-center justify-center mb-4 bg-rating-epic/20 border border-rating-epic/45">
-                  <Scale className="h-5 w-5 text-rating-epic" />
-                </div>
-                <h3 className="font-bold text-lg mb-2">Compare e acompanhe</h3>
-                <p className="text-sm text-foreground/70 leading-relaxed">
-                  Coloque até 3 praias lado a lado e veja se o mar de hoje está acima ou abaixo da média dos últimos 30 dias.
-                </p>
-              </div>
-            </Reveal>
-          </div>
+          <PremiumMorning />
         </div>
       </section>
 
@@ -253,9 +231,9 @@ export default function Landing() {
       <section id="pricing" className="py-20 relative border-t border-border/30">
         <div className="container mx-auto px-5 max-w-4xl relative">
           <SectionHead badge={<Badge className="bg-rating-fair/15 text-rating-fair border-rating-fair/30 mb-4"><Crown className="h-3 w-3 mr-1.5" />Premium</Badge>}
-            title={<>Mais dias bons<br /><span className="text-rating-fair">no mar.</span></>}>
+            title={<>Custa menos que uma ida<br /><span className="text-rating-fair">até a praia errada.</span></>}>
             O Premium libera os 14 dias de previsão, o chat com o Surf AI, os alertas e tudo o que você viu nesta página.
-            Custa menos que uma ida até a praia errada.
+            Pagamento único, sem cobrança automática.
           </SectionHead>
 
           <div className="grid md:grid-cols-2 gap-10 items-center mb-10">
