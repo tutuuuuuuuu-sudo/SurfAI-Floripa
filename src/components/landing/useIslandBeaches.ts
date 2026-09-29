@@ -7,8 +7,8 @@ import { projectLatLng } from '@/components/landing/islandShape'
 const LEGEND = [9, 7.5, 6, 4.5, 2].map(s => getRatingInfo(s))
 
 // Praias de norte a sul com a posição no desenho da ilha + resumo "Agora na ilha" por faixa de
-// nota. Usado pela lista/mapa (IslandMap.tsx) e pela transição do topo (Hero.tsx), que desenha
-// os mesmos pontos em cima do satélite.
+// nota. Usado pela transição do topo da landing (Hero.tsx): pontos no mapa de satélite + lista
+// (IslandBeachList.tsx).
 export function useIslandBeaches() {
   const { conditions } = useSurfData()
   const beaches = useMemo(
@@ -27,3 +27,4 @@ export function useIslandBeaches() {
 }
 
 export type IslandRatingSummary = ReturnType<typeof useIslandBeaches>['summary']
+export type IslandBeach = ReturnType<typeof useIslandBeaches>['beaches'][number]

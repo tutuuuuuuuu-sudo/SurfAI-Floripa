@@ -69,8 +69,9 @@ src/
 │   │   ├── DayCurve.tsx       # "Linha do dia": nota hora a hora como onda contínua + arco do sol, arrastável (ForecastDay)
 │   │   └── PicosSection.tsx   # Sub-regiões com matching de swell + links Maps/Waze
 │   ├── landing/               # Landing "juntada" (28/set/2026): visual da antiga + peças vivas do app
-│   │   ├── Hero.tsx           # Foto aérea + ondas animadas na passagem pra página (.hero-wave, .hero-scrim em index.css)
-│   │   ├── IslandMap.tsx      # Mapa em tempo real: contorno da ilha (islandShape.ts, OpenStreetMap) + 14 praias na cor da nota + picos de cada praia
+│   │   ├── Hero.tsx           # Topo "a câmera sobe": foto da Praia Mole → aerofoto SC → satélite → mapa da ilha + lista (fim do topo = mapa em tempo real). Animação montada 1x (Web Animations) e tocada pela rolagem (ViewTimeline; sem ela, JS). Camadas em assets/landing/flyover/, geradas por .content-drafts/flyover/build*.py (fora do git)
+│   │   ├── IslandBeachList.tsx# Lista de praias N→S (picos + nota) e resumo "Agora na ilha", ao lado do mapa do Hero
+│   │   ├── useIslandBeaches.ts# Praias ordenadas N→S com posição no desenho (islandShape.ts, OpenStreetMap) + resumo por faixa
 │   │   ├── DayCurveDemo.tsx   # DayCurve real com a previsão de amanhã (api/landing-day.ts, sem login)
 │   │   ├── ChatDemo.tsx       # Conversa de exemplo com dado real, no tom do chat (Lomba x Caldeirão; fim de semana no sul)
 │   │   ├── PremiumMorning.tsx # "Uma manhã com o Premium": linha do tempo alerta → Bora Surfar → comparação, com dado ao vivo

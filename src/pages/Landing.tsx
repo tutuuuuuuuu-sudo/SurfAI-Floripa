@@ -11,7 +11,6 @@ import { PremiumMorning } from '@/components/landing/PremiumMorning'
 import todayImg from '@/assets/landing/app-screens/today.webp'
 import { PhoneMock } from '@/components/landing/PhoneMock'
 import { Hero } from '@/components/landing/Hero'
-import { IslandMap } from '@/components/landing/IslandMap'
 import { DayCurveDemo } from '@/components/landing/DayCurveDemo'
 import { ChatDemo } from '@/components/landing/ChatDemo'
 import { FAQS } from '@/components/landing/landingData'
@@ -32,8 +31,9 @@ import { BEACH_DIRECTORY } from '@/lib/beachDirectory'
 // página; sai a vitrine de celular com rolagem; ilha sem fotos, explicada como mapa em tempo
 // real; um único print do app ("A nota de cada praia, agora") fora da moldura de celular;
 // perguntas novas no chat; "E ainda tem mais" virou uma manhã com o Premium; título do preço.
-// Plano D (29/set/2026): as ondas desenhadas da passagem saíram; rolando, a foto do topo vira a
-// ilha vista de satélite com as praias acesas (Hero.tsx), e a seção da ilha ficou só com a lista.
+// Plano D (29/set/2026): as ondas desenhadas da passagem saíram. Rolando, a câmera sobe da foto
+// da Praia Mole até a ilha inteira e pousa no mapa com a lista de praias (Hero.tsx) — o mapa da
+// ilha é o fim do próprio topo, não uma seção separada.
 
 const BEACH_COUNT = BEACH_DIRECTORY.length
 function SectionHead({ badge, title, children, center = true }: { badge: React.ReactNode; title: React.ReactNode; children?: React.ReactNode; center?: boolean }) {
@@ -87,7 +87,7 @@ export default function Landing() {
         </div>
       </nav>
 
-      {/* HERO — foto aérea + promessa; rolando, vira a ilha vista de satélite (Hero.tsx) */}
+      {/* HERO — foto da Praia Mole + promessa; rolando, a câmera sobe até o mapa da ilha (Hero.tsx) */}
       <Hero>
         <div className="mx-auto flex max-w-2xl flex-col items-center gap-4 sm:gap-5 [@media(max-height:700px)]:gap-3">
           <h1 className="text-[2.7rem] [@media(max-height:700px)]:text-[2.2rem] md:text-7xl font-black leading-[1.02] tracking-tight text-white overflow-hidden text-balance"
@@ -138,18 +138,6 @@ export default function Landing() {
           </div>
         </div>
       </Hero>
-
-      {/* A ILHA INTEIRA — o mapa em si (satélite + praias acesas) é o fim da transição do topo
-          (Hero.tsx); aqui fica a lista de norte a sul com as condições de cada praia */}
-      <section id="ilha" className="pt-4 pb-20 relative z-10">
-        <div className="container mx-auto px-5 max-w-3xl">
-          <p className="mb-4 text-center text-sm text-foreground/70">Toque numa praia e veja as condições de agora.</p>
-          <IslandMap listOnly />
-          <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground/70">
-            Imagem de satélite: contém dados modificados do Copernicus Sentinel (2026), ESA. Contorno da ilha: © colaboradores do OpenStreetMap.
-          </p>
-        </div>
-      </section>
 
       {/* AMANHÃ — curva real pra arrastar */}
       <section id="amanha" className="py-20 border-t border-border/30 relative z-10">
