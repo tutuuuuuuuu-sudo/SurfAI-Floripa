@@ -30,6 +30,8 @@ const SECTIONS = [
 
 • **Supabase**: nosso provedor de banco de dados e autenticação, sujeito à sua própria política de privacidade.
 • **Mercado Pago**: para processamento de pagamentos do plano Premium.
+• **PostHog**: estatísticas de uso do app, somente se você aceitar no aviso de privacidade.
+• **Sentry**: relatórios de erro técnico, para corrigir falhas (podem incluir o email da conta conectada no momento do erro).
 • **Autoridades legais**: quando exigido por lei ou ordem judicial.
 
 Nenhum dado identificável é compartilhado com anunciantes ou parceiros comerciais.`,
@@ -61,7 +63,12 @@ Para exercer qualquer um desses direitos, entre em contato pelo email abaixo.`,
   },
   {
     title: '7. Cookies e armazenamento local',
-    content: `O Surf AI usa localStorage do navegador para salvar preferências (nível de surf, região, tema) e cache de dados. Isso não envolve cookies de rastreamento de terceiros. Você pode limpar esses dados a qualquer momento pelo seu navegador.`,
+    content: `O Surf AI usa o armazenamento local do navegador (localStorage) para salvar preferências (nível de surf, região, tema) e cache de dados.
+
+• **Estatísticas de uso (PostHog)**: só são coletadas se você clicar em "Aceitar" no aviso de privacidade. Se recusar, nada é coletado.
+• **Página inicial**: contamos apenas o total de visitas e de cliques nos botões por dia, sem cookies e sem identificar ninguém.
+
+Você pode limpar esses dados a qualquer momento pelo seu navegador.`,
   },
   {
     title: '8. Notificações push',
@@ -98,7 +105,7 @@ export default function Privacy() {
           <AppLogo size={32} variant="icon" />
           <div>
             <h1 className="text-base font-bold leading-none">Política de Privacidade</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">Surf AI · Atualizado em junho de 2026</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Surf AI · Atualizado em setembro de 2026</p>
           </div>
         </div>
       </header>

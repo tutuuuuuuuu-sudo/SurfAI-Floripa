@@ -86,7 +86,7 @@ export function PremiumMorning() {
                 <step.icon className="h-4 w-4" />
               </span>
               <div className={i % 2 === 1 ? 'md:pl-10' : 'md:pr-10 md:text-right'}>
-                <div className="font-mono text-xs font-semibold tracking-wider text-primary">{step.time}</div>
+                <div className="text-xs font-semibold tabular-nums tracking-wider text-primary">{step.time}</div>
                 <h3 className="mt-1 text-xl font-black">{step.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-foreground/70">{step.text}</p>
               </div>

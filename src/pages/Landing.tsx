@@ -1,9 +1,10 @@
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
   Bell, BarChart3, Clock, Shield, ArrowRight, CheckCircle2, TrendingUp,
-  MapPin, Crown, Sparkles, Compass, Waves,
+  Crown, Sparkles, Compass, Waves, Mail, Instagram,
 } from 'lucide-react'
 import { AppLogo } from '@/components/AppLogo'
 import { FAQItem, Reveal } from '@/components/landing/LandingComponents'
@@ -15,6 +16,7 @@ import { DayCurveDemo } from '@/components/landing/DayCurveDemo'
 import { ChatDemo } from '@/components/landing/ChatDemo'
 import { FAQS } from '@/components/landing/landingData'
 import { BEACH_DIRECTORY } from '@/lib/beachDirectory'
+import { countLandingCta, countLandingView } from '@/lib/landingStats'
 
 // Landing "juntada" (28/set/2026): a estrutura e o visual da landing anterior (foto da ilha,
 // vitrine com prints do app, cartões de preço, animações de entrada) com as peças vivas da v2
@@ -49,6 +51,9 @@ function SectionHead({ badge, title, children, center = true }: { badge: React.R
 const pill = 'border-primary/30 text-primary bg-primary/5 mb-4 px-4 py-1'
 
 export default function Landing() {
+  // Contador anônimo (sem cookie): quantas visitas e quantos cliques em cada botão, por dia
+  useEffect(() => { countLandingView() }, [])
+
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-clip relative">
 
@@ -78,7 +83,7 @@ export default function Landing() {
             </Button>
             <Button size="sm" asChild className="text-sm font-bold px-4 bg-primary hover:bg-primary/90"
               style={{ boxShadow: '0 0 16px color-mix(in oklch, var(--primary) 25%, transparent)' }}>
-              <Link to="/login">
+              <Link to="/login" onClick={() => countLandingCta('nav')}>
                 Começar grátis
                 <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
               </Link>
@@ -106,21 +111,11 @@ export default function Landing() {
             pro mar de agora e dos próximos 14 dias.
           </p>
 
-          <div className="inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm sm:text-base font-bold text-white backdrop-blur-md"
-            style={{
-              animation: 'fadeIn 0.7s ease 0.45s both',
-              background: 'color-mix(in oklch, var(--primary) 26%, transparent)',
-              border: '1.5px solid color-mix(in oklch, var(--primary) 65%, transparent)',
-            }}>
-            <MapPin className="h-4 w-4" />
-            Feito só pra Floripa, pico por pico.
-          </div>
-
           <div className="flex w-full flex-col sm:w-auto sm:flex-row gap-3" style={{ animation: 'slideUp 0.6s ease 0.5s both' }}>
             <Button size="lg" asChild
               className="text-base font-bold px-8 h-12 relative overflow-hidden group bg-primary hover:bg-primary/90"
               style={{ boxShadow: '0 0 40px color-mix(in oklch, var(--primary) 45%, transparent)' }}>
-              <Link to="/login">
+              <Link to="/login" onClick={() => countLandingCta('hero')}>
                 <span className="relative z-10 flex items-center gap-2">
                   Criar conta grátis
                   <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -130,7 +125,7 @@ export default function Landing() {
             <Button size="lg" variant="outline" asChild
               className="text-base font-bold px-8 h-12 text-white border-white/40 hover:bg-black/50 hover:text-white"
               style={{ background: 'oklch(0.14 0.02 230 / 0.55)', backdropFilter: 'blur(12px)' }}>
-              <a href="#pricing">
+              <a href="#pricing" onClick={() => countLandingCta('hero-planos')}>
                 <Crown className="h-4 w-4 mr-2 text-rating-fair" />
                 Ver planos
               </a>
@@ -144,8 +139,7 @@ export default function Landing() {
         <div className="container mx-auto px-5 max-w-2xl">
           <SectionHead badge={<Badge variant="outline" className={pill}><Clock className="h-3 w-3 mr-1.5" />Previsão de amanhã</Badge>}
             title="Escolha a hora certa de cair.">
-            Arraste o dedo pela curva: cada ponto é uma hora de amanhã, com a nota, a onda, a maré e o vento.
-            É a previsão de verdade, a mesma que aparece no app.
+            Chegue no pico antes do vento entrar. A previsão de amanhã, hora a hora, em cada praia.
           </SectionHead>
           <DayCurveDemo />
         </div>
@@ -232,7 +226,7 @@ export default function Landing() {
                   <div className="text-3xl font-black text-foreground leading-none">R$16<span className="text-lg">,90</span></div>
                   <div className="text-xs text-muted-foreground mb-3">por 30 dias</div>
                   <Button asChild variant="outline" size="sm" className="w-full font-semibold">
-                    <Link to="/login?plan=premium">Assinar</Link>
+                    <Link to="/login?plan=premium" onClick={() => countLandingCta('preco-mensal')}>Assinar</Link>
                   </Button>
                 </div>
               </Reveal>
@@ -249,7 +243,7 @@ export default function Landing() {
                   <div className="text-xs text-muted-foreground mb-3">por mês · R$149,90/ano</div>
                   <Button asChild size="sm" className="w-full font-semibold"
                     style={{ background: 'var(--rating-fair)', color: 'oklch(0.1 0.02 240)' }}>
-                    <Link to="/login?plan=premium">Assinar</Link>
+                    <Link to="/login?plan=premium" onClick={() => countLandingCta('preco-anual')}>Assinar</Link>
                   </Button>
                 </div>
               </Reveal>
@@ -266,7 +260,7 @@ export default function Landing() {
             </div>
             <p className="text-sm text-muted-foreground text-center">
               Quer conhecer antes? O plano grátis já mostra a nota das {BEACH_COUNT} praias e 3 dias de previsão.{' '}
-              <Link to="/login" className="font-semibold text-primary hover:underline">Criar conta grátis</Link>
+              <Link to="/login" onClick={() => countLandingCta('preco-gratis')} className="font-semibold text-primary hover:underline">Criar conta grátis</Link>
             </p>
           </Reveal>
         </div>
@@ -306,14 +300,14 @@ export default function Landing() {
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Button size="lg" asChild className="font-bold px-10 h-12 text-base group bg-primary hover:bg-primary/90"
                   style={{ boxShadow: '0 0 40px color-mix(in oklch, var(--primary) 50%, transparent)' }}>
-                  <Link to="/login">
+                  <Link to="/login" onClick={() => countLandingCta('fechamento')}>
                     Criar conta grátis
                     <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </Button>
                 <Button size="lg" variant="outline" asChild className="font-bold px-8 h-12"
                   style={{ borderColor: 'color-mix(in oklch, var(--rating-fair) 40%, transparent)', color: 'var(--rating-fair)' }}>
-                  <a href="#pricing">
+                  <a href="#pricing" onClick={() => countLandingCta('fechamento-planos')}>
                     <Crown className="h-4 w-4 mr-2" />
                     Ver planos
                   </a>
@@ -327,15 +321,29 @@ export default function Landing() {
       {/* RODAPÉ */}
       <footer className="py-8"
         style={{ borderTop: '1px solid color-mix(in oklch, var(--foreground) 6%, transparent)' }}>
-        <div className="container mx-auto px-5 max-w-5xl flex flex-col md:flex-row items-center justify-between gap-4">
-          <AppLogo size={30} variant="full" />
-          <div className="text-xs text-muted-foreground text-center">
-            Florianópolis, SC · Feito em Floripa, pra quem surfa em Floripa
+        <div className="container mx-auto px-5 max-w-5xl flex flex-col md:flex-row items-center justify-between gap-5">
+          <div className="flex flex-col items-center gap-2 md:items-start">
+            <AppLogo size={30} variant="full" />
+            <div className="text-xs text-muted-foreground text-center md:text-left">
+              Florianópolis, SC · Feito em Floripa, pra quem surfa em Floripa
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-            <Link to="/privacy" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Privacidade</Link>
-            <Link to="/terms" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Termos de Uso</Link>
-            <Link to="/login" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Entrar</Link>
+          <div className="flex flex-col items-center gap-3 md:items-end">
+            <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+              <a href="https://www.instagram.com/surfaifloripa/" target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm text-foreground/80 hover:text-foreground transition-colors">
+                <Instagram className="h-4 w-4" />@surfaifloripa
+              </a>
+              <a href="mailto:surfaifloripa@gmail.com"
+                className="inline-flex items-center gap-1.5 text-sm text-foreground/80 hover:text-foreground transition-colors">
+                <Mail className="h-4 w-4" />surfaifloripa@gmail.com
+              </a>
+            </div>
+            <div className="flex items-center gap-4">
+              <Link to="/privacy" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Privacidade</Link>
+              <Link to="/terms" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Termos de Uso</Link>
+              <Link to="/login" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Entrar</Link>
+            </div>
           </div>
         </div>
       </footer>
