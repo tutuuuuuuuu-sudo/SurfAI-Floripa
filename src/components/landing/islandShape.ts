@@ -1,4 +1,4 @@
-// Contorno da Ilha de Santa Catarina pro mapa "A ilha inteira" da landing (IslandMap.tsx).
+// Contorno da Ilha de Santa Catarina pro mapa "A ilha inteira" da landing (Hero.tsx).
 // Gerado em 28/set/2026 a partir do polígono oficial do OpenStreetMap (Nominatim, "Ilha de
 // Santa Catarina", 8.583 pontos), simplificado (Douglas-Peucker, ~130m) pra 208 pontos e
 // projetado em coordenadas de SVG com correção de latitude. Dados © colaboradores do

@@ -69,8 +69,9 @@ src/
 │   │   ├── DayCurve.tsx       # "Linha do dia": nota hora a hora como onda contínua + arco do sol, arrastável (ForecastDay)
 │   │   └── PicosSection.tsx   # Sub-regiões com matching de swell + links Maps/Waze
 │   ├── landing/               # Landing "juntada" (28/set/2026): visual da antiga + peças vivas do app
-│   │   ├── Hero.tsx           # Foto aérea + ondas animadas na passagem pra página (.hero-wave, .hero-scrim em index.css)
-│   │   ├── IslandMap.tsx      # Mapa em tempo real: contorno da ilha (islandShape.ts, OpenStreetMap) + 14 praias na cor da nota + picos de cada praia
+│   │   ├── Hero.tsx           # Topo "a câmera sobe": foto da Praia Mole → aerofoto SC → satélite → mapa da ilha + lista (fim do topo = mapa em tempo real). Animação montada 1x (Web Animations) e tocada pela rolagem (ViewTimeline; sem ela, JS). Camadas em assets/landing/flyover/, geradas por .content-drafts/flyover/build*.py (fora do git)
+│   │   ├── IslandBeachList.tsx# Lista de praias N→S (picos + nota) e resumo "Agora na ilha", ao lado do mapa do Hero
+│   │   ├── useIslandBeaches.ts# Praias ordenadas N→S com posição no desenho (islandShape.ts, OpenStreetMap) + resumo por faixa
 │   │   ├── DayCurveDemo.tsx   # DayCurve real com a previsão de amanhã (api/landing-day.ts, sem login)
 │   │   ├── ChatDemo.tsx       # Conversa de exemplo com dado real, no tom do chat (Lomba x Caldeirão; fim de semana no sul)
 │   │   ├── PremiumMorning.tsx # "Uma manhã com o Premium": linha do tempo alerta → Bora Surfar → comparação, com dado ao vivo
@@ -100,7 +101,8 @@ src/
 │   ├── aiReport.ts            # fetchAIReport() — cache localStorage 30min
 │   ├── premium.ts             # usePremium(), createMercadoPagoCheckout()
 │   ├── supabase.ts            # createClient() — cliente Supabase único
-│   ├── monitoring.ts          # Sentry + PostHog — initMonitoring(), track(), captureError()
+│   ├── monitoring.ts          # Sentry + PostHog — initMonitoring(), track(), captureError(). PostHog SÓ depois do "Aceitar" no CookieConsent (enableAnalytics/disableAnalytics) — LGPD, 29/set/2026
+│   ├── landingStats.ts        # countLandingView/countLandingCta → api/landing-event.ts (só conta no domínio real, não em local/preview)
 │   ├── favorites.ts           # getFavorites(), toggleFavorite() via Supabase
 │   ├── comments.ts            # getComments(), addComment() via Supabase
 │   ├── notifications.ts       # Alertas de condições boas
@@ -129,6 +131,7 @@ api/
 │                          chamada de IA toda vez que qualquer Premium abria o app, mesmo sem pedir)
 ├── forecast.ts         # Forecast detalhado por pico
 ├── landing-day.ts      # Um dia (até 7 à frente) hora a hora de uma praia aberta (publicSpots.ts), sem login, cache CDN 1h — demos da landing
+├── landing-event.ts    # Contador anônimo da landing (+1 no dia: visita ou clique em botão, lista fechada) → tabela landing_stats (RPC bump_landing_stat, só service role). Sem cookie/IP → não depende do aviso de cookies
 ├── _dayDetail.ts       # Montagem do dia hora a hora (fonte única de forecast-day.ts e landing-day.ts)
 ├── create-payment.ts   # Cria preferência de pagamento no Mercado Pago
 ├── mp-webhook.ts       # Webhook do MP → atualiza subscriptions no Supabase
@@ -372,7 +375,7 @@ import { supabase } from '@/lib/supabase'
 ## 📊 MONITORING
 
 - **Sentry**: captura erros em produção (`VITE_SENTRY_DSN`)
-- **PostHog**: analytics de comportamento (`VITE_POSTHOG_KEY`) — autocapture desativado, usar `track()` manualmente
+- **PostHog**: analytics de comportamento (`VITE_POSTHOG_KEY`) — autocapture desativado, usar `track()` manualmente. Só é ligado depois do "Aceitar" no aviso de privacidade (antes disso `track()` não faz nada). A landing não mostra o aviso: lá quem conta visitas e cliques é o contador anônimo (`landing_stats`, ver `api/landing-event.ts`) — pra ver os números: `select * from landing_stats order by day desc`
 - Funções: `initMonitoring()`, `identifyUser()`, `resetUser()`, `track()`, `captureError()` em `src/lib/monitoring.ts`
 
 ---

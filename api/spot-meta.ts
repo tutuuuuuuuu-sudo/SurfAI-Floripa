@@ -38,7 +38,7 @@ function renderHtml(opts: { title: string; description: string; url: string }): 
 <meta property="og:description" content="${d}" />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="${url}" />
-<meta property="og:image" content="${APP_URL}/og-image.jpg" />
+<meta property="og:image" content="${APP_URL}/og-image-v2.jpg" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta property="og:locale" content="pt_BR" />
@@ -46,7 +46,7 @@ function renderHtml(opts: { title: string; description: string; url: string }): 
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="${t}" />
 <meta name="twitter:description" content="${d}" />
-<meta name="twitter:image" content="${APP_URL}/og-image.jpg" />
+<meta name="twitter:image" content="${APP_URL}/og-image-v2.jpg" />
 </head>
 <body>
 <h1>${t}</h1>

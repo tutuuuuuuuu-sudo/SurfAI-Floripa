@@ -257,27 +257,32 @@ input, textarea, select {
     transparent 100%);
 }
 
-/* Mapa da ilha na landing (IslandMap.tsx): cada praia acende em sequência, de norte a sul */
+/* Transição do topo da landing (Hero.tsx): foto da Praia Mole → aerofoto → satélite → mapa. O palco
+   é sempre escuro (imagem de satélite) nos dois temas; só a saída de baixo funde no fundo do tema.
+   Nada aqui muda durante a rolagem além de transform/opacity (a versão anterior animava máscara
+   e filtro a cada quadro e travava no celular). */
+.flyover-sea { background: oklch(0.18 0.057 256); } /* cor do mar aberto no satélite tratado */
+.flyover-dim { fill: oklch(0.12 0.03 245 / 0.62); }
+.flyover-vignette {
+  background: radial-gradient(ellipse 75% 60% at 50% 50%, transparent 40%, oklch(0.12 0.03 245 / 0.92) 100%);
+}
+.flyover-fade-bottom {
+  background: linear-gradient(180deg, transparent, var(--color-background));
+}
+.flyover-panel {
+  background: oklch(0.16 0.03 245 / 0.72);
+  border: 1px solid oklch(1 0 0 / 0.1);
+}
+/* Praias acendem de norte a sul quando o mapa se monta (data-lit no palco, ver Hero.tsx) */
 @keyframes mapDotIn {
   0%   { opacity: 0; transform: scale(0.2); }
   70%  { opacity: 1; transform: scale(1.35); }
   100% { opacity: 1; transform: scale(1); }
 }
-.map-dot-in {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: mapDotIn 0.55s ease-out both;
-}
-/* Base da foto da região fundindo no fundo do tema (texto legível no claro e no escuro) */
-.region-photo-fade {
-  background: linear-gradient(180deg, transparent 30%,
-    color-mix(in oklch, var(--color-background) 85%, transparent) 78%,
-    color-mix(in oklch, var(--color-background) 96%, transparent) 100%);
-}
-
-/* Ondas correndo no rodapé do topo da landing (Hero.tsx) */
-@keyframes heroWave { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-.hero-wave { animation: heroWave 20s linear infinite; will-change: transform; }
+.flyover-dot { opacity: 0; }
+[data-lit='1'] .flyover-dot { animation: mapDotIn 0.5s ease-out both; }
+.flyover-outline { stroke-dasharray: 1; stroke-dashoffset: 1; }
+[data-lit='1'] .flyover-outline { animation: drawLine 1.1s ease-out forwards; }
 
 /* Destaque do título da landing: degradê de mar forte (turquesa → azul), só no texto */
 .text-sea-gradient {

@@ -7,6 +7,7 @@ import { formatWaveRange, WIND_DEG } from '@/lib/surfData'
 import { directionName } from '@/lib/directions'
 import { useSurfData } from '@/contexts/SurfDataContext'
 import { computeGoldenWindow } from '../../../api/_goldenWindow'
+import { countLandingCta } from '@/lib/landingStats'
 
 // "O dia numa curva" (landing v2, 28/set/2026): a MESMA DayCurve da página de previsão do
 // app, com a previsão real de amanhã (api/landing-day.ts, sem login, cache 1h). Substitui a
@@ -191,7 +192,7 @@ export function DayCurveDemo() {
         )}
       </div>
 
-      <Link to="/login" className="inline-flex items-center gap-1.5 self-start text-sm font-semibold text-primary hover:underline">
+      <Link to="/login" onClick={() => countLandingCta('curva')} className="inline-flex items-center gap-1.5 self-start text-sm font-semibold text-primary hover:underline">
         Ver a previsão de todas as praias
         <ArrowRight className="h-4 w-4" />
       </Link>

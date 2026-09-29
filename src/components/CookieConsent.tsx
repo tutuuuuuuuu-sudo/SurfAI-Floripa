@@ -1,41 +1,35 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Shield } from 'lucide-react'
-import { getPosthog } from '@/lib/monitoring'
+import { disableAnalytics, enableAnalytics } from '@/lib/monitoring'
 
 const CONSENT_KEY = 'analytics_consent'
 
 export function CookieConsent() {
-  const [visible, setVisible] = useState(false)
+  // Aparece só pra quem ainda não decidiu (modo privado sem localStorage: não aparece)
+  const [visible, setVisible] = useState(() => {
+    try { return localStorage.getItem(CONSENT_KEY) === null } catch { return false }
+  })
   const location = useLocation()
 
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(CONSENT_KEY)
-      if (saved === null) setVisible(true)
-    } catch {
-      // modo privado — não exibe o banner
-    }
-  }, [])
-
   // Landing é página de vendas pré-cadastro — pedir consentimento de analytics
-  // antes do usuário nem saber o que é o app só polui visualmente.
+  // antes do usuário nem saber o que é o app só polui visualmente. Lá nada é coletado sem o
+  // aviso: só o contador anônimo de visitas/cliques (src/lib/landingStats.ts), sem cookie.
   if (location.pathname.startsWith('/landing')) return null
 
+  // O PostHog só é ligado aqui, no "Aceitar" (ou no início, pra quem já aceitou antes) —
+  // antes disso nada é coletado (monitoring.ts). Recusar não baixa nem liga nada.
   const handleAccept = () => {
     try { localStorage.setItem(CONSENT_KEY, 'accepted') } catch { /* */ }
     setVisible(false)
+    enableAnalytics()
   }
 
   const handleDecline = () => {
     try { localStorage.setItem(CONSENT_KEY, 'declined') } catch { /* */ }
     setVisible(false)
-    // window.posthog nunca existe de verdade (posthog-js é importado como módulo,
-    // nunca anexado em window) — o optional chaining fazia no-op silencioso e o
-    // rastreamento continuava rodando mesmo depois de recusado. Usa o mesmo
-    // singleton lazy que monitoring.ts inicializa (getPosthog), não uma cópia própria.
-    getPosthog().then(posthog => posthog.opt_out_capturing())
+    disableAnalytics()
   }
 
   if (!visible) return null
