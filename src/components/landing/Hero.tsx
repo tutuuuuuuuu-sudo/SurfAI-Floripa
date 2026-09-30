@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
 import photoMole from '@/assets/landing/flyover/photo-mole.webp'
+import photoTone from '@/assets/landing/flyover/photo-tone.webp'
 import orthoXfine from '@/assets/landing/flyover/ortho-xfine.webp'
 import orthoFine from '@/assets/landing/flyover/ortho-fine.webp'
 import orthoMid from '@/assets/landing/flyover/ortho-mid.webp'
@@ -26,10 +27,12 @@ import { IslandBeachList, IslandSummary } from '@/components/landing/IslandBeach
 // vídeo sem redesenhar.
 //
 // Camadas (unidades do desenho da ilha, islandShape.ts, ~91 m cada; geradas por
-// .content-drafts/flyover/build.py, fora do git):
-// - foto: Tiago Muraro (Unsplash License), Praia Mole, encaixada na aerofoto (giro de 11°)
+// .content-drafts/flyover/build2.py, fora do git):
+// - foto: Tiago Muraro (Unsplash License), Praia Mole, no tamanho e giro reais medidos contra a
+//   aerofoto (register3.py: dunas, areia e mar continuam de um lado pro outro da emenda)
 // - aerofoto: Governo de SC, SIGSC OrtoRGB 2012 (WMS público, sem taxa/restrição), cor convertida
-//   pra do satélite; 4 níveis (0,4 km na resolução máxima de 0,39 m, 0,7 / 2,2 / 6,5 km)
+//   pra do satélite com a areia segurada no bege; 4 níveis (0,55 / 0,7 / 2,2 / 6,5 km); pra emenda
+//   não aparecer, a foto ganha uma cópia com essas cores (photo-tone, ver toneMix)
 // - satélite: Copernicus Sentinel-2 (ESA), 21/ago/2026; detalhe perto da Mole + base da ilha
 
 const NAV = 60 // menu fixo da landing, por cima do palco
@@ -45,16 +48,22 @@ const BASE: Record<'tall' | 'wide', Layer> = {
 // De baixo pra cima, cada vez mais perto da Mole. Somem quando ficam pequenas na tela (a aerofoto
 // é de 2012 e não pode aparecer como remendo no mapa final, que é só satélite)
 const DETAILS: Layer[] = [
-  { src: s2Detail, x: 92.55, y: 149.05, w: 140, h: 270, px: 700, feather: 0.14, fadeSmall: true },
-  { src: orthoCoarse, x: 126.55, y: 233.05, w: 72, h: 72, px: 880, feather: 0.16, fadeSmall: true },
-  { src: orthoMid, x: 150.55, y: 257.05, w: 24, h: 24, px: 960, feather: 0.16, fadeSmall: true },
-  { src: orthoFine, x: 158.55, y: 265.05, w: 8, h: 8, px: 900, feather: 0.16, fadeSmall: true },
-  { src: orthoXfine, x: 160.25, y: 266.75, w: 4.6, h: 4.6, px: 1076, feather: 0.2, fadeSmall: true },
+  { src: s2Detail, x: 93.6, y: 147.91, w: 140, h: 270, px: 700, feather: 0.14, fadeSmall: true },
+  { src: orthoCoarse, x: 127.6, y: 231.91, w: 72, h: 72, px: 880, feather: 0.16, fadeSmall: true },
+  { src: orthoMid, x: 151.6, y: 255.91, w: 24, h: 24, px: 960, feather: 0.16, fadeSmall: true },
+  { src: orthoFine, x: 159.6, y: 263.91, w: 8, h: 8, px: 900, feather: 0.16, fadeSmall: true },
+  { src: orthoXfine, x: 160.6, y: 264.91, w: 6, h: 6, px: 1200, feather: 0.2, fadeSmall: true },
 ]
-// A foto (2000x1333), que é também o ponto em volta do qual a câmera sobe. De verdade ela cobre
-// ~1,3 unidade; aqui fica um pouco maior (2,2) pra diminuir o salto de nitidez pra aerofoto
-const PHOTO = { src: photoMole, cx: 162.55, cy: 269.05, w: 2.2, h: 2.2 / 1.5, rot: -11, feather: 0.17 }
-const PHOTO_LAYER: Layer = { src: photoMole, x: PHOTO.cx - PHOTO.w / 2, y: PHOTO.cy - PHOTO.h / 2, w: PHOTO.w, h: PHOTO.h, px: 2000, feather: PHOTO.feather }
+// A foto (2400x1600), que é também o ponto em volta do qual a câmera sobe. Tamanho, giro e
+// centro são os reais (cobre ~280 m de praia); feather = borda esfumada embutida na imagem
+const PHOTO = { src: photoMole, cx: 163.6, cy: 267.91, w: 3.1, h: 3.1 / 1.5, rot: 11, feather: 0.08 }
+const PHOTO_LAYER: Layer = { src: photoMole, x: PHOTO.cx - PHOTO.w / 2, y: PHOTO.cy - PHOTO.h / 2, w: PHOTO.w, h: PHOTO.h, px: 2400, feather: PHOTO.feather }
+// Abertura centrada na beira (areia com gente + ondas), não no meio da foto, que é só mar. Em
+// fração da largura da foto, pra esquerda; em tela larga não sobra espaço e fica no centro
+const START_DU = -0.16 * PHOTO.w
+// Nos primeiros passos da subida a foto troca pra uma cópia com as cores da aerofoto (mais clara,
+// como o ar visto de mais alto): quando a borda aparece, as cores dos dois lados já são iguais
+const toneMix = (L: Layout, s: number) => smooth(seg(L.s0 / s, 1.02, 1.6))
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v))
 const seg = (p: number, a: number, b: number) => clamp01((p - a) / (b - a))
@@ -63,7 +72,7 @@ const smooth = (t: number) => t * t * (3 - 2 * t)
 // aerofoto em volta) e pousa devagar no mapa
 const cameraEase = (t: number) => 0.65 * Math.sin((Math.PI * t) / 2) + 0.35 * (-(Math.cos(Math.PI * t) - 1) / 2)
 
-type Layout = { W: number; H: number; k: number; ox: number; oy: number; wide: boolean; s0: number }
+type Layout = { W: number; H: number; k: number; ox: number; oy: number; wide: boolean; s0: number; du: number }
 
 // Câmera no progresso p: escala s (1 = mapa final), giro e onde o centro da foto cai na tela
 function camera(L: Layout, p: number) {
@@ -73,13 +82,16 @@ function camera(L: Layout, p: number) {
   const x = L.W / 2 + (L.ox + PHOTO.cx * L.k - L.W / 2) * w
   const y = L.H / 2 + (L.oy + PHOTO.cy * L.k - L.H / 2) * w
   const theta = -PHOTO.rot * (1 - smooth(seg(z, 0.12, 0.65))) // começa com a foto reta, termina com o norte pra cima
-  return { s, x, y, theta }
+  // desloca o começo pra beira da praia e volta pro centro da foto nos primeiros passos da subida
+  const off = L.du * (1 - smooth(seg(z, 0, 0.3))) * L.k * s
+  const a = ((theta + PHOTO.rot) * Math.PI) / 180
+  return { s, x: x - off * Math.cos(a), y: y - off * Math.sin(a), theta, off: Math.abs(off) }
 }
 
 // Base de cada <img>: a caixa no CSS já tem ~ o tamanho da imagem, e a animação só escala
 const baseScale = (l: Layer, k: number) => Math.max(1, l.px / (2 * l.w * k))
 
-function layerFrames(L: Layout, layers: { l: Layer; photo?: boolean }[], samples = 64) {
+function layerFrames(L: Layout, layers: { l: Layer; photo?: boolean; tone?: boolean }[], samples = 64) {
   const frames = layers.map(() => [] as Keyframe[])
   const view = Math.max(L.W, L.H)
   for (let i = 0; i <= samples; i++) {
@@ -88,13 +100,18 @@ function layerFrames(L: Layout, layers: { l: Layer; photo?: boolean }[], samples
     // de cima pra baixo: uma camada opaca que já cobre a tela inteira esconde as de baixo
     let covered = false
     for (let j = layers.length - 1; j >= 0; j--) {
-      const { l, photo } = layers[j]
+      const { l, photo, tone } = layers[j]
       const f = l.feather * Math.min(l.w, l.h)
       let op = 1
-      if (photo) op = smooth(seg(l.w * L.k * c.s, 0.35 * L.W, 1.1 * L.W))
+      if (photo) {
+        op = smooth(seg(l.w * L.k * c.s, 0.35 * L.W, 1.1 * L.W))
+        // a cópia de cor entra por cima; a foto original só sai quando ela já cobre quase tudo
+        const m = toneMix(L, c.s)
+        op *= tone ? m : 1 - smooth(seg(m, 0.85, 1))
+      }
       else if (l.fadeSmall) op = smooth(seg(l.w * L.k * c.s, 90, 190))
       if (covered) op = 0
-      if (op >= 1 && Math.min(l.w - 2 * f, l.h - 2 * f) * L.k * c.s >= view * (photo ? 1.02 : 1.3)) covered = true
+      if (op >= 1 && Math.min(l.w - 2 * f, l.h - 2 * f) * L.k * c.s >= view * (photo ? 1.02 : 1.3) + 2 * c.off) covered = true
       const b = photo ? L.s0 : baseScale(l, L.k)
       const inner = photo
         ? `rotate(${PHOTO.rot}deg) translate(${(-l.w * L.k * b) / 2}px, ${(-l.h * L.k * b) / 2}px)`
@@ -156,6 +173,7 @@ function IslandStage({ hero }: { hero?: ReactNode }) {
   const baseRef = useRef<HTMLImageElement>(null)
   const detailRefs = useRef<(HTMLImageElement | null)[]>([])
   const photoRef = useRef<HTMLImageElement>(null)
+  const photoToneRef = useRef<HTMLImageElement>(null)
   const scrimRef = useRef<HTMLDivElement>(null)
   const vignetteRef = useRef<HTMLDivElement>(null)
   const heroRef = useRef<HTMLDivElement>(null)
@@ -180,7 +198,10 @@ function IslandStage({ hero }: { hero?: ReactNode }) {
       const k = slot.clientWidth / BOX.w
       const f = PHOTO.feather * Math.min(PHOTO.w, PHOTO.h)
       const s0 = Math.max(W / ((PHOTO.w - 2 * f) * k), H / ((PHOTO.h - 2 * f) * k)) * 1.04
-      const next: Layout = { W, H, k, ox: x - BOX.x * k, oy: y - BOX.y * k, wide: W / H >= 1, s0 }
+      // quanto o começo pode ir pro lado sem mostrar a borda da foto
+      const slack = Math.max(0, ((PHOTO.w - 2 * f) * k * s0 - W) / 2 / (k * s0) - 0.02 * PHOTO.w)
+      const du = Math.max(-slack, Math.min(slack, START_DU))
+      const next: Layout = { W, H, k, ox: x - BOX.x * k, oy: y - BOX.y * k, wide: W / H >= 1, s0, du }
       setLayout(prev => (prev && (Object.keys(next) as (keyof Layout)[]).every(key =>
         typeof next[key] === 'number' ? Math.abs((prev[key] as number) - (next[key] as number)) < 0.5 : prev[key] === next[key]) ? prev : next))
     }
@@ -200,10 +221,10 @@ function IslandStage({ hero }: { hero?: ReactNode }) {
     if (railRef.current) railRef.current.style.height = `${pin + window.innerHeight}px`
 
     const list: [Element | null, Keyframe[]][] = []
-    const world: { el: HTMLImageElement | null; l: Layer; photo?: boolean }[] = [
+    const world: { el: HTMLImageElement | null; l: Layer; photo?: boolean; tone?: boolean }[] = [
       { el: baseRef.current, l: L.wide ? BASE.wide : BASE.tall },
       ...(animated ? DETAILS.map((l, i) => ({ el: detailRefs.current[i], l })) : []),
-      ...(animated ? [{ el: photoRef.current, l: PHOTO_LAYER, photo: true }] : []),
+      ...(animated ? [{ el: photoRef.current, l: PHOTO_LAYER, photo: true }, { el: photoToneRef.current, l: PHOTO_LAYER, photo: true, tone: true }] : []),
     ]
     layerFrames(L, world).forEach((frames, i) => list.push([world[i].el, frames]))
     if (animated) {
@@ -306,9 +327,14 @@ function IslandStage({ hero }: { hero?: ReactNode }) {
               style={{ width: l.w * k * baseScale(l, k), height: l.h * k * baseScale(l, k), opacity: 0 }} />
           ))}
           {animated && (
-            <img ref={photoRef} src={PHOTO.src} alt="" fetchPriority="high"
-              className="absolute left-0 top-0 max-w-none origin-top-left"
-              style={{ width: PHOTO.w * k * layout.s0, height: PHOTO.h * k * layout.s0 }} />
+            <>
+              <img ref={photoRef} src={PHOTO.src} alt="" fetchPriority="high"
+                className="absolute left-0 top-0 max-w-none origin-top-left"
+                style={{ width: PHOTO.w * k * layout.s0, height: PHOTO.h * k * layout.s0 }} />
+              <img ref={photoToneRef} src={photoTone} alt="" decoding="async" fetchPriority="low"
+                className="absolute left-0 top-0 max-w-none origin-top-left"
+                style={{ width: PHOTO.w * k * layout.s0, height: PHOTO.h * k * layout.s0, opacity: 0 }} />
+            </>
           )}
         </div>
       )}
