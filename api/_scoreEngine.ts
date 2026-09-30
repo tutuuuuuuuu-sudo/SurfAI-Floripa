@@ -109,6 +109,8 @@ export function explainSurfScore(
 // orientação da praia (pro Campeche, virado pra leste, a conta geométrica chamava de "lateral"
 // e quase não descontava). Nunca fica mais brando que o maral na mesma velocidade.
 const SOUTH_WINDS = new Set(['S', 'SSE', 'SSW'])
+// Usado também pelo texto de análise (surfData.ts), pra frase e nota tratarem o sul igual
+export const isSouthWind = (windDir: string) => SOUTH_WINDS.has(windDir)
 // Curva ditada pelo usuário (30/set/2026, 2ª rodada): 10 km/h −1 · 15 −1,5 · 20 −2,5 · 25 −3,5
 // "e assim vai" (mais −1 a cada 5 km/h) — com sul de 21 km/h o mar "não fica nem regular"
 const WIND_SOUTH: [number, number][] = [[3, 1.0], [5, 0], [10, -1.0], [15, -1.5], [20, -2.5], [25, -3.5], [30, -4.5], [35, -5.5]]
