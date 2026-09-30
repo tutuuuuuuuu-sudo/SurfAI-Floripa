@@ -2,6 +2,7 @@
 // Prefixo _ indica que não é um handler HTTP — não será exposto como endpoint pelo Vercel.
 
 import { calculateSurfScore } from './_scoreEngine.js'
+import { toBeachHeight } from './_beachHeight.js'
 
 export function degreesToDir(deg: number): string {
   const dirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
@@ -114,11 +115,13 @@ export async function fetchHourlyForecast(
     // Sem applyDirectionalExposure aqui — removida de surf.ts e daqui juntas em
     // 24/set/2026 (mesma correção nos dois, pro mesmo motivo do achado de 22/ago/2026
     // de manter Home e Previsão consistentes: ver comentário em surf.ts).
-    const waveHeight = rawWaveHeight
     const swellDirection = degreesToDir(marine.hourly?.swell_wave_direction?.[idx] ?? 180)
     const swellPeriod = Math.round(
       marine.hourly?.swell_wave_period?.[idx] ?? marine.hourly?.wave_period?.[idx] ?? 10
     )
+    // Onda na praia, não mar aberto (30/set/2026) — mesma conversão do "agora" em
+    // _liveConditions.ts, pra Home e Previsão continuarem batendo
+    const waveHeight = toBeachHeight(rawWaveHeight, swellPeriod)
     const windSpeed = Math.round(weather.hourly?.wind_speed_10m?.[idx] ?? 12)
     const windDirection = degreesToDir(weather.hourly?.wind_direction_10m?.[idx] ?? 0)
     const temperature = Math.round(weather.hourly?.temperature_2m?.[idx] ?? 24)

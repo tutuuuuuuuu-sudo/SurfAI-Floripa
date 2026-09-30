@@ -36,7 +36,8 @@ describe('getSubRegionMatch — pico estreito fora da direção ideal', () => {
     const principal = getSubRegionMatch(['SE', 'SSE'], 'ESE', 1.27, 'estreita', 1.0, 9, 12)
     const riozinho = getSubRegionMatch(['SE', 'ESE'], 'ESE', 1.2, 'estreita', 1.0, 9, 10)
     expect(principal.minDiff).toBe(1)
-    expect(Number(principal.waveMax)).toBeGreaterThanOrEqual(1.2)
+    // topo da faixa = a própria série desde 30/set/2026 (antes +15%): perde no máximo ~20%
+    expect(Number(principal.waveMax)).toBeGreaterThanOrEqual(1.27 * 0.8)
     // Continua um pouco menor que o vizinho alinhado com o swell
     expect(Number(principal.waveMax)).toBeLessThan(Number(riozinho.waveMax))
     expect(principal.match).toBe('Swell bom')
