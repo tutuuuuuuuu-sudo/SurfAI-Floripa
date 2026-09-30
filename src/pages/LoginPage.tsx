@@ -12,7 +12,7 @@ import {
   GlassCardContent,
   GlassCardFooter,
 } from '@/components/ui/glass-card'
-import loginBg from '@/assets/login/armacao.webp'
+import aerialBg from '@/assets/landing/aerial-floripa.jpg'
 
 export default function LoginPage() {
   const [tab, setTab] = useState<'login' | 'signup'>('login')
@@ -72,9 +72,8 @@ export default function LoginPage() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-6 bg-cover relative"
-      // no celular (tela em pé) mostra a curva da praia e o mar, não o meio da foto (casas)
-      style={{ backgroundImage: `url(${loginBg})`, backgroundPosition: '38% 50%' }}
+      className="min-h-screen flex items-center justify-center p-6 bg-cover bg-center relative"
+      style={{ backgroundImage: `url(${aerialBg})` }}
     >
       {/* Escurece a foto pra garantir contraste do texto branco, independente do tema escolhido */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70" />
