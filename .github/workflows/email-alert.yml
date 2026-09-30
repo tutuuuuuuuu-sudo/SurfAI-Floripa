@@ -1,10 +1,9 @@
 name: Email Alert — Condições de Surf
 
+# Horário automático no agendador do Supabase desde 30/set/2026 (pg_cron: jobs robo-*,
+# função public.call_robot) — o agendamento do GitHub atrasava até 6 h. Aqui fica só a
+# execução manual.
 on:
-  schedule:
-    # 6h e 15h horário de Brasília (BRT = UTC-3)
-    - cron: '0 9 * * *'
-    - cron: '0 18 * * *'
   workflow_dispatch:
 
 permissions: {}

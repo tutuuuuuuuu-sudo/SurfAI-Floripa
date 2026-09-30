@@ -165,6 +165,39 @@ async function getLandingStats(): Promise<{ viewsToday: number; clicksToday: num
   }
 }
 
+// Robôs chamados pelo agendador do Supabase (tabela robot_runs, preenchida por public.call_robot
+// e public.collect_robot_results): quantos deram certo e quais falharam nas últimas 24 h
+const ROBOT_LABEL: Record<string, string> = {
+  '/api/snapshot': 'histórico', '/api/push-notify': 'alertas', '/api/refresh-windy-cache': 'praias',
+  '/api/email-alert': 'e-mail', '/api/daily-report': 'relatório', '/api/health': 'checagem',
+}
+
+async function getRobotStats(): Promise<{ ok: number; failed: number; failedBy: string } | null> {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return null
+  try {
+    const since = new Date(Date.now() - 24 * 3600000).toISOString()
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/robot_runs?called_at=gte.${since}&select=path,ok,called_at`, {
+      headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` },
+      signal: AbortSignal.timeout(8000),
+    })
+    if (!res.ok) return null
+    const rows = await res.json() as { path: string; ok: boolean | null; called_at: string }[]
+    // sem resposta depois de 15 min também conta como falha (a própria chamada deste relatório,
+    // ainda em andamento, fica de fora)
+    const stale = Date.now() - 15 * 60000
+    const failedRows = rows.filter(r => r.ok === false || (r.ok === null && Date.parse(r.called_at) < stale))
+    const byPath = new Map<string, number>()
+    for (const r of failedRows) byPath.set(r.path, (byPath.get(r.path) ?? 0) + 1)
+    return {
+      ok: rows.filter(r => r.ok === true).length,
+      failed: failedRows.length,
+      failedBy: [...byPath].map(([p, n]) => `${ROBOT_LABEL[p] ?? p} ${n}`).join(', '),
+    }
+  } catch {
+    return null
+  }
+}
+
 interface SpotResult {
   name: string
   score: number
@@ -235,6 +268,7 @@ async function generateSummary(data: {
   period: string
   users: Awaited<ReturnType<typeof getUserStats>>
   landing: Awaited<ReturnType<typeof getLandingStats>>
+  robots: Awaited<ReturnType<typeof getRobotStats>>
   surf: Awaited<ReturnType<typeof getSurfConditions>>
 }): Promise<string> {
   if (!GEMINI_KEY) return ''
@@ -277,10 +311,11 @@ function buildWhatsAppText(data: {
   date: string
   users: Awaited<ReturnType<typeof getUserStats>>
   landing: Awaited<ReturnType<typeof getLandingStats>>
+  robots: Awaited<ReturnType<typeof getRobotStats>>
   surf: Awaited<ReturnType<typeof getSurfConditions>>
   aiSummary: string
 }): string {
-  const { period, date, users, landing, surf, aiSummary } = data
+  const { period, date, users, landing, robots, surf, aiSummary } = data
   const greeting = period === 'Manhã' ? 'Bom dia' : period === 'Tarde' ? 'Boa tarde' : 'Boa noite'
 
   const lines = [
@@ -302,6 +337,12 @@ function buildWhatsAppText(data: {
     lines.push('', `Landing hoje: ${landing.viewsToday} visitas, ${landing.clicksToday} cliques${by}`, `Landing 7 dias: ${landing.views7d} visitas, ${landing.clicks7d} cliques`)
   }
 
+  if (robots) {
+    lines.push('', robots.failed > 0
+      ? `Robôs 24h: ${robots.ok} ok, ${robots.failed} falhas (${robots.failedBy})`
+      : `Robôs 24h: ${robots.ok} execuções, nenhuma falha`)
+  }
+
   lines.push('', `Melhor praia agora: ${surf.bestSpot} (${surf.bestScore}/10)`, `Score médio: ${surf.avgScore}/10`)
 
   const top3Lines = surf.top3.map((s, i) => `${medal(i)} ${s.name} — ${s.score}/10`).join('\n')
@@ -319,6 +360,7 @@ async function sendReportWhatsApp(data: {
   date: string
   users: Awaited<ReturnType<typeof getUserStats>>
   landing: Awaited<ReturnType<typeof getLandingStats>>
+  robots: Awaited<ReturnType<typeof getRobotStats>>
   surf: Awaited<ReturnType<typeof getSurfConditions>>
   aiSummary: string
 }): Promise<boolean> {
@@ -351,21 +393,22 @@ export default async function handler(req: Request) {
     })
   }
 
-  // Período pelo horário real do envio: o agendamento do GitHub chega a atrasar 5-6 h, e o
-  // relatório "da manhã" já saiu às 14h52 dizendo "Boa noite"
+  // Período pelo horário real do envio (o agendamento do GitHub, usado até 30/set/2026, chegava
+  // a atrasar 5-6 h e o relatório "da manhã" saiu às 14h52 dizendo "Boa noite")
   const hourBRT = (new Date().getUTCHours() - 3 + 24) % 24
   const period = hourBRT < 12 ? 'Manhã' : hourBRT < 18 ? 'Tarde' : 'Noite'
   const dateStr = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit' }).format(new Date())
 
-  const [users, landing, surf] = await Promise.all([
+  const [users, landing, robots, surf] = await Promise.all([
     getUserStats(),
     getLandingStats(),
+    getRobotStats(),
     getSurfConditions(),
   ])
 
-  const aiSummary = await generateSummary({ period, users, landing, surf })
+  const aiSummary = await generateSummary({ period, users, landing, robots, surf })
 
-  const whatsappSent = await sendReportWhatsApp({ period, date: dateStr, users, landing, surf, aiSummary })
+  const whatsappSent = await sendReportWhatsApp({ period, date: dateStr, users, landing, robots, surf, aiSummary })
 
   return new Response(JSON.stringify({
     period,
@@ -373,6 +416,7 @@ export default async function handler(req: Request) {
     users,
     surf,
     landing,
+    robots,
     aiSummary,
     whatsappSent,
   }), {

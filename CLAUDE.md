@@ -148,16 +148,27 @@ api/
 └── health.ts           # Health check (mantém serverless "quente")
 ```
 
-**Crons — migrados do `vercel.json` para GitHub Actions** (`.github/workflows/`, horário UTC):
-- `health.yml`: 10h e 22h diários
-- `content-agent.yml`: 13h e 22h diários
-- `daily-report.yml`: 12h e 23h diários
-- `email-alert.yml`: 9h e 18h diários
-- `push-notify.yml`: a cada hora
-- `snapshot.yml`: a cada hora
-- `cronitor.yml`: monitoramento dos jobs acima
+**Crons — no agendador do Supabase desde 30/set/2026** (pg_cron + pg_net, horário UTC). O
+GitHub Actions atrasava até 6 h (alertas "de hora em hora" rodavam a cada 5-6 h). Cada job chama
+`public.call_robot('/api/...')`, que manda a senha do cofre (vault `cron_secret`) no cabeçalho
+`x-cron-secret`; o robô confere com `isSchedulerCall` (`api/_auth.ts` → RPC `check_cron_secret`).
+Cada chamada fica em `robot_runs` (resultado copiado por `collect_robot_results`, job a cada 10 min)
+e o relatório diário mostra "Robôs 24h: N ok, N falhas". Ver jobs: `select * from cron.job`.
+- `robo-snapshot`: toda hora (:00)
+- `robo-push-notify`: toda hora (:05)
+- `robo-refresh-windy-cache`: a cada 2 h
+- `robo-email-alert`: 9h e 18h
+- `robo-daily-report`: 12h e 23h (9h e 20h em Brasília)
+- `robo-health`: 10h e 22h
+- `robo-resultados`: a cada 10 min (registra o resultado das chamadas)
 
-`vercel.json` não tem mais nenhum cron configurado — só headers de segurança/cache e rewrites de SPA. Motivo da migração: o plano Hobby da Vercel bloqueava deploys silenciosamente acima de 2 crons/1x-dia.
+Os arquivos em `.github/workflows/` ficaram só com execução manual (`workflow_dispatch`, senhas
+antigas de cada robô continuam valendo). `content-agent.yml` não tem mais horário automático: o
+resultado era descartado e gastava cota do Gemini — o ContentStudio usa o endpoint sob demanda.
+`cronitor.yml` só enxerga execuções do GitHub (manuais) — o monitoramento dos horários agora é o
+`robot_runs` no relatório diário.
+
+`vercel.json` não tem mais nenhum cron configurado — só headers de segurança/cache e rewrites de SPA. Motivo de não usar cron da Vercel: o plano Hobby bloqueava deploys silenciosamente acima de 2 crons/1x-dia.
 
 ---
 
