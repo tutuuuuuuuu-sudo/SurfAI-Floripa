@@ -144,6 +144,8 @@ api/
 ├── email-welcome.ts    # Email de boas-vindas (Resend)
 ├── push-subscribe.ts   # Registra subscription de push notification do usuário
 ├── push-notify.ts      # Envia push notifications (alertas de swell)
+├── push-test.ts        # Alerta de teste pedido pelo usuário no painel (push de verdade só pros aparelhos dele)
+├── _webPush.ts         # Assinatura VAPID + criptografia do push (compartilhado por push-notify e push-test). iPhone recebe só com o app instalado na tela de início (iOS 16.4+)
 ├── snapshot.ts         # Grava score_snapshots (histórico de condições) periodicamente
 └── health.ts           # Health check (mantém serverless "quente")
 ```
