@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { BeachCondition } from '@/lib/surfData'
 import { useSurfData } from '@/contexts/SurfDataContext'
-import { ArrowLeft, Waves, Wind, Thermometer, X, Plus, TrendingUp, TrendingDown, Minus, Crown, Lock } from 'lucide-react'
+import { ArrowLeft, Waves, Wind, Thermometer, X, Plus, TrendingUp, TrendingDown, Minus, Crown, Lock, Check } from 'lucide-react'
 import { getScoreColor, getScoreLabel } from '@/lib/rating'
 import { usePremium } from '@/lib/premium'
 import { supabase } from '@/lib/supabase'
@@ -253,7 +253,7 @@ export default function ComparePage() {
                           <div className={`text-sm font-bold ${isBest ? 'text-primary' : ''}`}>
                             {metric.format(val)}
                           </div>
-                          {isBest && <div className="text-xs text-primary">✓ melhor</div>}
+                          {isBest && <div className="flex items-center justify-center gap-0.5 text-xs text-primary"><Check className="h-3 w-3" />melhor</div>}
                         </div>
                       )
                     })}

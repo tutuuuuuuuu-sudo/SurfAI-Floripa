@@ -5,7 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="google-site-verification" content="Xvjza431k8frpdIwmk_SsXcwosANUDIW1NIFR19OzMo" />
     <title>Previsão de surf em Florianópolis | Surf AI Floripa</title>
-    <link rel="canonical" href="https://www.surfaifloripa.com.br/landing" />
+    <script>
+      // Endereço oficial de cada página pro Google. O mesmo index.html serve todas as rotas, então
+      // um canonical fixo em /landing fazia Privacidade/Termos se declararem cópia da landing.
+      // A raiz manda quem não está logado pra /landing, por isso aponta pra lá.
+      (function () {
+        var link = document.createElement('link')
+        link.rel = 'canonical'
+        link.href = 'https://www.surfaifloripa.com.br' + (location.pathname.replace(/\/+$/, '') || '/landing')
+        document.head.appendChild(link)
+      })()
+    </script>
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#06b6d4" />
     <meta name="mobile-web-app-capable" content="yes" />
