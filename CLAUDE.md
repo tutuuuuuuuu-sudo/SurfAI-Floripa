@@ -184,7 +184,7 @@ api/
   `SurfChatPanel.tsx` (painel full-screen animado) e chama `api/surf-chat.ts` só quando o
   usuário manda uma mensagem de verdade — sob demanda, não automático.
 - `api/surf-chat.ts` exige `Authorization: Bearer <supabase_token>`, verifica premium, aplica
-  rate limit persistido (40 msgs/usuário/dia) e usa `callGeminiChat` (multi-turn, em
+  rate limit persistido (20 msgs/usuário/dia, `CHAT_DAILY_MAX`) e usa `callGeminiChat` (multi-turn, em
   `api/_gemini.ts`) com histórico salvo em `chat_messages` (Supabase, RLS por usuário).
 - Contexto do chat (25/set/2026): condições de agora + **previsão de 7 dias** das 14 praias
   (`api/_chatForecast.ts`: onda, melhor horário via `_goldenWindow`, vento sigla+nome, maré

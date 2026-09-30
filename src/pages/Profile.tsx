@@ -12,7 +12,7 @@ import { supabase, getUserDisplayName } from '@/lib/supabase'
 import {
   ArrowLeft, Crown, Heart, MessageCircle, Waves, Settings,
   LogOut, User, TrendingUp, MapPin, Star, Calendar, Award,
-  Camera, Edit2, Check, X, Wind, Clock, Flame
+  Camera, Edit2, Check, X, Wind, Clock, Flame, Sparkles
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { getRatingInfo } from '@/lib/rating'
@@ -136,7 +136,7 @@ export default function ProfilePage() {
 
   const handleSignOut = async () => {
     await signOut()
-    toast.success('Até logo! 🤙')
+    toast.success('Até logo!')
     navigate('/')
   }
 
@@ -148,7 +148,7 @@ export default function ProfilePage() {
     if (error) { toast.error('Erro ao salvar bio.'); return }
     setBio(bioInput)
     setEditingBio(false)
-    toast.success('Bio atualizada! 🤙')
+    toast.success('Bio atualizada!')
   }
 
   const handlePhotoUpload = async (file: File) => {
@@ -167,7 +167,7 @@ export default function ProfilePage() {
       await supabase.from('profiles').upsert({ id: user.id, avatar_url: publicUrl, updated_at: new Date().toISOString() })
       await supabase.auth.updateUser({ data: { avatar_url: publicUrl } })
       setAvatarUrl(publicUrl)
-      toast.success('Foto de perfil atualizada! 📸')
+      toast.success('Foto de perfil atualizada!')
     } catch (err) {
       if (err instanceof Error && err.message === 'unreadable_image') {
         toast.error('Não conseguimos ler essa imagem. Tente outra foto (JPG ou PNG).')
@@ -298,8 +298,8 @@ export default function ProfilePage() {
             </div>
 
             {isPremium && subscription?.expires_at && (
-              <div className="mt-3 p-3 rounded-xl bg-rating-fair/10 border border-rating-fair/30 text-xs text-rating-fair">
-                ✨ Premium ativo até {new Date(subscription.expires_at).toLocaleDateString('pt-BR')}
+              <div className="mt-3 flex items-center gap-1.5 p-3 rounded-xl bg-rating-fair/10 border border-rating-fair/30 text-xs text-rating-fair">
+                <Sparkles className="h-3.5 w-3.5 shrink-0" />Premium ativo até {new Date(subscription.expires_at).toLocaleDateString('pt-BR')}
               </div>
             )}
 

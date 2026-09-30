@@ -103,7 +103,7 @@ export function NotificationPanel({ spots, favorites, isPremium }: Props) {
         )}
         {isPremium && isIOS && (
           <div className="text-xs bg-muted/30 border border-border rounded-lg p-3 text-muted-foreground">
-            😤 <strong>iPhone/iPad:</strong> O Safari no iOS não suporta notificações push em aplicações web.
+            <strong>iPhone/iPad:</strong> O Safari no iOS não suporta notificações push em aplicações web.
           </div>
         )}
         {isPremium && !isIOS && permission === 'unsupported' && (

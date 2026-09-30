@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
   ArrowLeft, Check, Crown, Loader2, CheckCircle2, XCircle, Clock,
-  Sparkles, Calendar, Bell, BookOpen, BarChart3, Zap, ShieldOff, TrendingDown
+  Sparkles, Calendar, Bell, BookOpen, BarChart3, Zap, ShieldOff, TrendingDown, Lock
 } from 'lucide-react'
 import { createMercadoPagoCheckout, usePremium } from '@/lib/premium'
 import { useAuth } from '@/contexts/AuthContext'
@@ -135,7 +135,7 @@ export default function PremiumPage() {
           <Card className="border-rating-fair/40 bg-rating-fair/5" style={{ animation: 'slideUp 0.4s ease-out' }}>
             <CardContent className="py-6 text-center space-y-2">
               <Crown className="h-8 w-8 text-rating-fair mx-auto" />
-              <p className="font-bold text-lg">Você já é Premium! 🤙</p>
+              <p className="font-bold text-lg">Você já é Premium!</p>
               <p className="text-sm text-muted-foreground">Aproveite todos os benefícios exclusivos.</p>
               <Button className="mt-2" onClick={() => navigate('/')}>Ir para o app</Button>
             </CardContent>
@@ -321,7 +321,7 @@ export default function PremiumPage() {
 
         {!isPremium && (
           <div className="text-center space-y-1 pb-6" style={{ animation: 'fadeIn 0.5s 0.5s ease-out both' }}>
-            <p className="text-xs text-muted-foreground">🔒 Pagamento seguro · Cancele quando quiser</p>
+            <p className="flex items-center justify-center gap-1 text-xs text-muted-foreground"><Lock className="h-3 w-3" />Pagamento seguro · Cancele quando quiser</p>
             <p className="text-xs text-muted-foreground/60">Dúvidas? surfaifloripa@gmail.com</p>
           </div>
         )}

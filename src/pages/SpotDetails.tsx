@@ -16,7 +16,8 @@ import {
   ArrowLeft, Waves, Wind, Navigation,
   TrendingUp, Compass, AlertCircle, Thermometer,
   Heart, Calendar, Sun, ChevronDown, Clock,
-  Share2, MessageCircle, Lock, Crown, Droplets, GitCompareArrows, ChevronRight
+  Share2, MessageCircle, Lock, Crown, Droplets, GitCompareArrows, ChevronRight,
+  Sunrise, Sunset
 } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { toast } from 'sonner'
@@ -72,7 +73,7 @@ const ShareButton = ({ spot }: { spot: BeachCondition }) => {
       catch { /* usuário cancelou o share nativo — cai pro clipboard abaixo */ }
     }
     await navigator.clipboard.writeText(text)
-    toast.success('Condições copiadas! Cole no WhatsApp 📋')
+    toast.success('Condições copiadas! Cole no WhatsApp')
   }
   return (
     <button onClick={handleShare} className="p-2 rounded-xl border border-border hover:bg-muted/50 transition-colors">
@@ -282,7 +283,7 @@ export default function SpotDetails() {
       return
     }
     setFavorite(newState)
-    toast.success(newState ? '❤️ Adicionado aos favoritos!' : '💔 Removido dos favoritos')
+    toast.success(newState ? 'Adicionado aos favoritos!' : 'Removido dos favoritos')
   }
 
   const rating = getRatingInfo(spot.score)
@@ -609,11 +610,11 @@ export default function SpotDetails() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <div className="text-xs text-muted-foreground">🌅 Nascer do Sol</div>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground"><Sunrise className="h-3.5 w-3.5" />Nascer do Sol</div>
                       <div className="text-lg font-semibold">{spot.sunrise}</div>
                     </div>
                     <div>
-                      <div className="text-xs text-muted-foreground">🌇 Pôr do Sol</div>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground"><Sunset className="h-3.5 w-3.5" />Pôr do Sol</div>
                       <div className="text-lg font-semibold">{spot.sunset}</div>
                     </div>
                   </div>
