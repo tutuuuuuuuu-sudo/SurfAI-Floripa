@@ -195,8 +195,13 @@ export interface SubRegionMatch {
 // bem mais estreito que a diferença "onda média vs onda de série" da oceanografia pura
 // (que chegaria a ±50-60%), porque essas fontes já mostram uma faixa de previsão, não a
 // variação real onda a onda de uma sessão).
-const WAVE_RANGE_LOW = 0.85
-const WAVE_RANGE_HIGH = 1.15
+//
+// 30/set/2026: o topo da faixa passou a ser o próprio número (a série), sem os +15% — o teto
+// ficava acima do Surfline e do Waves, e o usuário prefere nunca mostrar mar maior que o real.
+// A faixa agora vai de 20% abaixo até ele ("intermediárias a séries"). O número já chega aqui
+// como onda na praia (api/_beachHeight.ts), não mais como mar aberto.
+const WAVE_RANGE_LOW = 0.8
+const WAVE_RANGE_HIGH = 1.0
 
 export function getSubRegionMatch(
   swellDirections: string[] | undefined,
@@ -240,7 +245,7 @@ export function getSubRegionMatch(
   return { minDiff, waveMin, waveMax, match, matchCls }
 }
 
-// Formata a altura de onda como faixa (±15%, mesma WAVE_RANGE_LOW/HIGH de getSubRegionMatch
+// Formata a altura de onda como faixa (−20% até a série, mesma WAVE_RANGE_LOW/HIGH de getSubRegionMatch
 // acima) em vez de um número único — estilo Surfline/Waves.com.br/Surfguru, que também
 // mostram faixa em vez de um valor cravado (achado 24/set/2026, a pedido do usuário).
 export function formatWaveRange(waveHeight: number): string {

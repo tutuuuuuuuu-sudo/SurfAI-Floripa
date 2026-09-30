@@ -2,6 +2,8 @@
 // principal exibida na Home/SpotDetails).
 // Prefixo _ indica que não é um handler HTTP — não será exposto como endpoint pelo Vercel.
 
+import { toBeachHeight } from './_beachHeight.js'
+
 const DIRS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
 
 function degToDir(deg: number): string {
@@ -73,11 +75,13 @@ function windowIndices(idx: number, len: number, radius: number): number[] {
 // plano, e o Stormglass também segue de classe GFS — essas duas continuam GFS-based e viraram
 // fallback raro (só quando o Open-Meteo falha), então mantêm a correção abaixo. **1.85 segue
 // sendo uma estimativa de partida pra essas duas fontes, não uma constante definitiva.**
-const MODEL_BIAS_CORRECTION = 1.85
-
-function applyModelBiasCorrection(waveHeight: number): number {
-  return Number((waveHeight * MODEL_BIAS_CORRECTION).toFixed(1))
-}
+//
+// 30/set/2026: o ×1,85 foi REMOVIDO. Quando o Open-Meteo falhava e a Windy assumia, a onda saía
+// absurda — Santinho em 27/set gravou 3,1 m com o ECMWF marcando 0,68 m (×4,6), porque a própria
+// leitura da Windy já vinha alta e o fator empilhava por cima. Agora, se o Open-Meteo falha, o
+// primeiro recurso é a última leitura boa da praia (até 6 h, ver fetchLiveConditions); Windy e
+// Stormglass só entram depois disso e com a altura como vem, sem multiplicador.
+const roundHeight = (waveHeight: number) => Number(waveHeight.toFixed(1))
 
 export interface LiveConditions {
   waveHeight: number
@@ -124,7 +128,7 @@ interface WindyRaw {
 // camada de servidor agora é atualizada por tempo fixo, não por pedido.
 const WINDY_CACHE_TTL_MS = 150 * 60 * 1000
 
-async function getCachedWindyRaw(cacheKey: string): Promise<WindyRaw | null> {
+async function getCached<T>(cacheKey: string, ttlMs: number): Promise<T | null> {
   const supabaseUrl = process.env.SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
   if (!supabaseUrl || !serviceKey) {
@@ -140,11 +144,11 @@ async function getCachedWindyRaw(cacheKey: string): Promise<WindyRaw | null> {
       console.error('[liveConditions] cache GET não-ok:', res.status, await res.text())
       return null
     }
-    const rows = await res.json() as { payload: WindyRaw; fetched_at: string }[]
+    const rows = await res.json() as { payload: T; fetched_at: string }[]
     const row = rows[0]
     if (!row) return null
     const ageMs = Date.now() - new Date(row.fetched_at).getTime()
-    if (ageMs > WINDY_CACHE_TTL_MS) return null
+    if (ageMs > ttlMs) return null
     console.log('[liveConditions] cache HIT', cacheKey, `idade=${Math.round(ageMs / 1000)}s`)
     return row.payload
   } catch (err) {
@@ -153,7 +157,7 @@ async function getCachedWindyRaw(cacheKey: string): Promise<WindyRaw | null> {
   }
 }
 
-async function setCachedWindyRaw(cacheKey: string, raw: WindyRaw): Promise<void> {
+async function setCached(cacheKey: string, payload: unknown): Promise<void> {
   const supabaseUrl = process.env.SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
   if (!supabaseUrl || !serviceKey) return
@@ -164,7 +168,7 @@ async function setCachedWindyRaw(cacheKey: string, raw: WindyRaw): Promise<void>
         apikey: serviceKey, Authorization: `Bearer ${serviceKey}`,
         'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates',
       },
-      body: JSON.stringify({ cache_key: cacheKey, payload: raw, fetched_at: new Date().toISOString() }),
+      body: JSON.stringify({ cache_key: cacheKey, payload, fetched_at: new Date().toISOString() }),
     })
     if (!res.ok) {
       console.error('[liveConditions] cache SET não-ok:', res.status, await res.text())
@@ -238,7 +242,7 @@ export async function fetchAndCacheWindyRaw(lat: string, lng: string): Promise<W
     const windTs = (windData.ts ?? ts) as number[]
 
     const raw: WindyRaw = { ts, windTs, waveData, windData }
-    await setCachedWindyRaw(cacheKey, raw)
+    await setCached(cacheKey, raw)
     return raw
   } catch (err) {
     console.error('[liveConditions] Windy lançou exceção:', err)
@@ -253,7 +257,7 @@ export async function fetchAndCacheWindyRaw(lat: string, lng: string): Promise<W
 // pra quando o cron falhar/atrasar, não como caminho principal de consumo de cota.
 async function fetchWindyRaw(lat: string, lng: string): Promise<WindyRaw | null> {
   const cacheKey = `windy:${lat}:${lng}`
-  const cached = await getCachedWindyRaw(cacheKey)
+  const cached = await getCached<WindyRaw>(cacheKey, WINDY_CACHE_TTL_MS)
   if (cached) return cached
   return fetchAndCacheWindyRaw(lat, lng)
 }
@@ -290,7 +294,7 @@ function extractWindyPoint(raw: WindyRaw, wi: number, wIdx: number): LiveConditi
   const waterTemperature = tempSamples.length ? Math.round(mean(tempSamples) - 273.15) : null
 
   return {
-    waveHeight: applyModelBiasCorrection(finalH),
+    waveHeight: roundHeight(finalH),
     swellPeriod: Math.round(sP),
     swellDirection: degToDir(sD),
     windSpeed: windSpeedKmh,
@@ -323,8 +327,8 @@ async function fetchOpenMeteo(lat: string, lng: string): Promise<LiveConditions 
     // pedido sozinho (testado ao vivo: o payload inteiro desses campos vem null, não é
     // ausência de dado no ponto, é o modelo não calcular esses parâmetros). Por isso a
     // altura de onda vem do modelo ecmwf_wam direto (o mesmo que Windy.com/Surfline/
-    // Surfguru/Waves mostram — ver comentário de MODEL_BIAS_CORRECTION acima, por isso NÃO
-    // aplica applyModelBiasCorrection aqui), mas período/direção de swell e temperatura da
+    // Surfguru/Waves mostram — ver comentário de MODEL_BIAS_CORRECTION acima, altura de mar
+    // aberto: a conversão pra onda na praia é feita em fetchLiveConditions), mas período/direção de swell e temperatura da
     // água continuam vindo do modelo padrão (blend com mais parâmetros calculados).
     // Achado 02/set/2026: nenhuma chamada da cascata tinha timeout — se a Open-Meteo (fonte
     // principal) travasse, ela sozinha consumia os 25s de orçamento da função edge inteira,
@@ -398,7 +402,7 @@ async function fetchStormglass(lat: string, lng: string): Promise<LiveConditions
 
     const windSpd = pick('windSpeed') // m/s
     return {
-      waveHeight: applyModelBiasCorrection(wH),
+      waveHeight: roundHeight(wH),
       swellPeriod: Math.round(pick('swellPeriod') ?? pick('wavePeriod') ?? 8),
       swellDirection: degToDir(pick('swellDirection') ?? pick('waveDirection') ?? 90),
       windSpeed: Math.round((windSpd ?? 0) * 3.6),
@@ -430,15 +434,33 @@ async function fetchStormglass(lat: string, lng: string): Promise<LiveConditions
 // isso não dava pra saber, só pelos números, se a fonte principal estava mesmo respondendo ou
 // se o app rodava só no fallback silenciosamente (achado 24/ago/2026 investigando altura de
 // onda divergente do Surfline).
+//
+// 30/set/2026: a altura que sai daqui é a da ONDA NA PRAIA (toBeachHeight, api/_beachHeight.ts),
+// não a de mar aberto do modelo; e entre o Open-Meteo e a Windy entrou a última leitura boa da
+// praia (até 6 h) — ver comentário do fim do ×1,85 acima.
+const LAST_GOOD_TTL_MS = 6 * 60 * 60 * 1000
+
+function atBeach(c: LiveConditions): LiveConditions {
+  return { ...c, waveHeight: toBeachHeight(c.waveHeight, c.swellPeriod) }
+}
+
 export async function fetchLiveConditions(lat: string, lng: string): Promise<LiveConditions | null> {
+  const lastGoodKey = `live:${lat}:${lng}`
   const openMeteo = await fetchOpenMeteo(lat, lng)
-  if (openMeteo) { console.log('[liveConditions] Fonte: open-meteo (ecmwf_wam)'); return openMeteo }
+  if (openMeteo) {
+    console.log('[liveConditions] Fonte: open-meteo (ecmwf_wam)')
+    await setCached(lastGoodKey, openMeteo) // guarda a leitura de mar aberto, antes da conversão
+    return atBeach(openMeteo)
+  }
+
+  const lastGood = await getCached<LiveConditions>(lastGoodKey, LAST_GOOD_TTL_MS)
+  if (lastGood) { console.log('[liveConditions] Fonte: última leitura boa (open-meteo falhou)'); return atBeach(lastGood) }
 
   const windy = await fetchWindy(lat, lng)
-  if (windy) { console.log('[liveConditions] Fonte: windy (open-meteo falhou)'); return windy }
+  if (windy) { console.log('[liveConditions] Fonte: windy (open-meteo falhou, sem leitura recente)'); return atBeach(windy) }
 
   const stormglass = await fetchStormglass(lat, lng)
-  if (stormglass) { console.log('[liveConditions] Fonte: stormglass (open-meteo e windy falharam)'); return stormglass }
+  if (stormglass) { console.log('[liveConditions] Fonte: stormglass (open-meteo e windy falharam)'); return atBeach(stormglass) }
 
   console.error('[liveConditions] Todas as fontes falharam')
   return null
