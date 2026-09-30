@@ -9,6 +9,7 @@ export const config = { runtime: 'edge' }
 
 import { calculateSurfScore } from './_scoreEngine.js'
 import { getBeaches } from './_beachRegistry.js'
+import { isSchedulerCall } from './_auth.js'
 
 const AGENT_SECRET = process.env.AGENT_SECRET
 const SUPABASE_URL = process.env.SUPABASE_URL
@@ -168,7 +169,7 @@ export default async function handler(req: Request) {
   const url = new URL(req.url)
   const secret = req.headers.get('x-agent-secret') ?? url.searchParams.get('secret')
 
-  if (!AGENT_SECRET || secret !== AGENT_SECRET) {
+  if (!(AGENT_SECRET && secret === AGENT_SECRET) && !(await isSchedulerCall(req))) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },

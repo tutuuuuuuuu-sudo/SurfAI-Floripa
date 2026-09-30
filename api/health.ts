@@ -1,4 +1,5 @@
 export const config = { runtime: 'edge' }
+import { isSchedulerCall } from './_auth.js'
 
 // Agente de saúde — roda automaticamente toda manhã às 6h (horário de Brasília)
 // Testa todas as rotas críticas e envia relatório por email
@@ -186,7 +187,7 @@ export default async function handler(req: Request) {
   const secret = process.env.HEALTH_SECRET
   const provided = url.searchParams.get('secret') ?? req.headers.get('x-health-secret')
 
-  if (!secret || provided !== secret) {
+  if (!(secret && provided === secret) && !(await isSchedulerCall(req))) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
   }
 
