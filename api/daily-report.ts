@@ -2,6 +2,7 @@ export const config = { runtime: 'edge' }
 import { calculateSurfScore } from './_scoreEngine.js'
 import { callGemini } from './_gemini.js'
 import { getBeaches } from './_beachRegistry.js'
+import { isSchedulerCall } from './_auth.js'
 
 const APP_URL = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 const GEMINI_KEY = process.env.GEMINI_API_KEY
@@ -342,15 +343,8 @@ export default async function handler(req: Request) {
   const url = new URL(req.url)
   const secret = req.headers.get('x-agent-secret') ?? url.searchParams.get('secret')
 
-  // Cron roda via GitHub Actions (ver .github/workflows/daily-report.yml), autenticado por secret
-  if (!AGENT_SECRET) {
-    console.error('[daily-report] AGENT_SECRET não configurado')
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
-  if (secret !== AGENT_SECRET) {
+  // Agendador do Supabase (isSchedulerCall) ou execução manual pelo GitHub (x-agent-secret)
+  if (!(AGENT_SECRET && secret === AGENT_SECRET) && !(await isSchedulerCall(req))) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },

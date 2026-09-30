@@ -89,3 +89,26 @@ export async function verifyAdminToken(token: string): Promise<boolean> {
   if (!valid || !userId) return false
   return isAdminUser(userId)
 }
+
+// Chamada do agendador do Supabase (pg_cron + pg_net, 30/set/2026 — o agendamento do GitHub
+// atrasava até 6 h). A senha fica no cofre do Supabase (vault, nome 'cron_secret'), vem no
+// cabeçalho x-cron-secret e quem confere é a função check_cron_secret do banco, que só a chave
+// de serviço pode chamar — assim a senha não precisa existir também nas variáveis da Vercel.
+// As senhas antigas de cada robô continuam valendo (execução manual pelo GitHub).
+export async function isSchedulerCall(req: Request): Promise<boolean> {
+  const provided = req.headers.get('x-cron-secret')
+  const supabaseUrl = process.env.SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
+  if (!provided || provided.length < 20 || !supabaseUrl || !serviceKey) return false
+  try {
+    const res = await fetch(`${supabaseUrl}/rest/v1/rpc/check_cron_secret`, {
+      method: 'POST',
+      headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_secret: provided }),
+      signal: AbortSignal.timeout(5000),
+    })
+    return res.ok && (await res.json()) === true
+  } catch {
+    return false
+  }
+}

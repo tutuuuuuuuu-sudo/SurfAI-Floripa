@@ -13,17 +13,18 @@ export const config = { runtime: 'edge' }
 
 import { fetchAndCacheWindyRaw } from './_liveConditions.js'
 import { BEACH_REGISTRY } from './_beachRegistry.js'
+import { isSchedulerCall } from './_auth.js'
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
 }
 
 export default async function handler(req: Request) {
-  // Mesmo padrão de autenticação dos outros crons (ver push-notify.ts) — secret em query
-  // param, comparado com a env var. Chamado pelo GitHub Actions, nunca pelo frontend.
+  // Mesmo padrão de autenticação dos outros crons (ver push-notify.ts): agendador do Supabase
+  // ou execução manual pelo GitHub (secret em query param). Nunca chamado pelo frontend.
   const secret = process.env.REFRESH_WINDY_CACHE_SECRET
   const provided = new URL(req.url).searchParams.get('secret')
-  if (!secret || provided !== secret) return json({ error: 'Unauthorized' }, 401)
+  if (!(secret && provided === secret) && !(await isSchedulerCall(req))) return json({ error: 'Unauthorized' }, 401)
 
   const resultados = await Promise.all(
     BEACH_REGISTRY.map(async (praia) => {

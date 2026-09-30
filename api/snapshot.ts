@@ -2,6 +2,7 @@ export const config = { runtime: 'edge' }
 
 import { calculateSurfScore } from './_scoreEngine.js'
 import { BEACH_REGISTRY } from './_beachRegistry.js'
+import { isSchedulerCall } from './_auth.js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? ''
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY ?? ''
@@ -26,10 +27,10 @@ async function fetchSurf(lat: number, lng: number, orientation: number) {
 }
 
 export default async function handler(req: Request) {
-  // Cron roda via GitHub Actions (ver .github/workflows/snapshot.yml), autenticado por secret em query param
+  // Agendador do Supabase (isSchedulerCall) ou execução manual pelo GitHub (secret em query param)
   const secret = process.env.SNAPSHOT_SECRET
   const provided = new URL(req.url).searchParams.get('secret')
-  if (!secret || provided !== secret) {
+  if (!(secret && provided === secret) && !(await isSchedulerCall(req))) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
   }
 

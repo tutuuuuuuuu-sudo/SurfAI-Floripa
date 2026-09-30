@@ -5,6 +5,7 @@ export const config = { runtime: 'edge' }
 
 import { calculateSurfScore } from './_scoreEngine.js'
 import { BEACH_REGISTRY } from './_beachRegistry.js'
+import { isSchedulerCall } from './_auth.js'
 
 // TS 5.7+ tornou Uint8Array genérico sobre o tipo do buffer (ArrayBufferLike inclui
 // SharedArrayBuffer), o que quebra a atribuição direta às APIs de Web Crypto/fetch que
@@ -186,10 +187,10 @@ const WIND_DIR_MAP: Record<string, number> = {
 }
 
 export default async function handler(req: Request) {
-  // Cron roda via GitHub Actions (ver .github/workflows/push-notify.yml), autenticado por secret em query param
+  // Agendador do Supabase (isSchedulerCall) ou execução manual pelo GitHub (secret em query param)
   const secret = process.env.PUSH_NOTIFY_SECRET
   const provided = new URL(req.url).searchParams.get('secret')
-  if (!secret || provided !== secret) return json({ error: 'Unauthorized' }, 401)
+  if (!(secret && provided === secret) && !(await isSchedulerCall(req))) return json({ error: 'Unauthorized' }, 401)
 
   if (!SUPABASE_URL || !SUPABASE_KEY || !VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
     return json({ error: 'Configuração incompleta' }, 500)
