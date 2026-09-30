@@ -123,8 +123,16 @@ describe('calculateSurfScore', () => {
       for (const dir of ['S', 'SSE', 'SSW']) {
         expect(explainSurfScore(1.0, 10, 9, dir, orientation).windPenalty).toBe(-1.0)
         expect(explainSurfScore(1.0, 15, 9, dir, orientation).windPenalty).toBe(-1.5)
+        expect(explainSurfScore(1.0, 20, 9, dir, orientation).windPenalty).toBe(-2.5)
+        expect(explainSurfScore(1.0, 25, 9, dir, orientation).windPenalty).toBe(-3.5)
+        expect(explainSurfScore(1.0, 30, 9, dir, orientation).windPenalty).toBe(-4.5)
       }
     }
+  })
+
+  it('sul de 21 km/h com onda curta não passa de "ruim" (usuário, 30/set/2026)', () => {
+    // Campeche 30/set à tarde: ~1 m na praia, período 6 s, sul 21 km/h
+    expect(calculateSurfScore(0.98, 21, 6, 'S', 90)).toBeLessThan(4)
   })
 
   it('vento sul é o pior vento: nunca fica mais brando que outra direção na mesma velocidade', () => {

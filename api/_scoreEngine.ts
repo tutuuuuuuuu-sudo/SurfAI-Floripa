@@ -109,7 +109,9 @@ export function explainSurfScore(
 // orientação da praia (pro Campeche, virado pra leste, a conta geométrica chamava de "lateral"
 // e quase não descontava). Nunca fica mais brando que o maral na mesma velocidade.
 const SOUTH_WINDS = new Set(['S', 'SSE', 'SSW'])
-const WIND_SOUTH: [number, number][] = [[3, 1.0], [5, 0], [10, -1.0], [15, -1.5], [20, -2.3], [25, -3.0]]
+// Curva ditada pelo usuário (30/set/2026, 2ª rodada): 10 km/h −1 · 15 −1,5 · 20 −2,5 · 25 −3,5
+// "e assim vai" (mais −1 a cada 5 km/h) — com sul de 21 km/h o mar "não fica nem regular"
+const WIND_SOUTH: [number, number][] = [[3, 1.0], [5, 0], [10, -1.0], [15, -1.5], [20, -2.5], [25, -3.5], [30, -4.5], [35, -5.5]]
 // Os outros ventos não estragam muito o mar antes de uns 15 km/h (nem o maral: até 10 km/h
 // não desconta nada). Terral segura a onda em pé até ficar forte; lateral fica no meio.
 const WIND_OFFSHORE: [number, number][] = [[3, 1.5], [5, 1.2], [10, 1.2], [15, 1.0], [20, -0.4], [25, -1.0]]
