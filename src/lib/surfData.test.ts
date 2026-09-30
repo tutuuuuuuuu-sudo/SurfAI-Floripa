@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { degreesToWindDir, WIND_DEG, getSubRegionMatch } from './surfData'
+import { degreesToWindDir, WIND_DEG, getSubRegionMatch, getWindAnalysis } from './surfData'
 
 describe('degreesToWindDir', () => {
   it('0° = N', () => expect(degreesToWindDir(0)).toBe('N'))
@@ -41,5 +41,30 @@ describe('getSubRegionMatch — pico estreito fora da direção ideal', () => {
     // Continua um pouco menor que o vizinho alinhado com o swell
     expect(Number(principal.waveMax)).toBeLessThan(Number(riozinho.waveMax))
     expect(principal.match).toBe('Swell bom')
+  })
+})
+
+describe('getWindAnalysis — frase do vento acompanha a nota (30/set/2026)', () => {
+  it('sul forte não sai mais como "pode atrapalhar um pouco"', () => {
+    const t = getWindAnalysis('S', 22, 90)
+    expect(t).toContain('sul (S) forte, de 22 km/h')
+    expect(t).toContain('bagunçado')
+    expect(t).not.toContain('um pouco')
+  })
+
+  it('sul e variações ficam mais duros a cada faixa de velocidade', () => {
+    expect(getWindAnalysis('SSE', 12, 90)).toContain('já mexendo o mar')
+    expect(getWindAnalysis('SSW', 17, 90)).toContain('mar mexido')
+    expect(getWindAnalysis('S', 4, 90)).toContain('fraco')
+  })
+
+  it('terral fraco deixa o mar liso; terral forte não', () => {
+    expect(getWindAnalysis('W', 8, 90)).toContain('liso e organizado')
+    expect(getWindAnalysis('W', 25, 90)).not.toContain('liso')
+  })
+
+  it('maral de 10 km/h quase não pesa (outros ventos só estragam a partir de ~15 km/h)', () => {
+    expect(getWindAnalysis('E', 10, 90)).toContain('quase sem efeito')
+    expect(getWindAnalysis('E', 25, 90)).toContain('bagunçando')
   })
 })
