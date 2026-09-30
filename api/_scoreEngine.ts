@@ -83,34 +83,57 @@ export function explainSurfScore(
   else if (waveHeight >= 0.3) waveBase = 3.0
   else waveBase = 2.0
 
-  // Ajuste pelo vento considerando a orientação da praia — 3 curvas diferentes, porque um
-  // terral moderado-forte ainda mantém a onda em pé (o pior que faz é acelerar a onda), um
-  // maral (onshore, bate de frente) bagunça a onda mesmo fraco, e o lateral fica no meio.
+  // Ajuste pelo vento: o sul (e variações) tem curva própria; os outros dependem de como
+  // entram na praia (terral, lateral, maral). Os valores andam em linha reta entre os pontos
+  // (km/h → pontos), sem degrau: 1 km/h a mais não pode derrubar a nota de uma vez.
   const windQuality = classifyWind(windDir, beachOrientation)
-  let windPenalty: number
-  if (windQuality === 'offshore') {
-    // Offshore/terral — vento saindo do mar, mantém a onda organizada até ficar forte de verdade
-    windPenalty = windSpeed <= 3 ? 1.5 : windSpeed <= 10 ? 1.2 : windSpeed <= 15 ? 1.0 : windSpeed <= 20 ? -0.4 : -1.0
-  } else if (windQuality === 'lateral') {
-    // Lateral — fraco quase não atrapalha, só pesa de verdade quando fica forte
-    windPenalty = windSpeed <= 5 ? 1.3 : windSpeed <= 10 ? 1.0 : windSpeed <= 15 ? -0.5 : windSpeed <= 20 ? -1.0 : -1.5
-  } else {
-    // Onshore/maral — bate de frente e bagunça a onda mesmo em velocidade baixa
-    windPenalty = windSpeed <= 3 ? 1.0 : windSpeed <= 5 ? 0 : windSpeed <= 10 ? -0.8 : windSpeed <= 15 ? -1.5 : windSpeed <= 20 ? -2.3 : -3.0
-  }
+  const windCurve = SOUTH_WINDS.has(windDir) ? WIND_SOUTH
+    : windQuality === 'offshore' ? WIND_OFFSHORE
+    : windQuality === 'lateral' ? WIND_LATERAL
+    : WIND_ONSHORE
+  const windPenalty = round1(interpolate(windCurve, windSpeed))
 
-  // Ajuste pelo período do swell, comprimido pra faixa que realmente acontece em Floripa —
-  // dado real de 30 dias mostrou 0% de ocorrência acima de 11s (ver comentário acima)
-  let periodAdjust: number
-  if (swellPeriod >= 11) periodAdjust = 1.4
-  else if (swellPeriod >= 9) periodAdjust = 1.1
-  else if (swellPeriod >= 7) periodAdjust = 0.8
-  else if (swellPeriod >= 4) periodAdjust = 0.3
-  else periodAdjust = -0.5
+  // Ajuste pelo período médio do swell (swell_wave_period da Open-Meteo)
+  const periodAdjust = round1(interpolate(PERIOD, swellPeriod))
 
   const total = Math.min(10, Math.max(1, Number((waveBase + windPenalty + periodAdjust).toFixed(1))))
   return { waveBase, windPenalty, windQuality, periodAdjust, total }
 }
+
+// Recalibração de 30/set/2026, com o usuário (surfista local), depois de a landing mostrar 13 das
+// 14 praias como "épico" num mar de 1,4 m com período de 6 s, e o Campeche com 8,3 com vento sul
+// de 15 km/h. Pontos [valor medido, ajuste na nota]; fora das pontas vale o valor da ponta.
+//
+// Vento sul (S, SSE, SSW): o pior vento de Floripa. Chega com a frente fria, entra de lado ou
+// de frente em todas as 14 praias e já desmancha o mar com 10 km/h — por isso não depende da
+// orientação da praia (pro Campeche, virado pra leste, a conta geométrica chamava de "lateral"
+// e quase não descontava). Nunca fica mais brando que o maral na mesma velocidade.
+const SOUTH_WINDS = new Set(['S', 'SSE', 'SSW'])
+const WIND_SOUTH: [number, number][] = [[3, 1.0], [5, 0], [10, -1.0], [15, -1.5], [20, -2.3], [25, -3.0]]
+// Os outros ventos não estragam muito o mar antes de uns 15 km/h (nem o maral: até 10 km/h
+// não desconta nada). Terral segura a onda em pé até ficar forte; lateral fica no meio.
+const WIND_OFFSHORE: [number, number][] = [[3, 1.5], [5, 1.2], [10, 1.2], [15, 1.0], [20, -0.4], [25, -1.0]]
+const WIND_LATERAL: [number, number][] = [[5, 1.3], [10, 1.0], [15, -0.5], [20, -1.0], [25, -1.5]]
+const WIND_ONSHORE: [number, number][] = [[3, 1.0], [10, 0], [15, -0.8], [20, -2.3], [25, -3.0]]
+// Período médio do swell, tabela do usuário. Acima de 11 s quase não acontece em Floripa (0% em
+// 30 dias de dado real), por isso o bônus máximo fica em 11 s
+const PERIOD: [number, number][] = [[5, -1.2], [6, -0.7], [7, 0.2], [8, 0.7], [9, 1.0], [10, 1.2], [11, 1.4]]
+
+function interpolate(points: [number, number][], x: number): number {
+  if (!Number.isFinite(x) || x <= points[0][0]) return points[0][1]
+  for (let i = 1; i < points.length; i++) {
+    const [x1, y1] = points[i]
+    if (x <= x1) {
+      const [x0, y0] = points[i - 1]
+      return y0 + ((x - x0) / (x1 - x0)) * (y1 - y0)
+    }
+  }
+  return points[points.length - 1][1]
+}
+
+// Cada parte já arredondada a 1 casa: a tela que explica a nota (ScoreExplainer) mostra as
+// partes com 1 casa, e a soma delas tem que bater com o total
+const round1 = (n: number) => Math.round(n * 10) / 10 + 0
 
 export function calculateSurfScore(
   waveHeight: number,

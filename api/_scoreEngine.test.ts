@@ -108,6 +108,63 @@ describe('calculateSurfScore', () => {
     expect(short).toBeLessThan(medium)
   })
 
+  it('período segue a tabela de 30/set/2026 e anda em linha reta entre os pontos', () => {
+    const p = (t: number) => explainSurfScore(1.0, 5, t, 'W', 90).periodAdjust
+    expect([5, 6, 7, 8, 9, 10, 11].map(p)).toEqual([-1.2, -0.7, 0.2, 0.7, 1.0, 1.2, 1.4])
+    expect(p(6.5)).toBe(-0.2) // meio caminho entre -0,7 e +0,2 (-0,25, arredondado)
+    expect(p(4)).toBe(-1.2)
+    expect(p(14)).toBe(1.4)
+  })
+
+  // ── Vento sul (30/set/2026) ──────────────────────────────────────────────────
+
+  it('vento sul desconta 1 ponto com 10 km/h e 1,5 com 15 km/h, em qualquer praia', () => {
+    for (const orientation of [70, 90, 130, 180]) {
+      for (const dir of ['S', 'SSE', 'SSW']) {
+        expect(explainSurfScore(1.0, 10, 9, dir, orientation).windPenalty).toBe(-1.0)
+        expect(explainSurfScore(1.0, 15, 9, dir, orientation).windPenalty).toBe(-1.5)
+      }
+    }
+  })
+
+  it('vento sul é o pior vento: nunca fica mais brando que outra direção na mesma velocidade', () => {
+    const dirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
+    for (const speed of [5, 8, 10, 12, 15, 18, 20, 25, 30]) {
+      const south = explainSurfScore(1.0, speed, 9, 'S', 90).windPenalty
+      for (const dir of dirs) {
+        expect(south).toBeLessThanOrEqual(explainSurfScore(1.0, speed, 9, dir, 90).windPenalty)
+      }
+    }
+  })
+
+  it('outros ventos não descontam nada até 10 km/h', () => {
+    for (const dir of ['N', 'NE', 'E', 'SE', 'W', 'NW']) {
+      expect(explainSurfScore(1.0, 10, 9, dir, 90).windPenalty).toBeGreaterThanOrEqual(0)
+    }
+  })
+
+  it('1 km/h a mais de vento nunca derruba a nota de uma vez', () => {
+    for (const dir of ['S', 'E', 'N', 'W']) {
+      for (let v = 0; v < 30; v++) {
+        const a = explainSurfScore(1.0, v, 9, dir, 90).windPenalty
+        const b = explainSurfScore(1.0, v + 1, 9, dir, 90).windPenalty
+        expect(Math.abs(a - b)).toBeLessThanOrEqual(0.51)
+      }
+    }
+  })
+
+  it('casos reais do usuário: calibração de set/2026 mantida e Campeche com sul corrigido', () => {
+    // 0,75 m, período 9-10 s, terral fraco = nota ~8; 0,6 m nas mesmas condições = ~7
+    expect(calculateSurfScore(0.75, 5, 9.5, 'W', 90)).toBeGreaterThanOrEqual(7.8)
+    expect(calculateSurfScore(0.75, 5, 9.5, 'W', 90)).toBeLessThan(8.5)
+    expect(calculateSurfScore(0.6, 5, 9.5, 'W', 90)).toBeGreaterThanOrEqual(6.8)
+    expect(calculateSurfScore(0.6, 5, 9.5, 'W', 90)).toBeLessThan(7.5)
+    // Campeche, 1,5 m, 5 s, sul 15 km/h: antes 8,3 (excelente), agora abaixo de 7
+    expect(calculateSurfScore(1.5, 15, 5, 'S', 90)).toBeLessThan(7)
+    // 1,4 m com 6 s e quase sem vento não é mais "épico" (≥ 8,5)
+    expect(calculateSurfScore(1.4, 3, 6, 'NNE', 90)).toBeLessThan(8.5)
+  })
+
   // ── Direção desconhecida ─────────────────────────────────────────────────────
 
   it('direção de vento desconhecida não causa crash', () => {
