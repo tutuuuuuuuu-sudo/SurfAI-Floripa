@@ -1,8 +1,9 @@
 name: Snapshot — Histórico de Condições
 
+# Horário automático no agendador do Supabase desde 30/set/2026 (pg_cron: jobs robo-*,
+# função public.call_robot) — o agendamento do GitHub atrasava até 6 h. Aqui fica só a
+# execução manual.
 on:
-  schedule:
-    - cron: '0 * * * *'
   workflow_dispatch:
 
 permissions: {}

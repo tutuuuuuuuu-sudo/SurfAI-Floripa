@@ -1,10 +1,9 @@
 name: Daily Report — Resumo Diário do App
 
+# Horário automático no agendador do Supabase desde 30/set/2026 (pg_cron: jobs robo-*,
+# função public.call_robot) — o agendamento do GitHub atrasava até 6 h. Aqui fica só a
+# execução manual.
 on:
-  schedule:
-    # 9h BRT (12h UTC) e 20h BRT (23h UTC)
-    - cron: '0 12 * * *'
-    - cron: '0 23 * * *'
   workflow_dispatch:
 
 permissions: {}
