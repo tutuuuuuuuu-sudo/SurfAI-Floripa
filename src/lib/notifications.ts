@@ -32,11 +32,13 @@ export async function subscribeToNotifications(
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false
 
   try {
-    const reg = await navigator.serviceWorker.register('/sw.js')
-    await navigator.serviceWorker.ready
-
+    // Permissão PRIMEIRO, ainda "dentro" do toque do usuário: o iPhone (iOS 16.4+, app instalado na
+    // tela de início) recusa o pedido se antes vier outra espera (registro do service worker)
     const granted = await requestNotificationPermission()
     if (!granted) return false
+
+    const reg = await navigator.serviceWorker.register('/sw.js')
+    await navigator.serviceWorker.ready
 
     // Se não tiver VAPID key configurada, cai para notificação local apenas
     if (!VAPID_PUBLIC_KEY) return true
@@ -168,4 +170,21 @@ export async function checkAndNotifyGoodConditions(
 
   lsSetJson(notifiedKey, cleaned)
   return toNotify.length
+}
+
+// Alerta de teste de verdade, pelo servidor (api/push-test.ts), pros aparelhos do próprio usuário.
+// Retorna quantos aparelhos receberam, 0 se este aparelho não está inscrito, ou null se deu erro.
+export async function sendTestPush(): Promise<{ sent: number; total: number } | null> {
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) return null
+    const res = await fetch('/api/push-test', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
+    if (!res.ok) return null
+    return await res.json() as { sent: number; total: number }
+  } catch {
+    return null
+  }
 }
