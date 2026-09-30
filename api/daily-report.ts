@@ -125,6 +125,45 @@ async function getUserStats(): Promise<{
   }
 }
 
+// Contador anônimo da landing (api/landing-event.ts → tabela landing_stats, dia em horário de
+// Brasília): visitas e cliques em cada botão, hoje e nos últimos 7 dias
+const CTA_LABEL: Record<string, string> = {
+  nav: 'menu', hero: 'topo', 'hero-planos': 'topo/planos', curva: 'curva',
+  'preco-mensal': 'mensal', 'preco-anual': 'anual', 'preco-gratis': 'grátis',
+  fechamento: 'final', 'fechamento-planos': 'final/planos',
+}
+
+// Data (AAAA-MM-DD) em Brasília, `daysAgo` dias atrás — mesma conta de UTC-3 fixo do todayISO acima
+const brtDate = (daysAgo = 0) => new Date(Date.now() - 3 * 60 * 60 * 1000 - daysAgo * 86400000).toISOString().slice(0, 10)
+
+async function getLandingStats(): Promise<{ viewsToday: number; clicksToday: number; clicksTodayBy: string; views7d: number; clicks7d: number } | null> {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return null
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/landing_stats?day=gte.${brtDate(6)}&select=day,event,detail,count`, {
+      headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` },
+      signal: AbortSignal.timeout(8000),
+    })
+    if (!res.ok) return null
+    const rows = await res.json() as { day: string; event: string; detail: string; count: number }[]
+    const today = brtDate()
+    const sum = (f: (r: typeof rows[number]) => boolean) => rows.filter(f).reduce((n, r) => n + r.count, 0)
+    const clicksTodayBy = rows
+      .filter(r => r.day === today && r.event === 'cta')
+      .sort((a, b) => b.count - a.count)
+      .map(r => `${CTA_LABEL[r.detail] ?? r.detail} ${r.count}`)
+      .join(', ')
+    return {
+      viewsToday: sum(r => r.day === today && r.event === 'view'),
+      clicksToday: sum(r => r.day === today && r.event === 'cta'),
+      clicksTodayBy,
+      views7d: sum(r => r.event === 'view'),
+      clicks7d: sum(r => r.event === 'cta'),
+    }
+  } catch {
+    return null
+  }
+}
+
 interface SpotResult {
   name: string
   score: number
@@ -194,6 +233,7 @@ async function getSurfConditions(): Promise<{
 async function generateSummary(data: {
   period: string
   users: Awaited<ReturnType<typeof getUserStats>>
+  landing: Awaited<ReturnType<typeof getLandingStats>>
   surf: Awaited<ReturnType<typeof getSurfConditions>>
 }): Promise<string> {
   if (!GEMINI_KEY) return ''
@@ -211,7 +251,8 @@ DADOS DO DIA:
 - Cancelamentos hoje: ${data.users.cancelledToday}
 - MRR estimado: R$ ${data.users.mrr.toFixed(2)}
 - Taxa de conversão free→premium: ${data.users.conversionRate}%
-
+${data.landing ? `- Landing hoje: ${data.landing.viewsToday} visitas, ${data.landing.clicksToday} cliques em botão (últimos 7 dias: ${data.landing.views7d} visitas, ${data.landing.clicks7d} cliques)
+` : ''}
 CONDIÇÕES DO MAR:
 - Melhor praia: ${data.surf.bestSpot} (score ${data.surf.bestScore}/10)
 - Score médio das praias: ${data.surf.avgScore}/10
@@ -234,11 +275,12 @@ function buildWhatsAppText(data: {
   period: string
   date: string
   users: Awaited<ReturnType<typeof getUserStats>>
+  landing: Awaited<ReturnType<typeof getLandingStats>>
   surf: Awaited<ReturnType<typeof getSurfConditions>>
   aiSummary: string
 }): string {
-  const { period, date, users, surf, aiSummary } = data
-  const greeting = period === 'Manhã' ? 'Bom dia' : 'Boa noite'
+  const { period, date, users, landing, surf, aiSummary } = data
+  const greeting = period === 'Manhã' ? 'Bom dia' : period === 'Tarde' ? 'Boa tarde' : 'Boa noite'
 
   const lines = [
     `🏄 *Surf AI · Relatório ${period} · ${date}*`,
@@ -253,6 +295,11 @@ function buildWhatsAppText(data: {
   ]
 
   if (users.cancelledToday > 0) lines.push(`Cancelamentos: ${users.cancelledToday}`)
+
+  if (landing) {
+    const by = landing.clicksTodayBy ? ` (${landing.clicksTodayBy})` : ''
+    lines.push('', `Landing hoje: ${landing.viewsToday} visitas, ${landing.clicksToday} cliques${by}`, `Landing 7 dias: ${landing.views7d} visitas, ${landing.clicks7d} cliques`)
+  }
 
   lines.push('', `Melhor praia agora: ${surf.bestSpot} (${surf.bestScore}/10)`, `Score médio: ${surf.avgScore}/10`)
 
@@ -270,6 +317,7 @@ async function sendReportWhatsApp(data: {
   period: string
   date: string
   users: Awaited<ReturnType<typeof getUserStats>>
+  landing: Awaited<ReturnType<typeof getLandingStats>>
   surf: Awaited<ReturnType<typeof getSurfConditions>>
   aiSummary: string
 }): Promise<boolean> {
@@ -309,27 +357,34 @@ export default async function handler(req: Request) {
     })
   }
 
+  // Período pelo horário real do envio: o agendamento do GitHub chega a atrasar 5-6 h, e o
+  // relatório "da manhã" já saiu às 14h52 dizendo "Boa noite"
   const hourBRT = (new Date().getUTCHours() - 3 + 24) % 24
-  const period = hourBRT < 14 ? 'Manhã' : 'Noite'
+  const period = hourBRT < 12 ? 'Manhã' : hourBRT < 18 ? 'Tarde' : 'Noite'
   const dateStr = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit' }).format(new Date())
 
-  const [users, surf] = await Promise.all([
+  const [users, landing, surf] = await Promise.all([
     getUserStats(),
+    getLandingStats(),
     getSurfConditions(),
   ])
 
-  const aiSummary = await generateSummary({ period, users, surf })
+  const aiSummary = await generateSummary({ period, users, landing, surf })
 
-  const whatsappSent = await sendReportWhatsApp({ period, date: dateStr, users, surf, aiSummary })
+  const whatsappSent = await sendReportWhatsApp({ period, date: dateStr, users, landing, surf, aiSummary })
 
   return new Response(JSON.stringify({
     period,
     date: dateStr,
     users,
     surf,
+    landing,
     aiSummary,
     whatsappSent,
   }), {
+    // 502 quando a mensagem não saiu: o GitHub Actions marca a execução como falha e o Cronitor
+    // avisa (antes respondia 200 mesmo sem entregar, e "deu certo" no painel não queria dizer nada)
+    status: whatsappSent ? 200 : 502,
     headers: { 'Content-Type': 'application/json' },
   })
 }
