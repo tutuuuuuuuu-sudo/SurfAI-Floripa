@@ -28,13 +28,9 @@ import { isOnboardingDone, syncOnboardingDoneFromServer } from '@/lib/onboarding
 import {
   Waves, TrendingUp, MapPin, Heart, Settings,
   Crown, Sparkles, Flame, Fish, GitCompareArrows,
-  Sun, CloudSun, Cloud, CloudRain, CloudLightning, MessageCircle, ChevronRight
+  MessageCircle, ChevronRight
 } from 'lucide-react'
-import type { WeatherCondition } from '@/lib/weatherApi'
-
-const WEATHER_ICONS: Record<WeatherCondition['icon'], typeof Sun> = {
-  'sun': Sun, 'cloud-sun': CloudSun, 'cloud': Cloud, 'rain': CloudRain, 'storm': CloudLightning,
-}
+import { WEATHER_ICONS } from '@/lib/weatherIcons'
 
 export default function Home() {
   const [activeRegion, setActiveRegion] = useState<string>(() => {

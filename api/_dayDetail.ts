@@ -5,6 +5,7 @@
 // Prefixo _ indica que não é um handler HTTP — não será exposto como endpoint pelo Vercel.
 import { fetchHourlyForecast, type HourReading } from './_hourlyForecast.js'
 import { fetchTideData } from './_tide.js'
+import { summarizeDaySky, type WeatherCondition } from './_weatherCode.js'
 
 // Mesma janela "surfável" usada em forecast.ts pra escolher a melhor hora do dia — evita
 // cravar o resumo com base numa hora de madrugada que ninguém vai encarar.
@@ -20,6 +21,16 @@ export interface DayDetail {
   sunriseHour: number | null
   sunsetHour: number | null
   tideHeights: number[] | null
+  // Tempo do dia (01/out/2026, pedido do usuário): céu nas horas de luz, temperatura do ar
+  // (mín/máx do dia), chance de chuva (maior das horas de luz) e água (média das horas de luz;
+  // null além de ~10 dias, onde a Open-Meteo não tem previsão da água)
+  weather: {
+    sky: WeatherCondition | null
+    airMin: number
+    airMax: number
+    rainChance: number | null
+    waterTemp: number | null
+  }
 }
 
 export async function buildDayDetail(lat: string, lng: string, orientation: number, dayIndex: number): Promise<DayDetail | null> {
@@ -50,6 +61,22 @@ export async function buildDayDetail(lat: string, lng: string, orientation: numb
   }
   if (hours.length === 0) return null
 
+  // Nascer/pôr do sol do próprio dia (antes usava o de hoje pra qualquer dia da previsão)
+  const { sunriseHour, sunsetHour } = hourly.sunFor(dayIndex)
+  const daylight = hours.filter(h => h.hour >= (sunriseHour ?? 6) && h.hour <= (sunsetHour ?? 18))
+  const light = daylight.length > 0 ? daylight : hours
+  const codes = light.filter(h => h.weatherCode != null).map(h => ({ hour: h.hour, code: h.weatherCode! }))
+  const rain = light.map(h => h.rainChance).filter((v): v is number => v != null)
+  const water = light.map(h => h.waterTemp).filter((v): v is number => v != null)
+  const air = hours.map(h => h.temperature)
+  const weather = {
+    sky: summarizeDaySky(codes),
+    airMin: Math.min(...air),
+    airMax: Math.max(...air),
+    rainChance: rain.length > 0 ? Math.max(...rain) : null,
+    waterTemp: water.length > 0 ? Math.round(water.reduce((a, b) => a + b, 0) / water.length) : null,
+  }
+
   // Melhor hora dentro da janela surfável, mesmo critério de forecast.ts — onda/vento/
   // período sempre vêm do mesmo horário, nunca de picos independentes.
   const surfableHours = hours.filter(h => h.hour >= DAY_START_HOUR && h.hour <= DAY_END_HOUR)
@@ -71,8 +98,9 @@ export async function buildDayDetail(lat: string, lng: string, orientation: numb
     date, dayName, dayIndex,
     hours,
     best,
-    sunriseHour: hourly.sunriseHour,
-    sunsetHour: hourly.sunsetHour,
+    sunriseHour,
+    sunsetHour,
     tideHeights,
+    weather,
   }
 }
