@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import { calculateSurfScore, applyDirectionalExposure, explainSurfScore } from './_scoreEngine'
+import { calculateSurfScore, applyDirectionalExposure, explainSurfScore, southWindHits } from './_scoreEngine'
+import { BEACH_REGISTRY } from './_beachRegistry'
 
 describe('explainSurfScore', () => {
   it('a soma dos três componentes bate exatamente com calculateSurfScore (mesmos inputs)', () => {
@@ -201,6 +202,47 @@ describe('calculateSurfScore', () => {
     const asOffshore = calculateSurfScore(1.0, 15, 10, 'E', 270)
     const asOnshore  = calculateSurfScore(1.0, 15, 10, 'E', 90)
     expect(asOffshore).toBeGreaterThan(asOnshore)
+  })
+})
+
+// Orientação medida no mapa + guias de surf de Floripa (01/out/2026)
+describe('vento por praia com a orientação real', () => {
+  const beach = (id: string) => BEACH_REGISTRY.find(b => b.id === id)!
+
+  it('na Barra da Lagoa o sul sopra da terra e conta como terral', () => {
+    const barra = beach('barra-lagoa')
+    expect(southWindHits('S', barra.orientation)).toBe(false)
+    const b = explainSurfScore(1.0, 15, 9, 'S', barra.orientation, barra.southExposure ?? 1)
+    expect(b.windQuality).toBe('offshore')
+    expect(b.windPenalty).toBeGreaterThan(0)
+  })
+
+  it('nas praias expostas o sul continua derrubando a nota', () => {
+    for (const id of ['campeche', 'novo-campeche', 'morro-pedras', 'joaquina', 'mole', 'mocambique', 'santinho']) {
+      const b = beach(id)
+      expect(southWindHits('S', b.orientation)).toBe(true)
+      expect(calculateSurfScore(1.2, 20, 10, 'S', b.orientation, b.southExposure ?? 1)).toBeLessThan(4)
+    }
+  })
+
+  it('Matadeiro: sul ainda pega (protegido pela metade), sul-sudoeste já é terral', () => {
+    const m = beach('matadeiro')
+    expect(southWindHits('S', m.orientation)).toBe(true)
+    expect(southWindHits('SSW', m.orientation)).toBe(false)
+    const protegido = calculateSurfScore(1.2, 20, 10, 'S', m.orientation, m.southExposure ?? 1)
+    expect(protegido).toBeGreaterThan(calculateSurfScore(1.2, 20, 10, 'S', beach('campeche').orientation))
+  })
+
+  it('noroeste é terral na costa leste, como dizem os guias', () => {
+    for (const id of ['campeche', 'novo-campeche', 'joaquina', 'mole', 'mocambique', 'santinho', 'lagoinha-leste']) {
+      expect(explainSurfScore(1.0, 8, 9, 'NW', beach(id).orientation).windQuality).toBe('offshore')
+    }
+  })
+
+  it('norte não vem mais do mar na Mole, Moçambique e Santinho', () => {
+    for (const id of ['mole', 'mocambique', 'santinho']) {
+      expect(explainSurfScore(1.0, 8, 9, 'N', beach(id).orientation).windQuality).not.toBe('onshore')
+    }
   })
 })
 

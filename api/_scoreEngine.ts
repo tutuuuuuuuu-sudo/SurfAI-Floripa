@@ -88,7 +88,7 @@ export function explainSurfScore(
   // entram na praia (terral, lateral, maral). Os valores andam em linha reta entre os pontos
   // (km/h → pontos), sem degrau: 1 km/h a mais não pode derrubar a nota de uma vez.
   const windQuality = classifyWind(windDir, beachOrientation)
-  const south = SOUTH_WINDS.has(windDir)
+  const south = southWindHits(windDir, beachOrientation)
   const windCurve = south ? WIND_SOUTH
     : windQuality === 'offshore' ? WIND_OFFSHORE
     : windQuality === 'lateral' ? WIND_LATERAL
@@ -110,12 +110,17 @@ export function explainSurfScore(
 // de 15 km/h. Pontos [valor medido, ajuste na nota]; fora das pontas vale o valor da ponta.
 //
 // Vento sul (S, SSE, SSW): o pior vento de Floripa. Chega com a frente fria, entra de lado ou
-// de frente em todas as 14 praias e já desmancha o mar com 10 km/h — por isso não depende da
-// orientação da praia (pro Campeche, virado pra leste, a conta geométrica chamava de "lateral"
-// e quase não descontava). Nunca fica mais brando que o maral na mesma velocidade.
+// de frente em quase todas as praias e já desmancha o mar com 10 km/h — por isso, de lado ou de
+// frente, usa a curva própria (pro Campeche a conta geométrica chamava de "lateral" e quase não
+// descontava). Nunca fica mais brando que o maral na mesma velocidade.
 const SOUTH_WINDS = new Set(['S', 'SSE', 'SSW'])
-// Usado também pelo texto de análise (surfData.ts), pra frase e nota tratarem o sul igual
-export const isSouthWind = (windDir: string) => SOUTH_WINDS.has(windDir)
+// Exceção (01/out/2026): onde o sul sopra da terra (terral), ele segura a onda como qualquer terral
+// e usa a curva do terral. Com a orientação medida no mapa, isso vale pro sul e sul-sudoeste na Barra
+// da Lagoa (canto virado pra nordeste) e pro sul-sudoeste no Matadeiro. Os guias de surf apontam o sul
+// como vento bom na Barra, e o Waves classificou o sul de lá como terral. Usado também pelo texto de
+// análise (surfData.ts), pra frase e nota tratarem o sul igual.
+export const southWindHits = (windDir: string, beachOrientation: number) =>
+  SOUTH_WINDS.has(windDir) && classifyWind(windDir, beachOrientation) !== 'offshore'
 // Curva ditada pelo usuário (30/set/2026, 2ª rodada): 10 km/h −1 · 15 −1,5 · 20 −2,5 · 25 −3,5
 // "e assim vai" (mais −1 a cada 5 km/h) — com sul de 21 km/h o mar "não fica nem regular"
 // 01/out/2026 (3ª rodada): "swell bom com sul de 20 km/h no Campeche fica extremamente ruim — não

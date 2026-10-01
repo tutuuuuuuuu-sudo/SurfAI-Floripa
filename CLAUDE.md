@@ -224,7 +224,8 @@ resultado era descartado e gastava cota do Gemini — o ContentStudio usa o endp
 - Definidos em `src/lib/surfData.ts` como array `BEACHES` (rico — inclui subRegions, bestTimeWindow, hikeAccess, usado só pelo frontend).
 - Backend (crons) usa `api/_beachRegistry.ts` (id/nome/região/coordenadas/orientação) — **nunca criar uma terceira cópia**, os dois já precisam ser mantidos em sincronia manualmente.
 - Coordenadas foram **confirmadas pelo usuário no Google Maps** — não alterar sem confirmação explícita, nos dois arquivos.
-- Cada pico tem `orientation` (graus) usado no cálculo de offshore/onshore.
+- Cada pico tem `orientation` (graus, pra onde a praia está virada) usado no cálculo de offshore/onshore. Refeita em 01/out/2026 com OK do usuário: medida no contorno da costa (OpenStreetMap) e conferida com 5 guias de surf (ver comentário em `api/_beachRegistry.ts`) — a costa leste estava 30-50° virada pro norte demais.
+- Vento sul: curva própria, mais dura (`WIND_SOUTH` em `_scoreEngine.ts`), exceto onde ele sopra da terra (`southWindHits`: S/SSW na Barra, SSW no Matadeiro). `southExposure` no registro = proteção parcial (Matadeiro 0,5, Barra 0,7 pro SSE, Armação 0,85); Mole, Moçambique e Santinho ficam expostas (guias concordam/conflitam → mostrar menos).
 - Sub-regiões têm `swellDirections` que determinam qual pico brilha em cada swell.
 
 ### Testes

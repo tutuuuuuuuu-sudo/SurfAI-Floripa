@@ -10,6 +10,15 @@
 // dois lugares — coordenadas foram confirmadas pelo usuário no Google Maps, não alterar sem
 // confirmação explícita (ver CLAUDE.md).
 //
+// Orientação (pra onde a praia está virada, usada só pro vento) refeita em 01/out/2026, com OK do
+// usuário: medida no contorno da costa do OpenStreetMap e conferida com 5 guias de surf de Floripa
+// (NSC Total, Destino Florianópolis, Hotel Favareto, florianopolisguide.com, surf-forecast). O
+// cadastro antigo tinha a costa leste virada 30-50° pro norte demais (o app achava que o vento norte
+// vinha do mar na Mole, Moçambique e Santinho, onde os guias dizem que norte/noroeste é vento bom),
+// a Lagoinha do Leste virada pro sul (180°, real ~125°) e a Barra e o Matadeiro, que ficam em cantos
+// virados pra nordeste, como se olhassem pro leste. Morro das Pedras, Solidão, Armação e Naufragados
+// ficaram como estavam (medição perto do cadastro, ou praia em curva).
+//
 // Prefixo _ indica que não é um handler HTTP — não será exposto como endpoint pelo Vercel.
 
 export interface BeachRegistryEntry {
@@ -26,20 +35,20 @@ export interface BeachRegistryEntry {
 }
 
 export const BEACH_REGISTRY: BeachRegistryEntry[] = [
-  { id: 'campeche', name: 'Campeche', region: 'Sul', lat: -27.697703, lng: -48.4898603, orientation: 90 },
-  { id: 'novo-campeche', name: 'Novo Campeche', region: 'Centro', lat: -27.6661001, lng: -48.4755307, orientation: 90 },
+  { id: 'campeche', name: 'Campeche', region: 'Sul', lat: -27.697703, lng: -48.4898603, orientation: 130 },
+  { id: 'novo-campeche', name: 'Novo Campeche', region: 'Centro', lat: -27.6661001, lng: -48.4755307, orientation: 110 },
   { id: 'morro-pedras', name: 'Morro das Pedras', region: 'Sul', lat: -27.7170897, lng: -48.503436, orientation: 100 },
-  { id: 'matadeiro', name: 'Matadeiro', region: 'Sul', lat: -27.7548429, lng: -48.4985647, orientation: 110, southExposure: 0.5 },
-  { id: 'lagoinha-leste', name: 'Lagoinha do Leste', region: 'Sul', lat: -27.7732103, lng: -48.4863806, orientation: 180 },
-  { id: 'acores', name: 'Açores', region: 'Sul', lat: -27.7837144, lng: -48.5236746, orientation: 120 },
+  { id: 'matadeiro', name: 'Matadeiro', region: 'Sul', lat: -27.7548429, lng: -48.4985647, orientation: 60, southExposure: 0.5 },
+  { id: 'lagoinha-leste', name: 'Lagoinha do Leste', region: 'Sul', lat: -27.7732103, lng: -48.4863806, orientation: 125 },
+  { id: 'acores', name: 'Açores', region: 'Sul', lat: -27.7837144, lng: -48.5236746, orientation: 145 },
   { id: 'solidao', name: 'Solidão', region: 'Sul', lat: -27.7941233, lng: -48.5334965, orientation: 130 },
   { id: 'armacao', name: 'Armação', region: 'Sul', lat: -27.7504078, lng: -48.5017637, orientation: 115, southExposure: 0.85 },
   { id: 'naufragados', name: 'Naufragados', region: 'Sul', lat: -27.8335587, lng: -48.5641537, orientation: 180 },
-  { id: 'joaquina', name: 'Joaquina', region: 'Centro', lat: -27.6293577, lng: -48.4490173, orientation: 90 },
-  { id: 'mole', name: 'Praia Mole', region: 'Centro', lat: -27.6022459, lng: -48.4326839, orientation: 85 },
-  { id: 'mocambique', name: 'Moçambique', region: 'Norte', lat: -27.4937746, lng: -48.3955175, orientation: 80 },
-  { id: 'barra-lagoa', name: 'Barra da Lagoa', region: 'Centro', lat: -27.5734502, lng: -48.424939, orientation: 75, southExposure: 0.7 },
-  { id: 'santinho', name: 'Santinho', region: 'Norte', lat: -27.4618653, lng: -48.3761513, orientation: 70 },
+  { id: 'joaquina', name: 'Joaquina', region: 'Centro', lat: -27.6293577, lng: -48.4490173, orientation: 130 },
+  { id: 'mole', name: 'Praia Mole', region: 'Centro', lat: -27.6022459, lng: -48.4326839, orientation: 125 },
+  { id: 'mocambique', name: 'Moçambique', region: 'Norte', lat: -27.4937746, lng: -48.3955175, orientation: 130 },
+  { id: 'barra-lagoa', name: 'Barra da Lagoa', region: 'Centro', lat: -27.5734502, lng: -48.424939, orientation: 40, southExposure: 0.7 },
+  { id: 'santinho', name: 'Santinho', region: 'Norte', lat: -27.4618653, lng: -48.3761513, orientation: 100 },
 ]
 
 // Proteção ao vento sul (01/out/2026, usuário — surfista local):

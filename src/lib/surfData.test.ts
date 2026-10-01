@@ -77,3 +77,11 @@ describe('getWindAnalysis — praia protegida do sul (01/out/2026)', () => {
     expect(t).not.toContain('bagunçado')
   })
 })
+
+describe('getWindAnalysis — sul que sopra da terra (Barra da Lagoa, 01/out/2026)', () => {
+  it('na Barra o sul fraco é terral: mar liso, sem frase de "bagunçado"', () => {
+    const t = getWindAnalysis('S', 12, 40, 0.7)
+    expect(t).toContain('liso e organizado')
+    expect(t).not.toContain('mexendo')
+  })
+})
