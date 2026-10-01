@@ -134,9 +134,9 @@ export default async function handler(req: Request) {
       badge: '/icon-192.png',
     })
 
-    const ok = await sendPush(sub.endpoint, sub.p256dh, sub.auth, payload)
-    if (!ok) toRemove.push(sub.id)
-    else sent++
+    const r = await sendPush(sub.endpoint, sub.p256dh, sub.auth, payload)
+    if (r.gone) toRemove.push(sub.id) // só aparelho que não existe mais; recusa comum não apaga
+    else if (r.ok) sent++
   }))
 
   // 5. Remove subscriptions expiradas (410)

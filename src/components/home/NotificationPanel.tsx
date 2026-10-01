@@ -91,13 +91,20 @@ export function NotificationPanel({ spots, favorites, isPremium }: Props) {
     unsubscribeFromPush().catch(() => {})
   }
 
+  // O servidor espera ~8 s antes de mandar: o teste mais fiel é com o app fechado (no iPhone o
+  // alerta aparece na tela de bloqueio/no topo). Só diz "entregue" quando o serviço de push deste
+  // tipo de aparelho (Apple no iPhone) aceitou — antes dizia "deve chegar" mesmo quando a Apple recusava.
   const handleTest = async () => {
     setTesting(true)
-    const r = await sendTestPush()
+    toast.info('Saia do app agora (volte pra tela inicial): o alerta de teste chega em uns 10 segundos.')
+    const results = await sendTestPush()
     setTesting(false)
-    if (!r) toast.error('Não deu pra enviar o teste agora. Tente de novo em alguns segundos.')
-    else if (r.total === 0) toast.info('Este aparelho ainda não está inscrito. Desligue e ligue os alertas de novo.')
-    else toast.success('Alerta de teste enviado. Deve chegar em alguns segundos.')
+    if (!results) { toast.error('Não deu pra enviar o teste agora. Tente de novo em alguns segundos.'); return }
+    if (results.length === 0) { toast.info('Este aparelho ainda não está inscrito. Desligue e ligue os alertas de novo.'); return }
+    const mine = results.filter(r => r.apple === (ios === 'ok'))
+    const delivered = mine.find(r => r.ok)
+    if (delivered) toast.success(ios === 'ok' ? 'A Apple aceitou o alerta de teste.' : 'Alerta de teste entregue.')
+    else toast.error(`O alerta foi recusado${mine[0] ? ` (código ${mine[0].status})` : ''}. Tente desligar e ligar os alertas de novo.`)
   }
 
   const trigger = (
