@@ -2,6 +2,7 @@ export const config = { runtime: 'edge' }
 
 import { createRateLimiter } from './_httpUtils.js'
 import { fetchLiveConditions } from './_liveConditions.js'
+import { mapWeatherCode, type WeatherCondition } from './_weatherCode.js'
 
 // ── Utilitários ───────────────────────────────────────────────────────────────
 
@@ -16,24 +17,7 @@ function isValidCoord(lat: string | null, lng: string | null): boolean {
   return !isNaN(latN) && !isNaN(lngN) && latN >= -90 && latN <= 90 && lngN >= -180 && lngN <= 180
 }
 
-// ── Condição do tempo (sol/nublado/chuva) ──────────────────────────────────────
-
-export interface WeatherCondition {
-  code: number
-  label: string
-  icon: 'sun' | 'cloud-sun' | 'cloud' | 'rain' | 'storm'
-}
-
-function mapWeatherCode(code: number, isDay: boolean): WeatherCondition {
-  // Códigos WMO da Open-Meteo (https://open-meteo.com/en/docs) agrupados no que
-  // importa pro surfista: sol, nublado, chuva ou tempestade.
-  if (code === 0) return { code, label: isDay ? 'Sol' : 'Céu limpo', icon: 'sun' }
-  if (code <= 2) return { code, label: 'Parcialmente nublado', icon: 'cloud-sun' }
-  if (code === 3 || code === 45 || code === 48) return { code, label: 'Nublado', icon: 'cloud' }
-  if ([95, 96, 99].includes(code)) return { code, label: 'Tempestade', icon: 'storm' }
-  if (code >= 51) return { code, label: 'Chuva', icon: 'rain' }
-  return { code, label: 'Nublado', icon: 'cloud' }
-}
+// ── Condição do tempo (sol/nublado/chuva) — mapeamento em api/_weatherCode.ts ─────
 
 async function fetchWeatherCondition(lat: string, lng: string): Promise<WeatherCondition | null> {
   try {

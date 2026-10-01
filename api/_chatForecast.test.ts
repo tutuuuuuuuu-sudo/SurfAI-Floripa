@@ -28,7 +28,7 @@ describe('maré', () => {
 describe('formatBeachDay', () => {
   const h = (hour: number, score: number) => ({
     hour, score, waveHeight: 1 + hour / 100, swellPeriod: 10, swellDirection: 'SE',
-    windSpeed: 8, windDirection: 'NW', temperature: 20,
+    windSpeed: 8, windDirection: 'NW', temperature: 20, weatherCode: null, rainChance: null, waterTemp: null,
   })
   it('traz onda, melhor horário, vento com nome da direção, maré e período', () => {
     const line = formatBeachDay('sáb 26/09', [h(5, 9), h(7, 7.4), h(8, 7.5), h(9, 7.3), h(12, 5)], 6, 18, () => 'enchendo')

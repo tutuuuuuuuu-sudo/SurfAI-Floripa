@@ -3,12 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ArrowLeft, ArrowUp, Waves, Wind, Droplets, Timer, Lock, MoveHorizontal, Sparkles } from 'lucide-react'
+import { ArrowLeft, ArrowUp, Waves, Wind, Droplets, Droplet, Timer, Lock, MoveHorizontal, Sparkles, Thermometer } from 'lucide-react'
 import { useSurfData } from '@/contexts/SurfDataContext'
 import { supabase } from '@/lib/supabase'
 import { getRatingInfo } from '@/lib/rating'
 import { usePremium } from '@/lib/premium'
-import { formatWaveRange, WIND_DEG } from '@/lib/surfData'
+import { formatWaveRange, getWetsuitInfo, WIND_DEG } from '@/lib/surfData'
 import { directionName } from '@/lib/directions'
 import { getWeatherForecast, WeatherForecast, FREE_DAYS } from '@/lib/weatherData'
 import { PremiumUpsellBanner } from '@/components/PremiumUpsellBanner'
@@ -16,6 +16,8 @@ import { WindCompass } from '@/components/spot/WindCompass'
 import { DayTideChart } from '@/components/spot/DayTideChart'
 import { DayCurve } from '@/components/spot/DayCurve'
 import { computeGoldenWindow } from '../../api/_goldenWindow'
+import { mapWeatherCode, type WeatherCondition } from '../../api/_weatherCode'
+import { WEATHER_ICONS } from '@/lib/weatherIcons'
 
 interface DayHour {
   hour: number
@@ -26,6 +28,9 @@ interface DayHour {
   swellDirection: string
   temperature: number
   score: number
+  weatherCode?: number | null
+  rainChance?: number | null
+  waterTemp?: number | null
 }
 
 interface DayDetail {
@@ -37,6 +42,14 @@ interface DayDetail {
   sunriseHour: number | null
   sunsetHour: number | null
   tideHeights: number[] | null
+  // opcional: resposta antiga em cache (antes de 01/out/2026) não tinha
+  weather?: {
+    sky: WeatherCondition | null
+    airMin: number
+    airMax: number
+    rainChance: number | null
+    waterTemp: number | null
+  }
 }
 
 const fmtHour = (h: number) => `${String(h).padStart(2, '0')}h`
@@ -134,6 +147,8 @@ export default function ForecastDayPage() {
   const tideNow = data?.tideHeights && sel ? data.tideHeights[sel.hour] : undefined
   const tideNext = data?.tideHeights && sel ? data.tideHeights[sel.hour + 1] : undefined
   const swellDeg = sel ? WIND_DEG[sel.swellDirection.toUpperCase()] : undefined
+  const isDaylight = (h: number) => h >= (data?.sunriseHour ?? 6) && h <= (data?.sunsetHour ?? 18)
+  const selSky = sel?.weatherCode != null ? mapWeatherCode(sel.weatherCode, isDaylight(sel.hour)) : null
 
   return (
     <div className="min-h-screen bg-background">
@@ -277,6 +292,47 @@ export default function ForecastDayPage() {
                 <MoveHorizontal className="h-3.5 w-3.5" />Arraste pela curva pra ver cada hora
               </div>
             </section>
+
+            {/* Tempo do dia (01/out/2026): céu nas horas de luz, ar mín/máx e água — a última linha
+                acompanha a hora escolhida na curva */}
+            {data.weather && (() => {
+              const w = data.weather
+              const SkyIcon = w.sky ? WEATHER_ICONS[w.sky.icon] : null
+              const SelIcon = selSky ? WEATHER_ICONS[selSky.icon] : null
+              return (
+                <section className="rounded-2xl border border-border/40 bg-card" style={{ animation: 'slideUp 0.4s 0.03s ease-out both' }}>
+                  <div className="grid grid-cols-3 divide-x divide-border/40">
+                    <div className="p-3.5 min-w-0">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        {SkyIcon && <SkyIcon className="h-3.5 w-3.5 text-primary" />}Céu
+                      </div>
+                      <div className="mt-1 text-sm font-bold leading-snug">{w.sky?.label ?? '—'}</div>
+                      {w.rainChance != null && <div className="mt-0.5 text-xs text-muted-foreground">chuva {w.rainChance}%</div>}
+                    </div>
+                    <div className="p-3.5 min-w-0">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Thermometer className="h-3.5 w-3.5 text-primary" />Ar</div>
+                      <div className="mt-1 text-lg font-bold tabular-nums leading-snug">{w.airMin}° a {w.airMax}°</div>
+                      <div className="mt-0.5 text-xs text-muted-foreground">mín e máx</div>
+                    </div>
+                    <div className="p-3.5 min-w-0">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Droplet className="h-3.5 w-3.5 text-primary" />Água</div>
+                      <div className="mt-1 text-lg font-bold tabular-nums leading-snug">{w.waterTemp != null ? `${w.waterTemp}°` : '—'}</div>
+                      <div className="mt-0.5 text-xs text-muted-foreground">
+                        {w.waterTemp != null ? getWetsuitInfo(w.waterTemp).thickness : 'sem previsão ainda'}
+                      </div>
+                    </div>
+                  </div>
+                  <div key={`sky${sel.hour}`} className="flex items-center gap-1.5 border-t border-border/40 px-3.5 py-2 text-xs text-muted-foreground" style={{ animation: 'fadeIn 0.25s ease-out' }}>
+                    {SelIcon && <SelIcon className="h-3.5 w-3.5 shrink-0" />}
+                    <span>
+                      Às <span className="font-semibold text-foreground tabular-nums">{fmtHour(sel.hour)}</span>: {sel.temperature}°
+                      {selSky && <> · {selSky.label.toLowerCase()}</>}
+                      {sel.rainChance != null && sel.rainChance >= 30 && <> · chuva {sel.rainChance}%</>}
+                    </span>
+                  </div>
+                </section>
+              )
+            })()}
 
             {/* Condições da hora escolhida — tudo acompanha a curva */}
             <section className="grid grid-cols-2 gap-3" style={{ animation: 'slideUp 0.4s 0.05s ease-out both' }}>

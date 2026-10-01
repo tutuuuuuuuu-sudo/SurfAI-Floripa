@@ -18,6 +18,12 @@ export interface HourReading {
   windDirection: string
   temperature: number
   score: number
+  // Tempo da hora (01/out/2026, página do dia da previsão): código WMO do céu, chance de chuva (%)
+  // e temperatura da água (°C). null quando a Open-Meteo não manda — a água só tem previsão
+  // até ~10 dias à frente.
+  weatherCode: number | null
+  rainChance: number | null
+  waterTemp: number | null
 }
 
 interface MarineHourly {
@@ -27,11 +33,14 @@ interface MarineHourly {
   swell_wave_height?: number[]
   swell_wave_period?: number[]
   swell_wave_direction?: number[]
+  sea_surface_temperature?: (number | null)[]
 }
 interface WeatherHourly {
   wind_speed_10m?: number[]
   wind_direction_10m?: number[]
   temperature_2m?: number[]
+  weather_code?: (number | null)[]
+  precipitation_probability?: (number | null)[]
 }
 
 export interface HourlyForecast {
@@ -42,6 +51,8 @@ export interface HourlyForecast {
   // 21h às 23h"). `null` se a Open-Meteo não retornar o dado (fail-open — sem filtro).
   sunriseHour: number | null
   sunsetHour: number | null
+  // Nascer/pôr do sol de um dia qualquer da previsão (0 = hoje) — sunriseHour/sunsetHour acima são só de hoje
+  sunFor(dayIndex: number): { sunriseHour: number | null; sunsetHour: number | null }
   readHour(idx: number, orientation: number): HourReading | null
 }
 
@@ -71,7 +82,7 @@ export async function fetchHourlyForecast(
   const [marineRes, marineEcmwfRes, weatherRes] = await Promise.all([
     fetch(
       `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}` +
-      `&hourly=wave_height,wave_period,swell_wave_height,swell_wave_period,swell_wave_direction` +
+      `&hourly=wave_height,wave_period,swell_wave_height,swell_wave_period,swell_wave_direction,sea_surface_temperature` +
       `&length_unit=metric&timezone=America%2FSao_Paulo&forecast_days=${forecastDays}`,
       { signal: AbortSignal.timeout(8000) }
     ),
@@ -91,7 +102,7 @@ export async function fetchHourlyForecast(
     // sem round-trip extra pro nascer/pôr do sol.
     fetch(
       `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
-      `&hourly=wind_speed_10m,wind_direction_10m,temperature_2m&daily=sunrise,sunset` +
+      `&hourly=wind_speed_10m,wind_direction_10m,temperature_2m,weather_code,precipitation_probability&daily=sunrise,sunset` +
       `&wind_speed_unit=kmh&timezone=America%2FSao_Paulo&forecast_days=${forecastDays}`,
       { signal: AbortSignal.timeout(8000) }
     ),
@@ -133,8 +144,17 @@ export async function fetchHourlyForecast(
     const windDirection = degreesToDir(weather.hourly?.wind_direction_10m?.[idx] ?? 0)
     const temperature = Math.round(weather.hourly?.temperature_2m?.[idx] ?? 24)
     const score = calculateSurfScore(waveHeight, windSpeed, swellPeriod, windDirection, orientation, southExposure)
-    return { waveHeight, swellPeriod, swellDirection, windSpeed, windDirection, temperature, score }
+    const num = (v: number | null | undefined) => (v == null || !Number.isFinite(v) ? null : v)
+    const weatherCode = num(weather.hourly?.weather_code?.[idx])
+    const rainChance = num(weather.hourly?.precipitation_probability?.[idx])
+    const sst = num(marine.hourly?.sea_surface_temperature?.[idx])
+    const waterTemp = sst == null ? null : Math.round(sst * 10) / 10
+    return { waveHeight, swellPeriod, swellDirection, windSpeed, windDirection, temperature, score, weatherCode, rainChance, waterTemp }
   }
 
-  return { times, sunriseHour, sunsetHour, readHour }
+  function sunFor(dayIndex: number) {
+    return { sunriseHour: isoHour(weather.daily?.sunrise?.[dayIndex]), sunsetHour: isoHour(weather.daily?.sunset?.[dayIndex]) }
+  }
+
+  return { times, sunriseHour, sunsetHour, sunFor, readHour }
 }

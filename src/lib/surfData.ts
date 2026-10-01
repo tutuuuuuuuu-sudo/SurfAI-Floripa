@@ -110,8 +110,8 @@ const getTideHeight = (): number => {
   return Number((midLevel + amplitude * Math.cos((2 * Math.PI * (currentHour + phaseOffset)) / period)).toFixed(2))
 }
 
-// Sem descrição textual — só espessura
-const getWetsuitInfo = (temp: number) => {
+// Sem descrição textual — só espessura. Também usado na página do dia da previsão (ForecastDay.tsx)
+export const getWetsuitInfo = (temp: number) => {
   if (temp >= 24) return { thickness: '2mm ou lycra' }
   if (temp >= 20) return { thickness: '3/2mm' }
   if (temp >= 18) return { thickness: '4/3mm' }
