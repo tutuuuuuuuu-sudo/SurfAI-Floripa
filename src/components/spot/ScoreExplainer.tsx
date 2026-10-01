@@ -12,7 +12,7 @@ export const ScoreExplainer = ({ spot, onClose }: { spot: BeachCondition, onClos
   useBodyScrollLock(true)
   // Mesma função que gera a nota de verdade (api/_scoreEngine.ts) — os três números
   // abaixo somam exatamente pra spot.score, não é mais uma ilustração aproximada.
-  const breakdown = explainSurfScore(spot.waveHeight, spot.windSpeed, spot.swellPeriod, spot.windDirection, spot._beachOrientation ?? 90)
+  const breakdown = explainSurfScore(spot.waveHeight, spot.windSpeed, spot.swellPeriod, spot.windDirection, spot._beachOrientation ?? 90, spot._southExposure ?? 1)
 
   return (
     <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>

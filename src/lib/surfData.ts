@@ -1,7 +1,8 @@
 import { getWindyForecast, WeatherCondition } from './weatherApi'
 import { getRealWaterTemp } from './weatherData'
-import { calculateSurfScore, explainSurfScore, isSouthWind, WIND_DEG as _WIND_DEG } from '../../api/_scoreEngine'
+import { calculateSurfScore, explainSurfScore, southWindHits, WIND_DEG as _WIND_DEG } from '../../api/_scoreEngine'
 import { directionName } from './directions'
+import { southExposureAt } from '../../api/_beachRegistry'
 import { getRatingInfo } from './rating'
 import { captureError } from './monitoring'
 
@@ -48,6 +49,8 @@ export interface BeachCondition {
   lat: number
   lng: number
   _beachOrientation?: number
+  // Proteção ao vento sul (1 = em cheio), da lista oficial de praias — ver api/_beachRegistry.ts
+  _southExposure?: number
   // Praia só acessível por trilha (Lagoinha do Leste, Naufragados) — usado pelo
   // Smart Geo-Finder pra nunca sugerir essas praias como "vale o desvio" (distância
   // em linha reta não captura tempo de caminhada).
@@ -292,14 +295,22 @@ const getBestSubRegion = (
 // Frase do vento na "Análise Inteligente". Usa o mesmo desconto que entra na nota
 // (explainSurfScore), pra frase nunca contradizer a nota — antes olhava só a direção e ignorava a
 // força: sul de 22 km/h no Campeche saía "pode atrapalhar um pouco" com a nota em ruim (30/set/2026).
-// O sul e variações têm frases próprias: pro usuário é o vento que mais bagunça o mar.
-export function getWindAnalysis(windDir: string, windSpeed: number, beachOrientation: number): string {
+// O sul e variações têm frases próprias: pro usuário é o vento que mais bagunça o mar. Onde o sul
+// sopra da terra (Barra da Lagoa), ele cai nas frases normais, como qualquer terral.
+export function getWindAnalysis(windDir: string, windSpeed: number, beachOrientation: number, southExposure = 1): string {
   const label = `Vento ${directionName(windDir)} (${windDir})`
-  if (isSouthWind(windDir)) {
-    if (windSpeed <= 5) return `${label} fraco, de ${windSpeed} km/h. Se apertar, bagunça o mar rápido. `
-    if (windSpeed < 15) return `${label} de ${windSpeed} km/h já mexendo o mar. `
-    if (windSpeed < 20) return `${label} de ${windSpeed} km/h: mar mexido, sem formação. `
-    return `${label} forte, de ${windSpeed} km/h: mar bagunçado. `
+  if (southWindHits(windDir, beachOrientation)) {
+    // praia protegida do sul (Matadeiro, Armação, Barra): a frase segue a força que chega de fato
+    const felt = windSpeed * Math.min(1, Math.max(0, southExposure))
+    if (southExposure < 1 && windSpeed >= 10) {
+      if (felt < 15) return `${label} de ${windSpeed} km/h, mas esta praia é mais protegida do sul: o mar só mexe um pouco. `
+      if (felt < 17) return `${label} de ${windSpeed} km/h: mesmo mais protegida do sul, o mar fica mexido. `
+      return `${label} forte, de ${windSpeed} km/h: mesmo mais protegida do sul, o mar fica bagunçado. `
+    }
+    if (felt <= 5) return `${label} fraco, de ${windSpeed} km/h. Se apertar, bagunça o mar rápido. `
+    if (felt < 15) return `${label} de ${windSpeed} km/h já mexendo o mar. `
+    if (felt < 17) return `${label} de ${windSpeed} km/h: mar mexido, sem formação. `
+    return `${label} forte, de ${windSpeed} km/h: mar bagunçado, a onda se despedaça. `
   }
   const penalty = explainSurfScore(1, windSpeed, 9, windDir, beachOrientation).windPenalty
   if (penalty >= 1) return `${label} de ${windSpeed} km/h deixando o mar liso e organizado. `
@@ -325,7 +336,7 @@ const BEACHES: BeachDefinition[] = [
   // ✅ GPS corrigido conforme verificação no Google Maps (prints do usuário)
   { id: 'campeche', name: 'Campeche', region: 'Sul' as const,
     lat: -27.697703, lng: -48.4898603, // Campeche — Lomba do Sabão (bem na areia)
-    orientation: 90,
+    orientation: 130,
     subRegions: [
       { id: 'lomba-sabao', name: 'Lomba do Sabão', lat: -27.6974, lng: -48.4899, swellDirections: ['E', 'SE'], exposicao: 1.1 },
       { id: 'palanque', name: 'Palanque', lat: -27.6929, lng: -48.4870, swellDirections: ['S', 'SSE', 'SE', 'E'] },
@@ -333,7 +344,7 @@ const BEACHES: BeachDefinition[] = [
     ], bestTimeWindow: '06h - 09h' },
   { id: 'novo-campeche', name: 'Novo Campeche', region: 'Centro' as const,
     lat: -27.6661001, lng: -48.4755307, // Praia do Novo Campeche — bem na areia
-    orientation: 90,
+    orientation: 110,
     subRegions: [
       { id: 'riozinho', name: 'Riozinho', lat: -27.686650, lng: -48.481560, swellDirections: ['SE', 'ESE'], tolerance: 'estreita', idealPeriodMin: 10 },
       { id: 'centro', name: 'Centro', lat: -27.6648, lng: -48.4784, swellDirections: ['E', 'SE'] },
@@ -349,7 +360,7 @@ const BEACHES: BeachDefinition[] = [
     ], bestTimeWindow: '07h - 10h' },
   { id: 'matadeiro', name: 'Matadeiro', region: 'Sul' as const,
     lat: -27.7548429, lng: -48.4985647, // Matadeiro — estacionamento início trilha
-    orientation: 110,
+    orientation: 60,
     // ✅ Coordenadas dos 2 sub-picos confirmadas pelo usuário no Google Maps.
     subRegions: [
       { id: 'entrada', name: 'Entrada (Esquerdo)', lat: -27.7515, lng: -48.4970, swellDirections: ['E', 'SE'] },
@@ -357,7 +368,7 @@ const BEACHES: BeachDefinition[] = [
     ], bestTimeWindow: '06h - 09h' },
   { id: 'lagoinha-leste', name: 'Lagoinha do Leste', region: 'Sul' as const,
     lat: -27.7732103, lng: -48.4863806, // Lagoinha do Leste — início da trilha (Praia das Pacas)
-    orientation: 180,
+    orientation: 125,
     subRegions: [
       // Pesquisa de 24/set/2026 (Surf-Forecast, floripasurf.com.br, WannaSurf — confiança média,
       // sem nome de surfista consagrado como "Gravatá"/"Galheta"): o costão do lado onde chega a
@@ -369,7 +380,7 @@ const BEACHES: BeachDefinition[] = [
     ], bestTimeWindow: 'Dia todo (acesso por trilha)', hikeAccess: true },
   { id: 'acores', name: 'Açores', region: 'Sul' as const,
     lat: -27.7837144, lng: -48.5236746, // Praia dos Açores — bem na areia
-    orientation: 120,
+    orientation: 145,
     subRegions: [
       { id: 'ponta-esquerda', name: 'Ponta Esquerda', lat: -27.7825, lng: -48.5195, swellDirections: ['SE', 'S', 'SSE'], exposicao: 0.8 },
       { id: 'meio', name: 'Meio', lat: -27.7848, lng: -48.5212, swellDirections: ['SE', 'E', 'ESE'] },
@@ -388,14 +399,14 @@ const BEACHES: BeachDefinition[] = [
     orientation: 180, bestTimeWindow: 'Depende da maré (acesso por trilha)', hikeAccess: true },
   { id: 'joaquina', name: 'Joaquina', region: 'Centro' as const,
     lat: -27.6293577, lng: -48.4490173, // Joaquina — bem na areia
-    orientation: 90,
+    orientation: 130,
     subRegions: [
       { id: 'costao', name: 'Costão', lat: -27.6340, lng: -48.4520, swellDirections: ['E', 'SE', 'S', 'SSE'] },
       { id: 'meio', name: 'Meio da Praia', lat: -27.6294, lng: -48.4490, swellDirections: ['E', 'SE'] },
       { id: 'canto-direito', name: 'Canto Direito', lat: -27.6250, lng: -48.4460, swellDirections: ['NE', 'E', 'ENE'] },
     ], bestTimeWindow: 'Agora até 11h' },
   { id: 'mole', name: 'Praia Mole', region: 'Centro' as const,
-    lat: -27.6022459, lng: -48.4326839, orientation: 85,
+    lat: -27.6022459, lng: -48.4326839, orientation: 125,
     subRegions: [
       { id: 'canto-sul', name: 'Canto Sul (Gravatá)', lat: -27.6035, lng: -48.4340, swellDirections: ['S', 'SE', 'E'] },
       { id: 'meio', name: 'Meio da Praia', lat: -27.6022, lng: -48.4327, swellDirections: ['E', 'SE', 'NE'] },
@@ -403,20 +414,20 @@ const BEACHES: BeachDefinition[] = [
     ], bestTimeWindow: '07h - 10h' },
   { id: 'mocambique', name: 'Moçambique', region: 'Norte' as const,
     lat: -27.4937746, lng: -48.3955175, // Moçambique — bem na areia
-    orientation: 80,
+    orientation: 130,
     subRegions: [
       { id: 'norte', name: 'Canto das Aranhas', lat: -27.4695, lng: -48.3852, swellDirections: ['NE', 'E', 'ENE'], tolerance: 'estreita', exposicao: 0.9 },
       { id: 'meio', name: 'Meio da Praia', lat: -27.4938, lng: -48.3912, swellDirections: ['SE', 'E'] },
     ], bestTimeWindow: '08h - 11h' },
   { id: 'barra-lagoa', name: 'Barra da Lagoa', region: 'Centro' as const,
-    lat: -27.5734502, lng: -48.424939, orientation: 75,
+    lat: -27.5734502, lng: -48.424939, orientation: 40,
     subRegions: [
       { id: 'canal', name: 'Canal da Barra', lat: -27.5765, lng: -48.4185, swellDirections: ['E', 'SE'], exposicao: 0.65 },
       { id: 'norte-da-barra', name: 'Norte da Barra', lat: -27.5688, lng: -48.4252, swellDirections: ['E', 'SE'] },
     ], bestTimeWindow: 'Melhor na maré enchente' },
   { id: 'santinho', name: 'Santinho', region: 'Norte' as const,
     lat: -27.4618653, lng: -48.3761513, // Praia do Santinho — bem na areia
-    orientation: 70,
+    orientation: 100,
     subRegions: [
       { id: 'costao', name: 'Costão Norte', lat: -27.4575, lng: -48.3735, swellDirections: ['SE', 'E', 'NE'] },
       { id: 'centro', name: 'Centro', lat: -27.4619, lng: -48.3762, swellDirections: ['SE', 'E'] },
@@ -517,7 +528,8 @@ async function _doFetchConditions(partial: BeachCondition[]): Promise<BeachCondi
           captureError(new Error(`windDirection não reconhecido: "${windyData?.windDirection}"`), { beachId: beach.id })
         }
 
-        const score = calculateSurfScore(waveHeight, windSpeed, swellPeriod, windDirection, beach.orientation)
+        const southExposure = southExposureAt(beach.lat, beach.lng)
+        const score = calculateSurfScore(waveHeight, windSpeed, swellPeriod, windDirection, beach.orientation, southExposure)
 
         let subRegions: SubRegion[] | undefined = undefined
         if (beach.subRegions && beach.subRegions.length > 0) {
@@ -547,6 +559,7 @@ async function _doFetchConditions(partial: BeachCondition[]): Promise<BeachCondi
           weatherCondition: windyData?.weatherCondition,
           lat: beach.lat, lng: beach.lng,
           _beachOrientation: beach.orientation,
+          _southExposure: southExposure,
           hikeAccess: beach.hikeAccess,
         } satisfies BeachCondition
       })
@@ -637,7 +650,7 @@ export function analyzeConditions(spot: BeachCondition): string {
   }
   let analysis = ratingLabelToAnalysis[getRatingInfo(spot.score).label]
 
-  analysis += getWindAnalysis(spot.windDirection, spot.windSpeed, orientation)
+  analysis += getWindAnalysis(spot.windDirection, spot.windSpeed, orientation, spot._southExposure ?? 1)
 
   if (spot.swellPeriod >= 12) analysis += `Período de ${spot.swellPeriod}s trazendo ondas longas e bem formadas. `
   else if (spot.swellPeriod >= 9) analysis += `Período médio de ${spot.swellPeriod}s, ondas razoáveis. `

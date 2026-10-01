@@ -89,7 +89,8 @@ export default async function handler(req: Request) {
           data.windSpeed,
           data.swellPeriod ?? 8,
           windDir,
-          spot.orientation
+          spot.orientation,
+          spot.southExposure ?? 1
         )
         const label = getRatingInfo(score).label
         title = `${spot.name}: ${label} (${score.toFixed(1)}/10) agora | Surf AI Floripa`

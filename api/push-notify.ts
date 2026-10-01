@@ -104,7 +104,7 @@ export default async function handler(req: Request) {
       const sP = data.swellPeriod ?? 10
       const rawDir = (data.windDirection ?? 'N').toUpperCase()
       const wD = WIND_DIR_MAP[rawDir] !== undefined ? rawDir : 'N'
-      scores[beach.id] = calculateSurfScore(wH, wS, sP, wD, beach.orientation)
+      scores[beach.id] = calculateSurfScore(wH, wS, sP, wD, beach.orientation, beach.southExposure ?? 1)
     }))
   }
 

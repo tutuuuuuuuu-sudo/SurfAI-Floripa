@@ -54,7 +54,8 @@ describe('getWindAnalysis — frase do vento acompanha a nota (30/set/2026)', ()
 
   it('sul e variações ficam mais duros a cada faixa de velocidade', () => {
     expect(getWindAnalysis('SSE', 12, 90)).toContain('já mexendo o mar')
-    expect(getWindAnalysis('SSW', 17, 90)).toContain('mar mexido')
+    expect(getWindAnalysis('SSW', 16, 90)).toContain('mar mexido')
+    expect(getWindAnalysis('S', 20, 90)).toContain('a onda se despedaça')
     expect(getWindAnalysis('S', 4, 90)).toContain('fraco')
   })
 
@@ -66,5 +67,21 @@ describe('getWindAnalysis — frase do vento acompanha a nota (30/set/2026)', ()
   it('maral de 10 km/h quase não pesa (outros ventos só estragam a partir de ~15 km/h)', () => {
     expect(getWindAnalysis('E', 10, 90)).toContain('quase sem efeito')
     expect(getWindAnalysis('E', 25, 90)).toContain('bagunçando')
+  })
+})
+
+describe('getWindAnalysis — praia protegida do sul (01/out/2026)', () => {
+  it('Matadeiro com sul de 20 km/h avisa que a praia é mais protegida e não diz "bagunçado"', () => {
+    const t = getWindAnalysis('S', 20, 110, 0.5)
+    expect(t).toContain('mais protegida do sul')
+    expect(t).not.toContain('bagunçado')
+  })
+})
+
+describe('getWindAnalysis — sul que sopra da terra (Barra da Lagoa, 01/out/2026)', () => {
+  it('na Barra o sul fraco é terral: mar liso, sem frase de "bagunçado"', () => {
+    const t = getWindAnalysis('S', 12, 40, 0.7)
+    expect(t).toContain('liso e organizado')
+    expect(t).not.toContain('mexendo')
   })
 })

@@ -40,7 +40,7 @@ async function fetchSpotScore(spot: typeof SPOTS[number]): Promise<SpotResult | 
     if (!res.ok) return null
     const data = await res.json() as { waveHeight?: number; windSpeed?: number; windDirection?: string; swellPeriod?: number }
     const windDir = (data.windDirection ?? 'N').toUpperCase()
-    const score = calculateSurfScore(data.waveHeight ?? 0, data.windSpeed ?? 0, data.swellPeriod ?? 0, windDir, spot.orientation)
+    const score = calculateSurfScore(data.waveHeight ?? 0, data.windSpeed ?? 0, data.swellPeriod ?? 0, windDir, spot.orientation, spot.southExposure ?? 1)
     return { name: spot.name, score, waveHeight: data.waveHeight ?? 0, swellPeriod: data.swellPeriod ?? 0, windSpeed: data.windSpeed ?? 0, windDirection: data.windDirection ?? '' }
   } catch {
     return null

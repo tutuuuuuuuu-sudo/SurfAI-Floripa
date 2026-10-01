@@ -56,7 +56,7 @@ export default async function handler(req: Request) {
         const swellPeriod = Math.round(data.swellPeriod ?? 10)
         const rawDir = (data.windDirection ?? 'N').toUpperCase()
         const windDirection = WIND_DIR_MAP[rawDir] !== undefined ? rawDir : 'N'
-        const score = calculateSurfScore(waveHeight, windSpeed, swellPeriod, windDirection, beach.orientation)
+        const score = calculateSurfScore(waveHeight, windSpeed, swellPeriod, windDirection, beach.orientation, beach.southExposure ?? 1)
         return { beach_id: beach.id, beach_name: beach.name, score, wave_height: waveHeight, wind_speed: windSpeed, swell_period: swellPeriod, wind_direction: windDirection }
       })
     )

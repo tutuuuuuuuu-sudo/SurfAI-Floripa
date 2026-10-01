@@ -3,6 +3,7 @@
 
 import { calculateSurfScore } from './_scoreEngine.js'
 import { toBeachHeight } from './_beachHeight.js'
+import { southExposureAt } from './_beachRegistry.js'
 
 export function degreesToDir(deg: number): string {
   const dirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
@@ -105,6 +106,9 @@ export async function fetchHourlyForecast(
   const sunriseHour = isoHour(weather.daily?.sunrise?.[0])
   const sunsetHour = isoHour(weather.daily?.sunset?.[0])
 
+  // Proteção da praia ao vento sul (Matadeiro, Armação, Barra), achada pela posição
+  const southExposure = southExposureAt(Number(lat), Number(lng))
+
   function readHour(idx: number, orientation: number): HourReading | null {
     if (idx < 0 || idx >= times.length) return null
     // wave_height (ecmwf_wam) é a altura combinada (wind waves + swell) do modelo certo —
@@ -128,7 +132,7 @@ export async function fetchHourlyForecast(
     const windSpeed = Math.round(weather.hourly?.wind_speed_10m?.[idx] ?? 12)
     const windDirection = degreesToDir(weather.hourly?.wind_direction_10m?.[idx] ?? 0)
     const temperature = Math.round(weather.hourly?.temperature_2m?.[idx] ?? 24)
-    const score = calculateSurfScore(waveHeight, windSpeed, swellPeriod, windDirection, orientation)
+    const score = calculateSurfScore(waveHeight, windSpeed, swellPeriod, windDirection, orientation, southExposure)
     return { waveHeight, swellPeriod, swellDirection, windSpeed, windDirection, temperature, score }
   }
 

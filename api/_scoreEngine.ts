@@ -65,7 +65,8 @@ export function explainSurfScore(
   windSpeed: number,
   swellPeriod: number,
   windDir: string,
-  beachOrientation: number
+  beachOrientation: number,
+  southExposure = 1,
 ): ScoreBreakdown {
   // Base de score pela altura da onda, em metros reais (ver comentário acima — sem
   // multiplicador, compatível com o que a fonte principal de dados entrega hoje)
@@ -87,11 +88,15 @@ export function explainSurfScore(
   // entram na praia (terral, lateral, maral). Os valores andam em linha reta entre os pontos
   // (km/h → pontos), sem degrau: 1 km/h a mais não pode derrubar a nota de uma vez.
   const windQuality = classifyWind(windDir, beachOrientation)
-  const windCurve = SOUTH_WINDS.has(windDir) ? WIND_SOUTH
+  const south = southWindHits(windDir, beachOrientation)
+  const windCurve = south ? WIND_SOUTH
     : windQuality === 'offshore' ? WIND_OFFSHORE
     : windQuality === 'lateral' ? WIND_LATERAL
     : WIND_ONSHORE
-  const windPenalty = round1(interpolate(windCurve, windSpeed))
+  // Praia protegida do sul sente o vento como se fosse mais fraco (Matadeiro 0,5 → sul de 20 km/h
+  // pesa como 10 km/h); ver southExposure em api/_beachRegistry.ts
+  const effectiveSpeed = south ? windSpeed * Math.min(1, Math.max(0, southExposure)) : windSpeed
+  const windPenalty = round1(interpolate(windCurve, effectiveSpeed))
 
   // Ajuste pelo período médio do swell (swell_wave_period da Open-Meteo)
   const periodAdjust = round1(interpolate(PERIOD, swellPeriod))
@@ -105,15 +110,25 @@ export function explainSurfScore(
 // de 15 km/h. Pontos [valor medido, ajuste na nota]; fora das pontas vale o valor da ponta.
 //
 // Vento sul (S, SSE, SSW): o pior vento de Floripa. Chega com a frente fria, entra de lado ou
-// de frente em todas as 14 praias e já desmancha o mar com 10 km/h — por isso não depende da
-// orientação da praia (pro Campeche, virado pra leste, a conta geométrica chamava de "lateral"
-// e quase não descontava). Nunca fica mais brando que o maral na mesma velocidade.
+// de frente em quase todas as praias e já desmancha o mar com 10 km/h — por isso, de lado ou de
+// frente, usa a curva própria (pro Campeche a conta geométrica chamava de "lateral" e quase não
+// descontava). Nunca fica mais brando que o maral na mesma velocidade.
 const SOUTH_WINDS = new Set(['S', 'SSE', 'SSW'])
-// Usado também pelo texto de análise (surfData.ts), pra frase e nota tratarem o sul igual
-export const isSouthWind = (windDir: string) => SOUTH_WINDS.has(windDir)
+// Exceção (01/out/2026): onde o sul sopra da terra (terral), ele segura a onda como qualquer terral
+// e usa a curva do terral. Com a orientação medida no mapa, isso vale pro sul e sul-sudoeste na Barra
+// da Lagoa (canto virado pra nordeste) e pro sul-sudoeste no Matadeiro. Os guias de surf apontam o sul
+// como vento bom na Barra, e o Waves classificou o sul de lá como terral. Usado também pelo texto de
+// análise (surfData.ts), pra frase e nota tratarem o sul igual.
+export const southWindHits = (windDir: string, beachOrientation: number) =>
+  SOUTH_WINDS.has(windDir) && classifyWind(windDir, beachOrientation) !== 'offshore'
 // Curva ditada pelo usuário (30/set/2026, 2ª rodada): 10 km/h −1 · 15 −1,5 · 20 −2,5 · 25 −3,5
 // "e assim vai" (mais −1 a cada 5 km/h) — com sul de 21 km/h o mar "não fica nem regular"
-const WIND_SOUTH: [number, number][] = [[3, 1.0], [5, 0], [10, -1.0], [15, -1.5], [20, -2.5], [25, -3.5], [30, -4.5], [35, -5.5]]
+// 01/out/2026 (3ª rodada): "swell bom com sul de 20 km/h no Campeche fica extremamente ruim — não
+// tem formação, o mar fica mexido, a onda se despedaça" e "com sul de mais de 17 km/h a nota continua
+// 5,3". Curva endurecida pra que, numa praia exposta, sul de 20 km/h derrube até um swell bom
+// (1,2 m, 10 s) pra RUIM e sul de ~17 km/h derrube um mar médio pra RUIM. Praias protegidas do sul
+// usam a velocidade reduzida (southExposure).
+const WIND_SOUTH: [number, number][] = [[3, 1.0], [5, 0], [10, -1.5], [15, -3.0], [17, -4.0], [20, -5.5], [25, -7.0], [30, -8.0]]
 // Os outros ventos não estragam muito o mar antes de uns 15 km/h (nem o maral: até 10 km/h
 // não desconta nada). Terral segura a onda em pé até ficar forte; lateral fica no meio.
 const WIND_OFFSHORE: [number, number][] = [[3, 1.5], [5, 1.2], [10, 1.2], [15, 1.0], [20, -0.4], [25, -1.0]]
@@ -144,9 +159,10 @@ export function calculateSurfScore(
   windSpeed: number,
   swellPeriod: number,
   windDir: string,
-  beachOrientation: number
+  beachOrientation: number,
+  southExposure = 1,
 ): number {
-  return explainSurfScore(waveHeight, windSpeed, swellPeriod, windDir, beachOrientation).total
+  return explainSurfScore(waveHeight, windSpeed, swellPeriod, windDir, beachOrientation, southExposure).total
 }
 
 // Corrige a altura de onda "crua" do modelo de oceano aberto pela exposição direcional
