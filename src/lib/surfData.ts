@@ -301,11 +301,15 @@ export function getWindAnalysis(windDir: string, windSpeed: number, beachOrienta
   if (isSouthWind(windDir)) {
     // praia protegida do sul (Matadeiro, Armação, Barra): a frase segue a força que chega de fato
     const felt = windSpeed * Math.min(1, Math.max(0, southExposure))
-    const shelter = southExposure < 1 && windSpeed >= 10 ? ', mas esta praia fica mais protegida do sul' : ''
-    if (felt <= 5) return `${label} ${windSpeed <= 5 ? 'fraco, ' : ''}de ${windSpeed} km/h${shelter}. Se apertar, bagunça o mar rápido. `
-    if (felt < 15) return `${label} de ${windSpeed} km/h${shelter}, já mexendo o mar. `
-    if (felt < 17) return `${label} de ${windSpeed} km/h${shelter}: mar mexido, sem formação. `
-    return `${label} forte, de ${windSpeed} km/h${shelter}: mar bagunçado, a onda se despedaça. `
+    if (southExposure < 1 && windSpeed >= 10) {
+      if (felt < 15) return `${label} de ${windSpeed} km/h, mas esta praia é mais protegida do sul: o mar só mexe um pouco. `
+      if (felt < 17) return `${label} de ${windSpeed} km/h: mesmo mais protegida do sul, o mar fica mexido. `
+      return `${label} forte, de ${windSpeed} km/h: mesmo mais protegida do sul, o mar fica bagunçado. `
+    }
+    if (felt <= 5) return `${label} fraco, de ${windSpeed} km/h. Se apertar, bagunça o mar rápido. `
+    if (felt < 15) return `${label} de ${windSpeed} km/h já mexendo o mar. `
+    if (felt < 17) return `${label} de ${windSpeed} km/h: mar mexido, sem formação. `
+    return `${label} forte, de ${windSpeed} km/h: mar bagunçado, a onda se despedaça. `
   }
   const penalty = explainSurfScore(1, windSpeed, 9, windDir, beachOrientation).windPenalty
   if (penalty >= 1) return `${label} de ${windSpeed} km/h deixando o mar liso e organizado. `
