@@ -121,7 +121,10 @@ export async function fetchHourlyForecast(
     )
     // Onda na praia, não mar aberto (30/set/2026) — mesma conversão do "agora" em
     // _liveConditions.ts, pra Home e Previsão continuarem batendo
-    const waveHeight = toBeachHeight(rawWaveHeight, swellPeriod)
+    // Base: modelo francês (modelo padrão do Open-Meteo) na mesma hora, com teto no mar aberto
+    // (ECMWF) × fator do período — desde 01/out/2026, ver api/_beachHeight.ts
+    const waveHeight = toBeachHeight(marineEcmwf.hourly?.wave_height?.[idx], swellPeriod, marine.hourly?.wave_height?.[idx])
+      || toBeachHeight(rawWaveHeight, swellPeriod)
     const windSpeed = Math.round(weather.hourly?.wind_speed_10m?.[idx] ?? 12)
     const windDirection = degreesToDir(weather.hourly?.wind_direction_10m?.[idx] ?? 0)
     const temperature = Math.round(weather.hourly?.temperature_2m?.[idx] ?? 24)

@@ -30,8 +30,45 @@ export function beachHeightFactor(swellPeriod: number): number {
   return PERIOD_FACTOR[PERIOD_FACTOR.length - 1][1]
 }
 
+// 01/out/2026 — base passou a ser o modelo da Météo-France (o "modelo padrão" do Open-Meteo pra
+// Floripa, grade ~8 km, enxerga a proteção da costa), não mais o ECMWF de mar aberto (~28 km).
+// Observações reais que decidiram (mesma hora das duas fontes):
+// - 01/out 6h30, boletim.surf: Morro das Pedras e Armação 0,5-0,6 m; francês 0,7; ECMWF 1,5/1,2
+// - 30/set ~11h, usuário no Campeche: série 1 m (0,8-1,2); francês 1,04; ECMWF 1,48
+// - 24/set, usuário no Campeche: séries ~2 m, intermediárias 1-1,5; francês 1,02-1,22; ECMWF 1,56
+// O francês erra pra baixo em ONDULAÇÃO LONGA (24/set): onda longa cresce ao chegar no raso e ele
+// não pega isso inteiro. Acréscimo a partir de 8 s, chegando a +30% em 10 s ou mais — a física
+// (empinamento, ~(T/8)^0,4) dá uns 15-25%; 30% cobre o resto sem passar do real, porque parte da
+// diferença de 24/set era o usuário contando as séries. Começa conservador e vai ser recalibrado
+// pelo registro do mar real (tabela sea_observations).
+// Teto: nunca passa da conta antiga (ECMWF × fator do período) — nunca mostra mais que antes.
+const LONG_PERIOD_BOOST: [number, number][] = [[8, 1.0], [10, 1.3]]
+
+function interp(points: [number, number][], x: number): number {
+  if (x <= points[0][0]) return points[0][1]
+  for (let i = 1; i < points.length; i++) {
+    const [x1, y1] = points[i]
+    if (x <= x1) {
+      const [x0, y0] = points[i - 1]
+      return y0 + ((x - x0) / (x1 - x0)) * (y1 - y0)
+    }
+  }
+  return points[points.length - 1][1]
+}
+
+export function longPeriodBoost(swellPeriod: number): number {
+  return Number.isFinite(swellPeriod) && swellPeriod > 0 ? interp(LONG_PERIOD_BOOST, swellPeriod) : 1
+}
+
 // Duas casas: quem mostra arredonda pra uma (faixa, cards); o cálculo da faixa e da nota usa
-// o valor sem perder precisão no meio do caminho
-export function toBeachHeight(openSeaHeight: number, swellPeriod: number): number {
-  return Math.round(openSeaHeight * beachHeightFactor(swellPeriod) * 100) / 100
+// o valor sem perder precisão no meio do caminho.
+// - com as duas alturas: a menor entre francês × acréscimo de onda longa e mar aberto × fator
+// - só a do francês: francês × acréscimo
+// - só a de mar aberto (fontes reserva, ou dia sem o francês): mar aberto × fator do período
+export function toBeachHeight(openSeaHeight: number | null | undefined, swellPeriod: number, nearshoreHeight?: number | null): number {
+  const ok = (h: number | null | undefined): h is number => h != null && Number.isFinite(h) && h > 0
+  const options: number[] = []
+  if (ok(openSeaHeight)) options.push(openSeaHeight * beachHeightFactor(swellPeriod))
+  if (ok(nearshoreHeight)) options.push(nearshoreHeight * longPeriodBoost(swellPeriod))
+  return options.length ? Math.round(Math.min(...options) * 100) / 100 : 0
 }

@@ -52,6 +52,7 @@ src/
 │   ├── ForecastDay.tsx        # Detalhe de 1 dia da previsão (/forecast/:id/day/:dayIndex) — curva do dia arrastável (DayCurve), faixa de dias, condições da hora escolhida
 │   ├── SurfLog.tsx            # Diário de sessões do usuário
 │   ├── ContentStudio.tsx      # Gerador de posts pras redes sociais do Surf AI (uso interno, só admin)
+│   ├── SeaLog.tsx             # Registro do mar real (/registro-do-mar, só admin): tamanho visto x o que o app mostrava na mesma hora — calibra api/_beachHeight.ts
 │   ├── Premium.tsx            # Página de upgrade/assinatura
 │   ├── Profile.tsx            # Perfil e nível do surfista
 │   ├── Settings.tsx           # Configurações (notificações, preferências)
@@ -100,6 +101,7 @@ src/
 │   ├── rating.ts              # getRatingInfo(score) → label/color/bars — ÚNICA fonte
 │   ├── aiReport.ts            # fetchAIReport() — cache localStorage 30min
 │   ├── premium.ts             # usePremium(), createMercadoPagoCheckout()
+│   ├── admin.ts               # useIsAdmin() via api/is-admin (Registro do mar real + atalho em Configurações)
 │   ├── supabase.ts            # createClient() — cliente Supabase único
 │   ├── monitoring.ts          # Sentry + PostHog — initMonitoring(), track(), captureError(). PostHog SÓ depois do "Aceitar" no CookieConsent (enableAnalytics/disableAnalytics) — LGPD, 29/set/2026
 │   ├── landingStats.ts        # countLandingView/countLandingCta → api/landing-event.ts (só conta no domínio real, não em local/preview)
@@ -125,6 +127,8 @@ api/
 │                          nunca duplicar essa lista de novo (já divergiu 1x, ver auditoria de 22/ago/2026)
 ├── _auth.ts            # Helper de validação de Bearer token Supabase, compartilhado entre endpoints
 ├── surf.ts             # Fetch Open-Meteo Marine → processa dados brutos de surf
+├── _beachHeight.ts     # Altura da onda NA PRAIA (01/out/2026): base = modelo francês (Météo-France, "modelo padrão" do Open-Meteo) × acréscimo de onda longa (8 s→10 s: até +30%), teto = ECMWF de mar aberto × fator do período. Aplicado em _liveConditions e _hourlyForecast
+├── sea-log.ts          # Registro do mar real (só admin): GET lista com a comparação (RPC sea_log_recent), POST novo registro (sea_observations)
 ├── tide.ts             # Dados de maré por pico
 ├── surf-chat.ts        # Chat com o Surf AI (Gemini multi-turn, via api/_gemini.ts) — exige Bearer token Supabase + premium.
 │                          Substituiu o antigo "Relatório do dia" automático em 23/ago/2026 (gastava
