@@ -138,10 +138,22 @@ export async function encryptWebPush(
 
 // ── Envia um push para um endpoint ───────────────────────────────────────────
 
-export async function sendPush(endpoint: string, p256dh: string, auth: string, payload: string): Promise<boolean> {
+// Resultado detalhado (30/set/2026): antes era só true/false e QUALQUER recusa (ex. 403 da Apple
+// por um detalhe da assinatura) fazia o push-notify apagar a inscrição como se o aparelho tivesse
+// sumido. Agora só 404/410 (aparelho não existe mais) contam como `gone`.
+export interface PushResult {
+  ok: boolean      // entregue ao serviço de push (Apple/Google)
+  gone: boolean    // inscrição não existe mais: pode apagar
+  status: number   // código HTTP do serviço de push (0 = nem chegou a responder)
+  reason: string   // motivo da recusa, quando houver (texto do serviço de push)
+}
+
+export async function sendPush(endpoint: string, p256dh: string, auth: string, payload: string): Promise<PushResult> {
+  let host = 'endereço inválido'
   try {
-    const origin = new URL(endpoint).origin
-    const jwt = await makeVapidJwt(origin)
+    const url = new URL(endpoint)
+    host = url.host
+    const jwt = await makeVapidJwt(url.origin)
     const { body } = await encryptWebPush(payload, p256dh, auth)
     const res = await fetch(endpoint, {
       method: 'POST',
@@ -150,17 +162,21 @@ export async function sendPush(endpoint: string, p256dh: string, auth: string, p
         'Content-Encoding': 'aes128gcm',
         Authorization: `vapid t=${jwt},k=${VAPID_PUBLIC_KEY}`,
         TTL: '86400',
+        Urgency: 'high',
       },
       body: asBufferSource(body),
       signal: AbortSignal.timeout(10000),
     })
-    // 201, 200 = entregue; 404/410 = subscription não existe mais / expirou
-    if (res.status === 410 || res.status === 404) return false // sinaliza para remover
-    return res.ok || res.status === 201
+    if (res.ok) return { ok: true, gone: false, status: res.status, reason: '' }
+    const reason = (await res.text().catch(() => '')).slice(0, 300)
+    console.error('[webPush] recusado', host, res.status, reason)
+    return { ok: false, gone: res.status === 404 || res.status === 410, status: res.status, reason }
   } catch (err) {
-    // Endpoint malformado (não é uma URL válida) nunca vai funcionar — remove.
-    // Qualquer outro erro (timeout, DNS instável, etc.) é tratado como transiente.
-    if (err instanceof TypeError && /invalid url/i.test(err.message)) return false
-    return true
+    // Endpoint malformado (não é uma URL válida) nunca vai funcionar — pode apagar.
+    // Qualquer outro erro (timeout, DNS instável, etc.) é transiente: mantém a inscrição.
+    const malformed = err instanceof TypeError && /invalid url/i.test(err.message)
+    const reason = err instanceof Error ? err.message : String(err)
+    console.error('[webPush] erro', host, reason)
+    return { ok: false, gone: malformed, status: 0, reason }
   }
 }

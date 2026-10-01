@@ -3,14 +3,18 @@ export const config = { runtime: 'edge' }
 // Alerta de teste pedido pelo próprio usuário no painel de Alertas (30/set/2026): manda um push de
 // verdade, pelo mesmo caminho dos alertas de hora em hora (push-notify.ts), só pros aparelhos DELE
 // (push_subscriptions). Serve pra confirmar que o alerta chega — principalmente no iPhone, que só
-// recebe com o app instalado na tela de início (iOS 16.4+). O botão antigo só mostrava algo se
-// alguma praia já estivesse acima da nota mínima, e nunca passava pelo servidor.
+// recebe com o app instalado na tela de início (iOS 16.4+).
+//
+// 01/out/2026: espera ~8 s antes de enviar (dá tempo de sair do app — o teste mais fiel é com o app
+// fechado) e grava o que cada serviço de push respondeu em push_test_log, pra diagnosticar quando
+// não chega. Responde por aparelho, sem dizer "enviado" quando o serviço recusou.
 
 import { verifyToken } from './_auth.js'
 import { sendPush, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY } from './_webPush.js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? ''
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY ?? ''
+const DELAY_MS = 8000
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
@@ -34,19 +38,34 @@ export default async function handler(req: Request) {
   if (now - (lastTest.get(userId) ?? 0) < 20000) return json({ error: 'Aguarde alguns segundos' }, 429)
   lastTest.set(userId, now)
 
+  const headers = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
   const res = await fetch(
     `${SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.${userId}&select=endpoint,p256dh,auth`,
-    { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+    { headers }
   )
   if (!res.ok) return json({ error: 'Erro ao buscar inscrições' }, 500)
   const subs = await res.json() as { endpoint: string; p256dh: string; auth: string }[]
-  if (subs.length === 0) return json({ sent: 0, total: 0 })
+  if (subs.length === 0) return json({ results: [] })
+
+  await new Promise(r => setTimeout(r, DELAY_MS))
 
   const payload = JSON.stringify({
     title: 'Surf AI · alerta de teste',
     body: 'Se você está vendo isso, os alertas de swell estão funcionando neste aparelho.',
     url: '/',
   })
-  const results = await Promise.all(subs.map(s => sendPush(s.endpoint, s.p256dh, s.auth, payload)))
-  return json({ sent: results.filter(Boolean).length, total: subs.length })
+  const results = await Promise.all(subs.map(async s => {
+    const r = await sendPush(s.endpoint, s.p256dh, s.auth, payload)
+    let service = 'outro'
+    try { service = new URL(s.endpoint).host } catch { /* endereço inválido */ }
+    return { service, apple: service.endsWith('push.apple.com'), ...r }
+  }))
+
+  await fetch(`${SUPABASE_URL}/rest/v1/push_test_log`, {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify(results.map(r => ({ user_id: userId, service: r.service, ok: r.ok, status: r.status, reason: r.reason || null }))),
+  }).catch(() => {})
+
+  return json({ results: results.map(({ service, apple, ok, status }) => ({ service, apple, ok, status })) })
 }

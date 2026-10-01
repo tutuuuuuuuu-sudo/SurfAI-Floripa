@@ -173,8 +173,11 @@ export async function checkAndNotifyGoodConditions(
 }
 
 // Alerta de teste de verdade, pelo servidor (api/push-test.ts), pros aparelhos do próprio usuário.
-// Retorna quantos aparelhos receberam, 0 se este aparelho não está inscrito, ou null se deu erro.
-export async function sendTestPush(): Promise<{ sent: number; total: number } | null> {
+// O servidor espera ~8 s antes de enviar (dá tempo de sair do app). Devolve o resultado por
+// aparelho (apple = iPhone/iPad), lista vazia se nenhum aparelho está inscrito, ou null se deu erro.
+export interface TestPushResult { service: string; apple: boolean; ok: boolean; status: number }
+
+export async function sendTestPush(): Promise<TestPushResult[] | null> {
   try {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session?.access_token) return null
@@ -183,7 +186,8 @@ export async function sendTestPush(): Promise<{ sent: number; total: number } | 
       headers: { Authorization: `Bearer ${session.access_token}` },
     })
     if (!res.ok) return null
-    return await res.json() as { sent: number; total: number }
+    const data = await res.json() as { results?: TestPushResult[] }
+    return data.results ?? []
   } catch {
     return null
   }
