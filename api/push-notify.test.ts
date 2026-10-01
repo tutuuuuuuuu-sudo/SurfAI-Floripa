@@ -11,6 +11,7 @@
 // implementação está de fato interoperável com um push service real (é isso que importa —
 // checar só o formato do byte array não pegaria um erro de ordem de bytes ou de info string).
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { createHmac } from 'node:crypto'
 
 // TS 5.7+ tornou Uint8Array genérico sobre o tipo do buffer — ver comentário equivalente em push-notify.ts
 function asBufferSource(u: Uint8Array): BufferSource {
@@ -121,8 +122,11 @@ describe('makeVapidJwt', () => {
 })
 
 describe('encryptWebPush (RFC 8291)', () => {
-  // Decifra do lado "cliente", espelhando os passos que um push service/navegador real faria,
-  // usando a chave privada do cliente gerada no teste + o corpo produzido por encryptWebPush().
+  // Decifra do lado "cliente" escrevendo a RFC 8291 ao pé da letra, com HMAC-SHA-256 puro (node:crypto)
+  // — de propósito NÃO usa o HKDF do crypto.subtle como o servidor usa. Até 01/out/2026 este teste
+  // espelhava o mesmo código do servidor, inclusive o erro (um 0x01 a mais no info do HKDF): os dois
+  // lados erravam igual, o teste passava e nenhum aparelho conseguia abrir os alertas. Conferido
+  // também contra a http_ece (biblioteca de referência da web-push).
   async function decryptAsClient(
     body: Uint8Array,
     clientPrivateKey: CryptoKey,
@@ -130,7 +134,8 @@ describe('encryptWebPush (RFC 8291)', () => {
     authSecret: Uint8Array,
   ): Promise<string> {
     const enc = new TextEncoder()
-    const view = new DataView(body.buffer, body.byteOffset, body.byteLength)
+    const hmac = (key: Uint8Array, data: Uint8Array) =>
+      new Uint8Array(createHmac('sha256', key).update(data).digest())
     const salt = body.slice(0, 16)
     const keyLen = body[20]
     expect(keyLen).toBe(65)
@@ -140,30 +145,18 @@ describe('encryptWebPush (RFC 8291)', () => {
     const serverPublicKey = await crypto.subtle.importKey(
       'raw', serverPublicKeyBytes, { name: 'ECDH', namedCurve: 'P-256' }, false, [],
     )
-    const sharedSecret = new Uint8Array(
+    const ecdhSecret = new Uint8Array(
       await crypto.subtle.deriveBits({ name: 'ECDH', public: serverPublicKey }, clientPrivateKey, 256),
     )
 
-    const hkdfKey = await crypto.subtle.importKey('raw', sharedSecret, 'HKDF', false, ['deriveBits'])
-    const infoWebPush = new Uint8Array([
-      ...enc.encode('WebPush: info\x00'),
-      ...clientPublicKeyBytes,
-      ...serverPublicKeyBytes,
-    ])
-    const prk = new Uint8Array(await crypto.subtle.deriveBits(
-      { name: 'HKDF', hash: 'SHA-256', salt: asBufferSource(authSecret), info: asBufferSource(infoWebPush) },
-      hkdfKey, 256,
-    ))
-
-    const prkKey = await crypto.subtle.importKey('raw', prk, 'HKDF', false, ['deriveBits'])
-    const infoBase = new Uint8Array([...enc.encode('Content-Encoding: aes128gcm\x00'), 0x01])
-    const contentKey = new Uint8Array(await crypto.subtle.deriveBits(
-      { name: 'HKDF', hash: 'SHA-256', salt, info: infoBase }, prkKey, 128,
-    ))
-    const nonceInfo = new Uint8Array([...enc.encode('Content-Encoding: nonce\x00'), 0x01])
-    const nonce = new Uint8Array(await crypto.subtle.deriveBits(
-      { name: 'HKDF', hash: 'SHA-256', salt, info: nonceInfo }, prkKey, 96,
-    ))
+    // RFC 8291 §3.4: PRK_key = HMAC(auth_secret, ecdh_secret); IKM = HMAC(PRK_key, key_info || 0x01)
+    const prkKey = hmac(authSecret, ecdhSecret)
+    const keyInfo = new Uint8Array([...enc.encode('WebPush: info\x00'), ...clientPublicKeyBytes, ...serverPublicKeyBytes])
+    const ikm = hmac(prkKey, new Uint8Array([...keyInfo, 0x01]))
+    // PRK = HMAC(salt, IKM); CEK = HMAC(PRK, cek_info || 0x01)[0..16]; NONCE = HMAC(PRK, nonce_info || 0x01)[0..12]
+    const prk = hmac(salt, ikm)
+    const contentKey = hmac(prk, new Uint8Array([...enc.encode('Content-Encoding: aes128gcm\x00'), 0x01])).slice(0, 16)
+    const nonce = hmac(prk, new Uint8Array([...enc.encode('Content-Encoding: nonce\x00'), 0x01])).slice(0, 12)
 
     const aesKey = await crypto.subtle.importKey('raw', contentKey, 'AES-GCM', false, ['decrypt'])
     const plaintextPadded = new Uint8Array(
@@ -171,7 +164,6 @@ describe('encryptWebPush (RFC 8291)', () => {
     )
     // Remove o delimitador de padding (0x02) que encryptWebPush adiciona ao final
     expect(plaintextPadded[plaintextPadded.length - 1]).toBe(0x02)
-    void view // apenas para deixar claro que o DataView existe caso precise inspecionar rs no futuro
     return new TextDecoder().decode(plaintextPadded.slice(0, -1))
   }
 

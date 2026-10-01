@@ -106,13 +106,17 @@ export async function encryptWebPush(
 
   // Deriva chave de criptografia e nonce via HKDF
   const prkKey = await crypto.subtle.importKey('raw', prk, 'HKDF', false, ['deriveBits'])
-  const infoBase = new Uint8Array([
-    ...enc.encode('Content-Encoding: aes128gcm\x00'), 0x01,
-  ])
+  // ERRO CORRIGIDO 01/out/2026: aqui (e no nonce) havia um 0x01 a mais no fim do info. O 0x01 da
+  // RFC 8291 é o contador do HKDF-Expand, que o crypto.subtle (HKDF) já põe sozinho — com os dois,
+  // a chave saía diferente da que o navegador calcula, o aparelho não conseguia abrir o pacote e
+  // descartava o alerta em silêncio (a Apple/Google aceitam 201 porque não abrem o conteúdo).
+  // Nenhum alerta tinha chegado a aparelho nenhum desde junho. Conferido contra a http_ece (a
+  // biblioteca de referência por trás da web-push) — ver push-notify.test.ts.
+  const infoBase = enc.encode('Content-Encoding: aes128gcm\x00')
   const contentKey = new Uint8Array(await crypto.subtle.deriveBits(
     { name: 'HKDF', hash: 'SHA-256', salt, info: infoBase }, prkKey, 128,
   ))
-  const nonceInfo = new Uint8Array([...enc.encode('Content-Encoding: nonce\x00'), 0x01])
+  const nonceInfo = enc.encode('Content-Encoding: nonce\x00')
   const nonce = new Uint8Array(await crypto.subtle.deriveBits(
     { name: 'HKDF', hash: 'SHA-256', salt, info: nonceInfo }, prkKey, 96,
   ))
