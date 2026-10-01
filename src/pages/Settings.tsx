@@ -4,6 +4,7 @@ import { useTheme } from 'next-themes'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { usePremium } from '@/lib/premium'
+import { useIsAdmin } from '@/lib/admin'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -51,6 +52,7 @@ export default function Settings() {
   const { isPremium } = usePremium()
   const { theme, setTheme } = useTheme()
   const navigate = useNavigate()
+  const isAdmin = useIsAdmin()
 
   const [skillLevel, setSkillLevel] = useState<SkillLevel>(loadPref('pref_skill', ''))
   const [defaultRegion, setDefaultRegion] = useState<Region>(() => {
@@ -152,6 +154,19 @@ export default function Settings() {
       </header>
 
       <main className="container mx-auto px-4 py-6 pb-24 space-y-5 max-w-lg">
+
+        {/* Uso interno (só admin): calibração da altura de onda com o mar real */}
+        {isAdmin && (
+          <Card className="border-primary/30">
+            <CardContent className="flex items-center justify-between gap-3 py-4">
+              <div>
+                <div className="text-sm font-semibold">Registro do mar real</div>
+                <div className="text-xs text-muted-foreground">Anote o tamanho que viu e compare com o app</div>
+              </div>
+              <Button size="sm" onClick={() => navigate('/registro-do-mar')}>Abrir</Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Perfil */}
         <Card>

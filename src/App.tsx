@@ -28,6 +28,7 @@ const ForecastPage = lazy(() => import('./pages/Forecast'))
 const ForecastDayPage = lazy(() => import('./pages/ForecastDay'))
 const SurfLog = lazy(() => import('./pages/SurfLog'))
 const ContentStudio = lazy(() => import('./pages/ContentStudio'))
+const SeaLog = lazy(() => import('./pages/SeaLog'))
 
 function RouteLoading() {
   return (
@@ -104,6 +105,7 @@ function AppRoutes() {
           <Route path="/forecast/:id/day/:dayIndex" element={<ProtectedRoute><ForecastDayPage /></ProtectedRoute>} />
           <Route path="/surf-log" element={<ProtectedRoute><SurfLog /></ProtectedRoute>} />
           <Route path="/content-studio" element={<ProtectedRoute><ContentStudio /></ProtectedRoute>} />
+          <Route path="/registro-do-mar" element={<ProtectedRoute><SeaLog /></ProtectedRoute>} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/reset-password" element={<ResetPassword />} />

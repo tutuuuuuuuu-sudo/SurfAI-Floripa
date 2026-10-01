@@ -90,6 +90,11 @@ export interface LiveConditions {
   windSpeed: number
   windDir: string
   waterTemperature: number | null
+  // Só no Open-Meteo (01/out/2026, ver api/_beachHeight.ts): altura de mar aberto (ECMWF) e do
+  // modelo francês (Météo-France, "modelo padrão" do Open-Meteo, base da onda na praia).
+  // Fontes reserva (Windy/Stormglass) não têm — pra elas waveHeight é tratado como mar aberto.
+  openSeaHeight?: number | null
+  nearshoreHeight?: number | null
   sunrise?: string
   sunset?: string
 }
@@ -356,6 +361,8 @@ async function fetchOpenMeteo(lat: string, lng: string): Promise<LiveConditions 
 
     return {
       waveHeight: Number(waveHeightBruto.toFixed(1)),
+      openSeaHeight: marineEcmwf.current?.wave_height ?? null,
+      nearshoreHeight: marine.current?.wave_height ?? null,
       swellPeriod: Math.round(marine.current?.swell_wave_period ?? marine.current?.wave_period ?? 8),
       swellDirection: degToDir(marine.current?.swell_wave_direction ?? marine.current?.wave_direction ?? 180),
       windSpeed: Math.round(weather.current?.wind_speed_10m ?? 0),
@@ -441,7 +448,11 @@ async function fetchStormglass(lat: string, lng: string): Promise<LiveConditions
 const LAST_GOOD_TTL_MS = 6 * 60 * 60 * 1000
 
 function atBeach(c: LiveConditions): LiveConditions {
-  return { ...c, waveHeight: toBeachHeight(c.waveHeight, c.swellPeriod) }
+  const fromOpenMeteo = c.openSeaHeight !== undefined || c.nearshoreHeight !== undefined
+  const waveHeight = fromOpenMeteo
+    ? toBeachHeight(c.openSeaHeight, c.swellPeriod, c.nearshoreHeight)
+    : toBeachHeight(c.waveHeight, c.swellPeriod)
+  return { ...c, waveHeight }
 }
 
 export async function fetchLiveConditions(lat: string, lng: string): Promise<LiveConditions | null> {
