@@ -1,14 +1,14 @@
 export const config = { runtime: 'edge' }
 
-// Cron: GitHub Actions chama esse endpoint via .github/workflows/email-alert.yml,
-// autenticado por secret. Antes esse cron reimplementava a fórmula de score inteira
+// Cron: agendador do Supabase (robo-email-alert, 9h e 18h UTC = 6h e 15h em Brasília),
+// autenticado por isSchedulerCall; o workflow do GitHub ficou só pra rodar na mão. Antes esse cron reimplementava a fórmula de score inteira
 // dentro do próprio YAML (3ª cópia da lógica, fora de qualquer checagem de fonte
 // única) e mandava o alerta pra TODA a base cadastrada, de graça — mesmo "Alertas de
 // swell" sendo um benefício exclusivo do Premium. Agora importa o motor real e só
 // avisa assinantes premium ativos que não desligaram a preferência.
 
 import { calculateSurfScore } from './_scoreEngine.js'
-import { getBeaches } from './_beachRegistry.js'
+import { BEACH_REGISTRY } from './_beachRegistry.js'
 import { isSchedulerCall } from './_auth.js'
 
 const AGENT_SECRET = process.env.AGENT_SECRET
@@ -18,9 +18,10 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY
 const APP_URL = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 const SCORE_THRESHOLD = 6.0
 
-const SPOTS = getBeaches([
-  'campeche', 'joaquina', 'mole', 'barra-lagoa', 'santinho', 'morro-pedras', 'novo-campeche', 'mocambique',
-])
+// As 14 praias (01/out/2026). Antes eram só 8 — lista herdada do workflow antigo, de quando o app
+// ainda não cobria o sul inteiro: Matadeiro, Armação, Lagoinha, Açores, Solidão e Naufragados
+// nunca disparavam alerta, mesmo sendo as que funcionam com vento sul.
+const SPOTS = BEACH_REGISTRY
 
 interface SpotResult {
   name: string
@@ -176,7 +177,12 @@ export default async function handler(req: Request) {
     })
   }
 
-  const results = (await Promise.all(SPOTS.map(fetchSpotScore))).filter((r): r is SpotResult => r !== null)
+  // Em lotes de 5, igual push-notify.ts — /api/surf tem limite de pedidos por minuto
+  const results: SpotResult[] = []
+  for (let i = 0; i < SPOTS.length; i += 5) {
+    const batch = await Promise.all(SPOTS.slice(i, i + 5).map(fetchSpotScore))
+    results.push(...batch.filter((r): r is SpotResult => r !== null))
+  }
   const goodSpots = results.filter(s => s.score >= SCORE_THRESHOLD)
   if (goodSpots.length === 0) {
     return new Response(JSON.stringify({ ok: true, sent: 0, reason: 'nenhuma praia com score suficiente' }), { headers: { 'Content-Type': 'application/json' } })
