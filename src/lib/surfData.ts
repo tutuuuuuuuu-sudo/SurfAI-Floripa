@@ -2,6 +2,7 @@ import { getWindyForecast, WeatherCondition } from './weatherApi'
 import { getRealWaterTemp } from './weatherData'
 import { calculateSurfScore, explainSurfScore, isSouthWind, WIND_DEG as _WIND_DEG } from '../../api/_scoreEngine'
 import { directionName } from './directions'
+import { southExposureAt } from '../../api/_beachRegistry'
 import { getRatingInfo } from './rating'
 import { captureError } from './monitoring'
 
@@ -48,6 +49,8 @@ export interface BeachCondition {
   lat: number
   lng: number
   _beachOrientation?: number
+  // Proteção ao vento sul (1 = em cheio), da lista oficial de praias — ver api/_beachRegistry.ts
+  _southExposure?: number
   // Praia só acessível por trilha (Lagoinha do Leste, Naufragados) — usado pelo
   // Smart Geo-Finder pra nunca sugerir essas praias como "vale o desvio" (distância
   // em linha reta não captura tempo de caminhada).
@@ -293,13 +296,16 @@ const getBestSubRegion = (
 // (explainSurfScore), pra frase nunca contradizer a nota — antes olhava só a direção e ignorava a
 // força: sul de 22 km/h no Campeche saía "pode atrapalhar um pouco" com a nota em ruim (30/set/2026).
 // O sul e variações têm frases próprias: pro usuário é o vento que mais bagunça o mar.
-export function getWindAnalysis(windDir: string, windSpeed: number, beachOrientation: number): string {
+export function getWindAnalysis(windDir: string, windSpeed: number, beachOrientation: number, southExposure = 1): string {
   const label = `Vento ${directionName(windDir)} (${windDir})`
   if (isSouthWind(windDir)) {
-    if (windSpeed <= 5) return `${label} fraco, de ${windSpeed} km/h. Se apertar, bagunça o mar rápido. `
-    if (windSpeed < 15) return `${label} de ${windSpeed} km/h já mexendo o mar. `
-    if (windSpeed < 20) return `${label} de ${windSpeed} km/h: mar mexido, sem formação. `
-    return `${label} forte, de ${windSpeed} km/h: mar bagunçado. `
+    // praia protegida do sul (Matadeiro, Armação, Barra): a frase segue a força que chega de fato
+    const felt = windSpeed * Math.min(1, Math.max(0, southExposure))
+    const shelter = southExposure < 1 && windSpeed >= 10 ? ', mas esta praia fica mais protegida do sul' : ''
+    if (felt <= 5) return `${label} ${windSpeed <= 5 ? 'fraco, ' : ''}de ${windSpeed} km/h${shelter}. Se apertar, bagunça o mar rápido. `
+    if (felt < 15) return `${label} de ${windSpeed} km/h${shelter}, já mexendo o mar. `
+    if (felt < 17) return `${label} de ${windSpeed} km/h${shelter}: mar mexido, sem formação. `
+    return `${label} forte, de ${windSpeed} km/h${shelter}: mar bagunçado, a onda se despedaça. `
   }
   const penalty = explainSurfScore(1, windSpeed, 9, windDir, beachOrientation).windPenalty
   if (penalty >= 1) return `${label} de ${windSpeed} km/h deixando o mar liso e organizado. `
@@ -517,7 +523,8 @@ async function _doFetchConditions(partial: BeachCondition[]): Promise<BeachCondi
           captureError(new Error(`windDirection não reconhecido: "${windyData?.windDirection}"`), { beachId: beach.id })
         }
 
-        const score = calculateSurfScore(waveHeight, windSpeed, swellPeriod, windDirection, beach.orientation)
+        const southExposure = southExposureAt(beach.lat, beach.lng)
+        const score = calculateSurfScore(waveHeight, windSpeed, swellPeriod, windDirection, beach.orientation, southExposure)
 
         let subRegions: SubRegion[] | undefined = undefined
         if (beach.subRegions && beach.subRegions.length > 0) {
@@ -547,6 +554,7 @@ async function _doFetchConditions(partial: BeachCondition[]): Promise<BeachCondi
           weatherCondition: windyData?.weatherCondition,
           lat: beach.lat, lng: beach.lng,
           _beachOrientation: beach.orientation,
+          _southExposure: southExposure,
           hikeAccess: beach.hikeAccess,
         } satisfies BeachCondition
       })
@@ -637,7 +645,7 @@ export function analyzeConditions(spot: BeachCondition): string {
   }
   let analysis = ratingLabelToAnalysis[getRatingInfo(spot.score).label]
 
-  analysis += getWindAnalysis(spot.windDirection, spot.windSpeed, orientation)
+  analysis += getWindAnalysis(spot.windDirection, spot.windSpeed, orientation, spot._southExposure ?? 1)
 
   if (spot.swellPeriod >= 12) analysis += `Período de ${spot.swellPeriod}s trazendo ondas longas e bem formadas. `
   else if (spot.swellPeriod >= 9) analysis += `Período médio de ${spot.swellPeriod}s, ondas razoáveis. `

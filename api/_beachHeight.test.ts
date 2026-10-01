@@ -68,3 +68,15 @@ describe('toBeachHeight — base no modelo francês (01/out/2026)', () => {
     expect(toBeachHeight(null, 6, null)).toBe(0)
   })
 })
+
+describe('southExposureAt — proteção ao vento sul pela posição', () => {
+  it('Matadeiro 0,5 · Armação 0,85 · Barra 0,7 · Campeche 1 · fora da ilha 1', async () => {
+    const { southExposureAt, getBeach } = await import('./_beachRegistry')
+    const at = (id: string) => { const b = getBeach(id)!; return southExposureAt(b.lat, b.lng) }
+    expect(at('matadeiro')).toBe(0.5)
+    expect(at('armacao')).toBe(0.85)
+    expect(at('barra-lagoa')).toBe(0.7)
+    expect(at('campeche')).toBe(1)
+    expect(southExposureAt(-23.0, -43.0)).toBe(1)
+  })
+})

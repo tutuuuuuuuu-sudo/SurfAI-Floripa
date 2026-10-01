@@ -53,7 +53,7 @@ async function fetchSpot(spot: typeof SPOTS[0]): Promise<SpotData | null> {
 
     const rawDir = (data.windDirection ?? 'N').toUpperCase()
     // Orientação padrão 90° (leste) para spots sem orientação definida no content-agent
-    const score = calculateSurfScore(data.waveHeight ?? 0, data.windSpeed ?? 0, data.swellPeriod ?? 0, rawDir, spot.orientation)
+    const score = calculateSurfScore(data.waveHeight ?? 0, data.windSpeed ?? 0, data.swellPeriod ?? 0, rawDir, spot.orientation, spot.southExposure ?? 1)
 
     return {
       name: spot.name,
