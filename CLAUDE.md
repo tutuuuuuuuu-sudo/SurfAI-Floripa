@@ -137,12 +137,13 @@ api/
 ├── landing-day.ts      # Um dia (até 7 à frente) hora a hora de uma praia aberta (publicSpots.ts), sem login, cache CDN 1h — demos da landing
 ├── landing-event.ts    # Contador anônimo da landing (+1 no dia: visita ou clique em botão, lista fechada) → tabela landing_stats (RPC bump_landing_stat, só service role). Sem cookie/IP → não depende do aviso de cookies
 ├── _dayDetail.ts       # Montagem do dia hora a hora (fonte única de forecast-day.ts e landing-day.ts)
+├── _weatherCode.ts     # Tempo (sol/nublado/chuva) dos códigos WMO da Open-Meteo — fonte única do "agora" (surf.ts) e do resumo do céu do dia (_dayDetail: só horas de luz). Página do dia mostra Céu/Ar/Água (água só até ~10 dias)
 ├── create-payment.ts   # Cria preferência de pagamento no Mercado Pago
 ├── mp-webhook.ts       # Webhook do MP → atualiza subscriptions no Supabase
 ├── mp-ipn.ts           # IPN (notificação instantânea) do MP
 ├── delete-account.ts   # Exclusão de conta do usuário (LGPD)
 ├── daily-report.ts     # Envia relatório diário por WhatsApp (CallMeBot) — só pro founder, uso interno
-├── email-alert.ts      # Alerta de "mar bom" por email (Resend) — só assinantes premium, opt-out em Configurações
+├── email-alert.ts      # Alerta de "mar bom" por email (Resend) — só assinantes premium, opt-out em Configurações; olha as 14 praias (antes 8), dispara se alguma tiver nota ≥ 6
 ├── content-agent.ts    # Gera sugestões de conteúdo para ContentStudio (só admin, ver api/_auth.ts)
 ├── is-admin.ts         # Checa se o usuário logado está na tabela `admins` (a tabela em si não é lida pelo client, RLS bloqueia)
 ├── email-welcome.ts    # Email de boas-vindas (Resend)
