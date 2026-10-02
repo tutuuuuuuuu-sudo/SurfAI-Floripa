@@ -1,0 +1,23 @@
+name: Health — Checagem de Saúde do App
+
+# Horário automático no agendador do Supabase desde 30/set/2026 (pg_cron: jobs robo-*,
+# função public.call_robot) — o agendamento do GitHub atrasava até 6 h. Aqui fica só a
+# execução manual.
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  run-health:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chamar endpoint de health
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L \
+            "${{ secrets.APP_URL }}/api/health?secret=${{ secrets.HEALTH_SECRET }}")
+          echo "Status HTTP: $STATUS"
+          if [ "$STATUS" != "200" ] && [ "$STATUS" != "207" ]; then
+            echo "Health retornou status $STATUS"
+            exit 1
+          fi
