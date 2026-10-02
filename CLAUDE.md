@@ -8,7 +8,9 @@
 Domínio: `surfaifloripa.com.br` — deploy automático via Vercel conectado ao GitHub (branch `main`).
 
 ### Modelo de negócio (freemium)
-Dois planos pagos: **Mensal R$ 16,90/mês** ou **Anual R$ 149,90/ano** (equivale a R$ 12,49/mês). Escolha do plano em `src/pages/Premium.tsx` (`selectedPlan: 'monthly' | 'annual'`), preferência criada em `api/create-payment.ts`.
+Dois planos pagos: **Mensal R$ 22,90/mês** ou **Anual R$ 202,80/ano** (equivale a R$ 16,90/mês) — preço de 02/out/2026 (antes R$ 16,90 e R$ 149,90). **Fonte única do preço: `src/lib/pricing.ts`** (sem imports, usado pelo app e pelos endpoints) — nunca escrever valor à mão. Escolha do plano em `src/pages/Premium.tsx` (`selectedPlan: 'monthly' | 'annual'`), preferência criada em `api/create-payment.ts`.
+
+**Teste grátis (02/out/2026):** 15 dias de Premium, sem cartão, uma vez por conta — botão na página Premium chama a RPC `start_trial()` (só quem nunca teve linha em `subscriptions`). Vira linha `status='premium'`, `plan='trial'`, `amount=0`, `trial_started_at`; o resto do app trata como Premium normal. Quem assina durante o teste mantém os dias que sobraram (`activate_premium` soma). Relatório diário mostra "Teste grátis: N" separado de Premium/MRR. Lembretes de fim de teste/plano: `api/plan-reminders.ts` (abaixo).
 
 | Recurso | Free | Premium |
 |---|---|---|
@@ -100,7 +102,8 @@ src/
 │   ├── surfData.ts            # Picos (BEACHES), fetchCurrentConditions(), getSpotById()
 │   ├── rating.ts              # getRatingInfo(score) → label/color/bars — ÚNICA fonte
 │   ├── aiReport.ts            # fetchAIReport() — cache localStorage 30min
-│   ├── premium.ts             # usePremium(), createMercadoPagoCheckout()
+│   ├── premium.ts             # usePremium() (isTrial, daysLeft, canStartTrial), startPremiumTrial(), createMercadoPagoCheckout()
+│   ├── pricing.ts             # ⚠️ FONTE ÚNICA do preço (mensal/anual) e dos 15 dias de teste grátis — app e servidor importam daqui
 │   ├── admin.ts               # useIsAdmin() via api/is-admin (Registro do mar real + atalho em Configurações)
 │   ├── supabase.ts            # createClient() — cliente Supabase único
 │   ├── monitoring.ts          # Sentry + PostHog — initMonitoring(), track(), captureError(). PostHog SÓ depois do "Aceitar" no CookieConsent (enableAnalytics/disableAnalytics) — LGPD, 29/set/2026
@@ -138,7 +141,8 @@ api/
 ├── landing-event.ts    # Contador anônimo da landing (+1 no dia: visita ou clique em botão, lista fechada) → tabela landing_stats (RPC bump_landing_stat, só service role). Sem cookie/IP → não depende do aviso de cookies
 ├── _dayDetail.ts       # Montagem do dia hora a hora (fonte única de forecast-day.ts e landing-day.ts)
 ├── _weatherCode.ts     # Tempo (sol/nublado/chuva) dos códigos WMO da Open-Meteo — fonte única do "agora" (surf.ts) e do resumo do céu do dia (_dayDetail: só horas de luz). Página do dia mostra Céu/Ar/Água (água só até ~10 dias)
-├── create-payment.ts   # Cria preferência de pagamento no Mercado Pago
+├── create-payment.ts   # Cria preferência de pagamento no Mercado Pago (valor de src/lib/pricing.ts)
+├── plan-reminders.ts   # Robô diário: avisa por e-mail + push quando o Premium/teste grátis está acabando (faltando ~5 dias, 1 dia e no dia que acabou). Regras e textos em _planReminders.ts; tabela plan_reminders impede aviso repetido no mesmo período
 ├── mp-webhook.ts       # Webhook do MP → atualiza subscriptions no Supabase
 ├── mp-ipn.ts           # IPN (notificação instantânea) do MP
 ├── delete-account.ts   # Exclusão de conta do usuário (LGPD)
@@ -167,6 +171,7 @@ e o relatório diário mostra "Robôs 24h: N ok, N falhas". Ver jobs: `select * 
 - `robo-email-alert`: 9h e 18h
 - `robo-daily-report`: 12h e 23h (9h e 20h em Brasília)
 - `robo-health`: 10h e 22h
+- `robo-lembretes`: 12h (9h em Brasília) — `api/plan-reminders.ts`
 - `robo-resultados`: a cada 10 min (registra o resultado das chamadas)
 
 Os arquivos em `.github/workflows/` ficaram só com execução manual (`workflow_dispatch`, senhas
@@ -374,6 +379,7 @@ o CLI do shadcn (`npx shadcn@latest add <nome>`) pra gerar de novo, em vez de re
 - `user_preferences` — preferências salvas (notificações, filtros)
 - `push_subscriptions` — inscrições de push notification (VAPID)
 - `score_snapshots` — histórico periódico de score por pico (gravado por `api/snapshot.ts`)
+- `plan_reminders` — um registro por lembrete de fim de plano enviado (user_id, kind d5/d1/ended, period_end); RLS sem política, só o servidor
 
 ### Realtime
 - `subscriptions` tem listener realtime em `usePremium()` para detectar upgrade imediato

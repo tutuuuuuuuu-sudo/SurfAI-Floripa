@@ -5,31 +5,46 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
   ArrowLeft, Check, Crown, Loader2, CheckCircle2, XCircle, Clock,
-  Sparkles, Calendar, Bell, BookOpen, BarChart3, Zap, ShieldOff, TrendingDown, Lock
+  MessageCircle, Calendar, Bell, BarChart3, Zap, ShieldOff, TrendingDown, Lock, Gift
 } from 'lucide-react'
-import { createMercadoPagoCheckout, usePremium } from '@/lib/premium'
+import { createMercadoPagoCheckout, startPremiumTrial, usePremium } from '@/lib/premium'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
+import { track } from '@/lib/monitoring'
+import {
+  PRICE_MONTHLY, PRICE_ANNUAL, PRICE_ANNUAL_PER_MONTH, ANNUAL_SAVINGS, TRIAL_DAYS,
+  formatBRL, perDayCeil,
+} from '@/lib/pricing'
 
+// Lista revista em 02/out/2026: saiu "Relatório de IA" (removido em 23/ago, virou o chat) e
+// "Diário de surf" (é da conta grátis, não do Premium)
 const PREMIUM_BENEFITS = [
-  { icon: Sparkles, title: 'Relatório de IA personalizado', desc: 'IA analisa as condições e escreve um relatório diário pro seu nível de surf.' },
+  { icon: MessageCircle, title: 'Chat com o Surf AI', desc: 'Pergunte onde e quando surfar e receba a resposta com a previsão real das 14 praias.' },
   { icon: Calendar, title: 'Previsão 14 dias', desc: 'Planeje suas sessões com antecedência. Free tem apenas 3 dias.' },
   { icon: Bell, title: 'Alertas de swell', desc: 'Receba notificação quando suas praias favoritas estiverem boas.' },
-  { icon: BookOpen, title: 'Diário de surf', desc: 'Registre cada sessão com nota, duração e anotações. Veja seu histórico.' },
   { icon: BarChart3, title: 'Histórico 30 dias', desc: 'Veja como as condições evoluíram nas últimas semanas.' },
   { icon: Zap, title: 'Melhor janela do dia', desc: 'Horário exato com melhores condições calculado hora a hora.' },
   { icon: ShieldOff, title: 'Sem anúncios', desc: 'Experiência limpa e sem interrupções.' },
   { icon: Crown, title: 'Badge Premium', desc: 'Destaque no perfil e nos relatos da comunidade.' },
 ]
 
+// Quem pagou (plano sem renovação automática) vê as opções de novo quando faltam até 10 dias —
+// é pra onde o lembrete de fim de plano (api/plan-reminders.ts) manda a pessoa
+const RENEW_WINDOW_DAYS = 10
+
+const formatDate = (iso: string | null | undefined) =>
+  iso ? new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : ''
+
 export default function PremiumPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { user } = useAuth()
-  const { isPremium, loading: loadingStatus } = usePremium()
+  const { isPremium, isTrial, daysLeft, canStartTrial, offerTrial, subscription, loading: loadingStatus, refresh } = usePremium()
   const [loading, setLoading] = useState(false)
   const [loadingAnnual, setLoadingAnnual] = useState(false)
+  const [startingTrial, setStartingTrial] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [trialError, setTrialError] = useState<string | null>(null)
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'annual'>('annual')
   const [recentSignups, setRecentSignups] = useState<number | null>(null)
 
@@ -49,6 +64,21 @@ export default function PremiumPage() {
       window.history.replaceState({}, '', '/premium')
     }
   }, [paymentStatus])
+
+  const handleStartTrial = async () => {
+    if (!user) { navigate('/login?plan=premium'); return }
+    setStartingTrial(true)
+    setTrialError(null)
+    const result = await startPremiumTrial()
+    setStartingTrial(false)
+    if (!result.ok) { setTrialError(result.error ?? 'Não deu pra começar o teste agora.'); return }
+    track('trial_started')
+    refresh()
+  }
+
+  // Teste em andamento, plano pago perto do fim, ou ainda não é Premium: mostra os planos
+  const showPlans = !isPremium || isTrial || daysLeft <= RENEW_WINDOW_DAYS
+  const paidPremium = isPremium && !isTrial
 
   const handleSubscribe = async (plan: 'monthly' | 'annual' = 'monthly') => {
     if (!user) { navigate('/login'); return }
@@ -102,7 +132,7 @@ export default function PremiumPage() {
         </div>
 
         {/* Retorno do pagamento */}
-        {paymentStatus === 'success' && !isPremium && (
+        {paymentStatus === 'success' && (
           <div className="flex items-start gap-3 p-4 rounded-2xl border border-rating-good/30 bg-rating-good/5">
             <CheckCircle2 className="h-5 w-5 text-rating-good flex-shrink-0 mt-0.5" />
             <div>
@@ -130,16 +160,68 @@ export default function PremiumPage() {
           </div>
         )}
 
-        {/* Já é premium */}
-        {!loadingStatus && isPremium && (
+        {/* Já é premium (pagou ou ganhou cortesia) */}
+        {!loadingStatus && paidPremium && (
           <Card className="border-rating-fair/40 bg-rating-fair/5" style={{ animation: 'slideUp 0.4s ease-out' }}>
             <CardContent className="py-6 text-center space-y-2">
               <Crown className="h-8 w-8 text-rating-fair mx-auto" />
               <p className="font-bold text-lg">Você já é Premium!</p>
-              <p className="text-sm text-muted-foreground">Aproveite todos os benefícios exclusivos.</p>
+              {daysLeft <= RENEW_WINDOW_DAYS ? (
+                <p className="text-sm text-muted-foreground">
+                  Seu Premium vai até {formatDate(subscription?.expires_at)} ({daysLeft === 1 ? 'falta 1 dia' : `faltam ${daysLeft} dias`}).
+                  Renove abaixo: os dias que faltam continuam valendo.
+                </p>
+              ) : daysLeft <= 400 ? (
+                <p className="text-sm text-muted-foreground">Seu Premium vai até {formatDate(subscription?.expires_at)}.</p>
+              ) : (
+                <p className="text-sm text-muted-foreground">Aproveite todos os benefícios exclusivos.</p>
+              )}
               <Button className="mt-2" onClick={() => navigate('/')}>Ir para o app</Button>
             </CardContent>
           </Card>
+        )}
+
+        {/* Teste grátis em andamento */}
+        {!loadingStatus && isTrial && (
+          <Card className="border-rating-good/40 bg-rating-good/5" style={{ animation: 'slideUp 0.4s ease-out' }}>
+            <CardContent className="py-5 text-center space-y-1.5">
+              <Gift className="h-7 w-7 text-rating-good mx-auto" />
+              <p className="font-bold text-base">
+                Seu teste grátis vai até {formatDate(subscription?.expires_at)}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {daysLeft === 1 ? 'Falta 1 dia' : `Faltam ${daysLeft} dias`} com tudo liberado. Se assinar agora, os dias que sobraram do teste somam no plano.
+              </p>
+              <Button variant="outline" size="sm" className="mt-1" onClick={() => navigate('/')}>Ir para o app</Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Convite pro teste grátis (nunca testou, nunca assinou) */}
+        {!loadingStatus && !isPremium && offerTrial && (
+          <Card className="overflow-hidden border-rating-good/50" style={{ animation: 'slideUp 0.4s ease-out' }}>
+            <div className="text-center py-2 text-xs font-bold tracking-wider bg-rating-good/15 text-rating-good">
+              {TRIAL_DAYS} DIAS GRÁTIS · SEM CARTÃO
+            </div>
+            <CardContent className="p-5 text-center space-y-3">
+              <p className="font-bold text-lg leading-snug">Teste o Premium inteiro por {TRIAL_DAYS} dias</p>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Previsão de 14 dias, alertas, chat com o Surf AI e tudo mais. Não pedimos cartão e nada é cobrado no fim: você só paga se decidir assinar.
+              </p>
+              {trialError && (
+                <div className="text-xs text-destructive bg-destructive/10 rounded-lg p-3">{trialError}</div>
+              )}
+              <Button className="w-full h-12 text-base font-bold" onClick={handleStartTrial} disabled={startingTrial}>
+                {startingTrial
+                  ? <><Loader2 className="h-5 w-5 mr-2 animate-spin" />Liberando...</>
+                  : <><Gift className="h-5 w-5 mr-2" />{canStartTrial ? `Começar meus ${TRIAL_DAYS} dias grátis` : `Criar conta e testar ${TRIAL_DAYS} dias grátis`}</>}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {!loadingStatus && !isPremium && offerTrial && (
+          <p className="text-center text-xs font-semibold tracking-wider text-muted-foreground">OU ASSINE DIRETO</p>
         )}
 
         {/* Social proof */}
@@ -151,7 +233,7 @@ export default function PremiumPage() {
         )}
 
         {/* Seletor de planos */}
-        {!isPremium && (
+        {showPlans && (
           <div className="flex rounded-xl bg-muted/60 p-1.5 border border-border" style={{ animation: 'slideUp 0.4s 0.05s ease-out both' }}>
             <button
               onClick={() => setSelectedPlan('annual')}
@@ -162,10 +244,10 @@ export default function PremiumPage() {
               }`}
             >
               <span>Anual</span>
-              <span className={`text-xs font-bold ${selectedPlan === 'annual' ? 'text-primary-foreground' : 'text-rating-good'}`}>R$ 12,49/mês</span>
+              <span className={`text-xs font-bold ${selectedPlan === 'annual' ? 'text-primary-foreground' : 'text-rating-good'}`}>{formatBRL(PRICE_ANNUAL_PER_MONTH)}/mês</span>
               {selectedPlan === 'annual' && (
                 <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-rating-good text-white border-0 text-[10px] px-1.5 py-0 whitespace-nowrap shadow-sm">
-                  Economize R$ 53
+                  Economize R$ {ANNUAL_SAVINGS}
                 </Badge>
               )}
             </button>
@@ -178,13 +260,13 @@ export default function PremiumPage() {
               }`}
             >
               <span>Mensal</span>
-              <span className={`text-xs font-bold ${selectedPlan === 'monthly' ? 'text-foreground' : 'text-muted-foreground'}`}>R$ 16,90/mês</span>
+              <span className={`text-xs font-bold ${selectedPlan === 'monthly' ? 'text-foreground' : 'text-muted-foreground'}`}>{formatBRL(PRICE_MONTHLY)}/mês</span>
             </button>
           </div>
         )}
 
         {/* Card de preço */}
-        {!isPremium && (
+        {showPlans && (
           <Card className="overflow-hidden border-primary/50" style={{ animation: 'slideUp 0.4s 0.1s ease-out both' }}>
             {selectedPlan === 'annual' && (
               <div className="text-center py-2 text-xs font-bold tracking-wider bg-primary text-primary-foreground">
@@ -205,25 +287,25 @@ export default function PremiumPage() {
                   <>
                     <div className="flex items-end justify-center gap-1">
                       <span className="text-sm text-muted-foreground mb-1">R$</span>
-                      <span className="text-5xl font-bold text-rating-fair">12</span>
-                      <span className="text-2xl font-bold text-rating-fair">,49</span>
+                      <span className="text-5xl font-bold text-rating-fair">{Math.floor(PRICE_ANNUAL_PER_MONTH)}</span>
+                      <span className="text-2xl font-bold text-rating-fair">,{formatBRL(PRICE_ANNUAL_PER_MONTH).split(',')[1]}</span>
                       <span className="text-sm text-muted-foreground mb-1">/mês</span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">Cobrado anualmente · R$ 149,90/ano</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Cobrado uma vez por ano · {formatBRL(PRICE_ANNUAL)}</p>
                     <div className="flex items-center justify-center gap-1.5 mt-1.5">
                       <TrendingDown className="h-3.5 w-3.5 text-rating-good" />
-                      <span className="text-xs font-semibold text-rating-good">Menos de R$ 0,42/dia · você economiza R$ 53/ano</span>
+                      <span className="text-xs font-semibold text-rating-good">Menos de {perDayCeil(PRICE_ANNUAL, 365)}/dia · você economiza R$ {ANNUAL_SAVINGS}/ano</span>
                     </div>
                   </>
                 ) : (
                   <>
                     <div className="flex items-end justify-center gap-1">
                       <span className="text-sm text-muted-foreground mb-1">R$</span>
-                      <span className="text-5xl font-bold text-rating-fair">16</span>
-                      <span className="text-2xl font-bold text-rating-fair">,90</span>
+                      <span className="text-5xl font-bold text-rating-fair">{Math.floor(PRICE_MONTHLY)}</span>
+                      <span className="text-2xl font-bold text-rating-fair">,{formatBRL(PRICE_MONTHLY).split(',')[1]}</span>
                       <span className="text-sm text-muted-foreground mb-1">/mês</span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">Cancele quando quiser · menos de R$ 0,57/dia</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Cancele quando quiser · menos de {perDayCeil(PRICE_MONTHLY, 30)}/dia</p>
                   </>
                 )}
               </div>
@@ -254,8 +336,8 @@ export default function PremiumPage() {
                 {(loading || loadingAnnual)
                   ? <><Loader2 className="h-5 w-5 mr-2 animate-spin" />Redirecionando...</>
                   : selectedPlan === 'annual'
-                    ? <><Crown className="h-5 w-5 mr-2" />Assinar por R$ 149,90/ano</>
-                    : <><Crown className="h-5 w-5 mr-2" />Assinar por R$ 16,90/mês</>
+                    ? <><Crown className="h-5 w-5 mr-2" />{paidPremium ? 'Renovar' : 'Assinar'} por {formatBRL(PRICE_ANNUAL)}/ano</>
+                    : <><Crown className="h-5 w-5 mr-2" />{paidPremium ? 'Renovar' : 'Assinar'} por {formatBRL(PRICE_MONTHLY)}/mês</>
                 }
               </Button>
 
@@ -285,6 +367,7 @@ export default function PremiumPage() {
                   { feature: 'Relatos de surfistas',          free: true,  premium: true },
                   { feature: 'Previsão 3 dias',               free: true,  premium: true },
                   { feature: 'Previsão 14 dias',              free: false, premium: true },
+                  { feature: 'Chat com o Surf AI',            free: false, premium: true },
                   { feature: 'Alertas de swell (push)',       free: false, premium: true },
                   { feature: 'Histórico 30 dias',             free: false, premium: true },
                   { feature: 'Melhor janela horária',         free: false, premium: true },

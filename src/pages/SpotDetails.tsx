@@ -9,6 +9,7 @@ import { useSurfData } from '@/contexts/SurfDataContext'
 import { getWeatherForecast, WeatherForecast, FREE_DAYS } from '@/lib/weatherData'
 import { isFavorite, toggleFavorite } from '@/lib/favorites'
 import { usePremium } from '@/lib/premium'
+import { PRICE_MONTHLY, TRIAL_DAYS, formatBRL } from '@/lib/pricing'
 import { useAuth } from '@/contexts/AuthContext'
 import { PUBLIC_SPOT_IDS, TEASER_SPOT_IDS } from '@/lib/surfData'
 import { SpotTeaser } from '@/components/spot/SpotTeaser'
@@ -159,7 +160,7 @@ export default function SpotDetails() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { conditions, loading: conditionsLoading } = useSurfData()
-  const { isPremium, loading: premiumLoading } = usePremium()
+  const { isPremium, offerTrial, loading: premiumLoading } = usePremium()
   const { user, loading: authLoading } = useAuth()
   const isPublicSpot = id ? (PUBLIC_SPOT_IDS as readonly string[]).includes(id) : false
   const isTeaserSpot = id ? (TEASER_SPOT_IDS as readonly string[]).includes(id) : false
@@ -686,7 +687,9 @@ export default function SpotDetails() {
                   >
                     <Crown className="h-5 w-5 text-rating-fair mx-auto mb-1"/>
                     <div className="text-sm font-semibold text-rating-fair">Ver previsão completa de 14 dias</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">Assine o Premium por R$ 16,90/mês</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {offerTrial ? `Teste ${TRIAL_DAYS} dias grátis, sem cartão` : `Assine o Premium por ${formatBRL(PRICE_MONTHLY)}/mês`}
+                    </div>
                   </button>
                 )}
               </>

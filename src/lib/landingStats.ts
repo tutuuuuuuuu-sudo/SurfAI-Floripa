@@ -4,7 +4,7 @@
 // teste da Vercel usam o mesmo banco e iam sujar os números).
 export type LandingCta =
   | 'nav' | 'hero' | 'hero-planos' | 'curva'
-  | 'preco-mensal' | 'preco-anual' | 'preco-gratis'
+  | 'preco-mensal' | 'preco-anual' | 'preco-gratis' | 'teste-gratis'
   | 'fechamento' | 'fechamento-planos'
 
 function send(event: 'view' | 'cta', detail = '') {

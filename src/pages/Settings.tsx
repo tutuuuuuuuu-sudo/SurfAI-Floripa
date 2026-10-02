@@ -4,6 +4,7 @@ import { useTheme } from 'next-themes'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { usePremium } from '@/lib/premium'
+import { PRICE_MONTHLY, TRIAL_DAYS, formatBRL } from '@/lib/pricing'
 import { useIsAdmin } from '@/lib/admin'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -49,7 +50,7 @@ function savePref(key: string, value: unknown) {
 
 export default function Settings() {
   const { user, signOut } = useAuth()
-  const { isPremium } = usePremium()
+  const { isPremium, isTrial, daysLeft, canStartTrial } = usePremium()
   const { theme, setTheme } = useTheme()
   const navigate = useNavigate()
   const isAdmin = useIsAdmin()
@@ -190,14 +191,17 @@ export default function Settings() {
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Plano</span>
               <span className={`text-sm font-bold ${isPremium ? 'text-rating-fair' : 'text-muted-foreground'}`}>
-                {isPremium ? 'Premium' : 'Gratuito'}
+                {isTrial ? 'Teste grátis' : isPremium ? 'Premium' : 'Gratuito'}
+                {isPremium && daysLeft <= 10 && ` · ${daysLeft === 1 ? 'falta 1 dia' : `faltam ${daysLeft} dias`}`}
               </span>
             </div>
-            {!isPremium && (
+            {(!isPremium || isTrial || daysLeft <= 10) && (
               <Button variant="outline" size="sm" className="w-full border-rating-fair/50 text-rating-fair hover:bg-rating-fair/10"
                 onClick={() => navigate('/premium')}>
                 <Crown className="h-4 w-4 mr-2" />
-                Upgrade para Premium · R$ 16,90/mês
+                {canStartTrial
+                  ? `Testar o Premium ${TRIAL_DAYS} dias grátis`
+                  : isPremium && !isTrial ? 'Renovar o Premium' : `Assinar o Premium · ${formatBRL(PRICE_MONTHLY)}/mês`}
               </Button>
             )}
           </CardContent>

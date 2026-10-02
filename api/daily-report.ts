@@ -3,6 +3,7 @@ import { calculateSurfScore } from './_scoreEngine.js'
 import { callGemini } from './_gemini.js'
 import { getBeaches } from './_beachRegistry.js'
 import { isSchedulerCall } from './_auth.js'
+import { PRICE_MONTHLY, PRICE_ANNUAL } from '../src/lib/pricing.js'
 
 const APP_URL = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 const GEMINI_KEY = process.env.GEMINI_API_KEY
@@ -30,6 +31,7 @@ async function getUserStats(): Promise<{
   total: number
   newToday: number
   premiumActive: number
+  trialsActive: number
   newPremiumToday: number
   revenueToday: number
   cancelledToday: number
@@ -37,7 +39,7 @@ async function getUserStats(): Promise<{
   conversionRate: number
 }> {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-    return { total: 0, newToday: 0, premiumActive: 0, newPremiumToday: 0, revenueToday: 0, cancelledToday: 0, mrr: 0, conversionRate: 0 }
+    return { total: 0, newToday: 0, premiumActive: 0, trialsActive: 0, newPremiumToday: 0, revenueToday: 0, cancelledToday: 0, mrr: 0, conversionRate: 0 }
   }
 
   // Brasil não usa horário de verão desde 2019 — UTC-3 fixo é correto
@@ -61,7 +63,11 @@ async function getUserStats(): Promise<{
     interface AuthUsersResponse { total?: number; users?: { id: string; created_at: string }[] }
 
     const totalData = totalRes.ok ? await totalRes.json() as AuthUsersResponse : {}
-    const premiumData = premiumRes.ok ? await premiumRes.json() as SubRecord[] : []
+    // Teste grátis (plan 'trial') também é status premium, mas não é assinatura: fica de fora de
+    // Premium ativo, receita, MRR e conversão, e aparece numa linha própria
+    const allPremium = premiumRes.ok ? await premiumRes.json() as SubRecord[] : []
+    const premiumData = Array.isArray(allPremium) ? allPremium.filter(s => s.plan !== 'trial') : []
+    const trialsActive = Array.isArray(allPremium) ? allPremium.length - premiumData.length : 0
 
     const premiumActive = Array.isArray(premiumData) ? premiumData.length : 0
     const newPremiumToday = Array.isArray(premiumData)
@@ -70,7 +76,7 @@ async function getUserStats(): Promise<{
     const revenueToday = Array.isArray(premiumData)
       ? premiumData
           .filter((s) => s.created_at >= todayISO)
-          .reduce((sum, s) => sum + (s.amount ?? 16.90), 0)
+          .reduce((sum, s) => sum + (s.amount ?? (s.plan === 'annual' ? PRICE_ANNUAL : PRICE_MONTHLY)), 0)
       : 0
 
     // Cancelamentos (subscriptions com status cancelled, atualizadas hoje)
@@ -114,15 +120,15 @@ async function getUserStats(): Promise<{
     // MRR real: assinatura mensal conta o valor cheio, anual é dividida por 12
     const mrr = Array.isArray(premiumData)
       ? premiumData.reduce((sum, s) => {
-          const amount = s.amount ?? (s.plan === 'annual' ? 149.90 : 16.90)
+          const amount = s.amount ?? (s.plan === 'annual' ? PRICE_ANNUAL : PRICE_MONTHLY)
           return sum + (s.plan === 'annual' ? amount / 12 : amount)
         }, 0)
       : 0
     const conversionRate = total > 0 ? Number(((premiumActive / total) * 100).toFixed(1)) : 0
 
-    return { total, newToday, premiumActive, newPremiumToday, revenueToday, cancelledToday, mrr, conversionRate }
+    return { total, newToday, premiumActive, trialsActive, newPremiumToday, revenueToday, cancelledToday, mrr, conversionRate }
   } catch {
-    return { total: 0, newToday: 0, premiumActive: 0, newPremiumToday: 0, revenueToday: 0, cancelledToday: 0, mrr: 0, conversionRate: 0 }
+    return { total: 0, newToday: 0, premiumActive: 0, trialsActive: 0, newPremiumToday: 0, revenueToday: 0, cancelledToday: 0, mrr: 0, conversionRate: 0 }
   }
 }
 
@@ -130,7 +136,7 @@ async function getUserStats(): Promise<{
 // Brasília): visitas e cliques em cada botão, hoje e nos últimos 7 dias
 const CTA_LABEL: Record<string, string> = {
   nav: 'menu', hero: 'topo', 'hero-planos': 'topo/planos', curva: 'curva',
-  'preco-mensal': 'mensal', 'preco-anual': 'anual', 'preco-gratis': 'grátis',
+  'preco-mensal': 'mensal', 'preco-anual': 'anual', 'preco-gratis': 'grátis', 'teste-gratis': 'teste grátis',
   fechamento: 'final', 'fechamento-planos': 'final/planos',
 }
 
@@ -281,6 +287,7 @@ DADOS DO DIA:
 - Usuários totais: ${data.users.total}
 - Novos cadastros hoje: ${data.users.newToday}
 - Assinaturas Premium ativas: ${data.users.premiumActive}
+- Em teste grátis agora: ${data.users.trialsActive}
 - Novas assinaturas hoje: ${data.users.newPremiumToday}
 - Receita hoje: R$ ${data.users.revenueToday.toFixed(2)}
 - Cancelamentos hoje: ${data.users.cancelledToday}
@@ -325,6 +332,7 @@ function buildWhatsAppText(data: {
     '',
     `Usuários: ${users.total} (+${users.newToday} hoje)`,
     `Premium ativo: ${users.premiumActive} (+${users.newPremiumToday} hoje)`,
+    `Teste grátis: ${users.trialsActive}`,
     `Receita hoje: R$ ${users.revenueToday.toFixed(2)}`,
     `MRR estimado: R$ ${users.mrr.toFixed(2)}`,
     `Conversão: ${users.conversionRate}%`,
