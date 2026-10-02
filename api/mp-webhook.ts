@@ -3,6 +3,7 @@ export const config = { runtime: 'edge' }
 import { verifyMpSignature } from './_mpAuth.js'
 import { createPersistentRateLimiter } from './_httpUtils.js'
 import { fetchMpPayment, activatePremiumFromPayment } from './_mpPayment.js'
+import { handlePreapprovalEvent, handleAuthorizedPaymentEvent } from './_mpSubscription.js'
 
 // Por IP (não há userId disponível antes de buscar o pagamento no MP) — achado na
 // auditoria de 22/ago/2026: este endpoint público não tinha nenhum limite, ao
@@ -85,6 +86,22 @@ export default async function handler(req: Request) {
 
   console.log('[mp-webhook] Notificação:', body.type, body.data?.id)
 
+  // Assinatura mensal com renovação automática (_mpSubscription.ts). Esses avisos vêm do webhook
+  // do painel do MP (eventos "Planos e assinaturas"), não de notification_url
+  if ((body.type === 'subscription_preapproval' || body.type === 'subscription_authorized_payment') && body.data?.id) {
+    if (!parsedBody.live_mode && !xSignature) return ok() // teste do painel, sem assinatura real
+    const env = { accessToken, supabaseUrl, serviceKey }
+    const r = body.type === 'subscription_preapproval'
+      ? await handlePreapprovalEvent(body.data.id, env)
+      : await handleAuthorizedPaymentEvent(body.data.id, env)
+    if (!r.ok) {
+      console.error('[mp-webhook] assinatura:', body.type, body.data.id, r.reason)
+      return new Response('Subscription error', { status: r.status })
+    }
+    console.log('[mp-webhook] assinatura:', body.type, body.data.id, r.action)
+    return ok()
+  }
+
   if (body.type !== 'payment' || !body.data?.id) return ok()
 
   // IDs de teste do painel MP (ex: 123456) — retorna ok sem buscar
@@ -105,8 +122,10 @@ export default async function handler(req: Request) {
 
   if (!result.ok) {
     if (result.reason === 'missing-userid') {
-      console.error('[mp-webhook] userId não encontrado no pagamento')
-      return new Response('Missing userId', { status: 400 })
+      // Pagamento sem referência do app (ex.: cobrança de assinatura, que é ativada pelo aviso
+      // subscription_authorized_payment). Responde 200 pro MP não ficar reenviando pra sempre
+      console.error('[mp-webhook] userId não encontrado no pagamento', body.data.id)
+      return ok()
     }
     console.error('[mp-webhook] Erro activate_premium:', result.detail)
     return new Response('DB error', { status: 500 })

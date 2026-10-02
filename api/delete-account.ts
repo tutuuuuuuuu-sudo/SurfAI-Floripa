@@ -2,6 +2,7 @@ export const config = { runtime: 'edge' }
 
 import { verifyToken } from './_auth.js'
 import { createPersistentRateLimiter } from './_httpUtils.js'
+import { cancelPreapproval } from './_mpSubscription.js'
 
 // Por userId (endpoint já exige token válido) — achado na auditoria de 22/ago/2026:
 // era um dos endpoints sensíveis sem nenhum rate limit, ao contrário do que um
@@ -50,6 +51,22 @@ export default async function handler(req: Request) {
   // manuais que existiam aqui antes eram redundantes; o de score_snapshots era
   // pior — essa tabela não tem coluna user_id, então a chamada sempre falhava
   // silenciosamente (o Promise.all não checava .ok) sem fazer nada.
+
+  // Renovação automática ligada: cancela a assinatura no Mercado Pago ANTES de apagar a conta —
+  // senão o cartão continuaria sendo cobrado todo mês por uma conta que não existe mais. Se o MP
+  // não confirmar, não apaga (melhor a pessoa tentar de novo do que seguir pagando)
+  const subRes = await fetch(
+    `${supabaseUrl}/rest/v1/subscriptions?user_id=eq.${userId}&auto_renew=is.true&select=mp_preapproval_id`,
+    { headers },
+  )
+  const renewing = subRes.ok ? await subRes.json() as { mp_preapproval_id: string | null }[] : []
+  const preapprovalId = renewing[0]?.mp_preapproval_id
+  if (preapprovalId) {
+    const accessToken = process.env.MP_ACCESS_TOKEN
+    if (!accessToken || !(await cancelPreapproval(preapprovalId, accessToken))) {
+      return json({ error: 'Não deu pra cancelar sua assinatura no Mercado Pago. Tente de novo em instantes.' }, 502)
+    }
+  }
 
   // Remove a conta de autenticação
   const deleteRes = await fetch(`${supabaseUrl}/auth/v1/admin/users/${userId}`, {

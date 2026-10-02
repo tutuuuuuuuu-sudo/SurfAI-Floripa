@@ -37,7 +37,10 @@ export async function activatePremiumFromPayment(
   const [userId, plan] = (payment.external_reference ?? '').split('|')
   if (!userId) return { ok: false, reason: 'missing-userid' }
 
-  const durationDays = plan === 'annual' ? 365 : 30
+  // 'monthly-auto' = cobrança da assinatura mensal com renovação automática (_mpSubscription.ts).
+  // 31 dias e não 30: o MP cobra no mesmo dia de cada mês (meses de 31 dias), e com 30 o acesso
+  // acabaria horas antes da cobrança seguinte. Sobra meio dia por mês em média, a favor do assinante.
+  const durationDays = plan === 'annual' ? 365 : plan === 'monthly-auto' ? 31 : 30
 
   const rpcRes = await fetch(`${supabaseUrl}/rest/v1/rpc/activate_premium`, {
     method: 'POST',
