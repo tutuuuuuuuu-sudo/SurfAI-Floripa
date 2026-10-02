@@ -46,8 +46,10 @@ export default function PremiumPage() {
   const [error, setError] = useState<string | null>(null)
   const [trialError, setTrialError] = useState<string | null>(null)
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'annual'>('annual')
-  // Mensal: renovação automática no cartão (padrão) ou 1 mês avulso (Pix, boleto ou cartão)
-  const [monthlyAuto, setMonthlyAuto] = useState(true)
+  // Mensal: 1 mês avulso (padrão: Pix, boleto ou cartão de qualquer banco, sem conta) ou renovação
+  // automática. A renovação pelo checkout hospedado do MP exige login numa conta do Mercado Pago —
+  // por isso deixou de ser o padrão (02/out/2026), até o formulário de cartão dentro do app ficar pronto
+  const [monthlyAuto, setMonthlyAuto] = useState(false)
   // E-mail da conta do Mercado Pago: o checkout da assinatura só aceita quem entra com esse e-mail
   const [mpEmail, setMpEmail] = useState<string | null>(null)
   const [recentSignups, setRecentSignups] = useState<number | null>(null)
@@ -397,7 +399,7 @@ export default function PremiumPage() {
                 {selectedPlan === 'monthly' && (
                   <button type="button" onClick={() => { setMonthlyAuto(v => !v); setError(null) }}
                     className="pt-2 text-xs font-semibold text-primary hover:underline">
-                    {monthlyAuto ? 'Prefere Pix ou pagar só 1 mês? Pagar 1 mês avulso' : 'Quer que renove sozinho? Voltar pra renovação automática'}
+                    {monthlyAuto ? 'Prefere Pix ou não tem conta no Mercado Pago? Pagar 1 mês avulso' : 'Quer que renove sozinho todo mês? Ligar a renovação automática (precisa de conta no Mercado Pago)'}
                   </button>
                 )}
               </div>

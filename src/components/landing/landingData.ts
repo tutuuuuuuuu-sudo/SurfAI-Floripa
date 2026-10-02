@@ -3,7 +3,7 @@ import { TRIAL_DAYS } from '@/lib/pricing'
 
 // Perguntas da landing (v2, 28/set/2026). Cada resposta foi conferida com o app: a nota usa
 // onda, período e vento (api/_scoreEngine.ts), o chat tem 20 perguntas/dia e a semana
-// inteira (api/surf-chat.ts), o mensal renova sozinho e o anual é avulso (api/create-payment.ts) e o
+// inteira (api/surf-chat.ts), o mensal pode ser avulso ou com renovação automática e o anual é avulso (api/create-payment.ts) e o
 // reembolso de 7 dias vem dos Termos de Uso. A antiga seção "Instale no celular" virou a
 // última pergunta daqui. Sem travessão no texto (pedido do usuário).
 // Ordem pela latitude (api/_beachRegistry.ts), do Santinho ao Naufragados
@@ -41,7 +41,7 @@ export const FAQS = [
   },
   {
     q: 'Como funciona o pagamento?',
-    a: 'Pelo Mercado Pago. O mensal renova sozinho no cartão todo mês e você cancela quando quiser em Configurações, sem multa (o Premium vale até o fim do mês já pago). Se preferir Pix ou boleto, dá pra pagar 1 mês avulso ou o anual, que são pagamentos únicos e não renovam sozinhos: o app avisa uns dias antes de acabar. Se não curtir, pede o dinheiro de volta em até 7 dias pelo email surfaifloripa@gmail.com.',
+    a: 'Pelo Mercado Pago, com Pix, cartão de qualquer banco ou boleto. No mensal você escolhe: pagar mês a mês ou deixar renovando sozinho no cartão, e aí cancela quando quiser em Configurações. O anual é um pagamento só. Quando um plano que não renova sozinho está pra acabar, o app avisa uns dias antes. Se não curtir, pede o dinheiro de volta em até 7 dias pelo email surfaifloripa@gmail.com.',
   },
   {
     q: 'Preciso baixar na loja?',
