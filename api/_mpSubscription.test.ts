@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { userIdFromPreapproval, handleAuthorizedPaymentEvent, handlePreapprovalEvent, AUTO_PLAN } from './_mpSubscription'
+import { userIdFromPreapproval, handleAuthorizedPaymentEvent, handlePreapprovalEvent, createPreapproval, friendlyCardError, AUTO_PLAN } from './_mpSubscription'
 
 const env = { accessToken: 'APP_USR-x', supabaseUrl: 'https://db.test', serviceKey: 'svc' }
 const USER = '11111111-2222-4333-8444-555555555555'
@@ -85,5 +85,28 @@ describe('assinatura mudou de status (subscription_preapproval)', () => {
     })
     await handlePreapprovalEvent('pre2', env)
     expect(calls.find(c => c.method === 'PATCH')!.body).toEqual({ mp_preapproval_id: 'pre2', auto_renew: true })
+  })
+})
+
+describe('criar assinatura', () => {
+  it('com o cartão do formulário do app: já nasce autorizada, sem página do MP', async () => {
+    const calls = fakeFetch({ '/preapproval': { id: 'pre9', status: 'authorized' } })
+    const r = await createPreapproval({ accessToken: 'APP_USR-x', userId: USER, payerEmail: 'a@b.com', backUrl: 'https://x/premium', cardTokenId: 'tok123' })
+    expect(r).toEqual({ ok: true, id: 'pre9', status: 'authorized', initPoint: null })
+    expect(calls[0].body).toMatchObject({ card_token_id: 'tok123', status: 'authorized', external_reference: `${USER}|${AUTO_PLAN}`, auto_recurring: { transaction_amount: 22.9, frequency: 1, frequency_type: 'months' } })
+  })
+
+  it('sem cartão: nasce pendente e devolve a página de assinatura do MP', async () => {
+    const calls = fakeFetch({ '/preapproval': { id: 'pre10', status: 'pending', init_point: 'https://mp/checkout' } })
+    const r = await createPreapproval({ accessToken: 'APP_USR-x', userId: USER, payerEmail: 'a@b.com', backUrl: 'https://x/premium' })
+    expect(r).toEqual({ ok: true, id: 'pre10', status: 'pending', initPoint: 'https://mp/checkout' })
+    expect(calls[0].body).toMatchObject({ status: 'pending' })
+    expect((calls[0].body as Record<string, unknown>).card_token_id).toBeUndefined()
+  })
+
+  it('mensagem de cartão recusado em português claro', () => {
+    expect(friendlyCardError('{"message":"cc_rejected_bad_filled_security_code"}')).toContain('código de segurança')
+    expect(friendlyCardError('cc_rejected_insufficient_amount')).toContain('limite')
+    expect(friendlyCardError('qualquer outra coisa')).toContain('não foi aceito')
   })
 })

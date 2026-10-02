@@ -2,7 +2,7 @@ export const config = { runtime: 'edge' }
 import { createClient } from '@supabase/supabase-js'
 import { createPersistentRateLimiter } from './_httpUtils.js'
 import { PRICE_MONTHLY, PRICE_ANNUAL, PRICE_ANNUAL_PER_MONTH, formatBRL } from '../src/lib/pricing.js'
-import { createPreapproval } from './_mpSubscription.js'
+import { createPreapproval, cancelPreapproval, friendlyCardError } from './_mpSubscription.js'
 
 // Por userId (não IP) porque o endpoint já exige token válido — um bug de retry
 // no frontend ou usuário malicioso conseguia gerar preferências reais no Mercado
@@ -52,12 +52,15 @@ export default async function handler(req: Request) {
   // do Mercado Pago de quem paga, que pode ser diferente do e-mail do app (ver _mpSubscription.ts)
   let autoRenew = false
   let payerEmail = ''
+  // cardToken: código de uso único do cartão, gerado pelo formulário do MP dentro do app
+  let cardToken = ''
   try {
-    const body = await req.json() as { userEmail?: string; plan?: string; autoRenew?: boolean; payerEmail?: string }
+    const body = await req.json() as { userEmail?: string; plan?: string; autoRenew?: boolean; payerEmail?: string; cardToken?: string }
     userEmail = body.userEmail ?? user.email ?? ''
     if (body.plan === 'annual') plan = 'annual'
     autoRenew = plan === 'monthly' && body.autoRenew === true
     payerEmail = (body.payerEmail ?? '').trim().toLowerCase()
+    cardToken = typeof body.cardToken === 'string' ? body.cardToken.trim() : ''
   } catch {
     userEmail = user.email ?? ''
   }
@@ -87,10 +90,27 @@ export default async function handler(req: Request) {
       userId,
       payerEmail: mpEmail,
       backUrl: `${baseUrl}/premium?status=assinatura`,
+      cardTokenId: cardToken || undefined,
     })
     if (!pre.ok) {
       console.error('[create-payment] MP preapproval error:', pre.status, pre.detail)
+      if (cardToken) return json({ error: friendlyCardError(pre.detail) }, 402)
       return json({ error: 'Não deu pra criar a assinatura no Mercado Pago. Confira o e-mail da sua conta do Mercado Pago e tente de novo.' }, 500)
+    }
+
+    if (cardToken) {
+      // Assinatura já autorizada no cartão. Quem já tem linha (ex.: está no teste grátis) vê a
+      // renovação ligada na hora; a 1ª cobrança (até ~1 h) ativa/estende o Premium pelo webhook
+      if (pre.status !== 'authorized') {
+        // MP criou mas não autorizou o cartão: cancela pra não ficar assinatura pendurada
+        console.error('[create-payment] assinatura com cartão não autorizada:', pre.id, pre.status)
+        await cancelPreapproval(pre.id, accessToken)
+        return json({ error: 'O Mercado Pago não autorizou o cartão. Confira os dados ou tente outro cartão de crédito.' }, 402)
+      }
+      await supabase.from('subscriptions')
+        .update({ mp_preapproval_id: pre.id, auto_renew: true })
+        .eq('user_id', userId)
+      return json({ ok: true, id: pre.id, status: pre.status })
     }
     return json({ id: pre.id, init_point: pre.initPoint })
   }

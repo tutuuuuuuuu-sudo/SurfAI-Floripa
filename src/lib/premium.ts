@@ -157,6 +157,11 @@ export async function startPremiumTrial(): Promise<{ ok: boolean; error?: string
 
 // ─── Checkout Mercado Pago ────────────────────────────────────────────────────
 
+// Chave pública do MP (painel → Credenciais de produção → Public Key). É pública por natureza: só
+// serve pra gerar o código do cartão no formulário do MP dentro do app (CardSubscriptionForm).
+// Sem ela, a página Premium usa a renovação pela página do MP (exige conta no Mercado Pago).
+export const MP_PUBLIC_KEY = (import.meta.env.VITE_MP_PUBLIC_KEY as string | undefined) || undefined
+
 // autoRenew: mensal com renovação automática (só cartão); payerEmail = e-mail da conta do
 // Mercado Pago de quem vai pagar (o checkout da assinatura exige que seja o mesmo)
 export async function createMercadoPagoCheckout(
@@ -185,6 +190,26 @@ export async function createMercadoPagoCheckout(
     return { url: data.init_point ?? null }
   } catch {
     return { url: null, error: 'Erro ao conectar com o Mercado Pago. Tente novamente.' }
+  }
+}
+
+/** Assina o mensal com renovação automática usando o código (token) do cartão gerado pelo
+ *  formulário do Mercado Pago dentro do app (CardSubscriptionForm) — sem conta no Mercado Pago. */
+export async function subscribeWithCard(params: { cardToken: string; payerEmail: string }): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token
+    if (!token) return { ok: false, error: 'Usuário não autenticado' }
+    const res = await fetch('/api/create-payment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ plan: 'monthly', autoRenew: true, cardToken: params.cardToken, payerEmail: params.payerEmail }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) return { ok: false, error: data?.error ?? 'O cartão não foi aceito. Confira os dados ou tente outro cartão.' }
+    return { ok: true }
+  } catch {
+    return { ok: false, error: 'Erro de conexão. Tente de novo.' }
   }
 }
 

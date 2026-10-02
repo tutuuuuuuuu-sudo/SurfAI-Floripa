@@ -7,7 +7,8 @@ import {
   ArrowLeft, Check, Crown, Loader2, CheckCircle2, XCircle, Clock,
   MessageCircle, Calendar, Bell, BarChart3, Zap, ShieldOff, TrendingDown, Lock, Gift
 } from 'lucide-react'
-import { createMercadoPagoCheckout, startPremiumTrial, usePremium } from '@/lib/premium'
+import { createMercadoPagoCheckout, startPremiumTrial, usePremium, MP_PUBLIC_KEY } from '@/lib/premium'
+import { CardSubscriptionForm } from '@/components/CardSubscriptionForm'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { track } from '@/lib/monitoring'
@@ -46,10 +47,13 @@ export default function PremiumPage() {
   const [error, setError] = useState<string | null>(null)
   const [trialError, setTrialError] = useState<string | null>(null)
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'annual'>('annual')
-  // Mensal: 1 mês avulso (padrão: Pix, boleto ou cartão de qualquer banco, sem conta) ou renovação
-  // automática. A renovação pelo checkout hospedado do MP exige login numa conta do Mercado Pago —
-  // por isso deixou de ser o padrão (02/out/2026), até o formulário de cartão dentro do app ficar pronto
-  const [monthlyAuto, setMonthlyAuto] = useState(false)
+  // Mensal: renovação automática ou 1 mês avulso (Pix, boleto ou cartão de qualquer banco).
+  // Com o formulário de cartão dentro do app (MP_PUBLIC_KEY configurada), a renovação não precisa de
+  // conta no Mercado Pago e volta a ser o padrão. Sem ele, a renovação passa pela página do MP, que
+  // exige login numa conta do Mercado Pago — aí o padrão é o avulso
+  const [monthlyAuto, setMonthlyAuto] = useState(!!MP_PUBLIC_KEY)
+  // Assinou pelo formulário de cartão: a 1ª cobrança é confirmada pelo MP em até ~1 h
+  const [cardSubscribed, setCardSubscribed] = useState(false)
   // E-mail da conta do Mercado Pago: o checkout da assinatura só aceita quem entra com esse e-mail
   const [mpEmail, setMpEmail] = useState<string | null>(null)
   const [recentSignups, setRecentSignups] = useState<number | null>(null)
@@ -87,6 +91,7 @@ export default function PremiumPage() {
   const showPlans = !isPremium || isTrial || (!autoRenew && daysLeft <= RENEW_WINDOW_DAYS)
   const paidPremium = isPremium && !isTrial
   const useAutoRenew = selectedPlan === 'monthly' && monthlyAuto
+  const useCardForm = useAutoRenew && !!MP_PUBLIC_KEY
 
   const handleSubscribe = async (plan: 'monthly' | 'annual' = 'monthly') => {
     if (!user) { navigate('/login'); return }
@@ -151,7 +156,7 @@ export default function PremiumPage() {
             </div>
           </div>
         )}
-        {paymentStatus === 'assinatura' && !(isPremium && autoRenew) && (
+        {(paymentStatus === 'assinatura' || cardSubscribed) && !(isPremium && autoRenew) && (
           <div className="flex items-start gap-3 p-4 rounded-2xl border border-rating-good/30 bg-rating-good/5">
             <CheckCircle2 className="h-5 w-5 text-rating-good flex-shrink-0 mt-0.5" />
             <div>
@@ -356,7 +361,7 @@ export default function PremiumPage() {
                 ))}
               </div>
 
-              {useAutoRenew && (
+              {useAutoRenew && !useCardForm && (
                 <div className="space-y-1.5">
                   <label htmlFor="mp-email" className="text-xs font-semibold">E-mail da sua conta do Mercado Pago</label>
                   <input
@@ -378,28 +383,43 @@ export default function PremiumPage() {
                 <div className="text-xs text-destructive bg-destructive/10 rounded-lg p-3 text-center">{error}</div>
               )}
 
-              <Button className="w-full h-12 text-base font-bold"
-                onClick={() => handleSubscribe(selectedPlan)} disabled={loading || loadingAnnual || loadingStatus}>
-                {(loading || loadingAnnual)
-                  ? <><Loader2 className="h-5 w-5 mr-2 animate-spin" />Redirecionando...</>
-                  : selectedPlan === 'annual'
-                    ? <><Crown className="h-5 w-5 mr-2" />{paidPremium ? 'Renovar' : 'Assinar'} por {formatBRL(PRICE_ANNUAL)}/ano</>
-                    : <><Crown className="h-5 w-5 mr-2" />{paidPremium ? 'Renovar' : 'Assinar'} por {formatBRL(PRICE_MONTHLY)}/mês</>
-                }
-              </Button>
+              {useCardForm ? (
+                // Formulário de cartão do MP dentro do app: o próprio formulário tem o botão de pagar
+                !cardSubscribed && user && (
+                  <CardSubscriptionForm email={user.email ?? ''} onSubscribed={() => { setCardSubscribed(true); track('subscription_card') }} />
+                )
+              ) : (
+                <Button className="w-full h-12 text-base font-bold"
+                  onClick={() => handleSubscribe(selectedPlan)} disabled={loading || loadingAnnual || loadingStatus}>
+                  {(loading || loadingAnnual)
+                    ? <><Loader2 className="h-5 w-5 mr-2 animate-spin" />Redirecionando...</>
+                    : selectedPlan === 'annual'
+                      ? <><Crown className="h-5 w-5 mr-2" />{paidPremium ? 'Renovar' : 'Assinar'} por {formatBRL(PRICE_ANNUAL)}/ano</>
+                      : <><Crown className="h-5 w-5 mr-2" />{paidPremium ? 'Renovar' : 'Assinar'} por {formatBRL(PRICE_MONTHLY)}/mês</>
+                  }
+                </Button>
+              )}
 
               <div className="text-center space-y-1.5">
-                <p className="text-xs text-muted-foreground">Pagamento seguro via</p>
-                <div className="flex items-center justify-center gap-3">
-                  {(useAutoRenew ? ['Cartão de crédito'] : ['Cartão', 'PIX', 'Boleto']).map(method => (
-                    <span key={method} className="text-xs text-muted-foreground bg-muted/30 px-2.5 py-1 rounded-full">{method}</span>
-                  ))}
-                </div>
+                {!useCardForm && (
+                  <>
+                    <p className="text-xs text-muted-foreground">Pagamento seguro via</p>
+                    <div className="flex items-center justify-center gap-3">
+                      {(useAutoRenew ? ['Cartão de crédito'] : ['Cartão', 'PIX', 'Boleto']).map(method => (
+                        <span key={method} className="text-xs text-muted-foreground bg-muted/30 px-2.5 py-1 rounded-full">{method}</span>
+                      ))}
+                    </div>
+                  </>
+                )}
                 <p className="text-xs text-muted-foreground/60">Mercado Pago · Dados 100% protegidos</p>
-                {selectedPlan === 'monthly' && (
+                {selectedPlan === 'monthly' && !cardSubscribed && (
                   <button type="button" onClick={() => { setMonthlyAuto(v => !v); setError(null) }}
                     className="pt-2 text-xs font-semibold text-primary hover:underline">
-                    {monthlyAuto ? 'Prefere Pix ou não tem conta no Mercado Pago? Pagar 1 mês avulso' : 'Quer que renove sozinho todo mês? Ligar a renovação automática (precisa de conta no Mercado Pago)'}
+                    {monthlyAuto
+                      ? 'Prefere Pix ou boleto? Pagar 1 mês avulso'
+                      : MP_PUBLIC_KEY
+                        ? 'Quer que renove sozinho todo mês? Assinar com cartão de crédito'
+                        : 'Quer que renove sozinho todo mês? Ligar a renovação automática (precisa de conta no Mercado Pago)'}
                   </button>
                 )}
               </div>
