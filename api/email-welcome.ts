@@ -3,6 +3,8 @@ export const config = { runtime: 'edge' }
 // Chamado pelo webhook do Supabase quando um novo usuário se cadastra
 // Configurar em: Supabase → Database → Webhooks → auth.users → INSERT
 
+import { PRICE_MONTHLY, PRICE_ANNUAL_PER_MONTH, TRIAL_DAYS, formatBRL } from '../src/lib/pricing.js'
+
 const RESEND_KEY = process.env.RESEND_API_KEY
 const APP_URL = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 
@@ -69,9 +71,9 @@ export function buildWelcomeHtml(firstName: string): string {
             <tr><td style="padding:20px 24px">
               <div style="font-size:15px;font-weight:700;color:${text};margin:0 0 6px">Quer mais?</div>
               <div style="font-size:14px;line-height:1.6;color:${muted};margin:0 0 10px">
-                O Premium tem previsão de 14 dias, alerta quando o mar fica bom, chat com o Surf AI e comparação entre praias. R$ 16,90 por mês ou R$ 149,90 por ano.
+                O Premium tem previsão de 14 dias, alerta quando o mar fica bom, chat com o Surf AI e comparação entre praias. Dá pra testar ${TRIAL_DAYS} dias grátis, sem cartão. Depois, ${formatBRL(PRICE_MONTHLY)} por mês ou ${formatBRL(PRICE_ANNUAL_PER_MONTH)} por mês no plano anual.
               </div>
-              <a href="${APP_URL}/premium" style="font-size:14px;font-weight:700;color:${accent};text-decoration:none">Conhecer o Premium</a>
+              <a href="${APP_URL}/premium" style="font-size:14px;font-weight:700;color:${accent};text-decoration:none">Testar ${TRIAL_DAYS} dias grátis</a>
             </td></tr>
           </table>
         </td></tr>

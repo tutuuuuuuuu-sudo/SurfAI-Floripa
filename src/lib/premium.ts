@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from './supabase'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -10,12 +10,25 @@ export interface Subscription {
   id: string
   user_id: string
   status: PremiumStatus
+  // 'trial' = teste grátis de 15 dias (start_trial no banco); cortesias são 'annual' com amount 0
+  plan: 'monthly' | 'annual' | 'trial'
+  amount: number | null
   mp_payment_id: string | null
   mp_preference_id: string | null
   started_at: string | null
   expires_at: string | null
+  trial_started_at: string | null
   created_at: string
   updated_at: string
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+/** Dias (arredondados pra cima) até expires_at; 0 se já passou ou não tem data. */
+export function daysUntil(expiresAt: string | null | undefined, now = Date.now()): number {
+  if (!expiresAt) return 0
+  const diff = new Date(expiresAt).getTime() - now
+  return diff > 0 ? Math.ceil(diff / DAY_MS) : 0
 }
 
 // ─── Hook principal ───────────────────────────────────────────────────────────
@@ -25,6 +38,9 @@ export function usePremium() {
   const [status, setStatus] = useState<PremiumStatus>('loading')
   const [subscription, setSubscription] = useState<Subscription | null>(null)
   const [loading, setLoading] = useState(true)
+  // Recarregar sob demanda (depois de começar o teste grátis) sem refazer o canal realtime —
+  // recriar o canal com o mesmo nome já derrubou a Home uma vez (ver CLAUDE.md, 13/ago/2026).
+  const refetchRef = useRef<(() => void) | null>(null)
 
   useEffect(() => {
     if (!user) {
@@ -65,6 +81,7 @@ export function usePremium() {
       setLoading(false)
     }
 
+    refetchRef.current = fetchSubscription
     fetchSubscription()
 
     // Realtime pode perder eventos durante uma desconexão (app em background, troca de rede).
@@ -98,18 +115,40 @@ export function usePremium() {
       .subscribe()
 
     return () => {
+      refetchRef.current = null
       document.removeEventListener('visibilitychange', handleVisibility)
       window.removeEventListener('focus', handleVisibility)
       supabase.removeChannel(channel)
     }
   }, [user])
 
+  const isPremium = status === 'premium'
   return {
-    isPremium: status === 'premium',
+    isPremium,
+    // Teste grátis em andamento (continua sendo Premium pra todo o resto do app)
+    isTrial: isPremium && subscription?.plan === 'trial',
+    daysLeft: isPremium ? daysUntil(subscription?.expires_at) : 0,
+    // Teste é uma vez por conta: só pra quem nunca teve linha em subscriptions (nunca
+    // assinou, nunca testou, nunca ganhou cortesia) — mesma regra do start_trial no banco
+    canStartTrial: !!user && !loading && subscription === null,
+    // Pra texto de convite ("teste 15 dias grátis"): inclui quem ainda não entrou — quem chega
+    // por anúncio cria a conta nova e pode testar
+    offerTrial: !loading && (!user || subscription === null),
     status,
     subscription,
     loading,
+    refresh: () => refetchRef.current?.(),
   }
+}
+
+// ─── Teste grátis ─────────────────────────────────────────────────────────────
+
+/** Começa os 15 dias grátis da conta logada. A regra (uma vez por conta) fica no banco. */
+export async function startPremiumTrial(): Promise<{ ok: boolean; error?: string }> {
+  const { data, error } = await supabase.rpc('start_trial')
+  if (error) return { ok: false, error: 'Não deu pra começar o teste agora. Tente de novo.' }
+  if (data !== true) return { ok: false, error: 'O teste grátis já foi usado nesta conta.' }
+  return { ok: true }
 }
 
 // ─── Checkout Mercado Pago ────────────────────────────────────────────────────
@@ -142,10 +181,3 @@ export async function createMercadoPagoCheckout(
   }
 }
 
-// ─── Preço ────────────────────────────────────────────────────────────────────
-
-export const PREMIUM_PRICE = 'R$ 16,90'
-export const PREMIUM_PRICE_MONTHLY = 16.90
-export const PREMIUM_PRICE_ANNUAL = 'R$ 149,90'
-export const PREMIUM_PRICE_ANNUAL_VALUE = 149.90
-export const PREMIUM_PRICE_ANNUAL_MONTHLY_EQUIVALENT = 'R$ 12,49'

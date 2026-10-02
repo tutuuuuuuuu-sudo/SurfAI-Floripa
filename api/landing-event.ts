@@ -14,7 +14,7 @@ const CORS = {
 }
 const EVENTS: Record<string, readonly string[]> = {
   view: [''],
-  cta: ['nav', 'hero', 'hero-planos', 'curva', 'preco-mensal', 'preco-anual', 'preco-gratis', 'fechamento', 'fechamento-planos'],
+  cta: ['nav', 'hero', 'hero-planos', 'curva', 'preco-mensal', 'preco-anual', 'preco-gratis', 'teste-gratis', 'fechamento', 'fechamento-planos'],
 }
 const checkRateLimit = createRateLimiter(40)
 

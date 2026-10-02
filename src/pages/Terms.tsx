@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { AppLogo } from '@/components/AppLogo'
 import { ArrowLeft } from 'lucide-react'
+import { PRICE_MONTHLY, PRICE_ANNUAL, PRICE_ANNUAL_PER_MONTH, TRIAL_DAYS, formatBRL } from '@/lib/pricing'
 
 const SECTIONS = [
   {
@@ -26,7 +27,9 @@ Você deve ter pelo menos 13 anos para criar uma conta. Não crie mais de uma co
     title: '4. Plano gratuito e Premium',
     content: `O Surf AI tem um plano gratuito (nota em tempo real, previsão de 3 dias, favoritos, diário de surf e navegação até a praia) e um plano Premium pago, com o restante das funcionalidades listadas na página de assinatura.
 
-**Preço:** R$16,90/mês (mensal) ou R$149,90/ano (anual, equivalente a R$12,49/mês). Os valores podem mudar; se isso acontecer, avisamos com antecedência dentro do app antes de cobrar o novo valor de quem já é assinante.
+**Preço:** ${formatBRL(PRICE_MONTHLY)}/mês (mensal) ou ${formatBRL(PRICE_ANNUAL)}/ano (anual, equivalente a ${formatBRL(PRICE_ANNUAL_PER_MONTH)}/mês). Os valores podem mudar; se isso acontecer, avisamos com antecedência dentro do app antes de cobrar o novo valor de quem já é assinante.
+
+**Teste grátis:** cada conta pode testar o Premium uma vez, por ${TRIAL_DAYS} dias, sem informar cartão. No fim do teste nada é cobrado: o acesso volta ao plano gratuito, a não ser que você decida assinar.
 
 **Como funciona o pagamento:** o pagamento é processado pelo Mercado Pago e **não é uma assinatura com renovação automática**. Você paga uma vez, o acesso Premium vale por 30 dias (plano mensal) ou 365 dias (plano anual), e ao final desse período você decide se quer pagar de novo. Não há cobrança recorrente no seu cartão ou conta sem uma nova ação sua.
 
@@ -91,7 +94,7 @@ export default function Terms() {
           <AppLogo size={32} variant="icon" />
           <div>
             <h1 className="text-base font-bold leading-none">Termos de Uso</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">Surf AI · Atualizado em setembro de 2026</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Surf AI · Atualizado em outubro de 2026</p>
           </div>
         </div>
       </header>

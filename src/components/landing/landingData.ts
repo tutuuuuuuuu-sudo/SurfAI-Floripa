@@ -1,4 +1,5 @@
 import { BEACH_DIRECTORY, REGION_COUNT } from '@/lib/beachDirectory'
+import { TRIAL_DAYS } from '@/lib/pricing'
 
 // Perguntas da landing (v2, 28/set/2026). Cada resposta foi conferida com o app: a nota usa
 // onda, período e vento (api/_scoreEngine.ts), o chat tem 20 perguntas/dia e a semana
@@ -25,6 +26,10 @@ export const FAQS = [
   {
     q: 'O que é o Bora Surfar?',
     a: 'Você compartilha sua localização só naquele instante (a gente não guarda nada). O Surf AI compara a praia mais perto de você com a que está melhor por perto e diz se vale rodar um pouco mais. É do Premium.',
+  },
+  {
+    q: 'Dá pra testar antes de pagar?',
+    a: `Dá. São ${TRIAL_DAYS} dias de Premium grátis, com tudo liberado e sem pedir cartão. Você cria a conta e toca em "Começar meus ${TRIAL_DAYS} dias grátis" na página do Premium. No fim nada é cobrado: o app avisa uns dias antes e você decide se assina.`,
   },
   {
     q: 'Como funciona o pagamento?',

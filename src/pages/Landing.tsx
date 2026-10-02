@@ -17,6 +17,10 @@ import { ChatDemo } from '@/components/landing/ChatDemo'
 import { FAQS } from '@/components/landing/landingData'
 import { BEACH_DIRECTORY } from '@/lib/beachDirectory'
 import { countLandingCta, countLandingView } from '@/lib/landingStats'
+import { PRICE_MONTHLY, PRICE_ANNUAL, PRICE_ANNUAL_PER_MONTH, TRIAL_DAYS, formatBRL } from '@/lib/pricing'
+
+// Desconto do anual sobre o mensal, pro selo do card (-26%)
+const ANNUAL_DISCOUNT_PCT = Math.round((1 - PRICE_ANNUAL_PER_MONTH / PRICE_MONTHLY) * 100)
 
 // Landing "juntada" (28/set/2026): a estrutura e o visual da landing anterior (foto da ilha,
 // vitrine com prints do app, cartões de preço, animações de entrada) com as peças vivas da v2
@@ -223,7 +227,7 @@ export default function Landing() {
                 <div className="h-full rounded-2xl p-5 flex flex-col items-center text-center gap-1"
                   style={{ background: 'color-mix(in oklch, var(--foreground) 3%, transparent)', border: '1px solid color-mix(in oklch, var(--foreground) 10%, transparent)' }}>
                   <div className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Mensal</div>
-                  <div className="text-3xl font-black text-foreground leading-none">R$16<span className="text-lg">,90</span></div>
+                  <div className="text-3xl font-black text-foreground leading-none">R${Math.floor(PRICE_MONTHLY)}<span className="text-lg">,{formatBRL(PRICE_MONTHLY).split(',')[1]}</span></div>
                   <div className="text-xs text-muted-foreground mb-3">por 30 dias</div>
                   <Button asChild variant="outline" size="sm" className="w-full font-semibold">
                     <Link to="/login?plan=premium" onClick={() => countLandingCta('preco-mensal')}>Assinar</Link>
@@ -237,10 +241,10 @@ export default function Landing() {
                     border: '1px solid color-mix(in oklch, var(--rating-fair) 40%, transparent)',
                     boxShadow: '0 0 24px color-mix(in oklch, var(--rating-fair) 20%, transparent)',
                   }}>
-                  <Badge className="absolute -top-0.5 right-2 bg-rating-fair text-[9px] px-1.5 py-0 h-4 text-background">-26%</Badge>
+                  <Badge className="absolute -top-0.5 right-2 bg-rating-fair text-[9px] px-1.5 py-0 h-4 text-background">-{ANNUAL_DISCOUNT_PCT}%</Badge>
                   <div className="text-xs text-rating-fair uppercase tracking-widest mb-1 font-semibold">Anual</div>
-                  <div className="text-3xl font-black text-rating-fair leading-none">R$12<span className="text-lg">,49</span></div>
-                  <div className="text-xs text-muted-foreground mb-3">por mês · R$149,90/ano</div>
+                  <div className="text-3xl font-black text-rating-fair leading-none">R${Math.floor(PRICE_ANNUAL_PER_MONTH)}<span className="text-lg">,{formatBRL(PRICE_ANNUAL_PER_MONTH).split(',')[1]}</span></div>
+                  <div className="text-xs text-muted-foreground mb-3">por mês · {formatBRL(PRICE_ANNUAL).replace(' ', '')}/ano</div>
                   <Button asChild size="sm" className="w-full font-semibold"
                     style={{ background: 'var(--rating-fair)', color: 'oklch(0.1 0.02 240)' }}>
                     <Link to="/login?plan=premium" onClick={() => countLandingCta('preco-anual')}>Assinar</Link>
@@ -259,7 +263,11 @@ export default function Landing() {
               ))}
             </div>
             <p className="text-sm text-muted-foreground text-center">
-              Quer conhecer antes? O plano grátis já mostra a nota das {BEACH_COUNT} praias e 3 dias de previsão.{' '}
+              Quer conhecer antes? Teste o Premium inteiro por {TRIAL_DAYS} dias, sem cartão e sem cobrança no fim.{' '}
+              <Link to="/login?plan=premium" onClick={() => countLandingCta('teste-gratis')} className="font-semibold text-primary hover:underline">Testar {TRIAL_DAYS} dias grátis</Link>
+            </p>
+            <p className="text-xs text-muted-foreground text-center">
+              O plano grátis continua mostrando a nota das {BEACH_COUNT} praias e 3 dias de previsão.{' '}
               <Link to="/login" onClick={() => countLandingCta('preco-gratis')} className="font-semibold text-primary hover:underline">Criar conta grátis</Link>
             </p>
           </Reveal>

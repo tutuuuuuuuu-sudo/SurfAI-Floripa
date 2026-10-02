@@ -1,6 +1,7 @@
 export const config = { runtime: 'edge' }
 import { createClient } from '@supabase/supabase-js'
 import { createPersistentRateLimiter } from './_httpUtils.js'
+import { PRICE_MONTHLY, PRICE_ANNUAL, PRICE_ANNUAL_PER_MONTH, formatBRL } from '../src/lib/pricing.js'
 
 // Por userId (não IP) porque o endpoint já exige token válido — um bug de retry
 // no frontend ou usuário malicioso conseguia gerar preferências reais no Mercado
@@ -71,11 +72,11 @@ export default async function handler(req: Request) {
       id: isAnnual ? 'surf-ai-premium-anual' : 'surf-ai-premium-mensal',
       title: isAnnual ? 'Surf AI Premium Anual' : 'Surf AI Premium Mensal',
       description: isAnnual
-        ? 'Acesso completo ao Surf AI Floripa por 12 meses (equivale a R$ 12,49/mês)'
+        ? `Acesso completo ao Surf AI Floripa por 12 meses (equivale a ${formatBRL(PRICE_ANNUAL_PER_MONTH)}/mês)`
         : 'Acesso completo ao Surf AI Floripa por 30 dias',
       quantity: 1,
       currency_id: 'BRL',
-      unit_price: isAnnual ? 149.90 : 16.90,
+      unit_price: isAnnual ? PRICE_ANNUAL : PRICE_MONTHLY,
     }],
     payer: { email: userEmail },
     external_reference: `${userId}|${plan}`,
