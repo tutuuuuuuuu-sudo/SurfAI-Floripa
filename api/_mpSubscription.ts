@@ -39,12 +39,18 @@ function mpHeaders(accessToken: string) {
   return { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }
 }
 
+// Dois jeitos de criar a assinatura:
+// - com cardTokenId (formulário de cartão do MP dentro do app): já nasce 'authorized', cobra no
+//   cartão sem a pessoa sair do app e SEM precisar de conta no Mercado Pago
+// - sem cardTokenId: nasce 'pending' e devolve init_point, a página de assinatura do MP — que exige
+//   login numa conta do Mercado Pago com o mesmo e-mail de payer_email
 export async function createPreapproval(params: {
   accessToken: string
   userId: string
   payerEmail: string
   backUrl: string
-}): Promise<{ ok: true; id: string; initPoint: string } | { ok: false; status: number; detail: string }> {
+  cardTokenId?: string
+}): Promise<{ ok: true; id: string; status: string; initPoint: string | null } | { ok: false; status: number; detail: string }> {
   const res = await fetch(`${MP_API}/preapproval`, {
     method: 'POST',
     headers: mpHeaders(params.accessToken),
@@ -59,15 +65,25 @@ export async function createPreapproval(params: {
         currency_id: 'BRL',
       },
       back_url: params.backUrl,
-      status: 'pending',
+      ...(params.cardTokenId ? { card_token_id: params.cardTokenId, status: 'authorized' } : { status: 'pending' }),
     }),
-    signal: AbortSignal.timeout(10000),
+    signal: AbortSignal.timeout(15000),
   })
   if (!res.ok) return { ok: false, status: res.status, detail: (await res.text()).slice(0, 500) }
-  const data = await res.json() as { id: string; init_point: string; sandbox_init_point?: string }
+  const data = await res.json() as { id: string; status: string; init_point?: string; sandbox_init_point?: string }
   // Mesma regra do pagamento avulso: chave de teste (TEST-) usa o checkout de teste
-  const initPoint = params.accessToken.startsWith('TEST-') && data.sandbox_init_point ? data.sandbox_init_point : data.init_point
-  return { ok: true, id: data.id, initPoint }
+  const initPoint = (params.accessToken.startsWith('TEST-') && data.sandbox_init_point ? data.sandbox_init_point : data.init_point) ?? null
+  return { ok: true, id: data.id, status: data.status, initPoint }
+}
+
+/** Texto pra pessoa quando o MP recusa criar a assinatura com o cartão */
+export function friendlyCardError(detail: string): string {
+  const d = detail.toLowerCase()
+  if (d.includes('security_code') || d.includes('cvv')) return 'O código de segurança do cartão não confere. Confira e tente de novo.'
+  if (d.includes('insufficient')) return 'O cartão não tem limite pra essa cobrança. Tente outro cartão.'
+  if (d.includes('expir')) return 'A data de validade do cartão não confere. Confira e tente de novo.'
+  if (d.includes('call_for_authorize') || d.includes('call for authorize')) return 'O banco pediu pra você autorizar a compra. Ligue pro banco ou use outro cartão.'
+  return 'O cartão não foi aceito. Confira os dados ou tente outro cartão de crédito.'
 }
 
 export async function fetchPreapproval(id: string, accessToken: string): Promise<MpPreapproval | null> {
