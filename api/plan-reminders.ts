@@ -40,7 +40,8 @@ export default async function handler(req: Request) {
   const from = new Date(now - 2 * DAY).toISOString()
   const to = new Date(now + 5 * DAY).toISOString()
   const subsRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/subscriptions?status=eq.premium&expires_at=gte.${from}&expires_at=lte.${to}&select=user_id,plan,expires_at`,
+    // auto_renew: o mensal com renovação automática cobra sozinho, não tem "vai acabar" pra avisar
+    `${SUPABASE_URL}/rest/v1/subscriptions?status=eq.premium&auto_renew=is.false&expires_at=gte.${from}&expires_at=lte.${to}&select=user_id,plan,expires_at`,
     { headers },
   )
   if (!subsRes.ok) return json({ error: 'Erro ao buscar assinaturas' }, 500)

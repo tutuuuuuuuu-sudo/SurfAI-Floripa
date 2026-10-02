@@ -18,6 +18,9 @@ export interface Subscription {
   started_at: string | null
   expires_at: string | null
   trial_started_at: string | null
+  // Mensal com renovação automática (assinatura do Mercado Pago, cobra no cartão todo mês)
+  auto_renew: boolean
+  mp_preapproval_id: string | null
   created_at: string
   updated_at: string
 }
@@ -127,6 +130,7 @@ export function usePremium() {
     isPremium,
     // Teste grátis em andamento (continua sendo Premium pra todo o resto do app)
     isTrial: isPremium && subscription?.plan === 'trial',
+    autoRenew: isPremium && subscription?.auto_renew === true,
     daysLeft: isPremium ? daysUntil(subscription?.expires_at) : 0,
     // Teste é uma vez por conta: só pra quem nunca teve linha em subscriptions (nunca
     // assinou, nunca testou, nunca ganhou cortesia) — mesma regra do start_trial no banco
@@ -153,9 +157,12 @@ export async function startPremiumTrial(): Promise<{ ok: boolean; error?: string
 
 // ─── Checkout Mercado Pago ────────────────────────────────────────────────────
 
+// autoRenew: mensal com renovação automática (só cartão); payerEmail = e-mail da conta do
+// Mercado Pago de quem vai pagar (o checkout da assinatura exige que seja o mesmo)
 export async function createMercadoPagoCheckout(
   userEmail: string,
-  plan: 'monthly' | 'annual' = 'monthly'
+  plan: 'monthly' | 'annual' = 'monthly',
+  opts: { autoRenew?: boolean; payerEmail?: string } = {}
 ): Promise<{ url: string | null; error?: string }> {
   try {
     const { data: { session } } = await supabase.auth.getSession()
@@ -168,7 +175,7 @@ export async function createMercadoPagoCheckout(
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ userEmail, plan }),
+      body: JSON.stringify({ userEmail, plan, autoRenew: opts.autoRenew === true, payerEmail: opts.payerEmail }),
     })
     const data = await res.json()
     if (!res.ok) {
@@ -181,3 +188,20 @@ export async function createMercadoPagoCheckout(
   }
 }
 
+/** Cancela a renovação automática do mensal. O Premium continua até o fim do mês já pago. */
+export async function cancelAutoRenew(): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token
+    if (!token) return { ok: false, error: 'Usuário não autenticado' }
+    const res = await fetch('/api/cancel-renewal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) return { ok: false, error: data?.error ?? 'Não deu pra cancelar agora. Tente de novo.' }
+    return { ok: true }
+  } catch {
+    return { ok: false, error: 'Erro de conexão. Tente de novo.' }
+  }
+}

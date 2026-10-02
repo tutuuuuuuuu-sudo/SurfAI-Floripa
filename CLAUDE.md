@@ -26,6 +26,8 @@ Dois planos pagos: **Mensal R$ 22,90/mês** ou **Anual R$ 202,80/ano** (equivale
 | Badge Premium no perfil | ❌ | ✅ |
 
 Pagamento via **Mercado Pago**. Lógica de acesso em `src/lib/premium.ts` (hook `usePremium()`).
+
+**Renovação automática do mensal (02/out/2026):** o mensal padrão é uma assinatura do MP (`/preapproval`, só cartão) que cobra todo mês até cancelar — `api/_mpSubscription.ts`. Anual e "1 mês avulso" (Pix/boleto/cartão) continuam pagamento único (`/checkout/preferences`). Colunas `subscriptions.auto_renew` e `mp_preapproval_id`. Pegadinhas: (1) o checkout da assinatura só aceita quem entra no MP com o MESMO e-mail de `payer_email` → a página Premium pede "e-mail da sua conta do Mercado Pago"; (2) `/preapproval` não aceita `notification_url` → os avisos `subscription_preapproval` e `subscription_authorized_payment` precisam estar marcados no webhook do painel do MP (Suas integrações → Webhooks → "Planos e assinaturas", URL `/api/mp-webhook`); (3) 1ª cobrança sai em até ~1 h; (4) MP cancela sozinho depois de 3 cobranças recusadas. Cada cobrança aprovada ativa 31 dias (`external_reference` `<userId>|monthly-auto`, idempotente pelo id do pagamento). Cancelar: Configurações → `api/cancel-renewal.ts`. Excluir a conta cancela a assinatura no MP antes (`api/delete-account.ts`). Robô de lembretes pula quem tem `auto_renew`.
 Webhook em `api/mp-webhook.ts` e IPN em `api/mp-ipn.ts` atualizam a tabela `subscriptions` no Supabase.
 
 **ContentStudio não é benefício de assinante** — é ferramenta de uso interno (`/content-studio`),
@@ -143,7 +145,9 @@ api/
 ├── _weatherCode.ts     # Tempo (sol/nublado/chuva) dos códigos WMO da Open-Meteo — fonte única do "agora" (surf.ts) e do resumo do céu do dia (_dayDetail: só horas de luz). Página do dia mostra Céu/Ar/Água (água só até ~10 dias)
 ├── create-payment.ts   # Cria preferência de pagamento no Mercado Pago (valor de src/lib/pricing.ts)
 ├── plan-reminders.ts   # Robô diário: avisa por e-mail + push quando o Premium/teste grátis está acabando (faltando ~5 dias, 1 dia e no dia que acabou). Regras e textos em _planReminders.ts; tabela plan_reminders impede aviso repetido no mesmo período
-├── mp-webhook.ts       # Webhook do MP → atualiza subscriptions no Supabase
+├── mp-webhook.ts       # Webhook do MP → atualiza subscriptions no Supabase (pagamentos avulsos + avisos da assinatura mensal)
+├── _mpSubscription.ts  # Assinatura mensal com renovação automática (/preapproval): criar, cancelar, tratar avisos
+├── cancel-renewal.ts   # Cancela a renovação automática (botão em Configurações); Premium vale até o fim do mês pago
 ├── mp-ipn.ts           # IPN (notificação instantânea) do MP
 ├── delete-account.ts   # Exclusão de conta do usuário (LGPD)
 ├── daily-report.ts     # Envia relatório diário por WhatsApp (CallMeBot) — só pro founder, uso interno

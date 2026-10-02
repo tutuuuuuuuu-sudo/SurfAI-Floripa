@@ -2,6 +2,7 @@ export const config = { runtime: 'edge' }
 import { createClient } from '@supabase/supabase-js'
 import { createPersistentRateLimiter } from './_httpUtils.js'
 import { PRICE_MONTHLY, PRICE_ANNUAL, PRICE_ANNUAL_PER_MONTH, formatBRL } from '../src/lib/pricing.js'
+import { createPreapproval } from './_mpSubscription.js'
 
 // Por userId (não IP) porque o endpoint já exige token válido — um bug de retry
 // no frontend ou usuário malicioso conseguia gerar preferências reais no Mercado
@@ -47,10 +48,16 @@ export default async function handler(req: Request) {
 
   let userEmail: string
   let plan: 'monthly' | 'annual' = 'monthly'
+  // Mensal com renovação automática (assinatura do MP, só cartão). payerEmail = e-mail da conta
+  // do Mercado Pago de quem paga, que pode ser diferente do e-mail do app (ver _mpSubscription.ts)
+  let autoRenew = false
+  let payerEmail = ''
   try {
-    const body = await req.json() as { userEmail?: string; plan?: string }
+    const body = await req.json() as { userEmail?: string; plan?: string; autoRenew?: boolean; payerEmail?: string }
     userEmail = body.userEmail ?? user.email ?? ''
     if (body.plan === 'annual') plan = 'annual'
+    autoRenew = plan === 'monthly' && body.autoRenew === true
+    payerEmail = (body.payerEmail ?? '').trim().toLowerCase()
   } catch {
     userEmail = user.email ?? ''
   }
@@ -65,6 +72,28 @@ export default async function handler(req: Request) {
   if (!emailRegex.test(userEmail)) return json({ error: 'Email inválido' }, 400)
 
   const baseUrl = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
+
+  if (autoRenew) {
+    const mpEmail = payerEmail || userEmail
+    if (!emailRegex.test(mpEmail)) return json({ error: 'E-mail do Mercado Pago inválido' }, 400)
+
+    // Já tem renovação ligada: não deixa criar uma segunda assinatura (cobraria duas vezes)
+    const { data: current } = await supabase
+      .from('subscriptions').select('auto_renew').eq('user_id', userId).maybeSingle()
+    if (current?.auto_renew) return json({ error: 'Sua renovação automática já está ligada.' }, 409)
+
+    const pre = await createPreapproval({
+      accessToken,
+      userId,
+      payerEmail: mpEmail,
+      backUrl: `${baseUrl}/premium?status=assinatura`,
+    })
+    if (!pre.ok) {
+      console.error('[create-payment] MP preapproval error:', pre.status, pre.detail)
+      return json({ error: 'Não deu pra criar a assinatura no Mercado Pago. Confira o e-mail da sua conta do Mercado Pago e tente de novo.' }, 500)
+    }
+    return json({ id: pre.id, init_point: pre.initPoint })
+  }
 
   const isAnnual = plan === 'annual'
   const preference = {

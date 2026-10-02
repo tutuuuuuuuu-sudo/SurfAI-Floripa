@@ -31,7 +31,10 @@ Você deve ter pelo menos 13 anos para criar uma conta. Não crie mais de uma co
 
 **Teste grátis:** cada conta pode testar o Premium uma vez, por ${TRIAL_DAYS} dias, sem informar cartão. No fim do teste nada é cobrado: o acesso volta ao plano gratuito, a não ser que você decida assinar.
 
-**Como funciona o pagamento:** o pagamento é processado pelo Mercado Pago e **não é uma assinatura com renovação automática**. Você paga uma vez, o acesso Premium vale por 30 dias (plano mensal) ou 365 dias (plano anual), e ao final desse período você decide se quer pagar de novo. Não há cobrança recorrente no seu cartão ou conta sem uma nova ação sua.
+**Como funciona o pagamento:** o pagamento é processado pelo Mercado Pago, de dois jeitos:
+
+• **Mensal com renovação automática (cartão de crédito):** é uma assinatura. O valor é cobrado no cartão uma vez por mês, na mesma data, até você cancelar. Você cancela quando quiser em Configurações, sem multa: nada mais é cobrado e o Premium continua até o fim do mês já pago. Se o cartão recusar a cobrança 3 vezes seguidas, o Mercado Pago cancela a assinatura sozinho.
+• **Anual ou mensal avulso (cartão, Pix ou boleto):** é um pagamento único, sem renovação. O acesso Premium vale por 365 dias (anual) ou 30 dias (mensal avulso) e, ao final, você decide se quer pagar de novo. Avisamos por e-mail uns dias antes de acabar.
 
 **Direito de arrependimento:** por ser uma compra feita à distância (pela internet), você tem direito a cancelar a compra em até 7 dias corridos da data do pagamento e receber o valor de volta na íntegra, conforme o Art. 49 do Código de Defesa do Consumidor — mesmo que já tenha usado o Premium nesse período. Pra isso, entre em contato pelo email no fim desta página.`,
   },
@@ -55,7 +58,7 @@ Você deve ter pelo menos 13 anos para criar uma conta. Não crie mais de uma co
   },
   {
     title: '8. Cancelamento e exclusão de conta',
-    content: `Você pode excluir sua conta a qualquer momento nas configurações do app. Isso remove seus dados pessoais conforme descrito na nossa Política de Privacidade. Como não há renovação automática (ver seção 4), não existe "cancelamento de assinatura" separado: excluir a conta é suficiente pra garantir que nenhuma cobrança futura aconteça.
+    content: `Você pode excluir sua conta a qualquer momento nas configurações do app. Isso remove seus dados pessoais conforme descrito na nossa Política de Privacidade. Se você tiver o mensal com renovação automática, pode cancelar só a renovação em Configurações (a conta continua). Excluir a conta também cancela a renovação no Mercado Pago antes de apagar seus dados, então nenhuma cobrança futura acontece.
 
 Podemos suspender ou encerrar contas que violem estes termos, especialmente em caso de fraude no pagamento ou abuso do serviço.`,
   },

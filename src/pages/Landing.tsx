@@ -199,7 +199,7 @@ export default function Landing() {
           <SectionHead badge={<Badge className="bg-rating-fair/15 text-rating-fair border-rating-fair/30 mb-4"><Crown className="h-3 w-3 mr-1.5" />Premium</Badge>}
             title={<>Custa menos que uma ida<br /><span className="text-rating-fair">até a praia errada.</span></>}>
             O Premium libera os 14 dias de previsão, o chat com o Surf AI, os alertas e tudo o que você viu nesta página.
-            Pagamento único, sem cobrança automática.
+            Mensal renova sozinho e você cancela quando quiser; o anual é um pagamento só.
           </SectionHead>
 
           <div className="grid md:grid-cols-2 gap-10 items-center mb-10">
@@ -256,7 +256,7 @@ export default function Landing() {
 
           <Reveal className="flex flex-col items-center gap-5">
             <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
-              {['Pagamento único pelo Mercado Pago', 'Sem cobrança automática', 'Reembolso em até 7 dias'].map(t => (
+              {['Pago pelo Mercado Pago', 'Cancele quando quiser', 'Reembolso em até 7 dias'].map(t => (
                 <span key={t} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <CheckCircle2 className="h-3.5 w-3.5 text-rating-good" />{t}
                 </span>

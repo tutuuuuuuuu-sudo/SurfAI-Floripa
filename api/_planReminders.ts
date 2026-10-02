@@ -3,8 +3,8 @@
 // não é um handler HTTP — não será exposto como endpoint pelo Vercel.
 //
 // Quando: faltando ~5 dias, faltando 1 dia e no dia em que acabou (ideia do usuário: avisar com
-// 5 dias e de novo com 1-2 dias; o "acabou" é o convite pra voltar). O plano pago hoje é
-// pagamento único (não renova sozinho), por isso o aviso.
+// 5 dias e de novo com 1-2 dias; o "acabou" é o convite pra voltar). Só pra quem não renova
+// sozinho: anual e mensal avulso (pagamento único) e mensal com a renovação automática cancelada.
 
 import { PRICE_MONTHLY, PRICE_ANNUAL_PER_MONTH, formatBRL } from '../src/lib/pricing.js'
 

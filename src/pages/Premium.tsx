@@ -39,13 +39,17 @@ export default function PremiumPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { user } = useAuth()
-  const { isPremium, isTrial, daysLeft, canStartTrial, offerTrial, subscription, loading: loadingStatus, refresh } = usePremium()
+  const { isPremium, isTrial, autoRenew, daysLeft, canStartTrial, offerTrial, subscription, loading: loadingStatus, refresh } = usePremium()
   const [loading, setLoading] = useState(false)
   const [loadingAnnual, setLoadingAnnual] = useState(false)
   const [startingTrial, setStartingTrial] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [trialError, setTrialError] = useState<string | null>(null)
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'annual'>('annual')
+  // Mensal: renovação automática no cartão (padrão) ou 1 mês avulso (Pix, boleto ou cartão)
+  const [monthlyAuto, setMonthlyAuto] = useState(true)
+  // E-mail da conta do Mercado Pago: o checkout da assinatura só aceita quem entra com esse e-mail
+  const [mpEmail, setMpEmail] = useState<string | null>(null)
   const [recentSignups, setRecentSignups] = useState<number | null>(null)
 
   useEffect(() => {
@@ -56,10 +60,10 @@ export default function PremiumPage() {
       .then(({ data }) => { if (typeof data === 'number' && data >= 3) setRecentSignups(data) }, () => {})
   }, [])
 
-  const paymentStatus = searchParams.get('status') as 'success' | 'failure' | 'pending' | null
+  const paymentStatus = searchParams.get('status') as 'success' | 'failure' | 'pending' | 'assinatura' | null
 
   useEffect(() => {
-    if (paymentStatus === 'success') {
+    if (paymentStatus === 'success' || paymentStatus === 'assinatura') {
       // Limpa os params da URL sem recarregar
       window.history.replaceState({}, '', '/premium')
     }
@@ -77,15 +81,19 @@ export default function PremiumPage() {
   }
 
   // Teste em andamento, plano pago perto do fim, ou ainda não é Premium: mostra os planos
-  const showPlans = !isPremium || isTrial || daysLeft <= RENEW_WINDOW_DAYS
+  // (quem renova sozinho não precisa renovar à mão)
+  const showPlans = !isPremium || isTrial || (!autoRenew && daysLeft <= RENEW_WINDOW_DAYS)
   const paidPremium = isPremium && !isTrial
+  const useAutoRenew = selectedPlan === 'monthly' && monthlyAuto
 
   const handleSubscribe = async (plan: 'monthly' | 'annual' = 'monthly') => {
     if (!user) { navigate('/login'); return }
     if (plan === 'annual') setLoadingAnnual(true); else setLoading(true)
     setError(null)
     try {
-      const result = await createMercadoPagoCheckout(user.email ?? '', plan)
+      const result = await createMercadoPagoCheckout(user.email ?? '', plan, plan === 'monthly' && monthlyAuto
+        ? { autoRenew: true, payerEmail: (mpEmail ?? user.email ?? '').trim() }
+        : {})
       if (result.url) {
         window.location.href = result.url
       } else {
@@ -141,6 +149,15 @@ export default function PremiumPage() {
             </div>
           </div>
         )}
+        {paymentStatus === 'assinatura' && !(isPremium && autoRenew) && (
+          <div className="flex items-start gap-3 p-4 rounded-2xl border border-rating-good/30 bg-rating-good/5">
+            <CheckCircle2 className="h-5 w-5 text-rating-good flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-sm text-rating-good">Assinatura feita!</p>
+              <p className="text-xs text-muted-foreground mt-0.5">O Mercado Pago confirma a primeira cobrança em até 1 hora. Seu Premium libera aqui assim que confirmar, não precisa fazer mais nada.</p>
+            </div>
+          </div>
+        )}
         {paymentStatus === 'pending' && (
           <div className="flex items-start gap-3 p-4 rounded-2xl border border-rating-fair/30 bg-rating-fair/5">
             <Clock className="h-5 w-5 text-rating-fair flex-shrink-0 mt-0.5" />
@@ -166,7 +183,12 @@ export default function PremiumPage() {
             <CardContent className="py-6 text-center space-y-2">
               <Crown className="h-8 w-8 text-rating-fair mx-auto" />
               <p className="font-bold text-lg">Você já é Premium!</p>
-              {daysLeft <= RENEW_WINDOW_DAYS ? (
+              {autoRenew ? (
+                <p className="text-sm text-muted-foreground">
+                  Renova sozinho todo mês no cartão. Próxima cobrança por volta de {formatDate(subscription?.expires_at)}.
+                  Pra cancelar, é em Configurações.
+                </p>
+              ) : daysLeft <= RENEW_WINDOW_DAYS ? (
                 <p className="text-sm text-muted-foreground">
                   Seu Premium vai até {formatDate(subscription?.expires_at)} ({daysLeft === 1 ? 'falta 1 dia' : `faltam ${daysLeft} dias`}).
                   Renove abaixo: os dias que faltam continuam valendo.
@@ -305,7 +327,12 @@ export default function PremiumPage() {
                       <span className="text-2xl font-bold text-rating-fair">,{formatBRL(PRICE_MONTHLY).split(',')[1]}</span>
                       <span className="text-sm text-muted-foreground mb-1">/mês</span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">Cancele quando quiser · menos de {perDayCeil(PRICE_MONTHLY, 30)}/dia</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {monthlyAuto
+                        ? <>Renova sozinho todo mês · cancele quando quiser</>
+                        : <>Pagamento único de 30 dias, sem renovação</>}
+                      {' '}· menos de {perDayCeil(PRICE_MONTHLY, 30)}/dia
+                    </p>
                   </>
                 )}
               </div>
@@ -327,6 +354,24 @@ export default function PremiumPage() {
                 ))}
               </div>
 
+              {useAutoRenew && (
+                <div className="space-y-1.5">
+                  <label htmlFor="mp-email" className="text-xs font-semibold">E-mail da sua conta do Mercado Pago</label>
+                  <input
+                    id="mp-email"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    value={mpEmail ?? user?.email ?? ''}
+                    onChange={e => setMpEmail(e.target.value)}
+                    className="w-full h-11 rounded-xl border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  />
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    A assinatura fica na sua conta do Mercado Pago e só funciona com o mesmo e-mail dela. Se for diferente do e-mail do app, troque aqui.
+                  </p>
+                </div>
+              )}
+
               {error && (
                 <div className="text-xs text-destructive bg-destructive/10 rounded-lg p-3 text-center">{error}</div>
               )}
@@ -344,11 +389,17 @@ export default function PremiumPage() {
               <div className="text-center space-y-1.5">
                 <p className="text-xs text-muted-foreground">Pagamento seguro via</p>
                 <div className="flex items-center justify-center gap-3">
-                  {['Cartão', 'PIX', 'Boleto'].map(method => (
+                  {(useAutoRenew ? ['Cartão de crédito'] : ['Cartão', 'PIX', 'Boleto']).map(method => (
                     <span key={method} className="text-xs text-muted-foreground bg-muted/30 px-2.5 py-1 rounded-full">{method}</span>
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground/60">Mercado Pago · Dados 100% protegidos</p>
+                {selectedPlan === 'monthly' && (
+                  <button type="button" onClick={() => { setMonthlyAuto(v => !v); setError(null) }}
+                    className="pt-2 text-xs font-semibold text-primary hover:underline">
+                    {monthlyAuto ? 'Prefere Pix ou pagar só 1 mês? Pagar 1 mês avulso' : 'Quer que renove sozinho? Voltar pra renovação automática'}
+                  </button>
+                )}
               </div>
             </CardContent>
           </Card>

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTheme } from 'next-themes'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
-import { usePremium } from '@/lib/premium'
+import { usePremium, cancelAutoRenew } from '@/lib/premium'
 import { PRICE_MONTHLY, TRIAL_DAYS, formatBRL } from '@/lib/pricing'
 import { useIsAdmin } from '@/lib/admin'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -50,7 +50,20 @@ function savePref(key: string, value: unknown) {
 
 export default function Settings() {
   const { user, signOut } = useAuth()
-  const { isPremium, isTrial, daysLeft, canStartTrial } = usePremium()
+  const { isPremium, isTrial, autoRenew, daysLeft, canStartTrial, subscription, refresh } = usePremium()
+  const [cancelingRenewal, setCancelingRenewal] = useState(false)
+
+  const handleCancelRenewal = async () => {
+    setCancelingRenewal(true)
+    const r = await cancelAutoRenew()
+    setCancelingRenewal(false)
+    if (!r.ok) { toast.error(r.error ?? 'Não deu pra cancelar agora.'); return }
+    toast.success('Renovação cancelada. Seu Premium continua até o fim do mês já pago.')
+    refresh()
+  }
+  const paidUntil = subscription?.expires_at
+    ? new Date(subscription.expires_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+    : ''
   const { theme, setTheme } = useTheme()
   const navigate = useNavigate()
   const isAdmin = useIsAdmin()
@@ -192,10 +205,37 @@ export default function Settings() {
               <span className="text-sm text-muted-foreground">Plano</span>
               <span className={`text-sm font-bold ${isPremium ? 'text-rating-fair' : 'text-muted-foreground'}`}>
                 {isTrial ? 'Teste grátis' : isPremium ? 'Premium' : 'Gratuito'}
-                {isPremium && daysLeft <= 10 && ` · ${daysLeft === 1 ? 'falta 1 dia' : `faltam ${daysLeft} dias`}`}
+                {isPremium && !autoRenew && daysLeft <= 10 && ` · ${daysLeft === 1 ? 'falta 1 dia' : `faltam ${daysLeft} dias`}`}
               </span>
             </div>
-            {(!isPremium || isTrial || daysLeft <= 10) && (
+            {autoRenew && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Renovação automática</span>
+                <span className="text-sm font-medium">Ligada · próxima por volta de {paidUntil}</span>
+              </div>
+            )}
+            {autoRenew && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-full" disabled={cancelingRenewal}>
+                    {cancelingRenewal ? 'Cancelando...' : 'Cancelar renovação automática'}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Cancelar a renovação automática?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Nada mais será cobrado no seu cartão. Seu Premium continua até {paidUntil}, que já está pago, e depois a conta volta pro plano grátis.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Manter</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleCancelRenewal}>Cancelar renovação</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            {(!isPremium || isTrial || (!autoRenew && daysLeft <= 10)) && (
               <Button variant="outline" size="sm" className="w-full border-rating-fair/50 text-rating-fair hover:bg-rating-fair/10"
                 onClick={() => navigate('/premium')}>
                 <Crown className="h-4 w-4 mr-2" />
