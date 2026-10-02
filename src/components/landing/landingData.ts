@@ -1,4 +1,4 @@
-import { BEACH_DIRECTORY, REGION_COUNT } from '@/lib/beachDirectory'
+import { BEACH_DIRECTORY } from '@/lib/beachDirectory'
 import { TRIAL_DAYS } from '@/lib/pricing'
 
 // Perguntas da landing (v2, 28/set/2026). Cada resposta foi conferida com o app: a nota usa
@@ -6,14 +6,22 @@ import { TRIAL_DAYS } from '@/lib/pricing'
 // inteira (api/surf-chat.ts), o mensal renova sozinho e o anual é avulso (api/create-payment.ts) e o
 // reembolso de 7 dias vem dos Termos de Uso. A antiga seção "Instale no celular" virou a
 // última pergunta daqui. Sem travessão no texto (pedido do usuário).
+// Ordem pela latitude (api/_beachRegistry.ts), do Santinho ao Naufragados
+export const BEACHES_NORTH_TO_SOUTH = [
+  'Santinho', 'Moçambique', 'Barra da Lagoa', 'Praia Mole', 'Joaquina', 'Novo Campeche', 'Campeche',
+  'Morro das Pedras', 'Armação', 'Matadeiro', 'Lagoinha do Leste', 'Açores', 'Solidão', 'Naufragados',
+]
+
 export const FAQS = [
   {
     q: 'Quais praias vocês cobrem?',
-    a: `${BEACH_DIRECTORY.length} praias, nas ${REGION_COUNT} regiões da ilha (Norte, Centro e Sul): do Santinho e Moçambique, passando por Barra da Lagoa, Mole, Joaquina e Campeche, até Matadeiro, Lagoinha do Leste, Solidão e Naufragados.`,
+    // Todas, de norte a sul (02/out/2026: antes citava só 10 e chamava a costa leste de "Centro",
+    // que pra quem é de Floripa é o centro da cidade). landingData.test.ts confere com BEACH_DIRECTORY
+    a: `As ${BEACH_DIRECTORY.length} praias de surf da ilha, de norte a sul: ${BEACHES_NORTH_TO_SOUTH.slice(0, -1).join(', ')} e ${BEACHES_NORTH_TO_SOUTH[BEACHES_NORTH_TO_SOUTH.length - 1]}.`,
   },
   {
     q: 'De onde vêm os dados?',
-    a: 'De modelos meteorológicos internacionais de onda e vento (ECMWF), lidos pra cada praia e calibrados pro litoral de Floripa. O app busca tudo de novo a cada 15 minutos.',
+    a: 'De modelos internacionais de onda e vento: o francês (Météo-France) como base da altura da onda e o europeu (ECMWF) como teto, lidos pra cada praia e calibrados pro litoral de Floripa. O app busca tudo de novo a cada 15 minutos.',
   },
   {
     q: 'Como a nota é calculada?',
