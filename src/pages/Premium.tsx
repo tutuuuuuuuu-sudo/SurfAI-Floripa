@@ -299,7 +299,7 @@ export default function PremiumPage() {
             )}
             {selectedPlan === 'monthly' && (
               <div className="text-center py-2 text-xs font-bold tracking-wider bg-muted text-muted-foreground">
-                PLANO MENSAL · CANCELE QUANDO QUISER
+                {monthlyAuto ? 'PLANO MENSAL · CANCELE QUANDO QUISER' : 'PLANO MENSAL · SEM RENOVAÇÃO'}
               </div>
             )}
 
@@ -457,7 +457,7 @@ export default function PremiumPage() {
 
         {!isPremium && (
           <div className="text-center space-y-1 pb-6" style={{ animation: 'fadeIn 0.5s 0.5s ease-out both' }}>
-            <p className="flex items-center justify-center gap-1 text-xs text-muted-foreground"><Lock className="h-3 w-3" />Pagamento seguro · Cancele quando quiser</p>
+            <p className="flex items-center justify-center gap-1 text-xs text-muted-foreground"><Lock className="h-3 w-3" />Pagamento seguro pelo Mercado Pago</p>
             <p className="text-xs text-muted-foreground/60">Dúvidas? surfaifloripa@gmail.com</p>
           </div>
         )}
