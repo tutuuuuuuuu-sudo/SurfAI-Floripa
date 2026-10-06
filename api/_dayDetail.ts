@@ -35,9 +35,8 @@ export interface DayDetail {
 
 export async function buildDayDetail(lat: string, lng: string, orientation: number, dayIndex: number): Promise<DayDetail | null> {
   // Maré em paralelo com o forecast de onda/vento — são fontes independentes, não precisa
-  // esperar uma pra pedir a outra. Maré é astronômica (sol/lua), não depende do tempo como
-  // onda/vento, então o Open-Meteo prevê com confiança bem além de 14 dias (testado ao vivo
-  // em 24/set/2026: retorna dado consistente até pelo menos 16 dias à frente).
+  // esperar uma pra pedir a outra. Em 24/set/2026 a maré vinha até 16 dias à frente; em
+  // 06/out/2026 a Open-Meteo passou a mandar null depois de ~9,5 dias (ver filtro abaixo).
   const [hourly, tide] = await Promise.all([
     fetchHourlyForecast(lat, lng, dayIndex + 1),
     fetchTideData(dayIndex + 1),
@@ -91,7 +90,13 @@ export async function buildDayDetail(lat: string, lng: string, orientation: numb
     const dayIndices = tide.times
       .map((t, i) => (t.slice(0, 10) === date ? i : -1))
       .filter(i => i >= 0)
-    if (dayIndices.length >= 20) tideHeights = dayIndices.map(i => tide.heights[i])
+    // A Open-Meteo só prevê maré até ~9,5 dias à frente (conferido ao vivo em 06/out/2026):
+    // depois disso manda null hora a hora. Sem esse filtro a página do dia quebrava inteira
+    // ("algo deu errado") do 10º ao 14º dia, tentando formatar null como número.
+    const heights = dayIndices.map(i => tide.heights[i])
+    if (heights.length >= 20 && heights.every(h => typeof h === 'number' && Number.isFinite(h))) {
+      tideHeights = heights
+    }
   }
 
   return {

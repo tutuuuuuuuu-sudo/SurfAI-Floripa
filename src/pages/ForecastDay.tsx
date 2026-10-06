@@ -144,8 +144,10 @@ export default function ForecastDayPage() {
   const sel = data ? (data.hours.find(h => h.hour === (selectedHour ?? data.best.hour)) ?? data.best) : null
   const selInfo = sel ? getRatingInfo(sel.score) : null
   const isBestSelected = !!(data && sel && sel.hour === data.best.hour)
-  const tideNow = data?.tideHeights && sel ? data.tideHeights[sel.hour] : undefined
-  const tideNext = data?.tideHeights && sel ? data.tideHeights[sel.hour + 1] : undefined
+  // `?? undefined`: a maré pode vir null numa hora (fora do alcance da previsão) — sem isso
+  // o `.toFixed` lá embaixo derrubava a página inteira
+  const tideNow = data?.tideHeights && sel ? data.tideHeights[sel.hour] ?? undefined : undefined
+  const tideNext = data?.tideHeights && sel ? data.tideHeights[sel.hour + 1] ?? undefined : undefined
   const swellDeg = sel ? WIND_DEG[sel.swellDirection.toUpperCase()] : undefined
   const isDaylight = (h: number) => h >= (data?.sunriseHour ?? 6) && h <= (data?.sunsetHour ?? 18)
   const selSky = sel?.weatherCode != null ? mapWeatherCode(sel.weatherCode, isDaylight(sel.hour)) : null
