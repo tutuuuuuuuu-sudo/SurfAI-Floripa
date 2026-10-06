@@ -36,7 +36,7 @@ Você deve ter pelo menos 13 anos para criar uma conta. Não crie mais de uma co
 • **Mensal com renovação automática (cartão de crédito):** é uma assinatura. O valor é cobrado no cartão uma vez por mês, na mesma data, até você cancelar. Você cancela quando quiser em Configurações, sem multa: nada mais é cobrado e o Premium continua até o fim do mês já pago. Se o cartão recusar a cobrança 3 vezes seguidas, o Mercado Pago cancela a assinatura sozinho.
 • **Anual ou mensal avulso (cartão, Pix ou boleto):** é um pagamento único, sem renovação. O acesso Premium vale por 365 dias (anual) ou 30 dias (mensal avulso) e, ao final, você decide se quer pagar de novo. Avisamos por e-mail uns dias antes de acabar.
 
-**Direito de arrependimento:** por ser uma compra feita à distância (pela internet), você tem direito a cancelar a compra em até 7 dias corridos da data do pagamento e receber o valor de volta na íntegra, conforme o Art. 49 do Código de Defesa do Consumidor — mesmo que já tenha usado o Premium nesse período. Pra isso, entre em contato pelo email no fim desta página.`,
+**Direito de arrependimento:** por ser uma compra feita à distância (pela internet), você tem direito a cancelar a compra em até 7 dias corridos da data do pagamento e receber o valor de volta na íntegra, conforme o Art. 49 do Código de Defesa do Consumidor, mesmo que já tenha usado o Premium nesse período. Pra isso, entre em contato pelo email no fim desta página.`,
   },
   {
     title: '5. Uso permitido',
@@ -54,7 +54,7 @@ Você deve ter pelo menos 13 anos para criar uma conta. Não crie mais de uma co
   },
   {
     title: '7. Chat com o Surf AI',
-    content: `O chat usa inteligência artificial (Google Gemini) pra responder suas perguntas com base nas condições monitoradas. As respostas são geradas automaticamente e podem conter imprecisões — não são aconselhamento profissional de nenhum tipo. O uso do chat é limitado a um número de mensagens por dia, informado no próprio app.`,
+    content: `O chat usa inteligência artificial (Google Gemini, com Groq e OpenRouter de reserva) pra responder suas perguntas com base nas condições monitoradas. As respostas são geradas automaticamente e podem conter imprecisões. Não são aconselhamento profissional de nenhum tipo. O uso do chat é limitado a um número de mensagens por dia, informado no próprio app.`,
   },
   {
     title: '8. Cancelamento e exclusão de conta',

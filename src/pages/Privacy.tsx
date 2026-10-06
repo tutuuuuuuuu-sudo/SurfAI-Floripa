@@ -11,6 +11,7 @@ const SECTIONS = [
 • **Dados de conta**: endereço de email e senha (armazenados com criptografia) fornecidos no cadastro.
 • **Preferências**: nível de surf, região preferida e configurações de notificação salvas localmente no seu dispositivo.
 • **Sessões de surf**: registros que você mesmo insere voluntariamente no app.
+• **Conversas do chat** (Premium): as mensagens que você troca com o Surf AI ficam salvas na sua conta pra conversa ter continuidade. Você pode apagá-las excluindo a conta.
 • **Dados de uso**: páginas acessadas e interações dentro do app, de forma anônima e agregada.
 • **Dados de pagamento**: processados integralmente pelo Mercado Pago. Não armazenamos dados de cartão.`,
   },
@@ -30,6 +31,8 @@ const SECTIONS = [
 
 • **Supabase**: nosso provedor de banco de dados e autenticação, sujeito à sua própria política de privacidade.
 • **Mercado Pago**: para processamento de pagamentos do plano Premium.
+• **Serviços de inteligência artificial (Google Gemini, Groq e OpenRouter)**: quando você usa o chat, sua mensagem vai pra um desses serviços junto com seu nome, nível de surf e praias favoritas, só pra gerar a resposta. Usamos um de cada vez: se um estiver fora do ar, o próximo responde.
+• **Resend**: envio dos e-mails do app (boas-vindas, alertas de mar bom e avisos do plano).
 • **PostHog**: estatísticas de uso do app, somente se você aceitar no aviso de privacidade.
 • **Sentry**: relatórios de erro técnico, para corrigir falhas (podem incluir o email da conta conectada no momento do erro).
 • **Autoridades legais**: quando exigido por lei ou ordem judicial.
@@ -105,7 +108,7 @@ export default function Privacy() {
           <AppLogo size={32} variant="icon" />
           <div>
             <h1 className="text-base font-bold leading-none">Política de Privacidade</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">Surf AI · Atualizado em setembro de 2026</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Surf AI · Atualizado em outubro de 2026</p>
           </div>
         </div>
       </header>
