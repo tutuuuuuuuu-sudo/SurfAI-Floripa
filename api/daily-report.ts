@@ -1,8 +1,10 @@
 export const config = { runtime: 'edge' }
 import { calculateSurfScore } from './_scoreEngine.js'
 import { callGemini } from './_gemini.js'
+import { cleanChatReply } from './_chatText.js'
 import { getBeaches } from './_beachRegistry.js'
 import { isSchedulerCall } from './_auth.js'
+import { sendWhatsApp } from './_callmebot.js'
 import { PRICE_MONTHLY, PRICE_ANNUAL } from '../src/lib/pricing.js'
 
 const APP_URL = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
@@ -31,6 +33,7 @@ async function getUserStats(): Promise<{
   total: number
   newToday: number
   premiumActive: number
+  courtesyActive: number
   trialsActive: number
   newPremiumToday: number
   revenueToday: number
@@ -38,9 +41,8 @@ async function getUserStats(): Promise<{
   mrr: number
   conversionRate: number
 }> {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-    return { total: 0, newToday: 0, premiumActive: 0, trialsActive: 0, newPremiumToday: 0, revenueToday: 0, cancelledToday: 0, mrr: 0, conversionRate: 0 }
-  }
+  const empty = { total: 0, newToday: 0, premiumActive: 0, courtesyActive: 0, trialsActive: 0, newPremiumToday: 0, revenueToday: 0, cancelledToday: 0, mrr: 0, conversionRate: 0 }
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return empty
 
   // Brasil não usa horário de verão desde 2019 — UTC-3 fixo é correto
   // Subtrai 3h para obter "agora em BRT", zera para meia-noite BRT, soma 3h de volta para UTC
@@ -49,27 +51,38 @@ async function getUserStats(): Promise<{
   const todayISO = new Date(brtNow.getTime() + 3 * 60 * 60 * 1000).toISOString()
 
   try {
-    // Total de usuários
-    const [totalRes, premiumRes] = await Promise.all([
-      fetch(`${SUPABASE_URL}/auth/v1/admin/users?per_page=1`, {
-        headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` },
+    // Cadastros (total e novos hoje) contados direto de auth.users pela função report_user_counts
+    // — a tabela profiles, usada antes, só tem linha de parte dos usuários
+    const [countRes, premiumRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/rpc/report_user_counts`, {
+        method: 'POST',
+        headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_since: todayISO, p_exclude: EXCLUDED_USER_IDS }),
       }),
       fetch(`${SUPABASE_URL}/rest/v1/subscriptions?status=eq.premium&expires_at=gte.${new Date().toISOString()}&${excludeFilter('user_id')}&select=id,created_at,plan,amount`, {
         headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` },
       }),
     ])
 
-    interface SubRecord { id: string; created_at: string; plan?: string; amount?: number }
-    interface AuthUsersResponse { total?: number; users?: { id: string; created_at: string }[] }
+    interface SubRecord { id: string; created_at: string; plan?: string; amount?: number | null }
 
-    const totalData = totalRes.ok ? await totalRes.json() as AuthUsersResponse : {}
+    const counts = countRes.ok ? await countRes.json() as { total: number; new_since: number }[] : []
+    if (!countRes.ok) console.error('[daily-report] report_user_counts voltou', countRes.status, (await countRes.text()).slice(0, 200))
+    const total = counts[0]?.total ?? 0
+    const newToday = counts[0]?.new_since ?? 0
+
     // Teste grátis (plan 'trial') também é status premium, mas não é assinatura: fica de fora de
-    // Premium ativo, receita, MRR e conversão, e aparece numa linha própria
+    // Premium ativo, receita, MRR e conversão, e aparece numa linha própria. Cortesia (valor 0,
+    // dada à mão) também não é assinatura paga: aparece separada. Linha antiga sem valor (null)
+    // continua contando como paga.
     const allPremium = premiumRes.ok ? await premiumRes.json() as SubRecord[] : []
-    const premiumData = Array.isArray(allPremium) ? allPremium.filter(s => s.plan !== 'trial') : []
-    const trialsActive = Array.isArray(allPremium) ? allPremium.length - premiumData.length : 0
+    const nonTrial = Array.isArray(allPremium) ? allPremium.filter(s => s.plan !== 'trial') : []
+    const trialsActive = Array.isArray(allPremium) ? allPremium.length - nonTrial.length : 0
+    const isCourtesy = (s: SubRecord) => s.amount != null && Number(s.amount) === 0
+    const premiumData = nonTrial.filter(s => !isCourtesy(s))
+    const courtesyActive = nonTrial.length - premiumData.length
 
-    const premiumActive = Array.isArray(premiumData) ? premiumData.length : 0
+    const premiumActive = premiumData.length
     const newPremiumToday = Array.isArray(premiumData)
       ? premiumData.filter((s) => s.created_at >= todayISO).length
       : 0
@@ -87,36 +100,6 @@ async function getUserStats(): Promise<{
     const cancelData = cancelRes.ok ? await cancelRes.json() as { id: string }[] : []
     const cancelledToday = Array.isArray(cancelData) ? cancelData.length : 0
 
-    // Total de usuários via Content-Range (não carrega todos os registros na memória)
-    const countRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?select=id&${excludeFilter('id')}`,
-      {
-        headers: {
-          apikey: SUPABASE_SERVICE_KEY,
-          Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
-          Prefer: 'count=exact',
-          Range: '0-0',
-        }
-      }
-    )
-    const contentRange = countRes.headers.get('Content-Range') ?? ''
-    const total = parseInt(contentRange.split('/')[1] ?? '0') || (totalData.total ?? 0)
-
-    // Novos usuários hoje via Content-Range (evita carregar registros só para contar)
-    const newTodayRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?select=id&created_at=gte.${todayISO}&${excludeFilter('id')}`,
-      {
-        headers: {
-          apikey: SUPABASE_SERVICE_KEY,
-          Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
-          Prefer: 'count=exact',
-          Range: '0-0',
-        }
-      }
-    )
-    const newTodayRange = newTodayRes.headers.get('Content-Range') ?? ''
-    const newToday = parseInt(newTodayRange.split('/')[1] ?? '0') || 0
-
     // MRR real: assinatura mensal conta o valor cheio, anual é dividida por 12
     const mrr = Array.isArray(premiumData)
       ? premiumData.reduce((sum, s) => {
@@ -126,9 +109,10 @@ async function getUserStats(): Promise<{
       : 0
     const conversionRate = total > 0 ? Number(((premiumActive / total) * 100).toFixed(1)) : 0
 
-    return { total, newToday, premiumActive, trialsActive, newPremiumToday, revenueToday, cancelledToday, mrr, conversionRate }
-  } catch {
-    return { total: 0, newToday: 0, premiumActive: 0, trialsActive: 0, newPremiumToday: 0, revenueToday: 0, cancelledToday: 0, mrr: 0, conversionRate: 0 }
+    return { total, newToday, premiumActive, courtesyActive, trialsActive, newPremiumToday, revenueToday, cancelledToday, mrr, conversionRate }
+  } catch (err) {
+    console.error('[daily-report] getUserStats falhou:', err)
+    return empty
   }
 }
 
@@ -176,6 +160,7 @@ async function getLandingStats(): Promise<{ viewsToday: number; clicksToday: num
 const ROBOT_LABEL: Record<string, string> = {
   '/api/snapshot': 'histórico', '/api/push-notify': 'alertas', '/api/refresh-windy-cache': 'praias',
   '/api/email-alert': 'e-mail', '/api/daily-report': 'relatório', '/api/health': 'checagem',
+  '/api/plan-reminders': 'lembretes',
 }
 
 async function getRobotStats(): Promise<{ ok: number; failed: number; failedBy: string } | null> {
@@ -276,8 +261,8 @@ async function generateSummary(data: {
   landing: Awaited<ReturnType<typeof getLandingStats>>
   robots: Awaited<ReturnType<typeof getRobotStats>>
   surf: Awaited<ReturnType<typeof getSurfConditions>>
-}): Promise<string> {
-  if (!GEMINI_KEY) return ''
+}): Promise<{ text: string; error: string }> {
+  if (!GEMINI_KEY) return { text: '', error: 'sem chave' }
 
   const prompt = `Você é um assistente de negócios do app Surf AI Floripa. Escreva um relatório executivo curto e direto em português para o dono do app.
 
@@ -286,7 +271,8 @@ Período: ${data.period}
 DADOS DO DIA:
 - Usuários totais: ${data.users.total}
 - Novos cadastros hoje: ${data.users.newToday}
-- Assinaturas Premium ativas: ${data.users.premiumActive}
+- Assinaturas Premium pagas ativas: ${data.users.premiumActive}
+- Premium de cortesia (dado de graça, não paga): ${data.users.courtesyActive}
 - Em teste grátis agora: ${data.users.trialsActive}
 - Novas assinaturas hoje: ${data.users.newPremiumToday}
 - Receita hoje: R$ ${data.users.revenueToday.toFixed(2)}
@@ -301,10 +287,18 @@ CONDIÇÕES DO MAR:
 - Condições: ondas ${data.surf.bestWave}m, período ${data.surf.bestPeriod}s, vento ${data.surf.bestWind}km/h ${data.surf.bestWindDir}
 - Temporada da tainha: ${data.surf.tainhaSeasonActive ? 'ATIVA' : 'fora de temporada'}
 
-Escreva 3-4 frases de análise: o que foi bom, o que precisa de atenção, e uma ação sugerida se necessário. Tom direto e profissional, sem emojis.`
+Escreva no máximo 3 frases curtas de análise (até 400 caracteres no total): o que foi bom, o que precisa de atenção, e uma ação sugerida se necessário. Tom direto e profissional, sem emojis, sem título, sem markdown, texto corrido.`
 
-  const result = await callGemini(GEMINI_KEY, prompt, 3000)
-  return result.ok ? result.text : ''
+  // 15 s (padrão 20): a função edge precisa responder em ~25 s e agora manda duas mensagens
+  const result = await callGemini(GEMINI_KEY, prompt, 3000, 15000)
+  if (!result.ok) {
+    console.error('[daily-report] Gemini falhou:', result.status, result.error.slice(0, 300))
+    return { text: '', error: result.status ? `erro ${result.status}` : result.error.slice(0, 60) }
+  }
+  // Mesma limpeza do chat (sem asterisco, título ou travessão): em 07/out/2026 a resposta veio
+  // com "**Relatório Executivo**" no topo, que o WhatsApp mostra com asteriscos sobrando
+  const text = cleanChatReply(result.text)
+  return text ? { text, error: '' } : { text: '', error: 'resposta vazia' }
 }
 
 // ── WhatsApp (CallMeBot) ─────────────────────────────────────────────────────
@@ -320,9 +314,8 @@ function buildWhatsAppText(data: {
   landing: Awaited<ReturnType<typeof getLandingStats>>
   robots: Awaited<ReturnType<typeof getRobotStats>>
   surf: Awaited<ReturnType<typeof getSurfConditions>>
-  aiSummary: string
 }): string {
-  const { period, date, users, landing, robots, surf, aiSummary } = data
+  const { period, date, users, landing, robots, surf } = data
   const greeting = period === 'Manhã' ? 'Bom dia' : period === 'Tarde' ? 'Boa tarde' : 'Boa noite'
 
   const lines = [
@@ -331,7 +324,8 @@ function buildWhatsAppText(data: {
     `${greeting}! Resumo do app:`,
     '',
     `Usuários: ${users.total} (+${users.newToday} hoje)`,
-    `Premium ativo: ${users.premiumActive} (+${users.newPremiumToday} hoje)`,
+    `Premium pago: ${users.premiumActive} (+${users.newPremiumToday} hoje)`,
+    ...(users.courtesyActive > 0 ? [`Cortesia: ${users.courtesyActive}`] : []),
     `Teste grátis: ${users.trialsActive}`,
     `Receita hoje: R$ ${users.revenueToday.toFixed(2)}`,
     `MRR estimado: R$ ${users.mrr.toFixed(2)}`,
@@ -358,33 +352,7 @@ function buildWhatsAppText(data: {
 
   if (surf.tainhaSeasonActive) lines.push('', '🐟 Temporada da tainha ativa')
 
-  if (aiSummary) lines.push('', aiSummary)
-
   return lines.join('\n')
-}
-
-async function sendReportWhatsApp(data: {
-  period: string
-  date: string
-  users: Awaited<ReturnType<typeof getUserStats>>
-  landing: Awaited<ReturnType<typeof getLandingStats>>
-  robots: Awaited<ReturnType<typeof getRobotStats>>
-  surf: Awaited<ReturnType<typeof getSurfConditions>>
-  aiSummary: string
-}): Promise<boolean> {
-  if (!CALLMEBOT_PHONE || !CALLMEBOT_APIKEY) return false
-
-  const text = buildWhatsAppText(data)
-
-  try {
-    const res = await fetch(
-      `https://api.callmebot.com/whatsapp.php?phone=${CALLMEBOT_PHONE}&apikey=${CALLMEBOT_APIKEY}&text=${encodeURIComponent(text)}`,
-      { signal: AbortSignal.timeout(10000) }
-    )
-    return res.ok
-  } catch {
-    return false
-  }
 }
 
 // ── Handler ───────────────────────────────────────────────────────────────────
@@ -414,9 +382,20 @@ export default async function handler(req: Request) {
     getSurfConditions(),
   ])
 
-  const aiSummary = await generateSummary({ period, users, landing, robots, surf })
+  // Duas mensagens: os números saem antes de chamar a IA (a parte mais demorada) e a análise
+  // vem em seguida. Juntas passavam do tamanho que o CallMeBot entrega (ver _callmebot.ts).
+  const statsText = buildWhatsAppText({ period, date: dateStr, users, landing, robots, surf })
+  const send = (text: string) =>
+    CALLMEBOT_PHONE && CALLMEBOT_APIKEY ? sendWhatsApp(CALLMEBOT_PHONE, CALLMEBOT_APIKEY, text) : Promise.resolve(false)
+  const statsSent = await send(statsText)
 
-  const whatsappSent = await sendReportWhatsApp({ period, date: dateStr, users, landing, robots, surf, aiSummary })
+  const { text: aiSummary, error: aiError } = await generateSummary({ period, users, landing, robots, surf })
+  const aiText = aiSummary ? `*Análise do dia*\n\n${aiSummary}` : `IA não respondeu (${aiError})`
+  const aiSent = await send(aiText)
+
+  const whatsappSent = statsSent && aiSent
+  // Tamanho de cada mensagem na resposta do robô (guardada algumas horas em net._http_response)
+  const whatsappChars = [statsText.length, aiText.length]
 
   return new Response(JSON.stringify({
     period,
@@ -426,7 +405,9 @@ export default async function handler(req: Request) {
     landing,
     robots,
     aiSummary,
+    aiError,
     whatsappSent,
+    whatsappChars,
   }), {
     // 502 quando a mensagem não saiu: o GitHub Actions marca a execução como falha e o Cronitor
     // avisa (antes respondia 200 mesmo sem entregar, e "deu certo" no painel não queria dizer nada)
