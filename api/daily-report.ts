@@ -4,6 +4,7 @@ import { callGemini } from './_gemini.js'
 import { cleanChatReply } from './_chatText.js'
 import { getBeaches } from './_beachRegistry.js'
 import { isSchedulerCall } from './_auth.js'
+import { sendWhatsApp } from './_callmebot.js'
 import { PRICE_MONTHLY, PRICE_ANNUAL } from '../src/lib/pricing.js'
 
 const APP_URL = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
@@ -288,7 +289,8 @@ CONDIÇÕES DO MAR:
 
 Escreva no máximo 3 frases curtas de análise (até 400 caracteres no total): o que foi bom, o que precisa de atenção, e uma ação sugerida se necessário. Tom direto e profissional, sem emojis, sem título, sem markdown, texto corrido.`
 
-  const result = await callGemini(GEMINI_KEY, prompt, 3000)
+  // 15 s (padrão 20): a função edge precisa responder em ~25 s e agora manda duas mensagens
+  const result = await callGemini(GEMINI_KEY, prompt, 3000, 15000)
   if (!result.ok) {
     console.error('[daily-report] Gemini falhou:', result.status, result.error.slice(0, 300))
     return { text: '', error: result.status ? `erro ${result.status}` : result.error.slice(0, 60) }
@@ -312,10 +314,8 @@ function buildWhatsAppText(data: {
   landing: Awaited<ReturnType<typeof getLandingStats>>
   robots: Awaited<ReturnType<typeof getRobotStats>>
   surf: Awaited<ReturnType<typeof getSurfConditions>>
-  aiSummary: string
-  aiError: string
 }): string {
-  const { period, date, users, landing, robots, surf, aiSummary, aiError } = data
+  const { period, date, users, landing, robots, surf } = data
   const greeting = period === 'Manhã' ? 'Bom dia' : period === 'Tarde' ? 'Boa tarde' : 'Boa noite'
 
   const lines = [
@@ -352,36 +352,7 @@ function buildWhatsAppText(data: {
 
   if (surf.tainhaSeasonActive) lines.push('', '🐟 Temporada da tainha ativa')
 
-  if (aiSummary) lines.push('', aiSummary)
-  else if (aiError) lines.push('', `IA não respondeu (${aiError})`)
-
   return lines.join('\n')
-}
-
-async function sendReportWhatsApp(data: {
-  period: string
-  date: string
-  users: Awaited<ReturnType<typeof getUserStats>>
-  landing: Awaited<ReturnType<typeof getLandingStats>>
-  robots: Awaited<ReturnType<typeof getRobotStats>>
-  surf: Awaited<ReturnType<typeof getSurfConditions>>
-  aiSummary: string
-  aiError: string
-}): Promise<{ sent: boolean; chars: number }> {
-  const text = buildWhatsAppText(data)
-  // chars vai na resposta do robô (guardada algumas horas em net._http_response): em 07/out/2026
-  // a mensagem chegou cortada no caractere 718, com o texto da IA inteiro do lado de cá
-  if (!CALLMEBOT_PHONE || !CALLMEBOT_APIKEY) return { sent: false, chars: text.length }
-
-  try {
-    const res = await fetch(
-      `https://api.callmebot.com/whatsapp.php?phone=${CALLMEBOT_PHONE}&apikey=${CALLMEBOT_APIKEY}&text=${encodeURIComponent(text)}`,
-      { signal: AbortSignal.timeout(10000) }
-    )
-    return { sent: res.ok, chars: text.length }
-  } catch {
-    return { sent: false, chars: text.length }
-  }
 }
 
 // ── Handler ───────────────────────────────────────────────────────────────────
@@ -411,9 +382,20 @@ export default async function handler(req: Request) {
     getSurfConditions(),
   ])
 
-  const { text: aiSummary, error: aiError } = await generateSummary({ period, users, landing, robots, surf })
+  // Duas mensagens: os números saem antes de chamar a IA (a parte mais demorada) e a análise
+  // vem em seguida. Juntas passavam do tamanho que o CallMeBot entrega (ver _callmebot.ts).
+  const statsText = buildWhatsAppText({ period, date: dateStr, users, landing, robots, surf })
+  const send = (text: string) =>
+    CALLMEBOT_PHONE && CALLMEBOT_APIKEY ? sendWhatsApp(CALLMEBOT_PHONE, CALLMEBOT_APIKEY, text) : Promise.resolve(false)
+  const statsSent = await send(statsText)
 
-  const { sent: whatsappSent, chars: whatsappChars } = await sendReportWhatsApp({ period, date: dateStr, users, landing, robots, surf, aiSummary, aiError })
+  const { text: aiSummary, error: aiError } = await generateSummary({ period, users, landing, robots, surf })
+  const aiText = aiSummary ? `*Análise do dia*\n\n${aiSummary}` : `IA não respondeu (${aiError})`
+  const aiSent = await send(aiText)
+
+  const whatsappSent = statsSent && aiSent
+  // Tamanho de cada mensagem na resposta do robô (guardada algumas horas em net._http_response)
+  const whatsappChars = [statsText.length, aiText.length]
 
   return new Response(JSON.stringify({
     period,
