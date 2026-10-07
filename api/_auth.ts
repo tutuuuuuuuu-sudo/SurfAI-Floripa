@@ -95,20 +95,34 @@ export async function verifyAdminToken(token: string): Promise<boolean> {
 // cabeçalho x-cron-secret e quem confere é a função check_cron_secret do banco, que só a chave
 // de serviço pode chamar — assim a senha não precisa existir também nas variáveis da Vercel.
 // As senhas antigas de cada robô continuam valendo (execução manual pelo GitHub).
+//
+// Uma segunda tentativa quando a conferência em si falha (erro de rede, demora, resposta não-200):
+// na semana até 07/out/2026, 9 de ~470 chamadas do agendador voltaram 401 sem motivo aparente,
+// e o catch antigo engolia o erro. Agora o motivo vai pro log da Vercel. Senha conferida e
+// errada não repete.
 export async function isSchedulerCall(req: Request): Promise<boolean> {
   const provided = req.headers.get('x-cron-secret')
   const supabaseUrl = process.env.SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
-  if (!provided || provided.length < 20 || !supabaseUrl || !serviceKey) return false
-  try {
-    const res = await fetch(`${supabaseUrl}/rest/v1/rpc/check_cron_secret`, {
-      method: 'POST',
-      headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ p_secret: provided }),
-      signal: AbortSignal.timeout(5000),
-    })
-    return res.ok && (await res.json()) === true
-  } catch {
+  if (!supabaseUrl || !serviceKey) return false
+  if (!provided || provided.length < 20) {
+    // Separa "chegou sem a senha" de "a conferência falhou" no log
+    console.error(`[isSchedulerCall] chamada sem a senha do agendador (${provided === null ? 'cabeçalho ausente' : `${provided.length} caracteres`})`)
     return false
   }
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const res = await fetch(`${supabaseUrl}/rest/v1/rpc/check_cron_secret`, {
+        method: 'POST',
+        headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_secret: provided }),
+        signal: AbortSignal.timeout(5000),
+      })
+      if (res.ok) return (await res.json()) === true
+      console.error(`[isSchedulerCall] conferência da senha voltou ${res.status} (tentativa ${attempt}):`, (await res.text()).slice(0, 200))
+    } catch (err) {
+      console.error(`[isSchedulerCall] conferência da senha falhou (tentativa ${attempt}):`, err instanceof Error ? `${err.name}: ${err.message}` : err)
+    }
+  }
+  return false
 }
