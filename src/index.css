@@ -246,6 +246,42 @@ input, textarea, select {
   &::-webkit-scrollbar { display: none; }
 }
 
+/* Carteirinha Premium (Premium.tsx → MembershipCard.tsx, 08/out/2026): foto real da Praia Mole
+   com escurecimento em cima (logo) e embaixo (nome e plano), brilho que atravessa o cartão de
+   tempos em tempos, entrada "deitando pra frente" e flutuação leve. prefers-reduced-motion
+   acima zera tudo isso. */
+.member-card-scrim {
+  background: linear-gradient(180deg,
+    oklch(0.12 0.03 230 / 0.6) 0%,
+    oklch(0.12 0.03 230 / 0.08) 36%,
+    oklch(0.12 0.03 230 / 0.2) 58%,
+    oklch(0.12 0.03 230 / 0.85) 100%);
+}
+.member-card-sheen {
+  background: linear-gradient(105deg, transparent 38%, oklch(1 0 0 / 0.24) 48%, oklch(1 0 0 / 0.08) 53%, transparent 62%);
+  background-size: 260% 100%;
+  background-repeat: no-repeat;
+  background-position: 130% 0;
+  animation: memberSheen 7s ease-in-out 1.1s infinite;
+}
+@keyframes memberSheen {
+  0%        { background-position: 130% 0 }
+  26%, 100% { background-position: -30% 0 }
+}
+@keyframes memberRise {
+  from { opacity: 0; transform: perspective(1000px) rotateX(30deg) translateY(40px) scale(0.92) }
+  to   { opacity: 1; transform: perspective(1000px) rotateX(0deg) translateY(0) scale(1) }
+}
+@keyframes memberFloat {
+  0%, 100% { transform: translateY(0) }
+  50%      { transform: translateY(-6px) }
+}
+/* Dias da previsão que só o Premium vê acendendo um a um (PremiumShowcase.tsx) */
+@keyframes dayLight {
+  from { opacity: 0.2; transform: translateY(6px) scale(0.9) }
+  to   { opacity: 1; transform: translateY(0) scale(1) }
+}
+
 /* Escurecimento da foto do topo da landing (Hero.tsx). A foto é sempre clara (areia, espuma)
    nos dois temas, então o escurecimento é fixo e mais forte no meio, onde fica o título —
    antes (27/set/2026) o texto branco sumia em cima da areia no celular. */
