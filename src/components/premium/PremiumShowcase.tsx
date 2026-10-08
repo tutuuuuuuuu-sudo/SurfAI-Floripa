@@ -4,6 +4,8 @@ import { Reveal } from '@/components/landing/LandingComponents'
 import { PushNotificationCard } from '@/components/PushNotificationCard'
 import { ChatBubble } from '@/components/home/ChatBubble'
 import { CompareSpotCard } from '@/components/spot/CompareSpotCard'
+import { CompareTable } from '@/components/spot/CompareTable'
+import type { Trend } from '@/lib/compareTrend'
 import { DayCurveCard, type CurveDay } from '@/components/spot/DayCurveCard'
 import { getRatingInfo } from '@/lib/rating'
 
@@ -48,14 +50,23 @@ function ChatExample() {
   )
 }
 
+// Mesmo sábado de manhã nas três: a Mole pega a ondulação maior e o vento mais fraco
+const COMPARE_EXAMPLE = [
+  { id: 'mole', name: 'Praia Mole', region: 'Centro', score: 7.6, waveHeight: 1.4, swellPeriod: 11, windSpeed: 8, waterTemp: 20 },
+  { id: 'joaquina', name: 'Joaquina', region: 'Centro', score: 5.4, waveHeight: 1.3, swellPeriod: 11, windSpeed: 17, waterTemp: 20 },
+  { id: 'campeche', name: 'Campeche', region: 'Sul', score: 3.9, waveHeight: 0.9, swellPeriod: 9, windSpeed: 22, waterTemp: 20 },
+]
+const COMPARE_TRENDS: Record<string, Trend> = { mole: 'up', joaquina: 'stable', campeche: 'down' }
+
 function CompareExample() {
   return (
-    <div className="flex w-full max-w-sm flex-col gap-2">
+    <div className="flex w-full max-w-sm flex-col gap-3">
       <div className="grid grid-cols-3 gap-2">
-        <CompareSpotCard index={0} score={7.6} name="Praia Mole" region="Centro" />
-        <CompareSpotCard index={1} score={5.4} name="Joaquina" region="Centro" />
-        <CompareSpotCard index={2} score={3.9} name="Campeche" region="Sul" />
+        {COMPARE_EXAMPLE.map((s, i) => (
+          <CompareSpotCard key={s.id} index={i} score={s.score} name={s.name} region={s.region} />
+        ))}
       </div>
+      <CompareTable spots={COMPARE_EXAMPLE} trends={COMPARE_TRENDS} />
       <Caption>Exemplo: sábado, 7h</Caption>
     </div>
   )
@@ -112,7 +123,7 @@ const FEATURES: { icon: LucideIcon; title: string; text: string; visual: ReactNo
   {
     icon: Scale,
     title: 'Praias lado a lado',
-    text: 'Mesma ondulação, notas bem diferentes. Escolher a praia certa vale mais que acordar cedo.',
+    text: 'Mesma ondulação, notas bem diferentes. No exemplo, a Mole tem a onda maior e o vento mais fraco: 7.6 contra 3.9 no Campeche.',
     visual: <CompareExample />,
   },
   {

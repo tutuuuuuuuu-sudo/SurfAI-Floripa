@@ -1,6 +1,6 @@
 // sw.js — Service Worker Surf AI Floripa
 // Versão: incrementar esse número a cada deploy para forçar atualização
-const CACHE_VERSION = 'surf-ai-v7'
+const CACHE_VERSION = 'surf-ai-v8'
 
 // Assets do app shell que devem funcionar offline
 const APP_SHELL = ['/', '/index.html']
@@ -29,8 +29,15 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url)
 
+  // Pedidos pra OUTROS sites (fonte do Google, foto de perfil do Google, Mercado Pago...)
+  // passam direto, sem o service worker. Quando ele mesmo buscava, valia a regra de segurança
+  // (CSP connect-src) do próprio sw.js, que não lista esses sites: a fonte Poppins falhava e
+  // o app inteiro caía em Arial do 2º acesso em diante (provado em 08/out/2026, junto com
+  // imagens de fora). Mudança autorizada pelo usuário nesse dia, apesar do arquivo protegido.
+  if (url.origin !== self.location.origin) return
+
   // Chamadas de API: Network Only — nunca servir do cache (dados precisam ser frescos)
-  if (url.pathname.startsWith('/api/') || url.hostname !== self.location.hostname) {
+  if (url.pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(event.request).catch(() =>
         new Response(JSON.stringify({ error: 'offline' }), {

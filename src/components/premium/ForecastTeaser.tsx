@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Calendar, Crown, Lock } from 'lucide-react'
+import { Calendar, ChevronLeft, ChevronRight, Crown, Lock } from 'lucide-react'
 import { ForecastDayCard } from '@/components/spot/ForecastDayCard'
 import { getRatingInfo } from '@/lib/rating'
 import { todaySP } from '@/lib/timeSP'
@@ -74,6 +74,27 @@ export function ForecastTeaser() {
 
   const pick = (m: 'free' | 'premium') => { setTouched(true); setMode(m) }
 
+  // Faixa dos 14 dias: no celular o dedo já rola; no computador dá pra arrastar com o mouse e
+  // tem setas dos lados (o usuário não conseguia ver os outros dias no PC, 08/out/2026)
+  const drag = useRef<{ x: number; left: number } | null>(null)
+  const [dragging, setDragging] = useState(false)
+  const [edges, setEdges] = useState({ start: true, end: false })
+  const updateEdges = () => {
+    const row = rowRef.current
+    if (row) setEdges({ start: row.scrollLeft < 8, end: row.scrollLeft + row.clientWidth > row.scrollWidth - 8 })
+  }
+  const scrollByCards = (dir: 1 | -1) => rowRef.current?.scrollBy({ left: dir * rowRef.current.clientWidth * 0.66, behavior: 'smooth' })
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== 'mouse' || !rowRef.current) return
+    drag.current = { x: e.clientX, left: rowRef.current.scrollLeft }
+    setDragging(true)
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (drag.current && rowRef.current) rowRef.current.scrollLeft = drag.current.left - (e.clientX - drag.current.x)
+  }
+  const endDrag = () => { drag.current = null; setDragging(false) }
+
   return (
     <div ref={ref} className="space-y-4 text-left">
       <div className="flex items-center justify-between gap-3">
@@ -98,12 +119,28 @@ export function ForecastTeaser() {
       </div>
 
       {premium ? (
-        <div key="p" ref={rowRef} className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1 scrollbar-none">
-          {days.map((day, i) => (
-            <div key={day.date} ref={i === peak ? peakRef : undefined} className="w-[31%] shrink-0 snap-center">
-              <ForecastDayCard day={day} index={i} isPremium usesFeet={false} freeDays={FREE_DAYS} onUpgrade={() => {}} highlight={i === peak} />
-            </div>
-          ))}
+        <div key="p" className="relative">
+          <div ref={rowRef} onScroll={updateEdges}
+            onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={endDrag}
+            className={`-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 scrollbar-none ${dragging ? 'cursor-grabbing select-none' : 'cursor-grab snap-x'}`}>
+            {days.map((day, i) => (
+              <div key={day.date} ref={i === peak ? peakRef : undefined} className="w-[31%] shrink-0 snap-center">
+                <ForecastDayCard day={day} index={i} isPremium usesFeet={false} freeDays={FREE_DAYS} onUpgrade={() => {}} highlight={i === peak} />
+              </div>
+            ))}
+          </div>
+          {!edges.start && (
+            <button type="button" onClick={() => scrollByCards(-1)} aria-label="Dias anteriores"
+              className="absolute -left-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card/95 shadow-lg transition-colors hover:border-primary/50">
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+          )}
+          {!edges.end && (
+            <button type="button" onClick={() => scrollByCards(1)} aria-label="Próximos dias"
+              className="absolute -right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card/95 shadow-lg transition-colors hover:border-primary/50">
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          )}
         </div>
       ) : (
         <div key="f" className="space-y-2">
