@@ -19,11 +19,13 @@ Dois planos pagos: **Mensal R$ 22,90/mês** ou **Anual R$ 202,80/ano** (equivale
 | Previsão 14 dias | ❌ | ✅ |
 | Chat com o Surf AI (IA) | ❌ | ✅ |
 | Alertas de swell (push) | ❌ | ✅ |
-| Histórico 30 dias | ❌ | ✅ |
+| Histórico 30 dias ("X% acima da média" na página da praia; travado pra grátis em 08/out/2026, antes aparecia pra todos) | ❌ | ✅ |
 | Melhor janela horária do dia | ❌ | ✅ |
 | Comparação de picos | ❌ | ✅ |
 | Sem anúncios | ❌ | ✅ |
 | Badge Premium no perfil | ❌ | ✅ |
+| Onde surfar agora (GeoFinderCard, pela localização) | ❌ | ✅ |
+| Alerta de mar bom por e-mail | ❌ | ✅ |
 
 Pagamento via **Mercado Pago**. Lógica de acesso em `src/lib/premium.ts` (hook `usePremium()`).
 

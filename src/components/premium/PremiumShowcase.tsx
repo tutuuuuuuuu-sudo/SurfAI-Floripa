@@ -1,8 +1,9 @@
-import { Bell, Compass, Crown, History, MessageCircle, Scale, ShieldOff, Zap, type LucideIcon } from 'lucide-react'
+import { Bell, CalendarDays, Compass, Crown, History, MessageCircle, Scale, ShieldOff, Zap, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Reveal, GeoFinderMockup } from '@/components/landing/LandingComponents'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { PushNotificationCard } from '@/components/PushNotificationCard'
+import { ForecastTeaser } from '@/components/premium/ForecastTeaser'
 import { ChatBubble } from '@/components/home/ChatBubble'
 import { CompareSpotCard } from '@/components/spot/CompareSpotCard'
 import { CompareTable } from '@/components/spot/CompareTable'
@@ -133,6 +134,13 @@ function BestWindowExample() {
 }
 
 const FEATURES: { icon: LucideIcon; title: string; text: string; visual: ReactNode }[] = [
+  {
+    // Era o topo da página; o usuário pediu pra vir depois dos planos (08/out/2026)
+    icon: CalendarDays,
+    title: 'Previsão de 14 dias, não 3',
+    text: 'No grátis a previsão acaba no 3º dia. O dia clássico da quinzena costuma aparecer depois disso.',
+    visual: <div className="w-full"><ForecastTeaser /></div>,
+  },
   {
     icon: Bell,
     title: 'O celular avisa quando o mar fica bom',

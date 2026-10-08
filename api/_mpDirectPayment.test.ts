@@ -43,7 +43,7 @@ describe('buildDirectPayment', () => {
   })
 
   it('parcelas acima do permitido caem pro máximo do plano', () => {
-    const annual = buildDirectPayment({ ...base, plan: 'annual', form: { payment_method_id: 'visa', token: 't', installments: 12 } })
+    const annual = buildDirectPayment({ ...base, plan: 'annual', form: { payment_method_id: 'visa', token: 't', installments: 24 } })
     const monthly = buildDirectPayment({ ...base, plan: 'monthly', form: { payment_method_id: 'visa', token: 't', installments: 3 } })
     expect(annual.ok && annual.body.installments).toBe(ANNUAL_MAX_INSTALLMENTS)
     expect(monthly.ok && monthly.body.installments).toBe(1)

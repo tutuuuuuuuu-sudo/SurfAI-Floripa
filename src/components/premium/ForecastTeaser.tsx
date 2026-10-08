@@ -99,7 +99,7 @@ export function ForecastTeaser() {
     <div ref={ref} className="space-y-4 text-left">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="font-semibold">Próximos dias · Joaquina</h2>
+          <div className="font-semibold">Próximos dias · Joaquina</div>
           <p className="mt-0.5 text-xs text-muted-foreground">Exemplo de uma quinzena</p>
         </div>
       </div>

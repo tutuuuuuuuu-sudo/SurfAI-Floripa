@@ -17,7 +17,7 @@ import {
   ArrowLeft, Waves, Wind, Navigation,
   TrendingUp, Compass, AlertCircle, Thermometer,
   Heart, Calendar, Sun, ChevronDown, Clock,
-  Share2, MessageCircle, Crown, Droplets, GitCompareArrows,
+  Share2, MessageCircle, Lock, Crown, Droplets, GitCompareArrows,
   Sunrise, Sunset
 } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -389,6 +389,24 @@ export default function SpotDetails() {
               const diff = spot.score - scoreHistory.avg30
               const pct = Math.round(Math.abs(diff / scoreHistory.avg30) * 100)
               if (pct < 5 && !scoreHistory.isMonthBest) return null
+              // Histórico de 30 dias é Premium (página Premium e tabela de planos). Até 08/out/2026
+              // aparecia pra todo mundo; o usuário decidiu travar. A conta grátis vê o convite só
+              // quando haveria algo a mostrar, sem entregar se o mar está acima ou abaixo
+              if (!isPremium) {
+                if (premiumLoading) return null
+                return (
+                  <button type="button" onClick={() => navigate('/premium')}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl border border-dashed border-rating-fair/40 bg-rating-fair/5 hover:bg-rating-fair/10 transition-colors text-left"
+                    style={{ animation: 'slideUp 0.3s ease-out' }}>
+                    <Lock className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Como o mar de hoje se compara ao último mês?</p>
+                      <p className="text-xs text-muted-foreground">Média dos últimos 30 dias neste pico</p>
+                    </div>
+                    <span className="flex items-center gap-1 text-xs font-semibold text-rating-fair"><Crown className="h-3.5 w-3.5" />Premium</span>
+                  </button>
+                )
+              }
               return (
                 <div
                   className={`flex items-center gap-3 px-4 py-3 rounded-2xl border ${

@@ -4,26 +4,24 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
   ArrowLeft, Check, Crown, Loader2, CheckCircle2, XCircle, Clock, Lock, Gift, Minus,
-  ChevronDown, QrCode, CreditCard, Barcode, ArrowDown, type LucideIcon,
+  ChevronDown, QrCode, CreditCard, Barcode, type LucideIcon,
 } from 'lucide-react'
 import { createMercadoPagoCheckout, startPremiumTrial, usePremium, MP_PUBLIC_KEY } from '@/lib/premium'
 import { CardSubscriptionForm } from '@/components/CardSubscriptionForm'
 import { OneTimePaymentForm } from '@/components/OneTimePaymentForm'
-import { ForecastTeaser } from '@/components/premium/ForecastTeaser'
 import { PremiumShowcase } from '@/components/premium/PremiumShowcase'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { track } from '@/lib/monitoring'
 import {
-  PRICE_MONTHLY, PRICE_ANNUAL, PRICE_ANNUAL_PER_MONTH, ANNUAL_SAVINGS, TRIAL_DAYS,
+  PRICE_MONTHLY, PRICE_ANNUAL, PRICE_ANNUAL_PER_MONTH, ANNUAL_SAVINGS, ANNUAL_MAX_INSTALLMENTS, TRIAL_DAYS,
   formatBRL, perDayCeil,
 } from '@/lib/pricing'
 
 // Visual refeito em 08/out/2026 ("muito feia, simples, não parece que estou adquirindo uma coisa
-// muito boa"). 2ª versão no mesmo dia, depois do retorno dele: no topo, uma quinzena de exemplo
-// que mostra o que o grátis esconde (ForecastTeaser); recursos com números de exemplo
-// (PremiumShowcase) no lugar da lista de 7 benefícios; planos em dois cartões grandes; tabela
-// Free vs Premium recolhida. E TODO pagamento dentro do app: mensal com renovação no
+// muito boa"). Ordem pedida por ele no fim do dia: promessa (+ teste grátis) → planos → "O que
+// muda no seu surf" (PremiumShowcase, começando pela quinzena de exemplo que mostra o que o grátis
+// esconde, com as peças do próprio app e números de exemplo) → tabela Free vs Premium recolhida. E TODO pagamento dentro do app: mensal com renovação no
 // CardSubscriptionForm, anual e 1 mês avulso no OneTimePaymentForm (cartão, Pix e boleto). A
 // página do Mercado Pago só fica de reserva se faltar a chave pública.
 
@@ -181,9 +179,6 @@ export default function PremiumPage() {
       ? `${daysLeft === 1 ? 'Falta 1 dia' : `Faltam ${daysLeft} dias`} com tudo liberado. Se assinar agora, os dias que sobraram do teste somam no plano.`
       : 'Previsão de 14 dias, alerta no celular quando sua praia fica boa e um chat que conhece as 14 praias da ilha.'
 
-  // Quem não tem mais teste grátis pra pegar vê os planos logo depois da carteirinha
-  const plansFirst = !loadingStatus && showPlans && !offerTrial
-  const scrollToPlans = () => document.getElementById('planos')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
   const plans = showPlans && (
     <section id="planos" className="scroll-mt-20 space-y-4" style={{ animation: 'slideUp 0.5s 0.15s ease-out both' }}>
@@ -202,7 +197,7 @@ export default function PremiumPage() {
       <div className="grid grid-cols-2 gap-3 pt-2">
         <PlanOption selected={selectedPlan === 'annual'} onSelect={() => { setSelectedPlan('annual'); setError(null) }}
           name="Anual" price={PRICE_ANNUAL_PER_MONTH} ribbon={`Economize R$ ${ANNUAL_SAVINGS}`}
-          lines={[`${formatBRL(PRICE_ANNUAL)} por ano`, `menos de ${perDayCeil(PRICE_ANNUAL, 365)}/dia`]} />
+          lines={[`${formatBRL(PRICE_ANNUAL)} por ano`, `ou em até ${ANNUAL_MAX_INSTALLMENTS}x no cartão`]} />
         <PlanOption selected={selectedPlan === 'monthly'} onSelect={() => { setSelectedPlan('monthly'); setError(null) }}
           name="Mensal" price={PRICE_MONTHLY}
           lines={[monthlyAuto ? 'Renova todo mês' : '30 dias, sem renovação', monthlyAuto ? 'Cancele quando quiser' : `menos de ${perDayCeil(PRICE_MONTHLY, 30)}/dia`]} />
@@ -223,7 +218,7 @@ export default function PremiumPage() {
           {!useCardForm && !paidInApp && (
             <p className="text-center text-sm text-muted-foreground">
               {selectedPlan === 'annual'
-                ? <>Pagamento único de <span className="font-semibold text-foreground">{formatBRL(PRICE_ANNUAL)}</span>. Vale 12 meses.</>
+                ? <><span className="font-semibold text-foreground">{formatBRL(PRICE_ANNUAL)}</span> por 12 meses, à vista ou em até {ANNUAL_MAX_INSTALLMENTS}x no cartão.</>
                 : useAutoRenew
                   ? <>{formatBRL(PRICE_MONTHLY)} no cartão de crédito todo mês, até você cancelar.</>
                   : <>Pagamento único de <span className="font-semibold text-foreground">{formatBRL(PRICE_MONTHLY)}</span>. Vale 30 dias.</>}
@@ -367,15 +362,13 @@ export default function PremiumPage() {
           </div>
         )}
 
-        {/* Topo: promessa + carteirinha */}
+        {/* Topo: promessa + teste grátis */}
         <section className="space-y-7 text-center">
           <div className="space-y-3" style={{ animation: 'slideUp 0.6s ease-out both' }}>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Surf AI Premium</p>
             <h1 className="text-[2.15rem] font-black leading-[1.05] tracking-tight text-balance">{heroTitle}</h1>
             <p className="mx-auto max-w-sm text-sm leading-relaxed text-muted-foreground text-balance">{heroText}</p>
           </div>
-
-          {!paidPremium && <div style={{ animation: 'slideUp 0.6s 0.15s ease-out both' }}><ForecastTeaser /></div>}
 
           {!loadingStatus && (paidPremium || isTrial) && (
             <Button variant={isTrial ? 'outline' : 'default'} onClick={() => navigate('/')}>Ir para o app</Button>
@@ -392,15 +385,12 @@ export default function PremiumPage() {
                   : <><Gift className="h-5 w-5 mr-2" />{canStartTrial ? `Começar meus ${TRIAL_DAYS} dias grátis` : `Criar conta e testar ${TRIAL_DAYS} dias grátis`}</>}
               </Button>
               <p className="text-xs text-muted-foreground">Sem cartão. Nada é cobrado no fim: você só paga se decidir assinar.</p>
-              <button type="button" onClick={scrollToPlans}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
-                Ver os planos<ArrowDown className="h-3 w-3" />
-              </button>
             </div>
           )}
         </section>
 
-        {plansFirst ? <>{plans}{showcase}</> : <>{showcase}{plans}</>}
+        {plans}
+        {showcase}
 
         {/* Comparativo Free vs Premium, recolhido */}
         {!isPremium && (
