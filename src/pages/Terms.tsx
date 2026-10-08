@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { AppLogo } from '@/components/AppLogo'
 import { ArrowLeft } from 'lucide-react'
-import { PRICE_MONTHLY, PRICE_ANNUAL, PRICE_ANNUAL_PER_MONTH, TRIAL_DAYS, formatBRL } from '@/lib/pricing'
+import { PRICE_MONTHLY, PRICE_ANNUAL, PRICE_ANNUAL_PER_MONTH, ANNUAL_MAX_INSTALLMENTS, TRIAL_DAYS, formatBRL } from '@/lib/pricing'
 
 const SECTIONS = [
   {
@@ -34,7 +34,7 @@ Você deve ter pelo menos 13 anos para criar uma conta. Não crie mais de uma co
 **Como funciona o pagamento:** o pagamento é processado pelo Mercado Pago, de dois jeitos:
 
 • **Mensal com renovação automática (cartão de crédito):** é uma assinatura. O valor é cobrado no cartão uma vez por mês, na mesma data, até você cancelar. Você cancela quando quiser em Configurações, sem multa: nada mais é cobrado e o Premium continua até o fim do mês já pago. Se o cartão recusar a cobrança 3 vezes seguidas, o Mercado Pago cancela a assinatura sozinho.
-• **Anual ou mensal avulso (cartão, Pix ou boleto):** é um pagamento único, sem renovação. O acesso Premium vale por 365 dias (anual) ou 30 dias (mensal avulso) e, ao final, você decide se quer pagar de novo. Avisamos por e-mail uns dias antes de acabar.
+• **Anual ou mensal avulso (cartão, Pix ou boleto):** é um pagamento único, sem renovação. No cartão, o anual pode ser parcelado em até ${ANNUAL_MAX_INSTALLMENTS}x; os juros do parcelamento são calculados pelo Mercado Pago e mostrados antes de você confirmar. O acesso Premium vale por 365 dias (anual) ou 30 dias (mensal avulso) e, ao final, você decide se quer pagar de novo. Avisamos por e-mail uns dias antes de acabar.
 
 **Direito de arrependimento:** por ser uma compra feita à distância (pela internet), você tem direito a cancelar a compra em até 7 dias corridos da data do pagamento e receber o valor de volta na íntegra, conforme o Art. 49 do Código de Defesa do Consumidor, mesmo que já tenha usado o Premium nesse período. Pra isso, entre em contato pelo email no fim desta página.`,
   },

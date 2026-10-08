@@ -17,7 +17,7 @@ import { ChatDemo } from '@/components/landing/ChatDemo'
 import { FAQS } from '@/components/landing/landingData'
 import { BEACH_DIRECTORY } from '@/lib/beachDirectory'
 import { countLandingCta, countLandingView } from '@/lib/landingStats'
-import { PRICE_MONTHLY, PRICE_ANNUAL, PRICE_ANNUAL_PER_MONTH, TRIAL_DAYS, formatBRL } from '@/lib/pricing'
+import { PRICE_MONTHLY, PRICE_ANNUAL, PRICE_ANNUAL_PER_MONTH, ANNUAL_MAX_INSTALLMENTS, TRIAL_DAYS, formatBRL } from '@/lib/pricing'
 
 // Desconto do anual sobre o mensal, pro selo do card (-26%)
 const ANNUAL_DISCOUNT_PCT = Math.round((1 - PRICE_ANNUAL_PER_MONTH / PRICE_MONTHLY) * 100)
@@ -199,7 +199,7 @@ export default function Landing() {
           <SectionHead badge={<Badge className="bg-rating-fair/15 text-rating-fair border-rating-fair/30 mb-4"><Crown className="h-3 w-3 mr-1.5" />Premium</Badge>}
             title={<>Custa menos que uma ida<br /><span className="text-rating-fair">até a praia errada.</span></>}>
             O Premium libera os 14 dias de previsão, o chat com o Surf AI, os alertas e tudo o que você viu nesta página.
-            Pague com Pix, cartão ou boleto, sem fidelidade.
+            Pague com Pix, boleto ou cartão, o anual em até {ANNUAL_MAX_INSTALLMENTS}x, sem sair do app e sem fidelidade.
           </SectionHead>
 
           <div className="grid md:grid-cols-2 gap-10 items-center mb-10">
@@ -209,7 +209,7 @@ export default function Landing() {
                 { icon: BarChart3, title: 'Previsão de 14 dias, hora a hora' },
                 { icon: Clock, title: 'Melhor janela do dia' },
                 { icon: Compass, title: 'Bora Surfar, a praia boa mais perto de você' },
-                { icon: Bell, title: 'Alertas na nota que você escolher, praia por praia' },
+                { icon: Bell, title: 'Alertas no celular e por e-mail, na nota que você escolher' },
                 { icon: TrendingUp, title: 'Histórico de 30 dias e comparação de praias' },
                 { icon: Shield, title: 'Sem anúncios' },
               ].map(({ icon: Icon, title }) => (
@@ -244,7 +244,8 @@ export default function Landing() {
                   <Badge className="absolute -top-0.5 right-2 bg-rating-fair text-[9px] px-1.5 py-0 h-4 text-background">-{ANNUAL_DISCOUNT_PCT}%</Badge>
                   <div className="text-xs text-rating-fair uppercase tracking-widest mb-1 font-semibold">Anual</div>
                   <div className="text-3xl font-black text-rating-fair leading-none">R${Math.floor(PRICE_ANNUAL_PER_MONTH)}<span className="text-lg">,{formatBRL(PRICE_ANNUAL_PER_MONTH).split(',')[1]}</span></div>
-                  <div className="text-xs text-muted-foreground mb-3">por mês · {formatBRL(PRICE_ANNUAL).replace(' ', '')}/ano</div>
+                  <div className="text-xs text-muted-foreground">por mês · {formatBRL(PRICE_ANNUAL).replace(' ', '')}/ano</div>
+                  <div className="text-xs font-semibold text-rating-fair mb-3">ou em até {ANNUAL_MAX_INSTALLMENTS}x no cartão</div>
                   <Button asChild size="sm" className="w-full font-semibold"
                     style={{ background: 'var(--rating-fair)', color: 'oklch(0.1 0.02 240)' }}>
                     <Link to="/login?plan=premium" onClick={() => countLandingCta('preco-anual')}>Assinar</Link>
@@ -256,7 +257,7 @@ export default function Landing() {
 
           <Reveal className="flex flex-col items-center gap-5">
             <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
-              {['Pix, cartão ou boleto', 'Sem fidelidade', 'Reembolso em até 7 dias'].map(t => (
+              {['Pix, cartão ou boleto', `Anual em até ${ANNUAL_MAX_INSTALLMENTS}x`, 'Sem fidelidade', 'Reembolso em até 7 dias'].map(t => (
                 <span key={t} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <CheckCircle2 className="h-3.5 w-3.5 text-rating-good" />{t}
                 </span>

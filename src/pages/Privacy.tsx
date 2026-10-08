@@ -13,7 +13,7 @@ const SECTIONS = [
 • **Sessões de surf**: registros que você mesmo insere voluntariamente no app.
 • **Conversas do chat** (Premium): as mensagens que você troca com o Surf AI ficam salvas na sua conta pra conversa ter continuidade. Você pode apagá-las excluindo a conta.
 • **Dados de uso**: páginas acessadas e interações dentro do app, de forma anônima e agregada.
-• **Dados de pagamento**: processados integralmente pelo Mercado Pago. Não armazenamos dados de cartão.`,
+• **Dados de pagamento**: processados integralmente pelo Mercado Pago. O número do cartão é digitado em campos do próprio Mercado Pago, dentro do app, e nunca passa pelos nossos servidores. CPF, nome e, no boleto, endereço passam pelo nosso servidor só pra criar o pagamento no Mercado Pago e não são guardados por nós.`,
   },
   {
     title: '2. Como usamos suas informações',
