@@ -49,7 +49,7 @@ export function OneTimePaymentForm({ plan, email, onApproved }: {
           initialization: { amount, payer: { email } },
           customization: {
             visual: {
-              style: { theme: resolvedTheme === 'light' ? 'default' : 'dark', customVariables: brickColors() },
+              style: { theme: resolvedTheme === 'light' ? 'default' : 'dark', customVariables: brickColors('8px') },
               texts: { formSubmit: plan === 'annual' ? `Pagar ${formatBRL(PRICE_ANNUAL)}` : `Pagar ${formatBRL(PRICE_MONTHLY)}` },
             },
             paymentMethods: { creditCard: 'all', bankTransfer: 'all', ticket: 'all', maxInstallments: plan === 'annual' ? ANNUAL_MAX_INSTALLMENTS : 1 },
@@ -92,7 +92,7 @@ export function OneTimePaymentForm({ plan, email, onApproved }: {
         const mp = new window.MercadoPago(publicKey, { locale: 'pt-BR' })
         const created = await mp.bricks().create('statusScreen', STATUS_ID, {
           initialization: { paymentId: String(pendingId) },
-          customization: { visual: { style: { theme: resolvedTheme === 'light' ? 'default' : 'dark', customVariables: brickColors() } } },
+          customization: { visual: { style: { theme: resolvedTheme === 'light' ? 'default' : 'dark', customVariables: brickColors('8px') } } },
           callbacks: { onReady: () => {}, onError: (err: unknown) => console.error('[OneTimePaymentForm status]', err) },
         })
         if (cancelled) created.unmount()

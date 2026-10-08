@@ -65,36 +65,36 @@ export function ForecastTeaser() {
         </div>
       </div>
 
-      {/* Barras: altura e cor pela nota de cada dia */}
-      <div className="relative mt-4">
-        <div className="relative grid h-36 grid-cols-14 items-end gap-1">
+      {/* Barras: altura e cor pela nota de cada dia. pt-9 = espaço pro número do dia clássico */}
+      <div className="relative mt-2 pt-9">
+        <div className="relative grid h-32 grid-cols-14 items-end gap-1">
           {scores.map((s, i) => {
             const hidden = !premium && i >= FREE_DAYS
             const isPeak = i === peak
             return (
-              <div key={i} className="relative flex h-full items-end justify-center">
+              <div
+                key={i}
+                className={`relative w-full rounded-t-md transition-all duration-700 ease-out ${isPeak && premium ? 'shadow-lg' : ''}`}
+                style={{
+                  height: hidden ? '18%' : `${Math.max(12, s * 10)}%`,
+                  background: hidden ? 'var(--muted)' : getRatingInfo(s).scoreColor,
+                  opacity: hidden ? 0.6 : 1,
+                  transitionDelay: premium && i >= FREE_DAYS ? `${(i - FREE_DAYS) * 45}ms` : '0ms',
+                }}
+              >
                 {isPeak && premium && (
                   <div className="absolute bottom-full left-1/2 mb-1 -translate-x-1/2 whitespace-nowrap text-center"
-                    style={{ animation: 'slideUp 0.4s 0.55s ease-out both' }}>
+                    style={{ animation: 'fadeIn 0.4s 0.8s ease-out both' }}>
                     <div className="text-sm font-black tabular-nums leading-none" style={{ color: peakInfo.scoreColor }}>{PEAK.toFixed(1)}</div>
                     <div className="text-[8px] font-bold tracking-wider" style={{ color: peakInfo.scoreColor }}>{peakInfo.label}</div>
                   </div>
                 )}
-                <div
-                  className={`w-full rounded-t-md transition-all duration-700 ease-out ${isPeak && premium ? 'shadow-lg' : ''}`}
-                  style={{
-                    height: hidden ? '18%' : `${Math.max(12, s * 10)}%`,
-                    background: hidden ? 'var(--muted)' : getRatingInfo(s).scoreColor,
-                    opacity: hidden ? 0.6 : 1,
-                    transitionDelay: premium && i >= FREE_DAYS ? `${(i - FREE_DAYS) * 45}ms` : '0ms',
-                  }}
-                />
               </div>
             )
           })}
         </div>
         {/* Cadeado sobre os dias que o grátis não mostra */}
-        <div className={`pointer-events-none absolute inset-y-0 right-0 flex flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-border bg-card/70 text-center backdrop-blur-[2px] transition-opacity duration-500 ${premium ? 'opacity-0' : 'opacity-100'}`}
+        <div className={`pointer-events-none absolute bottom-0 top-9 right-0 flex flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-border bg-card/70 text-center backdrop-blur-[2px] transition-opacity duration-500 ${premium ? 'opacity-0' : 'opacity-100'}`}
           style={{ left: `calc(${(FREE_DAYS / DAYS) * 100}% + 2px)` }}>
           <Lock className="h-4 w-4 text-muted-foreground" />
           <span className="text-[11px] font-semibold text-muted-foreground">11 dias que o grátis não mostra</span>

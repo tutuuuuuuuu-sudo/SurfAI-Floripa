@@ -58,13 +58,16 @@ function themeHex(name: string): string | undefined {
   return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('')
 }
 
-export function brickColors() {
+/** Cores do tema pro formulário do MP. padding: espaço interno do formulário — o de cartão
+ *  (cardPayment) fica bem com 0 dentro do nosso card; o completo (payment) e a tela de status
+ *  usam esse valor também como margem das linhas da lista e quebram com 0 (padrão do MP: 16px). */
+export function brickColors(padding = '0px') {
   const vars: Record<string, string> = {
     formBackgroundColor: 'card', inputBackgroundColor: 'background', textPrimaryColor: 'foreground',
     textSecondaryColor: 'muted-foreground', secondaryBackgroundColor: 'muted', tertiaryBackgroundColor: 'muted',
     baseColor: 'primary', buttonTextColor: 'primary-foreground', outlinePrimaryColor: 'border', errorColor: 'destructive',
   }
-  const out: Record<string, string> = { formPadding: '0px', borderRadiusSmall: '8px', borderRadiusMedium: '12px', borderRadiusLarge: '12px' }
+  const out: Record<string, string> = { formPadding: padding, borderRadiusSmall: '8px', borderRadiusMedium: '12px', borderRadiusLarge: '12px' }
   for (const [key, cssVar] of Object.entries(vars)) {
     const hex = themeHex(cssVar)
     if (hex) out[key] = hex
