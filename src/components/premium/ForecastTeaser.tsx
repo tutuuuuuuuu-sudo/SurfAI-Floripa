@@ -131,13 +131,13 @@ export function ForecastTeaser() {
           </div>
           {!edges.start && (
             <button type="button" onClick={() => scrollByCards(-1)} aria-label="Dias anteriores"
-              className="absolute -left-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card/95 shadow-lg transition-colors hover:border-primary/50">
+              className="absolute -left-2 sm:-left-6 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card/95 shadow-lg transition-colors hover:border-primary/50">
               <ChevronLeft className="h-4 w-4" />
             </button>
           )}
           {!edges.end && (
             <button type="button" onClick={() => scrollByCards(1)} aria-label="Próximos dias"
-              className="absolute -right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card/95 shadow-lg transition-colors hover:border-primary/50">
+              className="absolute -right-2 sm:-right-6 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card/95 shadow-lg transition-colors hover:border-primary/50">
               <ChevronRight className="h-4 w-4" />
             </button>
           )}

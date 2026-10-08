@@ -85,7 +85,8 @@ export function CompareTable({ spots, trends }: { spots: CompareRow[]; trends: R
             return (
               <div key={spot.id} className="text-center rounded-lg py-1.5">
                 {info ? (
-                  <div className={`inline-flex items-center gap-1 text-xs font-semibold ${info.className}`}>
+                  // Ícone em cima do texto: com 3 praias no celular, "Melhorando" invadia a coluna do lado
+                  <div className={`inline-flex flex-col items-center gap-0.5 text-[11px] font-semibold leading-tight ${info.className}`}>
                     <info.icon className="h-3.5 w-3.5" />{info.label}
                   </div>
                 ) : (
