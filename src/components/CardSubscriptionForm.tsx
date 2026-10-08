@@ -60,7 +60,11 @@ export function CardSubscriptionForm({ email, onSubscribed }: { email: string; o
         const created = await mp.bricks().create('cardPayment', CONTAINER_ID, {
           initialization: { amount: PRICE_MONTHLY, payer: { email } },
           customization: {
-            visual: { style: { theme: resolvedTheme === 'light' ? 'default' : 'dark' } },
+            visual: {
+              style: { theme: resolvedTheme === 'light' ? 'default' : 'dark' },
+              // Título padrão do MP diz "crédito ou débito" mesmo com débito excluído
+              texts: { formTitle: 'Cartão de crédito', formSubmit: `Assinar por ${formatBRL(PRICE_MONTHLY)}/mês` },
+            },
             // Assinatura só funciona com cartão de crédito, cobrado à vista todo mês
             paymentMethods: { minInstallments: 1, maxInstallments: 1, types: { excluded: ['debit_card', 'prepaid_card'] } },
           },
