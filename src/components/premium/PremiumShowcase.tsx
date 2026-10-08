@@ -1,6 +1,7 @@
-import { Bell, Crown, History, MessageCircle, Scale, ShieldOff, Zap, type LucideIcon } from 'lucide-react'
+import { Bell, Compass, Crown, History, MessageCircle, Scale, ShieldOff, Zap, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { Reveal } from '@/components/landing/LandingComponents'
+import { Reveal, GeoFinderMockup } from '@/components/landing/LandingComponents'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { PushNotificationCard } from '@/components/PushNotificationCard'
 import { ChatBubble } from '@/components/home/ChatBubble'
 import { CompareSpotCard } from '@/components/spot/CompareSpotCard'
@@ -31,6 +32,30 @@ function AlertExample() {
         title={<>A Joaquina está com <Score value={8.2} /></>}
         body="Onda de 1.4 a 1.7m, vento W oeste de 8km/h. Bora?"
       />
+      <Caption>Exemplo</Caption>
+    </div>
+  )
+}
+
+// Mesmo cabeçalho do cartão "Onde Surfar Agora" da tela inicial (GeoFinderCard), com o
+// resultado de exemplo que a landing já usa (GeoFinderMockup: "Mais perto" x "Vale o desvio")
+function GeoExample() {
+  return (
+    <div className="flex w-full max-w-sm flex-col gap-2">
+      <Card className="border-primary/20 overflow-hidden">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Compass className="h-4 w-4 text-primary" />
+            Onde Surfar Agora
+          </CardTitle>
+          <CardDescription className="text-xs">
+            A gente compara as praias mais perto de você e mostra pra onde vale ir agora
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <GeoFinderMockup />
+        </CardContent>
+      </Card>
       <Caption>Exemplo</Caption>
     </div>
   )
@@ -111,8 +136,14 @@ const FEATURES: { icon: LucideIcon; title: string; text: string; visual: ReactNo
   {
     icon: Bell,
     title: 'O celular avisa quando o mar fica bom',
-    text: 'Você escolhe a nota que te tira da cama em cada praia. No exemplo, quem recebeu o alerta às 6h pegou 8.2. Às 10h o vento virou e a nota caiu pra 4.3.',
+    text: 'Você escolhe a nota que te tira da cama em cada praia. No exemplo, quem recebeu o alerta às 6h pegou 8.2. Às 10h o vento virou e a nota caiu pra 4.3. E chega e-mail às 6h e às 15h quando alguma praia passa de 6.',
     visual: <AlertExample />,
+  },
+  {
+    icon: Compass,
+    title: 'Onde surfar agora, a partir de onde você está',
+    text: 'O app compara a praia mais perto de você com a melhor da região e diz se vale rodar mais uns quilômetros. Depois abre o caminho no Maps ou no Waze, direto no melhor pico da praia.',
+    visual: <GeoExample />,
   },
   {
     icon: MessageCircle,

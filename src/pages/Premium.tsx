@@ -36,6 +36,8 @@ const FREE_VS_PREMIUM: { feature: string; free: boolean }[] = [
   { feature: 'Previsão 14 dias', free: false },
   { feature: 'Chat com o Surf AI', free: false },
   { feature: 'Alertas de swell (push)', free: false },
+  { feature: 'Alerta de mar bom por e-mail', free: false },
+  { feature: 'Onde surfar agora (pela sua localização)', free: false },
   { feature: 'Histórico 30 dias', free: false },
   { feature: 'Melhor janela horária', free: false },
   { feature: 'Comparar praias', free: false },
