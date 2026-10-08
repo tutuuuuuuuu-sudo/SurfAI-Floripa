@@ -7,6 +7,7 @@ import { useBodyScrollLock } from '@/hooks/use-body-scroll-lock'
 import { sendChatMessage, loadChatHistory, getChatUsage, ChatUsage } from '@/lib/surfChat'
 import { BeachCondition } from '@/lib/surfData'
 import { track } from '@/lib/monitoring'
+import { ChatBubble } from '@/components/home/ChatBubble'
 
 // Abaixo desse tanto de mensagens restando, a barra vira aviso mais direto ("só mais X
 // mensagens hoje") em vez do texto neutro de contagem.
@@ -124,17 +125,7 @@ export function SurfChatPanel({ open, onClose, spots, userLevel, userName }: Pro
         )}
 
         {messages.map(m => (
-          <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div
-              className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-line ${
-                m.role === 'user'
-                  ? 'bg-primary text-primary-foreground rounded-br-sm'
-                  : 'bg-card border border-border/50 rounded-bl-sm'
-              }`}
-            >
-              {m.content}
-            </div>
-          </div>
+          <ChatBubble key={m.id} role={m.role}>{m.content}</ChatBubble>
         ))}
 
         {sending && (

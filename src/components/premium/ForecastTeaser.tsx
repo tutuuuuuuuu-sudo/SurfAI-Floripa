@@ -1,121 +1,136 @@
-import { useEffect, useState } from 'react'
-import { Lock } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Calendar, Crown, Lock } from 'lucide-react'
+import { ForecastDayCard } from '@/components/spot/ForecastDayCard'
 import { getRatingInfo } from '@/lib/rating'
 import { todaySP } from '@/lib/timeSP'
-import { FREE_DAYS } from '@/lib/weatherData'
+import { FREE_DAYS, type WeatherForecast } from '@/lib/weatherData'
 import { useReveal } from '@/hooks/use-reveal'
 
-// Topo da página Premium (08/out/2026, 2ª versão): o usuário pediu "números que o usuário veja a
-// diferença e sinta que isso é necessário pra ele", com exemplo em vez de dado ao vivo, e não
-// gostou da carteirinha com a foto. Aqui é uma quinzena de EXEMPLO na Joaquina: no grátis a
-// previsão acaba no 3º dia; no Premium aparece o dia clássico (sábado que vem, 8.6) que estava
-// escondido. Começa no "Grátis" e vira "Premium" sozinho quando aparece na tela; dá pra alternar.
+// Topo da página Premium (08/out/2026, 3ª versão). O usuário pediu números de exemplo "que o
+// usuário veja a diferença" e depois: "vamos usar o que o app já usa, que já é validado e é
+// bonito" — o gráfico de barras próprio ficou "feio e genérico". Aqui é a MESMA aba Previsão da
+// página da praia (ForecastDayCard + abas no mesmo estilo), com uma quinzena de EXEMPLO na
+// Joaquina: no Grátis aparecem 3 dias e o resto trancado; no Premium os 14, com o sábado
+// clássico (8.6) em destaque. Começa no Grátis e abre o Premium sozinho quando aparece na tela.
 
 const DAYS = 14
-const WEEKDAY = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
+const WEEKDAY = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const WEEKDAY_FULL = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado']
 const PEAK = 8.6
 // Notas de um mar comum, com a ondulação crescendo até o pico e indo embora depois
 const BASE = [3.9, 4.4, 3.2, 2.7, 3.5, 4.1, 3.6, 3.3, 4.0, 3.8, 3.1, 3.7, 4.5, 4.2]
 const AROUND_PEAK: Record<number, number> = { [-2]: 5.4, [-1]: 7.1, 0: PEAK, 1: 7.6, 2: 5.9 }
 
-function quinzena() {
+function quinzena(): { days: WeatherForecast[]; peak: number } {
   const base = new Date(`${todaySP()}T12:00:00`)
   const dates = Array.from({ length: DAYS }, (_, i) => new Date(base.getTime() + i * 86_400_000))
-  // Pico no primeiro sábado que o grátis não mostra (sempre cai entre o 5º e o 11º dia)
+  // Pico no primeiro sábado que o grátis não mostra (sempre cai entre o 6º e o 12º dia)
   const peak = dates.findIndex((d, i) => i >= FREE_DAYS + 2 && d.getDay() === 6)
-  const scores = BASE.map((s, i) => AROUND_PEAK[i - peak] ?? s)
-  return { dates, scores, peak }
+  const days = dates.map((d, i): WeatherForecast => {
+    const score = AROUND_PEAK[i - peak] ?? BASE[i]
+    return {
+      date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
+      dayName: i === 1 ? 'Amanhã' : WEEKDAY[d.getDay()],
+      // Onda maior e vento mais fraco nos dias bons, como no mar de verdade
+      waveHeight: Math.round((0.4 + score * 0.15) * 10) / 10,
+      windSpeed: Math.round(30 - score * 2.8),
+      windDirection: score >= 7 ? 'W' : 'NE',
+      swellPeriod: score >= 7 ? 13 : 7,
+      temperature: 20 + (i % 3),
+      condition: 'Regular',
+      score,
+    }
+  })
+  return { days, peak }
 }
 
 export function ForecastTeaser() {
-  const { ref, visible } = useReveal(0.5)
+  const { ref, visible } = useReveal(0.4)
   const [mode, setMode] = useState<'free' | 'premium'>('free')
   const [touched, setTouched] = useState(false)
-  const { dates, scores, peak } = quinzena()
+  const rowRef = useRef<HTMLDivElement>(null)
+  const peakRef = useRef<HTMLDivElement>(null)
+  const [{ days, peak }] = useState(quinzena)
   const premium = mode === 'premium'
-  const peakInfo = getRatingInfo(PEAK)
-  const peakDate = dates[peak]
+  const peakDay = new Date(`${days[peak].date}T12:00:00`)
+  const lastFree = new Date(`${days[FREE_DAYS - 1].date}T12:00:00`)
 
-  // Mostra o "Grátis" por um instante e abre o resto sozinho (até a pessoa mexer no seletor)
+  // Mostra o Grátis por um instante e abre o Premium sozinho (até a pessoa mexer nas abas)
   useEffect(() => {
     if (!visible || touched) return
-    const t = setTimeout(() => setMode('premium'), 1400)
+    const t = setTimeout(() => setMode('premium'), 1600)
     return () => clearTimeout(t)
   }, [visible, touched])
+
+  // No Premium, rola a faixa de dias até o sábado clássico
+  useEffect(() => {
+    if (!premium) return
+    const t = setTimeout(() => {
+      const row = rowRef.current, card = peakRef.current
+      if (row && card) row.scrollTo({ left: card.offsetLeft - row.clientWidth / 2 + card.clientWidth / 2, behavior: 'smooth' })
+    }, 500)
+    return () => clearTimeout(t)
+  }, [premium])
 
   const pick = (m: 'free' | 'premium') => { setTouched(true); setMode(m) }
 
   return (
-    <div ref={ref} className="rounded-3xl border border-border/60 bg-card p-4 text-left shadow-xl shadow-primary/10">
-      <div className="flex items-center justify-between gap-2">
+    <div ref={ref} className="space-y-4 text-left">
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <div className="text-sm font-bold">Joaquina</div>
-          <div className="text-[11px] text-muted-foreground">Próximos 14 dias · exemplo</div>
-        </div>
-        <div className="flex rounded-full bg-muted p-0.5 text-xs font-semibold" role="tablist" aria-label="Ver a previsão como">
-          {(['free', 'premium'] as const).map(m => (
-            <button key={m} type="button" role="tab" aria-selected={mode === m} onClick={() => pick(m)}
-              className={`rounded-full px-3 py-1 transition-colors ${mode === m
-                ? m === 'premium' ? 'bg-primary text-primary-foreground' : 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground'}`}>
-              {m === 'free' ? 'Grátis' : 'Premium'}
-            </button>
-          ))}
+          <h2 className="font-semibold">Próximos dias · Joaquina</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">Exemplo de uma quinzena</p>
         </div>
       </div>
 
-      {/* Barras: altura e cor pela nota de cada dia. pt-9 = espaço pro número do dia clássico */}
-      <div className="relative mt-2 pt-9">
-        <div className="relative grid h-32 grid-cols-14 items-end gap-1">
-          {scores.map((s, i) => {
-            const hidden = !premium && i >= FREE_DAYS
-            const isPeak = i === peak
-            return (
-              <div
-                key={i}
-                className={`relative w-full rounded-t-md transition-all duration-700 ease-out ${isPeak && premium ? 'shadow-lg' : ''}`}
-                style={{
-                  height: hidden ? '18%' : `${Math.max(12, s * 10)}%`,
-                  background: hidden ? 'var(--muted)' : getRatingInfo(s).scoreColor,
-                  opacity: hidden ? 0.6 : 1,
-                  transitionDelay: premium && i >= FREE_DAYS ? `${(i - FREE_DAYS) * 45}ms` : '0ms',
-                }}
-              >
-                {isPeak && premium && (
-                  <div className="absolute bottom-full left-1/2 mb-1 -translate-x-1/2 whitespace-nowrap text-center"
-                    style={{ animation: 'fadeIn 0.4s 0.8s ease-out both' }}>
-                    <div className="text-sm font-black tabular-nums leading-none" style={{ color: peakInfo.scoreColor }}>{PEAK.toFixed(1)}</div>
-                    <div className="text-[8px] font-bold tracking-wider" style={{ color: peakInfo.scoreColor }}>{peakInfo.label}</div>
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-        {/* Cadeado sobre os dias que o grátis não mostra */}
-        <div className={`pointer-events-none absolute bottom-0 top-9 right-0 flex flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-border bg-card/70 text-center backdrop-blur-[2px] transition-opacity duration-500 ${premium ? 'opacity-0' : 'opacity-100'}`}
-          style={{ left: `calc(${(FREE_DAYS / DAYS) * 100}% + 2px)` }}>
-          <Lock className="h-4 w-4 text-muted-foreground" />
-          <span className="text-[11px] font-semibold text-muted-foreground">11 dias que o grátis não mostra</span>
-        </div>
-      </div>
-
-      <div className="mt-1.5 grid grid-cols-14 gap-1 text-center text-[9px] tabular-nums text-muted-foreground">
-        {dates.map((d, i) => (
-          <span key={i} className={i === peak && premium ? 'font-bold text-foreground' : ''}>{d.getDate()}</span>
+      {/* Mesmas abas da página da praia (Agora / Previsão) */}
+      <div className="flex rounded-xl bg-muted/30 p-1 border border-border/30" role="tablist" aria-label="Ver a previsão como">
+        {(['free', 'premium'] as const).map(m => (
+          <button key={m} type="button" role="tab" aria-selected={mode === m} onClick={() => pick(m)}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-semibold transition-all ${
+              mode === m ? 'bg-card shadow-sm text-foreground border border-border/40' : 'text-muted-foreground hover:text-foreground'
+            }`}>
+            {m === 'free'
+              ? <><Calendar className="h-4 w-4" />Grátis: {FREE_DAYS} dias</>
+              : <><Crown className="h-4 w-4 text-rating-fair" />Premium: {DAYS} dias</>}
+          </button>
         ))}
       </div>
 
-      <div className="mt-3 min-h-[2.5rem] rounded-xl bg-muted/50 px-3 py-2 text-xs leading-relaxed">
+      {premium ? (
+        <div key="p" ref={rowRef} className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1 scrollbar-none">
+          {days.map((day, i) => (
+            <div key={day.date} ref={i === peak ? peakRef : undefined} className="w-[31%] shrink-0 snap-center">
+              <ForecastDayCard day={day} index={i} isPremium usesFeet={false} freeDays={FREE_DAYS} onUpgrade={() => {}} highlight={i === peak} />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div key="f" className="space-y-2">
+          <div className="grid grid-cols-3 gap-2">
+            {days.slice(0, FREE_DAYS).map((day, i) => (
+              <ForecastDayCard key={day.date} day={day} index={i} isPremium={false} usesFeet={false} freeDays={FREE_DAYS} onUpgrade={() => pick('premium')} />
+            ))}
+          </div>
+          {/* Mesmo quadro que a conta grátis vê na página da praia */}
+          <button type="button" onClick={() => pick('premium')}
+            className="w-full py-4 rounded-2xl border border-dashed border-rating-fair/40 bg-rating-fair/5 hover:bg-rating-fair/10 transition-colors text-center">
+            <Lock className="h-4 w-4 text-muted-foreground mx-auto mb-1" />
+            <div className="text-sm font-semibold text-rating-fair">Mais {DAYS - FREE_DAYS} dias escondidos</div>
+            <div className="text-xs text-muted-foreground mt-0.5">Toque pra ver o que o Premium mostra</div>
+          </button>
+        </div>
+      )}
+
+      <div className="rounded-xl bg-muted/40 px-3.5 py-2.5 text-sm leading-relaxed">
         {premium ? (
           <span key="p" className="anim-fade block">
-            O melhor dia da quinzena é <span className="font-bold">{WEEKDAY_FULL[peakDate.getDay()]}, {peakDate.getDate()}</span>: nota{' '}
-            <span className="font-bold" style={{ color: peakInfo.scoreColor }}>{PEAK.toFixed(1)}</span>, onda de 1.6 a 1.9m com 13 segundos.
+            O melhor dia da quinzena é <span className="font-bold">{WEEKDAY_FULL[peakDay.getDay()]}, {peakDay.getDate()}</span>: nota{' '}
+            <span className="font-bold" style={{ color: getRatingInfo(PEAK).scoreColor }}>{PEAK.toFixed(1)}</span>, onda de 1.7m com 13 segundos.
           </span>
         ) : (
           <span key="f" className="anim-fade block text-muted-foreground">
-            No grátis, a previsão acaba {WEEKDAY[dates[FREE_DAYS - 1].getDay()]}, dia {dates[FREE_DAYS - 1].getDate()}. Até lá, nada passa de nota {Math.max(...scores.slice(0, FREE_DAYS)).toFixed(1)}.
+            No grátis, a previsão acaba {WEEKDAY_FULL[lastFree.getDay()]}, dia {lastFree.getDate()}. O que vem depois, você não vê.
           </span>
         )}
       </div>

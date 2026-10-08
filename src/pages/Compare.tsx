@@ -4,12 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { BeachCondition } from '@/lib/surfData'
 import { useSurfData } from '@/contexts/SurfDataContext'
-import { ArrowLeft, Waves, Wind, Thermometer, X, Plus, TrendingUp, TrendingDown, Minus, Crown, Lock, Check } from 'lucide-react'
-import { getScoreColor, getScoreLabel } from '@/lib/rating'
+import { ArrowLeft, Waves, Wind, Thermometer, Plus, TrendingUp, TrendingDown, Minus, Crown, Lock, Check } from 'lucide-react'
+import { getScoreColor } from '@/lib/rating'
 import { usePremium } from '@/lib/premium'
 import { supabase } from '@/lib/supabase'
 import { nowHourSP } from '@/lib/timeSP'
 import { computeTrend, type Trend } from '@/lib/compareTrend'
+import { CompareSpotCard } from '@/components/spot/CompareSpotCard'
 
 const TREND_INFO: Record<Trend, { icon: typeof TrendingUp; label: string; className: string }> = {
   up:      { icon: TrendingUp,   label: 'Melhorando', className: 'text-rating-good' },
@@ -155,26 +156,9 @@ export default function ComparePage() {
 
         {/* Praias selecionadas */}
         <div className={`grid gap-3 ${selected.length === 3 ? 'grid-cols-3' : selected.length === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-          {selected.map((spot, idx) => {
-            const color = getScoreColor(spot.score)
-            return (
-              <Card key={spot.id} className="relative overflow-hidden" style={{ animation: `slideUp 0.3s ${idx * 0.1}s ease-out both` }}>
-                <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: color }} />
-                <CardContent className="pt-5 pb-4 text-center">
-                  <button
-                    onClick={() => removeSpot(spot.id)}
-                    className="absolute top-2 right-2 p-1 rounded-full hover:bg-muted/50 transition-colors"
-                  >
-                    <X className="h-3.5 w-3.5 text-muted-foreground" />
-                  </button>
-                  <div className="text-3xl font-bold mb-0.5" style={{ color }}>{spot.score.toFixed(1)}</div>
-                  <div className="text-xs font-bold mb-2" style={{ color }}>{getScoreLabel(spot.score)}</div>
-                  <div className="font-semibold text-sm leading-tight">{spot.name}</div>
-                  <div className="text-xs text-muted-foreground">{spot.region}</div>
-                </CardContent>
-              </Card>
-            )
-          })}
+          {selected.map((spot, idx) => (
+            <CompareSpotCard key={spot.id} index={idx} score={spot.score} name={spot.name} region={spot.region} onRemove={() => removeSpot(spot.id)} />
+          ))}
 
           {/* Botão adicionar */}
           {selected.length < MAX_COMPARE && (
