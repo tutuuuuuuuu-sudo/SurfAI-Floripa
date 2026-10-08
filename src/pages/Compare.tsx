@@ -4,18 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { BeachCondition } from '@/lib/surfData'
 import { useSurfData } from '@/contexts/SurfDataContext'
-import { ArrowLeft, Waves, Wind, Thermometer, X, Plus, TrendingUp, TrendingDown, Minus, Crown, Lock, Check } from 'lucide-react'
-import { getScoreColor, getScoreLabel } from '@/lib/rating'
+import { ArrowLeft, Plus, Crown, Lock } from 'lucide-react'
+import { getScoreColor } from '@/lib/rating'
 import { usePremium } from '@/lib/premium'
 import { supabase } from '@/lib/supabase'
 import { nowHourSP } from '@/lib/timeSP'
 import { computeTrend, type Trend } from '@/lib/compareTrend'
-
-const TREND_INFO: Record<Trend, { icon: typeof TrendingUp; label: string; className: string }> = {
-  up:      { icon: TrendingUp,   label: 'Melhorando', className: 'text-rating-good' },
-  down:    { icon: TrendingDown, label: 'Piorando',   className: 'text-rating-poor' },
-  stable:  { icon: Minus,        label: 'Estável',    className: 'text-muted-foreground' },
-}
+import { CompareSpotCard } from '@/components/spot/CompareSpotCard'
+import { CompareTable } from '@/components/spot/CompareTable'
 
 const MAX_COMPARE = 3
 
@@ -92,28 +88,6 @@ export default function ComparePage() {
     s.name.toLowerCase().includes(search.toLowerCase())
   )
 
-  const metrics = [
-    { key: 'score',      label: 'Nota IA',           icon: TrendingUp, format: (v: number) => v.toFixed(1),        higher: true,  get: (s: BeachCondition) => s.score },
-    { key: 'waveHeight', label: 'Altura das Ondas',   icon: Waves,      format: (v: number) => `${v.toFixed(1)}m`,  higher: true,  get: (s: BeachCondition) => s.waveHeight },
-    { key: 'swellPeriod',label: 'Período',            icon: Waves,      format: (v: number) => `${Math.round(v)}s`, higher: true,  get: (s: BeachCondition) => s.swellPeriod },
-    { key: 'windSpeed',  label: 'Vento',              icon: Wind,       format: (v: number) => `${Math.round(v)}km/h`, higher: false, get: (s: BeachCondition) => s.windSpeed },
-    { key: 'waterTemp',  label: 'Água',               icon: Thermometer,format: (v: number) => `${v}°C`,            higher: true,  get: (s: BeachCondition) => s.waterConditions.temperature },
-  ]
-
-  const getValue = (spot: BeachCondition, key: string): number =>
-    metrics.find(m => m.key === key)?.get(spot) ?? 0
-
-  const getBest = (key: string, higher: boolean): string => {
-    if (selected.length < 2) return ''
-    const vals = selected.map(s => ({ id: s.id, val: getValue(s, key) }))
-    const best = higher
-      ? vals.reduce((a, b) => b.val > a.val ? b : a)
-      : vals.reduce((a, b) => b.val < a.val ? b : a)
-    // Só destaca se houver diferença
-    const allSame = vals.every(v => v.val === vals[0].val)
-    return allSame ? '' : best.id
-  }
-
   // "Comparação de picos" é benefício Premium (tabela de planos no CLAUDE.md) — antes
   // disso, o gate real era uma cota de "1 comparação grátis/dia" que não protegia nada
   // de verdade (o score de cada praia já é público pra conta free, praia por praia) e
@@ -155,26 +129,9 @@ export default function ComparePage() {
 
         {/* Praias selecionadas */}
         <div className={`grid gap-3 ${selected.length === 3 ? 'grid-cols-3' : selected.length === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-          {selected.map((spot, idx) => {
-            const color = getScoreColor(spot.score)
-            return (
-              <Card key={spot.id} className="relative overflow-hidden" style={{ animation: `slideUp 0.3s ${idx * 0.1}s ease-out both` }}>
-                <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: color }} />
-                <CardContent className="pt-5 pb-4 text-center">
-                  <button
-                    onClick={() => removeSpot(spot.id)}
-                    className="absolute top-2 right-2 p-1 rounded-full hover:bg-muted/50 transition-colors"
-                  >
-                    <X className="h-3.5 w-3.5 text-muted-foreground" />
-                  </button>
-                  <div className="text-3xl font-bold mb-0.5" style={{ color }}>{spot.score.toFixed(1)}</div>
-                  <div className="text-xs font-bold mb-2" style={{ color }}>{getScoreLabel(spot.score)}</div>
-                  <div className="font-semibold text-sm leading-tight">{spot.name}</div>
-                  <div className="text-xs text-muted-foreground">{spot.region}</div>
-                </CardContent>
-              </Card>
-            )
-          })}
+          {selected.map((spot, idx) => (
+            <CompareSpotCard key={spot.id} index={idx} score={spot.score} name={spot.name} region={spot.region} onRemove={() => removeSpot(spot.id)} />
+          ))}
 
           {/* Botão adicionar */}
           {selected.length < MAX_COMPARE && (
@@ -232,60 +189,10 @@ export default function ComparePage() {
 
         {/* Tabela comparativa */}
         {selected.length >= 2 && !loading && (
-          <Card style={{ animation: 'slideUp 0.4s ease-out' }}>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Comparativo Detalhado</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-0">
-              {metrics.map((metric, mIdx) => {
-                const bestId = getBest(metric.key, metric.higher)
-                return (
-                  <div key={metric.key} className={`grid gap-2 py-3 ${selected.length === 3 ? 'grid-cols-4' : 'grid-cols-3'} ${mIdx !== 0 ? 'border-t' : ''}`}>
-                    <div className="flex items-center gap-1.5">
-                      <metric.icon className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                      <span className="text-xs text-muted-foreground">{metric.label}</span>
-                    </div>
-                    {selected.map(spot => {
-                      const val = getValue(spot, metric.key)
-                      const isBest = spot.id === bestId
-                      return (
-                        <div key={spot.id} className={`text-center rounded-lg py-1.5 ${isBest ? 'bg-primary/10' : ''}`}>
-                          <div className={`text-sm font-bold ${isBest ? 'text-primary' : ''}`}>
-                            {metric.format(val)}
-                          </div>
-                          {isBest && <div className="flex items-center justify-center gap-0.5 text-xs text-primary"><Check className="h-3 w-3" />melhor</div>}
-                        </div>
-                      )
-                    })}
-                  </div>
-                )
-              })}
-
-              {/* Tendência das próximas horas — não entra no "melhor" das outras métricas
-                  porque não é um valor do momento atual, é uma direção */}
-              <div className={`grid gap-2 py-3 border-t ${selected.length === 3 ? 'grid-cols-4' : 'grid-cols-3'}`}>
-                <div className="flex items-center gap-1.5">
-                  <TrendingUp className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                  <span className="text-xs text-muted-foreground">Tendência (3h)</span>
-                </div>
-                {selected.map(spot => {
-                  const trend = trends[spot.id]
-                  const info = trend ? TREND_INFO[trend] : null
-                  return (
-                    <div key={spot.id} className="text-center rounded-lg py-1.5">
-                      {info ? (
-                        <div className={`inline-flex items-center gap-1 text-xs font-semibold ${info.className}`}>
-                          <info.icon className="h-3.5 w-3.5" />{info.label}
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">···</span>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            </CardContent>
-          </Card>
+          <CompareTable
+            spots={selected.map(s => ({ id: s.id, score: s.score, waveHeight: s.waveHeight, swellPeriod: s.swellPeriod, windSpeed: s.windSpeed, waterTemp: s.waterConditions.temperature }))}
+            trends={trends}
+          />
         )}
 
         {/* Links para detalhes */}

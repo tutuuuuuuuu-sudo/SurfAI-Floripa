@@ -1,22 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
+import { useReveal } from '@/hooks/use-reveal'
 import { ChevronDown } from 'lucide-react'
 import { getRatingInfo } from '@/lib/rating'
-
-// ── Hook: animação de entrada no scroll ─────────────────────────────────────
-
-function useReveal(threshold = 0.15) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [visible, setVisible] = useState(false)
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setVisible(true); observer.disconnect() } },
-      { threshold }
-    )
-    if (ref.current) observer.observe(ref.current)
-    return () => observer.disconnect()
-  }, [threshold])
-  return { ref, visible }
-}
 
 // ── Reveal wrapper ───────────────────────────────────────────────────────────
 

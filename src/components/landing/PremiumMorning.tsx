@@ -1,5 +1,5 @@
 import { Bell, Compass, Scale } from 'lucide-react'
-import { AppLogo } from '@/components/AppLogo'
+import { PushNotificationCard } from '@/components/PushNotificationCard'
 import { GeoFinderMockup, Reveal } from '@/components/landing/LandingComponents'
 import { useSurfData } from '@/contexts/SurfDataContext'
 import { getRatingInfo } from '@/lib/rating'
@@ -21,27 +21,16 @@ const STEPS_BASE = [
 function PushMock() {
   const { conditions } = useSurfData()
   const best = [...conditions].sort((a, b) => b.score - a.score)[0]
+  if (!best) return <PushNotificationCard time="agora" />
   return (
-    <div className="w-full max-w-sm rounded-2xl border border-border/60 bg-card/90 p-3.5 shadow-xl backdrop-blur-md">
-      <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-        <AppLogo size={18} variant="icon" />
-        <span className="font-semibold uppercase tracking-wide">Surf AI</span>
-        <span className="ml-auto">agora</span>
-      </div>
-      {best ? (
-        <>
-          <div className="mt-1.5 text-sm font-bold">
-            {(() => { const n = withArticle(best.id, best.name); return n.charAt(0).toUpperCase() + n.slice(1) })()} está com{' '}
-            <span style={{ color: getRatingInfo(best.score).scoreColor }}>{best.score.toFixed(1)}</span>
-          </div>
-          <div className="text-sm leading-snug text-muted-foreground">
-            Onda de {formatWaveRange(best.waveHeight).replace('–', ' a ')}, vento {best.windDirection} {directionName(best.windDirection)} de {Math.round(best.windSpeed)}km/h. Bora?
-          </div>
-        </>
-      ) : (
-        <div className="mt-2 h-10 animate-pulse rounded bg-muted" />
-      )}
-    </div>
+    <PushNotificationCard
+      time="agora"
+      title={<>
+        {(() => { const n = withArticle(best.id, best.name); return n.charAt(0).toUpperCase() + n.slice(1) })()} está com{' '}
+        <span style={{ color: getRatingInfo(best.score).scoreColor }}>{best.score.toFixed(1)}</span>
+      </>}
+      body={`Onda de ${formatWaveRange(best.waveHeight).replace('–', ' a ')}, vento ${best.windDirection} ${directionName(best.windDirection)} de ${Math.round(best.windSpeed)}km/h. Bora?`}
+    />
   )
 }
 

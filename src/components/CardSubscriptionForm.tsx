@@ -3,41 +3,18 @@ import { useTheme } from 'next-themes'
 import { Loader2 } from 'lucide-react'
 import { PRICE_MONTHLY, formatBRL } from '@/lib/pricing'
 import { subscribeWithCard, MP_PUBLIC_KEY } from '@/lib/premium'
+import { loadMercadoPagoSdk, brickColors, type BrickController } from '@/lib/mercadoPagoSdk'
 
 // Formulário de cartão do próprio Mercado Pago ("Card Payment Brick") dentro da página Premium,
 // pra assinar o mensal com renovação automática sem precisar de conta no Mercado Pago (02/out/2026).
 // O número do cartão é digitado em campos do MP e vira um código de uso único (token) — nunca passa
 // pelo nosso servidor. O servidor usa esse código pra criar a assinatura (api/_mpSubscription.ts).
 
-const SDK_URL = 'https://sdk.mercadopago.com/js/v2'
 const CONTAINER_ID = 'mp-card-brick'
 
 interface CardFormData {
   token: string
   payer?: { email?: string }
-}
-interface BrickController { unmount: () => void }
-interface MercadoPagoInstance {
-  bricks: () => { create: (type: 'cardPayment', containerId: string, settings: unknown) => Promise<BrickController> }
-}
-declare global {
-  interface Window { MercadoPago?: new (key: string, opts: { locale: string }) => MercadoPagoInstance }
-}
-
-let sdkPromise: Promise<void> | null = null
-function loadSdk(): Promise<void> {
-  if (window.MercadoPago) return Promise.resolve()
-  if (!sdkPromise) {
-    sdkPromise = new Promise<void>((resolve, reject) => {
-      const script = document.createElement('script')
-      script.src = SDK_URL
-      script.async = true
-      script.onload = () => resolve()
-      script.onerror = () => { sdkPromise = null; reject(new Error('Mercado Pago SDK não carregou')) }
-      document.head.appendChild(script)
-    })
-  }
-  return sdkPromise
 }
 
 export function CardSubscriptionForm({ email, onSubscribed }: { email: string; onSubscribed: () => void }) {
@@ -53,7 +30,7 @@ export function CardSubscriptionForm({ email, onSubscribed }: { email: string; o
     let controller: BrickController | null = null
     let cancelled = false
 
-    loadSdk()
+    loadMercadoPagoSdk()
       .then(async () => {
         if (cancelled || !window.MercadoPago) return
         const mp = new window.MercadoPago(publicKey, { locale: 'pt-BR' })
@@ -61,7 +38,7 @@ export function CardSubscriptionForm({ email, onSubscribed }: { email: string; o
           initialization: { amount: PRICE_MONTHLY, payer: { email } },
           customization: {
             visual: {
-              style: { theme: resolvedTheme === 'light' ? 'default' : 'dark' },
+              style: { theme: resolvedTheme === 'light' ? 'default' : 'dark', customVariables: brickColors() },
               // Título padrão do MP diz "crédito ou débito" mesmo com débito excluído
               texts: { formTitle: 'Cartão de crédito', formSubmit: `Assinar por ${formatBRL(PRICE_MONTHLY)}/mês` },
             },

@@ -216,6 +216,33 @@ export async function subscribeWithCard(params: { cardToken: string; payerEmail:
   }
 }
 
+/** Anual ou 1 mês avulso pago dentro do app pelo formulário completo do MP (OneTimePaymentForm):
+ *  manda os dados do formulário pro servidor, que cria o pagamento com o preço de lá
+ *  (api/_mpDirectPayment.ts). status: approved (cartão aprovado, Premium já liberado), pending
+ *  (Pix/boleto esperando pagamento) ou in_process (cartão em análise). */
+export async function payOnce(params: {
+  plan: 'monthly' | 'annual'
+  formData: unknown
+  idempotencyKey: string
+  deviceId?: string
+}): Promise<{ ok: true; id: number; status: string } | { ok: false; error: string }> {
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token
+    if (!token) return { ok: false, error: 'Faça login de novo pra pagar.' }
+    const res = await fetch('/api/create-payment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ plan: params.plan, payment: params.formData, idempotencyKey: params.idempotencyKey, deviceId: params.deviceId }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok || !data?.ok) return { ok: false, error: data?.error ?? 'O pagamento não foi concluído. Tente de novo.' }
+    return { ok: true, id: data.id, status: data.status }
+  } catch {
+    return { ok: false, error: 'Erro de conexão. Tente de novo.' }
+  }
+}
+
 /** Cancela a renovação automática do mensal. O Premium continua até o fim do mês já pago. */
 export async function cancelAutoRenew(): Promise<{ ok: boolean; error?: string }> {
   try {

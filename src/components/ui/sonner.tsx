@@ -34,6 +34,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
           "--border-radius": "var(--radius)",
+          // A biblioteca dos avisos usa a letra do sistema; aqui segue a Poppins do app
+          fontFamily: "inherit",
         } as React.CSSProperties
       }
       toastOptions={{

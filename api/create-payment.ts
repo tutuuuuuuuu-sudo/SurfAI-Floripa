@@ -3,6 +3,8 @@ import { createClient } from '@supabase/supabase-js'
 import { createPersistentRateLimiter } from './_httpUtils.js'
 import { PRICE_MONTHLY, PRICE_ANNUAL, PRICE_ANNUAL_PER_MONTH, formatBRL } from '../src/lib/pricing.js'
 import { createPreapproval, cancelPreapproval, friendlyCardError } from './_mpSubscription.js'
+import { buildDirectPayment, createDirectPayment, friendlyPaymentError, type BrickFormData } from './_mpDirectPayment.js'
+import { activatePremiumFromPayment } from './_mpPayment.js'
 
 // Por userId (não IP) porque o endpoint já exige token válido — um bug de retry
 // no frontend ou usuário malicioso conseguia gerar preferências reais no Mercado
@@ -54,13 +56,23 @@ export default async function handler(req: Request) {
   let payerEmail = ''
   // cardToken: código de uso único do cartão, gerado pelo formulário do MP dentro do app
   let cardToken = ''
+  // payment: dados do formulário completo do MP (anual / 1 mês avulso dentro do app, _mpDirectPayment.ts)
+  let directForm: BrickFormData | null = null
+  let idempotencyKey = ''
+  let deviceId = ''
   try {
-    const body = await req.json() as { userEmail?: string; plan?: string; autoRenew?: boolean; payerEmail?: string; cardToken?: string }
+    const body = await req.json() as {
+      userEmail?: string; plan?: string; autoRenew?: boolean; payerEmail?: string; cardToken?: string
+      payment?: BrickFormData; idempotencyKey?: string; deviceId?: string
+    }
     userEmail = body.userEmail ?? user.email ?? ''
     if (body.plan === 'annual') plan = 'annual'
     autoRenew = plan === 'monthly' && body.autoRenew === true
     payerEmail = (body.payerEmail ?? '').trim().toLowerCase()
     cardToken = typeof body.cardToken === 'string' ? body.cardToken.trim() : ''
+    if (body.payment && typeof body.payment === 'object') directForm = body.payment
+    idempotencyKey = typeof body.idempotencyKey === 'string' ? body.idempotencyKey.replace(/[^\w-]/g, '').slice(0, 64) : ''
+    deviceId = typeof body.deviceId === 'string' ? body.deviceId.slice(0, 200) : ''
   } catch {
     userEmail = user.email ?? ''
   }
@@ -75,6 +87,36 @@ export default async function handler(req: Request) {
   if (!emailRegex.test(userEmail)) return json({ error: 'Email inválido' }, 400)
 
   const baseUrl = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
+
+  // Anual ou 1 mês avulso pagos dentro do app (formulário completo do MP: cartão, Pix ou boleto)
+  if (!autoRenew && directForm) {
+    const built = buildDirectPayment({ plan, userId, userEmail, form: directForm, baseUrl })
+    if (!built.ok) return json({ error: built.error }, 400)
+    const created = await createDirectPayment(built.body, {
+      accessToken,
+      // Mesmo envio repetido (rede caiu e o navegador mandou de novo) não cobra duas vezes
+      idempotencyKey: `${userId}-${idempotencyKey || crypto.randomUUID()}`,
+      deviceId: deviceId || undefined,
+    })
+    if (!created.ok) {
+      console.error('[create-payment] MP payment error:', created.status, created.detail)
+      return json({ error: friendlyPaymentError(created.detail) }, 402)
+    }
+    const payment = created.payment
+    console.log('[create-payment] pagamento direto:', payment.id, payment.status, payment.status_detail, plan)
+    if (payment.status === 'rejected' || payment.status === 'cancelled') {
+      return json({ error: friendlyPaymentError(payment.status_detail ?? '') }, 402)
+    }
+    if (payment.status === 'approved') {
+      // Cartão aprovado: libera o Premium agora, sem esperar o aviso do MP (o aviso, quando
+      // chegar, não ativa de novo — activate_premium é idempotente pelo id do pagamento)
+      const activation = await activatePremiumFromPayment({ ...payment, preference_id: payment.preference_id ?? '' }, supabaseUrl, serviceKey)
+      if (!activation.ok) console.error('[create-payment] ativação imediata falhou, o webhook tenta de novo:', activation)
+    }
+    // pending (Pix/boleto esperando pagamento) ou in_process (cartão em análise): a tela de
+    // status do MP mostra o QR code / boleto / análise, e o webhook ativa quando o pagamento cair
+    return json({ ok: true, id: payment.id, status: payment.status })
+  }
 
   if (autoRenew) {
     const mpEmail = payerEmail || userEmail

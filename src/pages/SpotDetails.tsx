@@ -17,7 +17,7 @@ import {
   ArrowLeft, Waves, Wind, Navigation,
   TrendingUp, Compass, AlertCircle, Thermometer,
   Heart, Calendar, Sun, ChevronDown, Clock,
-  Share2, MessageCircle, Lock, Crown, Droplets, GitCompareArrows, ChevronRight,
+  Share2, MessageCircle, Lock, Crown, Droplets, GitCompareArrows,
   Sunrise, Sunset
 } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -31,10 +31,10 @@ import { CommentsSection } from '@/components/spot/CommentsSection'
 import { ScoreExplainer } from '@/components/spot/ScoreExplainer'
 import { PicosSection } from '@/components/spot/PicosSection'
 import { BestWindowWidget } from '@/components/spot/BestWindowWidget'
+import { ForecastDayCard } from '@/components/spot/ForecastDayCard'
 import { PremiumUpsellBanner } from '@/components/PremiumUpsellBanner'
 
 const FIXED_DOMAIN = typeof window !== 'undefined' ? window.location.origin : ''
-const metersToFeet = (m: number): string => `${(m * 3.281).toFixed(1)}ft`
 
 const AnimatedProgress = ({ value }: { value: number }) => {
   const [displayed, setDisplayed] = useState(0)
@@ -79,79 +79,6 @@ const ShareButton = ({ spot }: { spot: BeachCondition }) => {
   return (
     <button onClick={handleShare} className="p-2 rounded-xl border border-border hover:bg-muted/50 transition-colors">
       <Share2 className="h-4 w-4"/>
-    </button>
-  )
-}
-
-const ForecastCard = ({
-  day, index, isPremium, usesFeet, freeDays, onUpgrade, onOpen
-}: {
-  day: WeatherForecast
-  index: number
-  isPremium: boolean
-  usesFeet: boolean
-  freeDays: number
-  onUpgrade: () => void
-  onOpen: () => void
-}) => {
-  const isLocked = index >= freeDays && !isPremium
-  const isToday = index === 0
-  const rating = getRatingInfo(day.score)
-
-  if (isLocked) {
-    return (
-      <button
-        onClick={onUpgrade}
-        className="flex flex-col items-center justify-center gap-1 p-3 rounded-2xl border border-dashed border-border/40 bg-muted/10 hover:bg-muted/20 transition-all min-h-[120px]"
-        style={{animation:`fadeIn 0.4s ${index*0.05}s ease-out both`}}
-      >
-        <Lock className="h-4 w-4 text-muted-foreground/50 mb-1"/>
-        <div className="text-xs font-bold text-muted-foreground">{day.dayName}</div>
-        <Crown className="h-3.5 w-3.5 text-rating-fair"/>
-      </button>
-    )
-  }
-
-  // Clicável: abre o detalhe hora a hora desse dia direto daqui, sem precisar passar pela
-  // aba Previsão do menu inferior e achar a praia de novo (pedido do usuário 25/set/2026)
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all cursor-pointer active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-        isToday ? 'bg-primary/8 border-primary/30 shadow-sm hover:border-primary/50' : 'bg-card border-border/40 hover:border-primary/40'
-      }`}
-      style={{animation:`fadeIn 0.4s ${index*0.05}s ease-out both`}}
-    >
-      <div className="text-center">
-        <div className={`text-xs font-bold ${isToday ? 'text-primary' : 'text-muted-foreground'}`}>
-          {isToday ? 'Hoje' : day.dayName}
-        </div>
-        <div className="text-xs text-muted-foreground/60">
-          {new Date(day.date+'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit'})}
-        </div>
-      </div>
-      <div className={`text-2xl font-bold ${rating.color}`}>{Number(day.score).toFixed(1)}</div>
-      <div className={`text-xs font-semibold ${rating.color}`}>{rating.label}</div>
-      <div className="flex gap-0.5">{[1,2,3,4,5].map(i=><div key={i} className={`h-1 w-3.5 rounded-full ${i<=rating.bars?rating.bg:'bg-muted'}`}/>)}</div>
-      <Separator className="w-full opacity-30"/>
-      <div className="w-full space-y-1">
-        <div className="flex items-center justify-between">
-          <Waves className="h-3 w-3 text-muted-foreground"/>
-          <span className="text-xs font-semibold">{usesFeet ? metersToFeet(day.waveHeight) : `${Number(day.waveHeight).toFixed(1)}m`}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <Wind className="h-3 w-3 text-muted-foreground"/>
-          <span className="text-xs font-semibold">{Math.round(day.windSpeed)}km/h</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <Thermometer className="h-3 w-3 text-muted-foreground"/>
-          <span className="text-xs font-semibold">{day.temperature}°C</span>
-        </div>
-      </div>
-      <div className="flex items-center gap-0.5 text-[10px] font-semibold text-primary">
-        Ver dia<ChevronRight className="h-3 w-3"/>
-      </div>
     </button>
   )
 }
@@ -462,6 +389,24 @@ export default function SpotDetails() {
               const diff = spot.score - scoreHistory.avg30
               const pct = Math.round(Math.abs(diff / scoreHistory.avg30) * 100)
               if (pct < 5 && !scoreHistory.isMonthBest) return null
+              // Histórico de 30 dias é Premium (página Premium e tabela de planos). Até 08/out/2026
+              // aparecia pra todo mundo; o usuário decidiu travar. A conta grátis vê o convite só
+              // quando haveria algo a mostrar, sem entregar se o mar está acima ou abaixo
+              if (!isPremium) {
+                if (premiumLoading) return null
+                return (
+                  <button type="button" onClick={() => navigate('/premium')}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl border border-dashed border-rating-fair/40 bg-rating-fair/5 hover:bg-rating-fair/10 transition-colors text-left"
+                    style={{ animation: 'slideUp 0.3s ease-out' }}>
+                    <Lock className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Como o mar de hoje se compara ao último mês?</p>
+                      <p className="text-xs text-muted-foreground">Média dos últimos 30 dias neste pico</p>
+                    </div>
+                    <span className="flex items-center gap-1 text-xs font-semibold text-rating-fair"><Crown className="h-3.5 w-3.5" />Premium</span>
+                  </button>
+                )
+              }
               return (
                 <div
                   className={`flex items-center gap-3 px-4 py-3 rounded-2xl border ${
@@ -668,7 +613,7 @@ export default function SpotDetails() {
                 )}
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                   {forecast.map((day, index) => (
-                    <ForecastCard
+                    <ForecastDayCard
                       key={day.date}
                       day={day}
                       index={index}
