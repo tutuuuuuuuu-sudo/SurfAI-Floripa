@@ -78,7 +78,7 @@ export function GeoFinderCard({ spots, isPremium }: Props) {
   if (!isPremium) {
     return (
       <PremiumUpsellBanner
-        title="Onde Surfar Agora é Premium"
+        title="Bora Surfar é Premium"
         subtitle="A gente compara as praias mais perto de você e mostra pra onde vale ir agora"
       />
     )
@@ -89,7 +89,7 @@ export function GeoFinderCard({ spots, isPremium }: Props) {
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
           <Compass className="h-4 w-4 text-primary" />
-          Onde Surfar Agora
+          Bora Surfar
         </CardTitle>
         <CardDescription className="text-xs">
           A gente compara as praias mais perto de você e mostra pra onde vale ir agora

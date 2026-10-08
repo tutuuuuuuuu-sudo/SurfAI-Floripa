@@ -38,7 +38,7 @@ function AlertExample() {
   )
 }
 
-// Mesmo cabeçalho do cartão "Onde Surfar Agora" da tela inicial (GeoFinderCard), com o
+// Mesmo cabeçalho do cartão "Bora Surfar" da tela inicial (GeoFinderCard), com o
 // resultado de exemplo que a landing já usa (GeoFinderMockup: "Mais perto" x "Vale o desvio")
 function GeoExample() {
   return (
@@ -47,7 +47,7 @@ function GeoExample() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Compass className="h-4 w-4 text-primary" />
-            Onde Surfar Agora
+            Bora Surfar
           </CardTitle>
           <CardDescription className="text-xs">
             A gente compara as praias mais perto de você e mostra pra onde vale ir agora
@@ -149,7 +149,7 @@ const FEATURES: { icon: LucideIcon; title: string; text: string; visual: ReactNo
   },
   {
     icon: Compass,
-    title: 'Onde surfar agora, a partir de onde você está',
+    title: 'Bora Surfar: a praia certa a partir de onde você está',
     text: 'O app compara a praia mais perto de você com a melhor da região e diz se vale rodar mais uns quilômetros. Depois abre o caminho no Maps ou no Waze, direto no melhor pico da praia.',
     visual: <GeoExample />,
   },
