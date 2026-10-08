@@ -157,10 +157,13 @@ export async function startPremiumTrial(): Promise<{ ok: boolean; error?: string
 
 // ─── Checkout Mercado Pago ────────────────────────────────────────────────────
 
-// Chave pública do MP (painel → Credenciais de produção → Public Key). É pública por natureza: só
-// serve pra gerar o código do cartão no formulário do MP dentro do app (CardSubscriptionForm).
-// Sem ela, a página Premium usa a renovação pela página do MP (exige conta no Mercado Pago).
-export const MP_PUBLIC_KEY = (import.meta.env.VITE_MP_PUBLIC_KEY as string | undefined) || undefined
+// Chave pública do MP (painel → Credenciais de produção → Public Key, recebida em 08/out/2026). É
+// pública por natureza (vai no código do site de qualquer jeito): só serve pra gerar o código do
+// cartão no formulário do MP dentro do app (CardSubscriptionForm). NÃO confundir com o Access Token,
+// que é secreto e fica só na Vercel. VITE_MP_PUBLIC_KEY, se existir, tem prioridade.
+// Sem chave, a página Premium usa a renovação pela página do MP (exige conta no Mercado Pago).
+export const MP_PUBLIC_KEY: string | undefined =
+  (import.meta.env.VITE_MP_PUBLIC_KEY as string | undefined) || 'APP_USR-3d7b6332-b6f1-439f-9c42-b29ba29e99ad'
 
 // autoRenew: mensal com renovação automática (só cartão); payerEmail = e-mail da conta do
 // Mercado Pago de quem vai pagar (o checkout da assinatura exige que seja o mesmo)
