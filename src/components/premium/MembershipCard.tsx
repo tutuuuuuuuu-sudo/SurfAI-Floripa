@@ -41,7 +41,7 @@ export function MembershipCard({ holder, plan, detail }: { holder: string; plan:
           <div className="member-card-scrim absolute inset-0" />
           <div className="member-card-sheen pointer-events-none absolute inset-0" />
 
-          <div className="relative flex h-full flex-col justify-between p-4 text-white">
+          <div className="relative flex h-full flex-col justify-between p-4 text-left text-white">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-1.5">
                 <AppLogo size={22} variant="icon" />

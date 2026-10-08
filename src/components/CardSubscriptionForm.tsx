@@ -24,6 +24,32 @@ declare global {
   interface Window { MercadoPago?: new (key: string, opts: { locale: string }) => MercadoPagoInstance }
 }
 
+// O formulário do MP só aceita cor em hex, e o tema do app é em oklch (index.css): converte na
+// hora, pra ele ter a cara do app (fundo do card, campos, botão turquesa) nos dois temas
+function themeHex(name: string): string | undefined {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(`--${name}`).trim()
+  const ctx = value ? document.createElement('canvas').getContext('2d') : null
+  if (!ctx) return undefined
+  ctx.fillStyle = value
+  ctx.fillRect(0, 0, 1, 1)
+  const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data
+  return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('')
+}
+
+function brickColors() {
+  const vars: Record<string, string> = {
+    formBackgroundColor: 'card', inputBackgroundColor: 'background', textPrimaryColor: 'foreground',
+    textSecondaryColor: 'muted-foreground', secondaryBackgroundColor: 'muted', tertiaryBackgroundColor: 'muted',
+    baseColor: 'primary', buttonTextColor: 'primary-foreground', outlinePrimaryColor: 'border', errorColor: 'destructive',
+  }
+  const out: Record<string, string> = { formPadding: '0px', borderRadiusSmall: '8px', borderRadiusMedium: '12px', borderRadiusLarge: '12px' }
+  for (const [key, cssVar] of Object.entries(vars)) {
+    const hex = themeHex(cssVar)
+    if (hex) out[key] = hex
+  }
+  return out
+}
+
 let sdkPromise: Promise<void> | null = null
 function loadSdk(): Promise<void> {
   if (window.MercadoPago) return Promise.resolve()
@@ -61,7 +87,7 @@ export function CardSubscriptionForm({ email, onSubscribed }: { email: string; o
           initialization: { amount: PRICE_MONTHLY, payer: { email } },
           customization: {
             visual: {
-              style: { theme: resolvedTheme === 'light' ? 'default' : 'dark' },
+              style: { theme: resolvedTheme === 'light' ? 'default' : 'dark', customVariables: brickColors() },
               // Título padrão do MP diz "crédito ou débito" mesmo com débito excluído
               texts: { formTitle: 'Cartão de crédito', formSubmit: `Assinar por ${formatBRL(PRICE_MONTHLY)}/mês` },
             },

@@ -218,7 +218,7 @@ export default function PremiumPage() {
           lines={[monthlyAuto ? 'Renova todo mês' : '30 dias, sem renovação', monthlyAuto ? 'Cancele quando quiser' : `menos de ${perDayCeil(PRICE_MONTHLY, 30)}/dia`]} />
       </div>
 
-      <Card className="border-primary/30">
+      <Card className="rounded-2xl py-0">
         <CardContent className="space-y-4 p-5">
           {!useCardForm && (
             <p className="text-center text-sm text-muted-foreground">
