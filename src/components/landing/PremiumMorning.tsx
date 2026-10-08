@@ -18,7 +18,7 @@ const STEPS_BASE = [
   { time: '06:10', icon: Scale, title: 'Ainda em dúvida? Coloca lado a lado.', text: 'Até 3 praias na mesma tela, com nota, onda e vento. E ainda dá pra ver se o mar de hoje está acima da média do mês.' },
 ]
 
-export function PushMock() {
+function PushMock() {
   const { conditions } = useSurfData()
   const best = [...conditions].sort((a, b) => b.score - a.score)[0]
   return (
@@ -45,7 +45,7 @@ export function PushMock() {
   )
 }
 
-export function CompareMock() {
+function CompareMock() {
   const { conditions } = useSurfData()
   const picks = ['joaquina', 'mole', 'campeche']
     .map(id => conditions.find(c => c.id === id))

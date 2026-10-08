@@ -18,6 +18,11 @@ export const PLAN_DAYS = { monthly: 30, annual: 365 } as const
 // mar estava bom mesmo) — em 7 dias pode cair uma semana de mar flat.
 export const TRIAL_DAYS = 15
 
+// Parcelas do anual pago dentro do app (OneTimePaymentForm + api/_mpDirectPayment.ts). 1 = só à
+// vista. Decisão pendente do usuário (08/out/2026): com parcelamento, quem paga os juros é o
+// comprador, a não ser que a conta do Mercado Pago ofereça parcelas sem juros.
+export const ANNUAL_MAX_INSTALLMENTS = 1
+
 /** 22.9 → "R$ 22,90" */
 export function formatBRL(value: number): string {
   return `R$ ${value.toFixed(2).replace('.', ',')}`

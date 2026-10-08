@@ -8,7 +8,8 @@ import {
 } from 'lucide-react'
 import { createMercadoPagoCheckout, startPremiumTrial, usePremium, MP_PUBLIC_KEY } from '@/lib/premium'
 import { CardSubscriptionForm } from '@/components/CardSubscriptionForm'
-import { MembershipCard } from '@/components/premium/MembershipCard'
+import { OneTimePaymentForm } from '@/components/OneTimePaymentForm'
+import { ForecastTeaser } from '@/components/premium/ForecastTeaser'
 import { PremiumShowcase } from '@/components/premium/PremiumShowcase'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
@@ -19,9 +20,12 @@ import {
 } from '@/lib/pricing'
 
 // Visual refeito em 08/out/2026 ("muito feia, simples, não parece que estou adquirindo uma coisa
-// muito boa"): carteirinha Premium no topo (MembershipCard), recursos funcionando com o mar de
-// agora (PremiumShowcase) no lugar da lista de 7 benefícios, planos em dois cartões grandes e a
-// tabela Free vs Premium recolhida. A lógica de pagamento não mudou.
+// muito boa"). 2ª versão no mesmo dia, depois do retorno dele: no topo, uma quinzena de exemplo
+// que mostra o que o grátis esconde (ForecastTeaser); recursos com números de exemplo
+// (PremiumShowcase) no lugar da lista de 7 benefícios; planos em dois cartões grandes; tabela
+// Free vs Premium recolhida. E TODO pagamento dentro do app: mensal com renovação no
+// CardSubscriptionForm, anual e 1 mês avulso no OneTimePaymentForm (cartão, Pix e boleto). A
+// página do Mercado Pago só fica de reserva se faltar a chave pública.
 
 const FREE_VS_PREMIUM: { feature: string; free: boolean }[] = [
   { feature: 'Condições em tempo real', free: true },
@@ -38,15 +42,6 @@ const FREE_VS_PREMIUM: { feature: string; free: boolean }[] = [
   { feature: 'Sem anúncios', free: false },
   { feature: 'Badge Premium no perfil', free: false },
 ]
-
-// Nome na carteirinha: o do Google quando tem, senão o começo do e-mail. Só o primeiro e o
-// último nome, pra caber
-function holderName(meta: Record<string, unknown> | undefined, email: string | undefined): string {
-  const full = (typeof meta?.full_name === 'string' && meta.full_name) || (typeof meta?.name === 'string' && meta.name) || ''
-  const words = full.trim().split(/\s+/).filter(Boolean)
-  if (words.length) return words.length > 1 ? `${words[0]} ${words[words.length - 1]}` : words[0]
-  return email?.split('@')[0] || 'Surfista de Floripa'
-}
 
 function PlanOption({ selected, onSelect, name, price, lines, ribbon }: {
   selected: boolean; onSelect: () => void; name: string; price: number; lines: string[]; ribbon?: string
@@ -108,6 +103,8 @@ export default function PremiumPage() {
   const [monthlyAuto, setMonthlyAuto] = useState(!!MP_PUBLIC_KEY)
   // Assinou pelo formulário de cartão: a 1ª cobrança é confirmada pelo MP em até ~1 h
   const [cardSubscribed, setCardSubscribed] = useState(false)
+  // Pagou o anual / 1 mês avulso com cartão dentro do app e foi aprovado na hora
+  const [paidInApp, setPaidInApp] = useState(false)
   // E-mail da conta do Mercado Pago: o checkout da assinatura só aceita quem entra com esse e-mail
   const [mpEmail, setMpEmail] = useState<string | null>(null)
   const [recentSignups, setRecentSignups] = useState<number | null>(null)
@@ -146,6 +143,8 @@ export default function PremiumPage() {
   const paidPremium = isPremium && !isTrial
   const useAutoRenew = selectedPlan === 'monthly' && monthlyAuto
   const useCardForm = useAutoRenew && !!MP_PUBLIC_KEY
+  // Anual e 1 mês avulso também dentro do app (cartão, Pix e boleto); precisa estar logado
+  const useOneTimeForm = !useAutoRenew && !!MP_PUBLIC_KEY && !!user
 
   const handleSubscribe = async (plan: 'monthly' | 'annual' = 'monthly') => {
     if (!user) { navigate('/login'); return }
@@ -168,17 +167,6 @@ export default function PremiumPage() {
     }
   }
 
-
-  // Carteirinha: mostra o plano escolhido (ou o que a pessoa já tem)
-  const card = paidPremium
-    ? (autoRenew
-      ? { plan: 'Renova todo mês', detail: 'Ativo' }
-      : daysLeft <= 400 ? { plan: 'Válido até', detail: formatDate(subscription?.expires_at) } : { plan: 'Membro', detail: 'Ativo' })
-    : isTrial
-      ? { plan: 'Teste grátis', detail: `até ${formatDate(subscription?.expires_at)}` }
-      : selectedPlan === 'annual'
-        ? { plan: 'Plano anual', detail: `${formatBRL(PRICE_ANNUAL_PER_MONTH)}/mês` }
-        : { plan: 'Plano mensal', detail: `${formatBRL(PRICE_MONTHLY)}/mês` }
 
   const heroTitle = paidPremium ? 'Você é Premium.' : isTrial ? 'Seu teste grátis está rolando.' : 'Nunca mais perca o mar clássico.'
   const heroText = paidPremium
@@ -220,7 +208,17 @@ export default function PremiumPage() {
 
       <Card className="rounded-2xl py-0">
         <CardContent className="space-y-4 p-5">
-          {!useCardForm && (
+          {paidInApp && (
+            <div className="flex items-start gap-3 p-4 rounded-2xl border border-rating-good/30 bg-rating-good/5">
+              <CheckCircle2 className="h-5 w-5 text-rating-good flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-sm text-rating-good">Pagamento aprovado!</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Seu Premium está liberado. Pode ir pro app.</p>
+              </div>
+            </div>
+          )}
+
+          {!useCardForm && !paidInApp && (
             <p className="text-center text-sm text-muted-foreground">
               {selectedPlan === 'annual'
                 ? <>Pagamento único de <span className="font-semibold text-foreground">{formatBRL(PRICE_ANNUAL)}</span>. Vale 12 meses.</>
@@ -257,6 +255,12 @@ export default function PremiumPage() {
             !cardSubscribed && user && (
               <CardSubscriptionForm email={user.email ?? ''} onSubscribed={() => { setCardSubscribed(true); track('subscription_card') }} />
             )
+          ) : useOneTimeForm ? (
+            // key: trocar de plano refaz o formulário com o valor certo
+            !paidInApp && user && (
+              <OneTimePaymentForm key={selectedPlan} plan={selectedPlan} email={user.email ?? ''}
+                onApproved={() => { setPaidInApp(true); track('payment_in_app', { plan: selectedPlan }); refresh() }} />
+            )
           ) : (
             <Button className="w-full h-12 text-base font-bold shadow-lg shadow-primary/25"
               onClick={() => handleSubscribe(selectedPlan)} disabled={loading || loadingAnnual || loadingStatus}>
@@ -269,7 +273,7 @@ export default function PremiumPage() {
             </Button>
           )}
 
-          {!useCardForm && (
+          {!useCardForm && !useOneTimeForm && (
             <div className="flex items-center justify-center gap-2">
               {(useAutoRenew ? [{ icon: CreditCard, label: 'Cartão de crédito' }] : PAY_METHODS).map(m => (
                 <span key={m.label} className="flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground">
@@ -279,7 +283,7 @@ export default function PremiumPage() {
             </div>
           )}
 
-          {selectedPlan === 'monthly' && !cardSubscribed && (
+          {selectedPlan === 'monthly' && !cardSubscribed && !paidInApp && (
             <div className="text-center">
               <button type="button" onClick={() => { setMonthlyAuto(v => !v); setError(null) }}
                 className="text-xs font-semibold text-primary hover:underline">
@@ -369,7 +373,7 @@ export default function PremiumPage() {
             <p className="mx-auto max-w-sm text-sm leading-relaxed text-muted-foreground text-balance">{heroText}</p>
           </div>
 
-          <MembershipCard holder={holderName(user?.user_metadata, user?.email)} plan={card.plan} detail={card.detail} />
+          {!paidPremium && <div style={{ animation: 'slideUp 0.6s 0.15s ease-out both' }}><ForecastTeaser /></div>}
 
           {!loadingStatus && (paidPremium || isTrial) && (
             <Button variant={isTrial ? 'outline' : 'default'} onClick={() => navigate('/')}>Ir para o app</Button>
