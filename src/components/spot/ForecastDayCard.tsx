@@ -1,16 +1,16 @@
-import { Waves, Wind, Thermometer, Lock, Crown, ChevronRight } from 'lucide-react'
+import { Waves, Wind, Clock, Lock, Crown, ChevronRight } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 import { getRatingInfo } from '@/lib/rating'
 import type { WeatherForecast } from '@/lib/weatherData'
+import { formatWaveRange, formatWaveRangeFeet } from '@/lib/surfData'
 
 // Cartão de um dia da previsão (aba Previsão da página da praia). Saiu de SpotDetails.tsx em
 // 08/out/2026 pra página Premium mostrar o MESMO cartão no exemplo dos 14 dias (pedido do
 // usuário: "vamos usar o que o app já usa, que já é validado e é bonito").
 
-const metersToFeet = (m: number): string => `${(m * 3.281).toFixed(1)}ft`
 
 export function ForecastDayCard({
-  day, index, isPremium, usesFeet, freeDays, onUpgrade, onOpen, highlight
+  day, index, isPremium, usesFeet, freeDays, onUpgrade, onOpen, highlight, trend
 }: {
   day: WeatherForecast
   index: number
@@ -22,6 +22,8 @@ export function ForecastDayCard({
   onOpen?: () => void
   // Destaque do dia clássico no exemplo da página Premium
   highlight?: boolean
+  // 8º dia em diante (09/out/2026): previsão longa muda bastante, o cartão fica mais apagado
+  trend?: boolean
 }) {
   const isLocked = index >= freeDays && !isPremium
   const isToday = index === 0
@@ -51,7 +53,9 @@ export function ForecastDayCard({
         onOpen ? 'cursor-pointer active:scale-95' : ''
       } ${
         highlight ? 'bg-rating-epic/10 border-rating-epic/60 ring-2 ring-rating-epic/40 shadow-lg'
-          : isToday ? 'bg-primary/8 border-primary/30 shadow-sm hover:border-primary/50' : 'bg-card border-border/40 hover:border-primary/40'
+          : isToday ? 'bg-primary/8 border-primary/30 shadow-sm hover:border-primary/50'
+          : trend ? 'bg-card/60 border-dashed border-border/60 opacity-85 hover:border-primary/40'
+          : 'bg-card border-border/40 hover:border-primary/40'
       }`}
       style={{animation:`fadeIn 0.4s ${index*0.05}s ease-out both`}}
     >
@@ -70,15 +74,15 @@ export function ForecastDayCard({
       <div className="w-full space-y-1">
         <div className="flex items-center justify-between">
           <Waves className="h-3 w-3 text-muted-foreground"/>
-          <span className="text-xs font-semibold">{usesFeet ? metersToFeet(day.waveHeight) : `${Number(day.waveHeight).toFixed(1)}m`}</span>
+          <span className="text-xs font-semibold">{usesFeet ? formatWaveRangeFeet(Number(day.waveHeight)) : formatWaveRange(Number(day.waveHeight))}</span>
         </div>
         <div className="flex items-center justify-between">
           <Wind className="h-3 w-3 text-muted-foreground"/>
-          <span className="text-xs font-semibold">{Math.round(day.windSpeed)}km/h</span>
+          <span className="text-xs font-semibold">{Math.round(day.windSpeed)} {day.windDirection}</span>
         </div>
         <div className="flex items-center justify-between">
-          <Thermometer className="h-3 w-3 text-muted-foreground"/>
-          <span className="text-xs font-semibold">{day.temperature}°C</span>
+          <Clock className="h-3 w-3 text-muted-foreground"/>
+          <span className="text-xs font-semibold">{Math.round(day.swellPeriod)}s</span>
         </div>
       </div>
       {onOpen && (

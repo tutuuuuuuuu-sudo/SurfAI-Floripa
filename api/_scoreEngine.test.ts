@@ -119,11 +119,11 @@ describe('calculateSurfScore', () => {
 
   // ── Vento sul (30/set/2026) ──────────────────────────────────────────────────
 
-  it('vento sul em praia exposta: 10 km/h −1,5 · 15 −3 · 17 −4 · 20 −5,5 · 25 −7 (01/out/2026)', () => {
+  it('vento sul em praia exposta: 10 km/h −1 · 15 −3 · 17 −4 · 20 −5,5 · 25 −7 (01/out/2026; 10 km/h em 09/out)', () => {
     for (const orientation of [70, 90, 130, 180]) {
       for (const dir of ['S', 'SSE', 'SSW']) {
         const p = (v: number) => explainSurfScore(1.0, v, 9, dir, orientation).windPenalty
-        expect([10, 15, 17, 20, 25, 30].map(p)).toEqual([-1.5, -3, -4, -5.5, -7, -8])
+        expect([10, 15, 17, 20, 25, 30].map(p)).toEqual([-1, -3, -4, -5.5, -7, -8])
       }
     }
   })

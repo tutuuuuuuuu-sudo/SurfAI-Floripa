@@ -1,37 +1,72 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { usePremium } from '@/lib/premium'
 import { useSurfData } from '@/contexts/SurfDataContext'
-import { getWeatherForecast, WeatherForecast } from '@/lib/weatherData'
-import { ArrowLeft, Waves, Wind, Calendar, Crown, TrendingUp, Thermometer } from 'lucide-react'
-import { getScoreColor, getScoreLabel } from '@/lib/rating'
+import { getWeatherForecast, FREE_DAYS, type WeatherForecast } from '@/lib/weatherData'
+import { getFavorites } from '@/lib/favorites'
+import { fetchIslandWindows, pickBestWindows, TREND_FROM_DAY, type BeachWindow } from '@/lib/forecastWindows'
+import { ForecastDayCard } from '@/components/spot/ForecastDayCard'
+import { BestWindows } from '@/components/forecast/BestWindows'
+import { BeachPicker } from '@/components/forecast/BeachPicker'
 import { PremiumUpsellBanner } from '@/components/PremiumUpsellBanner'
+import { ArrowLeft, Calendar, Waves, CalendarRange } from 'lucide-react'
+
+// Aba Previsão, redesenhada em 09/out/2026. Antes: fileira de praias rolando pro lado, um cartão
+// repetindo o "agora" (já está na página da praia) e linhas com temperatura do ar, sem direção do
+// vento nem período. Agora responde "quando e onde vale surfar": melhores janelas da ilha toda,
+// praia escolhida numa lista por região e os dias com o mesmo cartão da página da praia — do 8º
+// em diante, separados como tendência.
+
+const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+
+// Dias trancados pro grátis, só pra mostrar o que falta (o servidor não manda o dado)
+function lockedDays(from: WeatherForecast[], upTo: number): WeatherForecast[] {
+  const last = from[from.length - 1]
+  if (!last) return []
+  return Array.from({ length: Math.max(0, upTo - from.length) }, (_, i) => {
+    const d = new Date(`${last.date}T12:00:00`)
+    d.setDate(d.getDate() + i + 1)
+    return { ...last, date: d.toISOString().slice(0, 10), dayName: WEEKDAYS[d.getDay()], locked: true }
+  })
+}
 
 export default function ForecastPage() {
   const navigate = useNavigate()
   const { id } = useParams<{ id?: string }>()
-  const { isPremium } = usePremium()
+  const { isPremium, loading: premiumLoading } = usePremium()
   const { conditions, loading } = useSurfData()
   const spots = useMemo(() => [...conditions].sort((a, b) => b.score - a.score), [conditions])
-  const [selectedSpot, setSelectedSpot] = useState<string>(id ?? '')
-  const [forecast, setForecast] = useState<WeatherForecast[]>([])
-  const [loadingForecast, setLoadingForecast] = useState(false)
+  const [chosenSpot, setChosenSpot] = useState<string | null>(id ?? null)
+  const [forecastFor, setForecastFor] = useState<{ key: string; data: WeatherForecast[] } | null>(null)
+  const [favorites, setFavorites] = useState<string[] | null>(null)
+  const [windowsFor, setWindowsFor] = useState<{ premium: boolean; windows: BeachWindow[]; days: number } | null>(null)
+  const usesFeet = useMemo(() => {
+    try { return JSON.parse(localStorage.getItem('pref_units') ?? '"metric"') === 'imperial' } catch { return false }
+  }, [])
 
-  // Seleciona a melhor praia por padrão quando os dados chegam
-  useEffect(() => {
-    if (!selectedSpot && spots.length > 0) setSelectedSpot(spots[0].id)
-  }, [conditions]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { getFavorites().catch(() => [] as string[]).then(setFavorites) }, [])
+  const favoriteIds = favorites ?? []
+
+  // Praia padrão: a favorita com a maior nota agora; sem favorita, a melhor da ilha agora
+  const defaultSpot = favorites === null ? '' : (spots.find(s => favorites.includes(s.id)) ?? spots[0])?.id ?? ''
+  const selectedSpot = chosenSpot ?? defaultSpot
 
   useEffect(() => {
-    if (!selectedSpot) return
+    if (premiumLoading) return
+    let cancelled = false
+    fetchIslandWindows(isPremium).then(data => {
+      if (!cancelled) setWindowsFor({ premium: isPremium, windows: data ? pickBestWindows(data.beaches) : [], days: data?.days ?? FREE_DAYS })
+    })
+    return () => { cancelled = true }
+  }, [isPremium, premiumLoading])
+  const loadingWindows = premiumLoading || windowsFor?.premium !== isPremium
+
+  const forecastKey = `${selectedSpot}|${isPremium}`
+  useEffect(() => {
     const spot = spots.find(s => s.id === selectedSpot)
     if (!spot) return
-    setLoadingForecast(true)
     let cancelled = false
     getWeatherForecast(spot.id, {
       waveHeight: spot.waveHeight,
@@ -41,180 +76,95 @@ export default function ForecastPage() {
       waterTemperature: spot.waterConditions.temperature,
       score: spot.score,
     }, isPremium, spot._beachOrientation ?? 90).then(data => {
-      if (!cancelled) { setForecast(data); setLoadingForecast(false) }
+      if (!cancelled) setForecastFor({ key: `${spot.id}|${isPremium}`, data })
     })
     return () => { cancelled = true }
   }, [selectedSpot, spots, isPremium])
+  const loadingForecast = forecastFor?.key !== forecastKey
+  const forecast = loadingForecast ? [] : forecastFor.data
 
   const currentSpot = spots.find(s => s.id === selectedSpot)
+  const selectSpot = (spotId: string) => {
+    setChosenSpot(spotId)
+    navigate(`/forecast/${spotId}`, { replace: true })
+  }
+
+  const visible = isPremium ? forecast : forecast.slice(0, FREE_DAYS)
+  const week = isPremium ? visible.slice(0, TREND_FROM_DAY) : [...visible, ...lockedDays(visible, TREND_FROM_DAY)]
+  const trend = isPremium ? visible.slice(TREND_FROM_DAY) : []
+  const card = (day: WeatherForecast, index: number) => (
+    <ForecastDayCard
+      key={day.date}
+      day={day}
+      index={index}
+      isPremium={isPremium}
+      usesFeet={usesFeet}
+      freeDays={FREE_DAYS}
+      onUpgrade={() => navigate('/premium')}
+      onOpen={() => currentSpot && navigate(`/forecast/${currentSpot.id}/day/${index}`)}
+      trend={index >= TREND_FROM_DAY}
+    />
+  )
 
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border/40">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 py-3 max-w-2xl flex items-center justify-between">
           <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-4 w-4 mr-2" />Voltar
+            <ArrowLeft className="h-4 w-4 mr-1.5" />Voltar
           </Button>
           <h1 className="text-lg font-bold flex items-center gap-2">
             <Calendar className="h-5 w-5 text-primary" />
-            Previsão 14 Dias
+            Previsão
           </h1>
           <div className="w-16" />
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6 max-w-2xl space-y-5">
-
-        {/* Banner de upgrade para free */}
-        {!isPremium && (
-          <div style={{ animation: 'slideUp 0.4s ease-out' }}>
-            <PremiumUpsellBanner
-              title="Previsão gratuita: 3 dias"
-              subtitle="Premium libera 14 dias para qualquer praia"
-            />
-          </div>
+      <main className="container mx-auto px-4 py-5 pb-28 max-w-2xl space-y-5">
+        {!isPremium && !premiumLoading && (
+          <PremiumUpsellBanner title="Previsão gratuita: 3 dias" subtitle="Premium libera 14 dias para qualquer praia" />
         )}
 
-        {/* Esqueleto enquanto as condições ainda não chegaram — essa é a única aba fixa
-            do rodapé que ficava alguns segundos só com o cabeçalho vazio antes de
-            mostrar qualquer coisa, diferente do resto do app. */}
-        {loading && (
-          <div className="space-y-5">
-            <div className="flex gap-2">
-              {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-7 w-20 rounded-full flex-shrink-0" />)}
+        <BestWindows windows={windowsFor?.windows ?? []} loading={loadingWindows} isPremium={isPremium} days={windowsFor?.days ?? FREE_DAYS} />
+
+        {loading ? (
+          <Skeleton className="h-[76px] w-full rounded-2xl" />
+        ) : (
+          <BeachPicker spots={spots} selectedId={selectedSpot} favorites={favoriteIds} onSelect={selectSpot} />
+        )}
+
+        <section className="space-y-2.5">
+          <div className="flex items-center gap-2">
+            <Waves className="h-4 w-4 text-primary" />
+            <h2 className="font-bold text-sm">Próximos 7 dias</h2>
+            {currentSpot && <span className="text-xs text-muted-foreground">· {currentSpot.name}</span>}
+          </div>
+          {loadingForecast || loading ? (
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+              {Array.from({ length: 6 }, (_, i) => <Skeleton key={i} className="h-[178px] rounded-2xl" />)}
             </div>
-            <Skeleton className="h-24 w-full rounded-xl" />
-            <Skeleton className="h-64 w-full rounded-xl" />
-          </div>
-        )}
+          ) : (
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">{week.map((day, i) => card(day, i))}</div>
+          )}
+        </section>
 
-        {/* Seletor de praia */}
-        {!loading && (
-          <div style={{ animation: 'slideUp 0.3s ease-out' }}>
-            <p className="text-xs text-muted-foreground mb-2 font-medium">Escolha a praia:</p>
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {spots.map(spot => {
-                const color = getScoreColor(spot.score)
-                const isSelected = spot.id === selectedSpot
-                return (
-                  <button
-                    key={spot.id}
-                    onClick={() => setSelectedSpot(spot.id)}
-                    className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
-                      isSelected ? 'text-white border-transparent' : 'border-border text-muted-foreground hover:border-primary/30'
-                    }`}
-                    style={isSelected ? { backgroundColor: color } : {}}
-                  >
-                    {spot.name}
-                  </button>
-                )
-              })}
+        {trend.length > 0 && !loadingForecast && (
+          <section className="space-y-2.5">
+            <div className="flex items-center gap-2">
+              <CalendarRange className="h-4 w-4 text-muted-foreground" />
+              <h2 className="font-bold text-sm">Tendência · 8 a 14 dias</h2>
             </div>
-          </div>
+            <p className="text-xs text-muted-foreground -mt-1">Previsão longa muda bastante. Confira de novo mais perto do dia.</p>
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">{trend.map((day, i) => card(day, i + TREND_FROM_DAY))}</div>
+          </section>
         )}
 
-        {/* Info da praia selecionada */}
         {currentSpot && (
-          <Card style={{ animation: 'slideUp 0.35s ease-out' }}>
-            <CardContent className="py-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-bold">{currentSpot.name}</h2>
-                  <p className="text-xs text-muted-foreground">{currentSpot.region} da Ilha</p>
-                </div>
-                <div className="text-right">
-                  <div className="text-3xl font-bold" style={{ color: getScoreColor(currentSpot.score) }}>
-                    {currentSpot.score.toFixed(1)}
-                  </div>
-                  <div className="text-xs font-bold" style={{ color: getScoreColor(currentSpot.score) }}>
-                    {getScoreLabel(currentSpot.score)}
-                  </div>
-                </div>
-              </div>
-              <Separator className="my-3" />
-              <div className="grid grid-cols-4 gap-2 text-center text-xs">
-                <div><div className="text-muted-foreground">Ondas</div><div className="font-bold">{currentSpot.waveHeight.toFixed(1)}m</div></div>
-                <div><div className="text-muted-foreground">Período</div><div className="font-bold">{Math.round(currentSpot.swellPeriod)}s</div></div>
-                <div><div className="text-muted-foreground">Vento</div><div className="font-bold">{Math.round(currentSpot.windSpeed)}km/h</div></div>
-                <div><div className="text-muted-foreground">Água</div><div className="font-bold">{currentSpot.waterConditions.temperature}°C</div></div>
-              </div>
-            </CardContent>
-          </Card>
+          <Button variant="outline" className="w-full" onClick={() => navigate(`/spot/${currentSpot.id}`)}>
+            Ver condições de agora em {currentSpot.name}
+          </Button>
         )}
-
-        {/* Previsão: 3 dias (free) ou 14 dias (premium) */}
-        <Card style={{ animation: 'slideUp 0.4s ease-out' }}>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              Previsão dos Próximos {isPremium ? '14' : '3'} Dias
-              {isPremium && (
-                <Badge className="ml-auto bg-rating-fair/10 text-rating-fair border-rating-fair/30 text-xs">
-                  <Crown className="h-3 w-3 mr-1" />Premium
-                </Badge>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loadingForecast ? (
-              <div className="flex justify-center py-8">
-                <Waves className="h-6 w-6 text-primary animate-bounce" />
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {(isPremium ? forecast : forecast.slice(0, 3)).map((day, idx) => {
-                  const color = getScoreColor(day.score)
-                  const label = getScoreLabel(day.score)
-                  const isToday = idx === 0
-                  return (
-                    <button
-                      key={day.date}
-                      type="button"
-                      onClick={() => currentSpot && navigate(`/forecast/${currentSpot.id}/day/${idx}`)}
-                      className={`w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all hover:border-primary/40 hover:bg-muted/10 ${isToday ? 'bg-primary/5 border-primary/20' : 'border-border/40'}`}
-                      style={{ animation: `slideUp 0.3s ${idx * 0.05}s ease-out both` }}
-                    >
-                      <div className="min-w-[70px]">
-                        <div className="font-bold text-sm">{day.dayName}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {new Date(day.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-                        </div>
-                      </div>
-                      <Separator orientation="vertical" className="h-10" />
-                      <div className="flex items-center gap-4">
-                        <div className="text-center">
-                          <Waves className="h-3.5 w-3.5 mx-auto mb-0.5 text-primary" />
-                          <div className="text-xs font-semibold">{day.waveHeight.toFixed(1)}m</div>
-                        </div>
-                        <div className="text-center">
-                          <Wind className="h-3.5 w-3.5 mx-auto mb-0.5 text-accent" />
-                          <div className="text-xs font-semibold">{Math.round(day.windSpeed)}km/h</div>
-                        </div>
-                        <div className="text-center hidden sm:block">
-                          <Thermometer className="h-3.5 w-3.5 mx-auto mb-0.5 text-chart-2" />
-                          <div className="text-xs font-semibold">{day.temperature}°C</div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-xl font-bold" style={{ color }}>{day.score.toFixed(1)}</div>
-                        <div className="text-xs font-bold" style={{ color }}>{label}</div>
-                        <div className="flex gap-0.5 mt-1 justify-end">
-                          {[1,2,3,4,5].map(i => (
-                            <div key={i} className="h-1 w-3 rounded-full" style={{ backgroundColor: i <= Math.ceil(day.score / 2) ? color : 'var(--muted)' }} />
-                          ))}
-                        </div>
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Button variant="outline" className="w-full" onClick={() => currentSpot && navigate(`/spot/${currentSpot.id}`)}>
-          Ver condições detalhadas de {currentSpot?.name ?? 'hoje'}
-        </Button>
       </main>
     </div>
   )

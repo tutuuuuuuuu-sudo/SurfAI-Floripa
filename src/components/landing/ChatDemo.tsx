@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Crown, Sparkles } from 'lucide-react'
 import { useSurfData } from '@/contexts/SurfDataContext'
 import { getRatingInfo } from '@/lib/rating'
-import { formatWaveRange, getSubRegionMatch, type BeachCondition } from '@/lib/surfData'
+import { formatWaveRange, getBeachPeaks, type BeachCondition } from '@/lib/surfData'
 import { directionName } from '@/lib/directions'
 import { withArticle } from '@/lib/beachArticles'
 import { todaySP } from '@/lib/timeSP'
@@ -74,10 +74,9 @@ function weekendAnswer(w: Weekend): string | null {
 
 // Casamento de swell de um pico (mesma conta de PicosSection)
 function picoRead(beach: BeachCondition | undefined, picoId: string) {
-  const sub = beach?.subRegions?.find(s => s.id === picoId)
-  if (!beach || !sub) return null
-  const m = getSubRegionMatch(sub.swellDirections, beach.swellDirection, beach.waveHeight, sub.tolerance, sub.exposicao, beach.swellPeriod, sub.idealPeriodMin)
-  return { beach, sub, m, mid: (Number(m.waveMin) + Number(m.waveMax)) / 2 }
+  const m = beach ? getBeachPeaks(beach).find(s => s.id === picoId) : undefined
+  if (!beach || !m) return null
+  return { beach, m, mid: (Number(m.waveMin) + Number(m.waveMax)) / 2 }
 }
 
 interface QA { q: string; a: (spots: BeachCondition[], weekend: Weekend | null) => string | null }

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { MapPin, Star, Navigation, ChevronRight } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { BeachCondition, getSubRegionMatch } from '@/lib/surfData'
+import { BeachCondition, getBeachPeaks } from '@/lib/surfData'
 import { directionName } from '@/lib/directions'
 
 export const PicosSection = ({ spot }: { spot: BeachCondition }) => {
@@ -9,14 +9,7 @@ export const PicosSection = ({ spot }: { spot: BeachCondition }) => {
 
   if (!spot.subRegions || spot.subRegions.length === 0) return null
 
-  const enrichedPicos = spot.subRegions.map(sub => {
-    const idealDirs: string[] = sub.swellDirections ?? []
-    const { waveMin, waveMax, match, matchCls, minDiff } = getSubRegionMatch(
-      sub.swellDirections, spot.swellDirection, spot.waveHeight, sub.tolerance, sub.exposicao,
-      spot.swellPeriod, sub.idealPeriodMin
-    )
-    return { ...sub, waveMin, waveMax, match, matchCls, idealDirs, minDiff }
-  })
+  const enrichedPicos = getBeachPeaks(spot).map(pico => ({ ...pico, idealDirs: pico.swellDirections ?? [] }))
 
   return (
     <div className="space-y-3">

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { degreesToWindDir, WIND_DEG, getSubRegionMatch, getWindAnalysis } from './surfData'
+import { degreesToWindDir, WIND_DEG, getSubRegionMatch, getWindAnalysis, getBeachPeaks, formatWaveRange } from './surfData'
 
 describe('degreesToWindDir', () => {
   it('0° = N', () => expect(degreesToWindDir(0)).toBe('N'))
@@ -83,5 +83,35 @@ describe('getWindAnalysis — sul que sopra da terra (Barra da Lagoa, 01/out/202
     const t = getWindAnalysis('S', 12, 40, 0.7)
     expect(t).toContain('liso e organizado')
     expect(t).not.toContain('mexendo')
+  })
+})
+
+describe('faixa de onda e picos (09/out/2026)', () => {
+  it('faixa vai de 20% abaixo a 10% acima do número', () => {
+    expect(formatWaveRange(0.6)).toBe('0.5–0.7m')
+    expect(formatWaveRange(1.0)).toBe('0.8–1.1m')
+  })
+
+  // Campeche medido na própria Lomba: antes a Lomba aparecia 0.7–0.9 com a praia em 0.6–0.8
+  const campeche = {
+    waveHeight: 0.78, swellDirection: 'E', swellPeriod: 7,
+    subRegions: [
+      { id: 'lomba-sabao', name: 'Lomba do Sabão', lat: 0, lng: 0, swellDirections: ['E', 'SE'], exposicao: 1.1 },
+      { id: 'palanque', name: 'Palanque', lat: 0, lng: 0, swellDirections: ['S', 'SSE', 'SE', 'E'] },
+      { id: 'principal', name: 'Principal', lat: 0, lng: 0, swellDirections: ['SE', 'SSE'], tolerance: 'estreita' as const, idealPeriodMin: 12 },
+    ],
+  }
+
+  it('o melhor pico fica igual à praia e nenhum passa dela', () => {
+    const peaks = getBeachPeaks(campeche)
+    const lomba = peaks.find(p => p.id === 'lomba-sabao')!
+    expect(`${lomba.waveMin}–${lomba.waveMax}m`).toBe(formatWaveRange(0.78))
+    for (const p of peaks) expect(Number(p.waveMax)).toBeLessThanOrEqual(Number(lomba.waveMax))
+  })
+
+  it('a ordem entre os picos continua a mesma', () => {
+    const [lomba, palanque, principal] = getBeachPeaks(campeche).map(p => Number(p.waveMax))
+    expect(lomba).toBeGreaterThanOrEqual(palanque)
+    expect(palanque).toBeGreaterThan(principal)
   })
 })
