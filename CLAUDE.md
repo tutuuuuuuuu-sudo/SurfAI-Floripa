@@ -54,9 +54,9 @@ src/
 │   ├── SpotDetails.tsx        # Detalhe de um pico específico
 │   ├── Favorites.tsx          # Picos favoritados pelo usuário
 │   ├── Compare.tsx            # Comparação lado a lado de picos (premium)
-│   ├── Forecast.tsx           # Previsão 14 dias (premium) — rotas /forecast, /forecast/:id. Histórico de 30 dias é feature separada, direto em SpotDetails.tsx via score_snapshots
+│   ├── Forecast.tsx           # Previsão (14 dias premium, 3 grátis) — rotas /forecast, /forecast/:id. Desde 09/out/2026 responde "quando e onde surfar": melhores janelas da ilha toda (forecast-windows), praia escolhida em lista por região (BeachPicker, sem rolagem lateral), dias com ForecastDayCard e 8º-14º dia como "tendência". Histórico de 30 dias é feature separada, direto em SpotDetails.tsx via score_snapshots
 │   ├── ForecastDay.tsx        # Detalhe de 1 dia da previsão (/forecast/:id/day/:dayIndex) — curva do dia arrastável (DayCurve), faixa de dias, condições da hora escolhida
-│   ├── SurfLog.tsx            # Diário de sessões do usuário
+│   ├── SurfLog.tsx            # Diário de sessões (refeito 09/out/2026 — só 1 sessão registrada na história até então): registrar em poucos toques (SessionSheet, também em "Surfei aqui hoje" na praia e "Caiu hoje?" na Home), mar daquela hora salvo na sessão, seu mar ideal (Premium), conquistas e cartão pro story
 │   ├── ContentStudio.tsx      # Gerador de posts pras redes sociais do Surf AI (uso interno, só admin)
 │   ├── SeaLog.tsx             # Registro do mar real (/registro-do-mar, só admin): tamanho visto x o que o app mostrava na mesma hora — calibra api/_beachHeight.ts
 │   ├── Premium.tsx            # Página de upgrade/assinatura
@@ -79,6 +79,8 @@ src/
 │   │   ├── DayCurveCard.tsx   # Nota da hora + DayCurve + onda/maré/vento/período (landing e página Premium)
 │   │   ├── CompareSpotCard.tsx# Cartão de praia da tela Comparar
 │   │   └── CompareTable.tsx   # "Comparativo Detalhado" (Comparar e página Premium)
+│   ├── sessions/              # SessionSheet (registrar), SessionCard, IdealSeaCard, SessionAchievements (mês, semanas seguidas, passaporte das 14 praias, ano)
+│   ├── forecast/              # BestWindows (melhores janelas) e BeachPicker (praia por região) da aba Previsão
 │   ├── premium/               # Página Premium: ForecastTeaser (14 dias de exemplo, grátis x premium) e PremiumShowcase (recursos com as peças do app e números de exemplo)
 │   ├── landing/               # Landing "juntada" (28/set/2026): visual da antiga + peças vivas do app
 │   │   ├── Hero.tsx           # Topo "a câmera sobe": foto da Praia Mole → aerofoto SC → satélite → mapa da ilha + lista (fim do topo = mapa em tempo real). Animação montada 1x (Web Animations) e tocada pela rolagem (ViewTimeline; sem ela, JS). Camadas em assets/landing/flyover/, geradas por .content-drafts/flyover/build*.py (fora do git)
@@ -118,6 +120,12 @@ src/
 │   ├── monitoring.ts          # Sentry + PostHog — initMonitoring(), track(), captureError(). PostHog SÓ depois do "Aceitar" no CookieConsent (enableAnalytics/disableAnalytics) — LGPD, 29/set/2026
 │   ├── landingStats.ts        # countLandingView/countLandingCta → api/landing-event.ts (só conta no domínio real, não em local/preview)
 │   ├── favorites.ts           # getFavorites(), toggleFavorite() via Supabase
+│   ├── sessions.ts            # Diário: carregar/salvar/apagar sessão + mar daquela hora (api/session-conditions)
+│   ├── idealSea.ts            # "Seu mar ideal": aprende das sessões de 4-5 estrelas (onda, vento, maré, praias) e acha a próxima vez nos 14 dias
+│   ├── sessionStats.ts        # Conquistas: mês, semanas seguidas, passaporte, retrospectiva do ano
+│   ├── sessionStoryCard.ts    # Cartão da sessão pro story (canvas 1080×1920, cores do tema escuro, praia marcada na ilha)
+│   ├── forecastWindows.ts     # Busca api/forecast-windows + melhores janelas (máx. 1 de tendência) + aviso da ilha toda (pickIslandAlert) + TREND_FROM_DAY
+│   ├── homeRegion.ts          # Região que a pessoa mais frequenta (sessões ×3, favoritas ×2, páginas de praia abertas no aparelho em 30 dias ×1; a escolhida nas Configurações manda; sem GPS) — melhores janelas abrem nela
 │   ├── comments.ts            # getComments(), addComment() via Supabase
 │   ├── notifications.ts       # Alertas de condições boas
 │   ├── tainha.ts              # isTainhaSeasonActive() — temporada de tainha (sazonalidade)
@@ -146,6 +154,9 @@ api/
 │                          Substituiu o antigo "Relatório do dia" automático em 23/ago/2026 (gastava
 │                          chamada de IA toda vez que qualquer Premium abria o app, mesmo sem pedir)
 ├── forecast.ts         # Forecast detalhado por pico
+├── _beachDays.ts       # Resumo dos 14 dias das 14 praias (melhor horário/janela, onda, vento, maré por dia), 1 h de cache no Supabase (`forecast:island-14d-v1`, via _cache.ts) — fonte do chat (_chatForecast) e da aba Previsão. Tipos em _beachDayTypes.ts (o app importa só os tipos)
+├── forecast-windows.ts # _beachDays pro app: grátis recebe 3 dias, Premium 14
+├── session-conditions.ts # Mar de uma praia numa hora passada (score_snapshots + maré com past_days), pra sessão se preencher sozinha. Sem login, histórico de 30 dias
 ├── landing-day.ts      # Um dia (até 7 à frente) hora a hora de uma praia aberta (publicSpots.ts), sem login, cache CDN 1h — demos da landing
 ├── landing-event.ts    # Contador anônimo da landing (+1 no dia: visita ou clique em botão, lista fechada) → tabela landing_stats (RPC bump_landing_stat, só service role). Sem cookie/IP → não depende do aviso de cookies
 ├── _dayDetail.ts       # Montagem do dia hora a hora (fonte única de forecast-day.ts e landing-day.ts)
@@ -224,7 +235,7 @@ resultado era descartado e gastava cota do Gemini — o ContentStudio usa o endp
   (`api/_chatForecast.ts`: onda, melhor horário via `_goldenWindow`, vento sigla+nome, maré
   enchendo/secando, período; horários de maré alta/baixa) + **tendência do 8º ao 14º dia** (onda e
   nota, 09/out/2026 — antes o chat dizia que o app "não tinha" os dias que a aba Previsão mostra),
-  cache 1h no Supabase (`live_conditions_cache`, chave `chat:forecast-week-v3`). Memória: últimas 6 mensagens.
+  cache 1h no Supabase dividido com a aba Previsão (`live_conditions_cache`, chave `forecast:island-14d-v1`, ver `api/_beachDays.ts`). Memória: últimas 6 mensagens.
   Prioridade ao falar de uma praia: onda → maré → vento (direção+velocidade) → melhor horário.
   Toda resposta passa por `cleanChatReply` (`api/_chatText.ts`) — tira asterisco/markdown/
   travessão no código, não depende do modelo obedecer. Não usar terral/maral/lateral.
@@ -243,8 +254,9 @@ resultado era descartado e gastava cota do Gemini — o ContentStudio usa o endp
 - Backend (crons) usa `api/_beachRegistry.ts` (id/nome/região/coordenadas/orientação) — **nunca criar uma terceira cópia**, os dois já precisam ser mantidos em sincronia manualmente.
 - Coordenadas foram **confirmadas pelo usuário no Google Maps** — não alterar sem confirmação explícita, nos dois arquivos.
 - Cada pico tem `orientation` (graus, pra onde a praia está virada) usado no cálculo de offshore/onshore. Refeita em 01/out/2026 com OK do usuário: medida no contorno da costa (OpenStreetMap) e conferida com 5 guias de surf (ver comentário em `api/_beachRegistry.ts`) — a costa leste estava 30-50° virada pro norte demais.
-- Vento sul: curva própria, mais dura (`WIND_SOUTH` em `_scoreEngine.ts`), exceto onde ele sopra da terra (`southWindHits`: S/SSW na Barra, SSW no Matadeiro). `southExposure` no registro = proteção parcial (Matadeiro 0,5, Barra 0,7 pro SSE, Armação 0,85); Mole, Moçambique e Santinho ficam expostas (guias concordam/conflitam → mostrar menos).
+- Vento sul: curva própria, mais dura (`WIND_SOUTH` em `_scoreEngine.ts`; ditada pelo usuário em 09/out/2026: 10 km/h −1, 11-14 −1,1 a −1,7, 15-20 −1,8 a −2,5, e o mesmo ritmo depois — desfez o endurecimento de 01/out), exceto onde ele sopra da terra (`southWindHits`: S/SSW na Barra, SSW no Matadeiro). `southExposure` no registro = proteção parcial (Matadeiro 0,5, Barra 0,7 pro SSE, Armação 0,85); Mole, Moçambique e Santinho ficam expostas (guias concordam/conflitam → mostrar menos).
 - Sub-regiões têm `swellDirections` que determinam qual pico brilha em cada swell.
+- Altura mostrada como faixa (`formatWaveRange` em `surfData.ts`): 20% abaixo a 10% acima do número (09/out/2026, o usuário escolheu +10% e não +20%); a nota sai sempre do número do meio. Picos (`getBeachPeaks`): o melhor pico fica igual à praia e nenhum passa dela (a Lomba do Sabão aparecia maior que o próprio Campeche).
 
 ### Testes
 - Suite vitest: `npm test` → deve manter todos os testes passando (rodar pra ver o número atual — já mudou várias vezes e qualquer contagem fixa aqui fica desatualizada rápido).
@@ -388,7 +400,7 @@ o CLI do shadcn (`npx shadcn@latest add <nome>`) pra gerar de novo, em vez de re
 - `comments` — relatos da comunidade por pico
 - `favorites` — picos favoritados por usuário
 - `surf_log` — diário de sessões
-- `surf_sessions` — sessões de surf registradas pelo usuário
+- `surf_sessions` — sessões de surf registradas pelo usuário. Desde 09/out/2026 também `start_hour` e o mar daquela hora (`wave_height`, `wind_speed`, `wind_direction`, `swell_period`, `app_score`, `tide_trend`), preenchido pelo app
 - `user_preferences` — preferências salvas (notificações, filtros)
 - `push_subscriptions` — inscrições de push notification (VAPID)
 - `score_snapshots` — histórico periódico de score por pico (gravado por `api/snapshot.ts`)

@@ -204,9 +204,28 @@ export interface SubRegionMatch {
 // ficava acima do Surfline e do Waves, e o usuário prefere nunca mostrar mar maior que o real.
 // A faixa agora vai de 20% abaixo até ele ("intermediárias a séries"). O número já chega aqui
 // como onda na praia (api/_beachHeight.ts), não mais como mar aberto.
+//
+// 09/out/2026: topo voltou a passar do número, +10% (pedido do usuário: 0,5 m aparecia como
+// "0.4–0.5", estreito demais). Propus +20% (em 30/set ele viu série de 1 m com o app em 1,04)
+// e ele preferiu +10%, pra não criar expectativa. A nota continua saindo do número do meio.
 const WAVE_RANGE_LOW = 0.8
-const WAVE_RANGE_HIGH = 1.0
+const WAVE_RANGE_HIGH = 1.1
 
+// Quanto o pico recebe da onda da praia, pela direção do swell e pela exposição dele
+function peakMultiplier(
+  swellDirections: string[] | undefined,
+  swellDirection: string,
+  tolerance?: 'estreita' | 'ampla',
+  exposicao: number = 1.0
+): number {
+  const minDiff = swellAngularDiff(swellDirections ?? [], swellDirection)
+  return (tolerance === 'estreita'
+    ? (minDiff === 0 ? 1.0 : minDiff === 1 ? 0.85 : minDiff === 2 ? 0.7 : 0.55)
+    : (minDiff === 0 ? 1.05 : minDiff === 1 ? 1.00 : minDiff === 2 ? 0.95 : minDiff <= 4 ? 0.88 : 0.80)) * exposicao
+}
+
+// `beachTopMultiplier` (09/out/2026): o maior multiplicador entre os picos da praia naquele
+// momento (ver getBeachPeaks) — divide a conta pra que o melhor pico fique igual à praia
 export function getSubRegionMatch(
   swellDirections: string[] | undefined,
   swellDirection: string,
@@ -214,7 +233,8 @@ export function getSubRegionMatch(
   tolerance?: 'estreita' | 'ampla',
   exposicao: number = 1.0,
   swellPeriod?: number,
-  idealPeriodMin?: number
+  idealPeriodMin?: number,
+  beachTopMultiplier: number = 1
 ): SubRegionMatch {
   const minDiff = swellAngularDiff(swellDirections ?? [], swellDirection)
   const narrow = tolerance === 'estreita'
@@ -227,9 +247,7 @@ export function getSubRegionMatch(
   // local). O pico estreito continua perdendo mais que o `ampla` fora da direção ideal,
   // só que de forma gradual; a exigência maior dele segue aparecendo no rótulo ("Swell
   // bom"/"Swell ruim") e no "Dia clássico", não só na altura.
-  const mult = (narrow
-    ? (minDiff === 0 ? 1.0 : minDiff === 1 ? 0.85 : minDiff === 2 ? 0.7 : 0.55)
-    : (minDiff === 0 ? 1.05 : minDiff === 1 ? 1.00 : minDiff === 2 ? 0.95 : minDiff <= 4 ? 0.88 : 0.80)) * exposicao
+  const mult = peakMultiplier(swellDirections, swellDirection, tolerance, exposicao) / Math.max(1, beachTopMultiplier)
 
   const waveEst = waveHeight * mult
   const waveMin = (waveEst * WAVE_RANGE_LOW).toFixed(1)
@@ -249,7 +267,22 @@ export function getSubRegionMatch(
   return { minDiff, waveMin, waveMax, match, matchCls }
 }
 
-// Formata a altura de onda como faixa (−20% até a série, mesma WAVE_RANGE_LOW/HIGH de getSubRegionMatch
+// Picos da praia com a altura de cada um (09/out/2026). A leitura da praia já é a do lugar mais
+// exposto (o Campeche é medido na própria Lomba do Sabão) e a Lomba ainda ganhava ×1,1 de
+// exposição × 1,05 de swell perfeito: mostrava 0.7–0.9 com a praia em 0.6–0.8 (achado do usuário).
+// Agora o melhor pico fica igual à praia e os outros mantêm a diferença entre eles, abaixo dela.
+// Fonte única pra página da praia (PicosSection) e pra conversa de exemplo da landing.
+export function getBeachPeaks(spot: Pick<BeachCondition, 'subRegions' | 'swellDirection' | 'waveHeight' | 'swellPeriod'>) {
+  const subs = spot.subRegions ?? []
+  const top = Math.max(1, ...subs.map(s => peakMultiplier(s.swellDirections, spot.swellDirection, s.tolerance, s.exposicao)))
+  return subs.map(sub => ({
+    ...sub,
+    ...getSubRegionMatch(sub.swellDirections, spot.swellDirection, spot.waveHeight, sub.tolerance, sub.exposicao,
+      spot.swellPeriod, sub.idealPeriodMin, top),
+  }))
+}
+
+// Formata a altura de onda como faixa (−20% a +10%, mesma WAVE_RANGE_LOW/HIGH de getSubRegionMatch
 // acima) em vez de um número único — estilo Surfline/Waves.com.br/Surfguru, que também
 // mostram faixa em vez de um valor cravado (achado 24/set/2026, a pedido do usuário).
 export function formatWaveRange(waveHeight: number): string {
@@ -304,12 +337,13 @@ export function getWindAnalysis(windDir: string, windSpeed: number, beachOrienta
     const felt = windSpeed * Math.min(1, Math.max(0, southExposure))
     if (southExposure < 1 && windSpeed >= 10) {
       if (felt < 15) return `${label} de ${windSpeed} km/h, mas esta praia é mais protegida do sul: o mar só mexe um pouco. `
-      if (felt < 17) return `${label} de ${windSpeed} km/h: mesmo mais protegida do sul, o mar fica mexido. `
+      if (felt < 22) return `${label} de ${windSpeed} km/h: mesmo mais protegida do sul, o mar fica mexido. `
       return `${label} forte, de ${windSpeed} km/h: mesmo mais protegida do sul, o mar fica bagunçado. `
     }
     if (felt <= 5) return `${label} fraco, de ${windSpeed} km/h. Se apertar, bagunça o mar rápido. `
     if (felt < 15) return `${label} de ${windSpeed} km/h já mexendo o mar. `
-    if (felt < 17) return `${label} de ${windSpeed} km/h: mar mexido, sem formação. `
+    // limites acompanham a curva de 09/out/2026 (20 km/h tira 2,5: mexido; de ~22 km/h, perto de −3)
+    if (felt < 22) return `${label} de ${windSpeed} km/h: mar mexido, sem formação. `
     return `${label} forte, de ${windSpeed} km/h: mar bagunçado, a onda se despedaça. `
   }
   const penalty = explainSurfScore(1, windSpeed, 9, windDir, beachOrientation).windPenalty

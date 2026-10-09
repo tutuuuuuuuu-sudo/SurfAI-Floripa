@@ -122,62 +122,12 @@ async function fetchUserContext(supabaseUrl: string, serviceKey: string, userId:
   }
 }
 
-// Previsão de 1 semana das 14 praias pro contexto (ver api/_chatForecast.ts). Substituiu em
-// 25/set/2026 o resumo antigo de só 2 dias (faixa de altura + nota máxima) — o usuário quer
-// que o chat responda sobre a semana, priorizando onda, maré, vento e melhor horário.
-// Cache no Supabase (mesma tabela/padrão de _liveConditions.ts) — achado 02/set/2026: sem
-// cache, cada mensagem batia 14 praias × 3 chamadas na Open-Meteo e às vezes derrubava o
-// chat. A previsão muda pouco dentro de 1h, então 60min de cache basta. Chave nova (v2) pra
-// não reaproveitar o resumo antigo de 2 dias que possa estar no cache. v3 (09/out/2026): resumo
-// passou a ir até o 14º dia, igual à aba Previsão.
-const FORECAST_SUMMARY_CACHE_KEY = 'chat:forecast-week-v3'
-const FORECAST_SUMMARY_CACHE_TTL_MS = 60 * 60 * 1000
-
-async function getCachedForecastSummary(supabaseUrl: string, serviceKey: string): Promise<string | null> {
-  try {
-    const res = await fetch(
-      `${supabaseUrl}/rest/v1/live_conditions_cache?cache_key=eq.${encodeURIComponent(FORECAST_SUMMARY_CACHE_KEY)}&select=payload,fetched_at`,
-      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
-    )
-    if (!res.ok) return null
-    const rows = await res.json() as { payload: { summary: string }; fetched_at: string }[]
-    const row = rows[0]
-    if (!row) return null
-    if (Date.now() - new Date(row.fetched_at).getTime() > FORECAST_SUMMARY_CACHE_TTL_MS) return null
-    return row.payload.summary
-  } catch (err) {
-    console.error('[surf-chat] cache do resumo de previsão GET lançou exceção:', err)
-    return null
-  }
-}
-
-async function setCachedForecastSummary(supabaseUrl: string, serviceKey: string, summary: string): Promise<void> {
-  try {
-    await fetch(`${supabaseUrl}/rest/v1/live_conditions_cache`, {
-      method: 'POST',
-      headers: {
-        apikey: serviceKey, Authorization: `Bearer ${serviceKey}`,
-        'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates',
-      },
-      body: JSON.stringify({
-        cache_key: FORECAST_SUMMARY_CACHE_KEY,
-        payload: { summary },
-        fetched_at: new Date().toISOString(),
-      }),
-    })
-  } catch (err) {
-    console.error('[surf-chat] cache do resumo de previsão SET lançou exceção:', err)
-  }
-}
-
-async function buildForecastSummary(supabaseUrl: string, serviceKey: string): Promise<string> {
-  const cached = await getCachedForecastSummary(supabaseUrl, serviceKey)
-  if (cached !== null) return cached
-
-  const summary = await buildWeekForecastSummary()
-  if (summary) await setCachedForecastSummary(supabaseUrl, serviceKey, summary)
-  return summary
-}
+// Previsão das 14 praias pro contexto (ver api/_chatForecast.ts). Substituiu em 25/set/2026 o
+// resumo antigo de só 2 dias (faixa de altura + nota máxima) — o usuário quer que o chat responda
+// sobre a semana, priorizando onda, maré, vento e melhor horário. Achado 02/set/2026: sem cache,
+// cada mensagem batia 14 praias × 3 chamadas na Open-Meteo e às vezes derrubava o chat — desde
+// 09/out/2026 o cache de 1 h é o do resumo das praias (api/_beachDays.ts), dividido com a aba
+// Previsão; o texto em cima dele é montado na hora.
 
 async function saveMessages(supabaseUrl: string, serviceKey: string, userId: string, userMessage: string, assistantReply: string) {
   try {
@@ -242,7 +192,7 @@ export default async function handler(req: Request) {
 
   const [{ skill, favoriteNames, history }, forecastSummary] = await Promise.all([
     fetchUserContext(supabaseUrl, serviceKey, userId),
-    buildForecastSummary(supabaseUrl, serviceKey),
+    buildWeekForecastSummary().catch(err => { console.error('[surf-chat] resumo da previsão falhou:', err); return '' }),
   ])
   const userLevel = sanitizeName(body.userLevel ?? skill ?? '')
 

@@ -11,6 +11,7 @@ import { ConditionBadge } from '@/components/home/ConditionBadge'
 import { SwellAlert } from '@/components/home/SwellAlert'
 import { NotificationPanel } from '@/components/home/NotificationPanel'
 import { GeoFinderCard } from '@/components/home/GeoFinderCard'
+import { SurfedTodayPrompt } from '@/components/home/SurfedTodayPrompt'
 import { SurfChatPanel } from '@/components/home/SurfChatPanel'
 import { PremiumUpsellBanner } from '@/components/PremiumUpsellBanner'
 import { analyzeConditions, BeachCondition, formatWaveRange } from '@/lib/surfData'
@@ -210,6 +211,8 @@ export default function Home() {
             </div>
           </div>
         )}
+
+        <SurfedTodayPrompt favorites={favorites} />
 
         {!premiumLoading && (
           <div className="anim-slide" style={{ animationDelay: '0.15s' }}>

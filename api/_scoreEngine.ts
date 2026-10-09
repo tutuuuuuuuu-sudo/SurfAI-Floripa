@@ -128,7 +128,11 @@ export const southWindHits = (windDir: string, beachOrientation: number) =>
 // 5,3". Curva endurecida pra que, numa praia exposta, sul de 20 km/h derrube até um swell bom
 // (1,2 m, 10 s) pra RUIM e sul de ~17 km/h derrube um mar médio pra RUIM. Praias protegidas do sul
 // usam a velocidade reduzida (southExposure).
-const WIND_SOUTH: [number, number][] = [[3, 1.0], [5, 0], [10, -1.5], [15, -3.0], [17, -4.0], [20, -5.5], [25, -7.0], [30, -8.0]]
+// 09/out/2026 (5ª rodada, ditada pelo usuário ao ver 13 km/h tirar 2,2): "10 km/h tira 1; de 11 a 14
+// tira 1,1 a 1,7; de 15 a 20 tira 1,8 a 2,5, e assim vai" (mesmo ritmo depois de 20). Desfaz o
+// endurecimento de 01/out (15 km/h −3, 20 km/h −5,5): um swell bom (1,2 m, 10 s) com sul de 20 km/h
+// numa praia exposta volta a ficar BOM (6,7), não RUIM.
+const WIND_SOUTH: [number, number][] = [[3, 1.0], [5, 0], [10, -1.0], [11, -1.1], [14, -1.7], [15, -1.8], [20, -2.5], [25, -3.2], [30, -3.9]]
 // Os outros ventos não estragam muito o mar antes de uns 15 km/h (nem o maral: até 10 km/h
 // não desconta nada). Terral segura a onda em pé até ficar forte; lateral fica no meio.
 const WIND_OFFSHORE: [number, number][] = [[3, 1.5], [5, 1.2], [10, 1.2], [15, 1.0], [20, -0.4], [25, -1.0]]

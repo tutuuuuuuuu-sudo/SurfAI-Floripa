@@ -11,6 +11,8 @@ import { isFavorite, toggleFavorite } from '@/lib/favorites'
 import { usePremium } from '@/lib/premium'
 import { PRICE_MONTHLY, TRIAL_DAYS, formatBRL } from '@/lib/pricing'
 import { useAuth } from '@/contexts/AuthContext'
+import { SessionSheet } from '@/components/sessions/SessionSheet'
+import { recordBeachVisit } from '@/lib/homeRegion'
 import { PUBLIC_SPOT_IDS, TEASER_SPOT_IDS } from '@/lib/surfData'
 import { SpotTeaser } from '@/components/spot/SpotTeaser'
 import {
@@ -18,7 +20,7 @@ import {
   TrendingUp, Compass, AlertCircle, Thermometer,
   Heart, Calendar, Sun, ChevronDown, Clock,
   Share2, MessageCircle, Lock, Crown, Droplets, GitCompareArrows,
-  Sunrise, Sunset
+  Sunrise, Sunset, BookOpen
 } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { toast } from 'sonner'
@@ -32,6 +34,7 @@ import { ScoreExplainer } from '@/components/spot/ScoreExplainer'
 import { PicosSection } from '@/components/spot/PicosSection'
 import { BestWindowWidget } from '@/components/spot/BestWindowWidget'
 import { ForecastDayCard } from '@/components/spot/ForecastDayCard'
+import { TREND_FROM_DAY } from '@/lib/forecastWindows'
 import { PremiumUpsellBanner } from '@/components/PremiumUpsellBanner'
 
 const FIXED_DOMAIN = typeof window !== 'undefined' ? window.location.origin : ''
@@ -101,6 +104,9 @@ export default function SpotDetails() {
   const [visible, setVisible] = useState(false)
   const [showScoreExplainer, setShowScoreExplainer] = useState(false)
   const [activeTab, setActiveTab] = useState<'agora'|'previsao'>('agora')
+  const [showSessionSheet, setShowSessionSheet] = useState(false)
+  // Conta a visita pra saber a região que a pessoa mais frequenta (src/lib/homeRegion.ts)
+  useEffect(() => { if (id) recordBeachVisit(id) }, [id])
   const [scoreHistory, setScoreHistory] = useState<{ avg30: number | null; isMonthBest: boolean } | null>(null)
   const [commentsOpen, setCommentsOpen] = useState(false)
   const [bestWindowOpen, setBestWindowOpen] = useState(false)
@@ -221,6 +227,7 @@ export default function SpotDetails() {
   return (
     <div className="min-h-screen bg-background">
       {showScoreExplainer && <ScoreExplainer spot={spot} onClose={() => setShowScoreExplainer(false)}/>}
+      {showSessionSheet && <SessionSheet source="spot" initialBeachId={spot.id} onClose={() => setShowSessionSheet(false)}/>}
 
       <header className="sticky top-0 z-40 bg-card/90 backdrop-blur-md border-b border-border/40">
         <div className="container mx-auto px-4 py-2.5 max-w-4xl">
@@ -299,10 +306,20 @@ export default function SpotDetails() {
             </a>
           </div>
 
+          {/* Registrar a sessão daqui, com a praia e o dia já preenchidos (09/out/2026) */}
+          {user && (
+            <button
+              onClick={() => setShowSessionSheet(true)}
+              className="w-full flex items-center justify-center gap-2 h-10 rounded-xl text-sm font-semibold text-primary border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-all active:scale-95"
+            >
+              <BookOpen className="h-4 w-4"/>Surfei aqui hoje
+            </button>
+          )}
+
           <div className="grid grid-cols-4 gap-2">
-            <div className="flex flex-col items-center gap-1 bg-muted/20 rounded-xl p-2.5">
+            <div className="flex flex-col items-center gap-1 bg-muted/20 rounded-xl py-2.5 px-1">
               <Waves className="h-4 w-4 text-primary"/>
-              <div className="text-base font-bold">{usesFeet ? formatWaveRangeFeet(spot.waveHeight) : formatWaveRange(spot.waveHeight)}</div>
+              <div className="text-[13px] sm:text-base font-bold whitespace-nowrap tracking-tight">{usesFeet ? formatWaveRangeFeet(spot.waveHeight) : formatWaveRange(spot.waveHeight)}</div>
               <div className="text-xs text-muted-foreground text-center">Ondas</div>
             </div>
             <div className="flex flex-col items-center gap-1 bg-muted/20 rounded-xl p-2.5">
@@ -463,7 +480,7 @@ export default function SpotDetails() {
                     <span className="text-sm font-semibold">Ondulação</span>
                   </div>
                   <div className="flex items-end gap-2">
-                    <div className="text-3xl font-bold">
+                    <div className="text-2xl sm:text-3xl font-bold whitespace-nowrap tracking-tight">
                       {usesFeet ? formatWaveRangeFeet(spot.waveHeight) : formatWaveRange(spot.waveHeight)}
                     </div>
                     <button
@@ -622,6 +639,7 @@ export default function SpotDetails() {
                       freeDays={FREE_DAYS}
                       onUpgrade={() => navigate('/premium')}
                       onOpen={() => navigate(`/forecast/${spot.id}/day/${index}`)}
+                      trend={index >= TREND_FROM_DAY}
                     />
                   ))}
                 </div>
