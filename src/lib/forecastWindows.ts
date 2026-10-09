@@ -64,6 +64,15 @@ export function pickBestWindows(beaches: BeachForecast[], count = 3, minScore = 
     .sort((a, b) => a.day.dayIndex - b.day.dayIndex)
 }
 
+// Olhando a região da pessoa: a melhor janela de FORA dela, se for pelo menos 1 ponto melhor que a
+// melhor da região (pra ninguém perder um dia épico do outro lado da ilha)
+export function pickIslandAlert(beaches: BeachForecast[], region: string, margin = 1): BeachWindow | null {
+  const regionBest = Math.max(0, ...pickBestWindows(beaches.filter(b => b.region === region)).map(w => w.day.score))
+  return pickBestWindows(beaches.filter(b => b.region !== region))
+    .sort((a, b) => b.day.score - a.day.score)
+    .find(w => w.day.score >= regionBest + margin) ?? null
+}
+
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
 export function dayName(day: Pick<BeachDay, 'date' | 'dayIndex'>): string {

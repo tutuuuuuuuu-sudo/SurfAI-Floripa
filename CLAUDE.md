@@ -124,7 +124,8 @@ src/
 │   ├── idealSea.ts            # "Seu mar ideal": aprende das sessões de 4-5 estrelas (onda, vento, maré, praias) e acha a próxima vez nos 14 dias
 │   ├── sessionStats.ts        # Conquistas: mês, semanas seguidas, passaporte, retrospectiva do ano
 │   ├── sessionStoryCard.ts    # Cartão da sessão pro story (canvas 1080×1920, cores do tema escuro, praia marcada na ilha)
-│   ├── forecastWindows.ts     # Busca api/forecast-windows + melhores janelas (máx. 1 de tendência) + TREND_FROM_DAY
+│   ├── forecastWindows.ts     # Busca api/forecast-windows + melhores janelas (máx. 1 de tendência) + aviso da ilha toda (pickIslandAlert) + TREND_FROM_DAY
+│   ├── homeRegion.ts          # Região que a pessoa mais frequenta (sessões ×3, favoritas ×2, páginas de praia abertas no aparelho em 30 dias ×1; a escolhida nas Configurações manda; sem GPS) — melhores janelas abrem nela
 │   ├── comments.ts            # getComments(), addComment() via Supabase
 │   ├── notifications.ts       # Alertas de condições boas
 │   ├── tainha.ts              # isTainhaSeasonActive() — temporada de tainha (sazonalidade)
@@ -253,7 +254,7 @@ resultado era descartado e gastava cota do Gemini — o ContentStudio usa o endp
 - Backend (crons) usa `api/_beachRegistry.ts` (id/nome/região/coordenadas/orientação) — **nunca criar uma terceira cópia**, os dois já precisam ser mantidos em sincronia manualmente.
 - Coordenadas foram **confirmadas pelo usuário no Google Maps** — não alterar sem confirmação explícita, nos dois arquivos.
 - Cada pico tem `orientation` (graus, pra onde a praia está virada) usado no cálculo de offshore/onshore. Refeita em 01/out/2026 com OK do usuário: medida no contorno da costa (OpenStreetMap) e conferida com 5 guias de surf (ver comentário em `api/_beachRegistry.ts`) — a costa leste estava 30-50° virada pro norte demais.
-- Vento sul: curva própria, mais dura (`WIND_SOUTH` em `_scoreEngine.ts`), exceto onde ele sopra da terra (`southWindHits`: S/SSW na Barra, SSW no Matadeiro). `southExposure` no registro = proteção parcial (Matadeiro 0,5, Barra 0,7 pro SSE, Armação 0,85); Mole, Moçambique e Santinho ficam expostas (guias concordam/conflitam → mostrar menos).
+- Vento sul: curva própria, mais dura (`WIND_SOUTH` em `_scoreEngine.ts`; ditada pelo usuário em 09/out/2026: 10 km/h −1, 11-14 −1,1 a −1,7, 15-20 −1,8 a −2,5, e o mesmo ritmo depois — desfez o endurecimento de 01/out), exceto onde ele sopra da terra (`southWindHits`: S/SSW na Barra, SSW no Matadeiro). `southExposure` no registro = proteção parcial (Matadeiro 0,5, Barra 0,7 pro SSE, Armação 0,85); Mole, Moçambique e Santinho ficam expostas (guias concordam/conflitam → mostrar menos).
 - Sub-regiões têm `swellDirections` que determinam qual pico brilha em cada swell.
 - Altura mostrada como faixa (`formatWaveRange` em `surfData.ts`): 20% abaixo a 10% acima do número (09/out/2026, o usuário escolheu +10% e não +20%); a nota sai sempre do número do meio. Picos (`getBeachPeaks`): o melhor pico fica igual à praia e nenhum passa dela (a Lomba do Sabão aparecia maior que o próprio Campeche).
 

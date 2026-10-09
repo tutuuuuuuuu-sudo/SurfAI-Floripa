@@ -6,7 +6,7 @@ import { usePremium } from '@/lib/premium'
 import { useSurfData } from '@/contexts/SurfDataContext'
 import { getWeatherForecast, FREE_DAYS, type WeatherForecast } from '@/lib/weatherData'
 import { getFavorites } from '@/lib/favorites'
-import { fetchIslandWindows, pickBestWindows, TREND_FROM_DAY, type BeachForecast } from '@/lib/forecastWindows'
+import { fetchIslandWindows, pickBestWindows, pickIslandAlert, TREND_FROM_DAY, type BeachForecast } from '@/lib/forecastWindows'
 import { useHomeRegion } from '@/lib/homeRegion'
 import { useAuth } from '@/contexts/AuthContext'
 import { ForecastDayCard } from '@/components/spot/ForecastDayCard'
@@ -80,12 +80,7 @@ export default function ForecastPage() {
   const islandWindows = pickBestWindows(allBeaches)
   const regionWindows = homeRegion ? pickBestWindows(allBeaches.filter(b => b.region === homeRegion.region)) : []
   const showRegion = !!homeRegion && scope === 'region'
-  // Na região, avisa se a ilha tem uma janela pelo menos 1 ponto melhor fora dela
-  const regionBest = Math.max(0, ...regionWindows.map(w => w.day.score))
-  const islandAlert = showRegion
-    ? [...islandWindows].sort((a, b) => b.day.score - a.day.score)
-        .find(w => allBeaches.find(b => b.id === w.beachId)?.region !== homeRegion.region && w.day.score >= regionBest + 1) ?? null
-    : null
+  const islandAlert = showRegion ? pickIslandAlert(allBeaches, homeRegion.region) : null
 
   const forecastKey = `${selectedSpot}|${isPremium}`
   useEffect(() => {
@@ -159,7 +154,7 @@ export default function ForecastPage() {
           islandAlert={islandAlert}
         />
 
-        {loading ? (
+        {loading || spots.length === 0 ? (
           <Skeleton className="h-[76px] w-full rounded-2xl" />
         ) : (
           <BeachPicker spots={spots} selectedId={selectedSpot} favorites={favoriteIds} onSelect={selectSpot} />

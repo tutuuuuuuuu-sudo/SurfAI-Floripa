@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import type { SurfSession } from './sessions'
 import { learnIdealSea, findNextIdealSea, matchesIdealSea } from './idealSea'
 import { weekStreak, monthSummary, yearRecap, surfedBeaches } from './sessionStats'
-import { pickBestWindows } from './forecastWindows'
+import { pickBestWindows, pickIslandAlert } from './forecastWindows'
 import { inferHomeRegion } from './homeRegion'
 import type { BeachDay, BeachForecast } from '../../api/_beachDayTypes'
 
@@ -132,5 +132,19 @@ describe('região que a pessoa mais frequenta', () => {
   it('só visitas também servem', () => {
     expect(inferHomeRegion({ sessionBeachIds: [], favoriteIds: [], visits: { joaquina: 2, mole: 2 } }))
       .toEqual({ region: 'Centro', reason: 'pelas praias que você mais abre' })
+  })
+})
+
+describe('aviso da ilha toda', () => {
+  const beaches: BeachForecast[] = [
+    { id: 'campeche', name: 'Campeche', region: 'Sul', days: [day({ dayIndex: 1, score: 7 })] },
+    { id: 'santinho', name: 'Santinho', region: 'Norte', days: [day({ dayIndex: 2, score: 7.6 }), day({ dayIndex: 3, score: 8.4 })] },
+  ]
+  it('aparece quando fora da região tem janela 1 ponto melhor', () => {
+    expect(pickIslandAlert(beaches, 'Sul')?.day.dayIndex).toBe(3)
+  })
+  it('não aparece quando a diferença é menor que 1 ponto', () => {
+    expect(pickIslandAlert(beaches, 'Sul', 1.5)).toBeNull()
+    expect(pickIslandAlert(beaches, 'Norte')).toBeNull()
   })
 })
