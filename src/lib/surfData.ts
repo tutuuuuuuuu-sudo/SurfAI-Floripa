@@ -337,12 +337,13 @@ export function getWindAnalysis(windDir: string, windSpeed: number, beachOrienta
     const felt = windSpeed * Math.min(1, Math.max(0, southExposure))
     if (southExposure < 1 && windSpeed >= 10) {
       if (felt < 15) return `${label} de ${windSpeed} km/h, mas esta praia é mais protegida do sul: o mar só mexe um pouco. `
-      if (felt < 17) return `${label} de ${windSpeed} km/h: mesmo mais protegida do sul, o mar fica mexido. `
+      if (felt < 22) return `${label} de ${windSpeed} km/h: mesmo mais protegida do sul, o mar fica mexido. `
       return `${label} forte, de ${windSpeed} km/h: mesmo mais protegida do sul, o mar fica bagunçado. `
     }
     if (felt <= 5) return `${label} fraco, de ${windSpeed} km/h. Se apertar, bagunça o mar rápido. `
     if (felt < 15) return `${label} de ${windSpeed} km/h já mexendo o mar. `
-    if (felt < 17) return `${label} de ${windSpeed} km/h: mar mexido, sem formação. `
+    // limites acompanham a curva de 09/out/2026 (20 km/h tira 2,5: mexido; de ~22 km/h, perto de −3)
+    if (felt < 22) return `${label} de ${windSpeed} km/h: mar mexido, sem formação. `
     return `${label} forte, de ${windSpeed} km/h: mar bagunçado, a onda se despedaça. `
   }
   const penalty = explainSurfScore(1, windSpeed, 9, windDir, beachOrientation).windPenalty

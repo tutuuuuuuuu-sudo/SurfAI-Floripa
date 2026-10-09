@@ -119,27 +119,28 @@ describe('calculateSurfScore', () => {
 
   // ── Vento sul (30/set/2026) ──────────────────────────────────────────────────
 
-  it('vento sul em praia exposta: 10 km/h −1 · 15 −3 · 17 −4 · 20 −5,5 · 25 −7 (01/out/2026; 10 km/h em 09/out)', () => {
+  it('vento sul em praia exposta: 10 km/h −1 · 11 a 14 −1,1 a −1,7 · 15 a 20 −1,8 a −2,5 (usuário, 09/out/2026)', () => {
     for (const orientation of [70, 90, 130, 180]) {
       for (const dir of ['S', 'SSE', 'SSW']) {
         const p = (v: number) => explainSurfScore(1.0, v, 9, dir, orientation).windPenalty
-        expect([10, 15, 17, 20, 25, 30].map(p)).toEqual([-1, -3, -4, -5.5, -7, -8])
+        expect([10, 11, 13, 14, 15, 17, 20, 25, 30].map(p)).toEqual([-1, -1.1, -1.5, -1.7, -1.8, -2.1, -2.5, -3.2, -3.9])
       }
     }
   })
 
-  it('swell bom com sul de 20 km/h no Campeche fica ruim; no Matadeiro (protegido) segue bom', () => {
-    // "o mar fica extremamente ruim, não tem formação" — usuário, 01/out/2026
-    expect(calculateSurfScore(1.2, 20, 10, 'S', 90)).toBeLessThan(4)
+  it('Campeche do print (0,8 m, sul-sudeste de 13 km/h, 6 s): vento tira 1,5, não 2,2', () => {
+    const b = explainSurfScore(0.8, 13, 6, 'SSE', 130)
+    expect(b.windPenalty).toBe(-1.5)
+    expect(b.total).toBe(3.8)
+  })
+
+  it('swell bom com sul de 20 km/h: praia exposta perde 2,5; Matadeiro (protegido) perde menos', () => {
+    expect(calculateSurfScore(1.2, 20, 10, 'S', 90)).toBe(6.7)
     const matadeiro = calculateSurfScore(1.2, 20, 10, 'S', 110, 0.5)
     const armacao = calculateSurfScore(1.2, 20, 10, 'S', 115, 0.85)
     expect(matadeiro).toBeGreaterThanOrEqual(7)
     expect(armacao).toBeGreaterThan(calculateSurfScore(1.2, 20, 10, 'S', 100))
     expect(armacao).toBeLessThan(matadeiro)
-  })
-
-  it('mar médio com sul de 17 km/h em praia exposta cai pra ruim (antes ficava em 5,3)', () => {
-    expect(calculateSurfScore(1.0, 17, 7, 'S', 90)).toBeLessThan(4)
   })
 
   it('proteção ao sul só mexe no vento sul', () => {
@@ -217,11 +218,11 @@ describe('vento por praia com a orientação real', () => {
     expect(b.windPenalty).toBeGreaterThan(0)
   })
 
-  it('nas praias expostas o sul continua derrubando a nota', () => {
+  it('nas praias expostas o sul de 20 km/h tira a curva cheia (2,5)', () => {
     for (const id of ['campeche', 'novo-campeche', 'morro-pedras', 'joaquina', 'mole', 'mocambique', 'santinho']) {
       const b = beach(id)
       expect(southWindHits('S', b.orientation)).toBe(true)
-      expect(calculateSurfScore(1.2, 20, 10, 'S', b.orientation, b.southExposure ?? 1)).toBeLessThan(4)
+      expect(explainSurfScore(1.2, 20, 10, 'S', b.orientation, b.southExposure ?? 1).windPenalty).toBe(-2.5)
     }
   })
 

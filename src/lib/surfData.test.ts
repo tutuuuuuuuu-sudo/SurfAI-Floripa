@@ -55,7 +55,8 @@ describe('getWindAnalysis — frase do vento acompanha a nota (30/set/2026)', ()
   it('sul e variações ficam mais duros a cada faixa de velocidade', () => {
     expect(getWindAnalysis('SSE', 12, 90)).toContain('já mexendo o mar')
     expect(getWindAnalysis('SSW', 16, 90)).toContain('mar mexido')
-    expect(getWindAnalysis('S', 20, 90)).toContain('a onda se despedaça')
+    expect(getWindAnalysis('S', 20, 90)).toContain('mar mexido')
+    expect(getWindAnalysis('S', 23, 90)).toContain('a onda se despedaça')
     expect(getWindAnalysis('S', 4, 90)).toContain('fraco')
   })
 

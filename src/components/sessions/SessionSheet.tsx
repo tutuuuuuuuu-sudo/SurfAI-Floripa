@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { X, Star, Check, Share2, Waves, Wind, Clock, ArrowUpDown, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -69,6 +69,13 @@ export function SessionSheet({ initialBeachId, initialDate, initialHour, source,
   const [sharing, setSharing] = useState(false)
 
   const beach = BEACH_REGISTRY.find(b => b.id === beachId)
+  const dateInput = useRef<HTMLInputElement>(null)
+  function openDatePicker() {
+    const el = dateInput.current
+    if (!el) return
+    // showPicker: Chrome 99+, Safari 16+, Firefox 101+; sem ele, foco + clique no campo
+    try { el.showPicker() } catch { el.focus(); el.click() }
+  }
   const futureHour = date === today && hour > nowHourSP()
   const byRegion = useMemo(() => REGIONS.map(region => ({
     region,
@@ -184,13 +191,17 @@ export function SessionSheet({ initialBeachId, initialDate, initialHour, source,
               <div className="grid grid-cols-3 gap-2">
                 <button className={`${chip(date === today)} py-2`} onClick={() => setDate(today)}>Hoje</button>
                 <button className={`${chip(date === yesterday)} py-2`} onClick={() => setDate(yesterday)}>Ontem</button>
-                <label className={`${chip(date !== today && date !== yesterday)} py-2 relative text-center cursor-pointer`}>
+                {/* Botão que abre o calendário (09/out/2026): o campo de data invisível por cima do botão
+                    recebia o clique, mas no computador o calendário só abre pelo iconezinho dele — o
+                    usuário clicava e nada acontecia */}
+                <button type="button" className={`${chip(date !== today && date !== yesterday)} py-2 relative`} onClick={openDatePicker}>
                   {date !== today && date !== yesterday
                     ? new Date(`${date}T12:00:00`).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
                     : 'Outro dia'}
-                  <input type="date" value={date} max={today} onChange={e => e.target.value && setDate(e.target.value)}
-                    className="absolute inset-0 opacity-0 cursor-pointer" aria-label="Escolher outro dia" />
-                </label>
+                  <input ref={dateInput} type="date" value={date} max={today} tabIndex={-1} aria-label="Escolher outro dia"
+                    onChange={e => e.target.value && setDate(e.target.value)}
+                    className="absolute inset-x-0 bottom-0 h-px w-full opacity-0 pointer-events-none" />
+                </button>
               </div>
             </div>
 
