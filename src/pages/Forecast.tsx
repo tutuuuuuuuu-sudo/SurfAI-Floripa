@@ -6,7 +6,9 @@ import { usePremium } from '@/lib/premium'
 import { useSurfData } from '@/contexts/SurfDataContext'
 import { getWeatherForecast, FREE_DAYS, type WeatherForecast } from '@/lib/weatherData'
 import { getFavorites } from '@/lib/favorites'
-import { fetchIslandWindows, pickBestWindows, TREND_FROM_DAY, type BeachWindow } from '@/lib/forecastWindows'
+import { fetchIslandWindows, pickBestWindows, TREND_FROM_DAY, type BeachForecast } from '@/lib/forecastWindows'
+import { useHomeRegion } from '@/lib/homeRegion'
+import { useAuth } from '@/contexts/AuthContext'
 import { ForecastDayCard } from '@/components/spot/ForecastDayCard'
 import { BestWindows } from '@/components/forecast/BestWindows'
 import { BeachPicker } from '@/components/forecast/BeachPicker'
@@ -41,7 +43,8 @@ export default function ForecastPage() {
   const [chosenSpot, setChosenSpot] = useState<string | null>(id ?? null)
   const [forecastFor, setForecastFor] = useState<{ key: string; data: WeatherForecast[] } | null>(null)
   const [favorites, setFavorites] = useState<string[] | null>(null)
-  const [windowsFor, setWindowsFor] = useState<{ premium: boolean; windows: BeachWindow[]; days: number } | null>(null)
+  const [windowsFor, setWindowsFor] = useState<{ premium: boolean; beaches: BeachForecast[]; days: number } | null>(null)
+  const { user } = useAuth()
   const usesFeet = useMemo(() => {
     try { return JSON.parse(localStorage.getItem('pref_units') ?? '"metric"') === 'imperial' } catch { return false }
   }, [])
@@ -57,11 +60,32 @@ export default function ForecastPage() {
     if (premiumLoading) return
     let cancelled = false
     fetchIslandWindows(isPremium).then(data => {
-      if (!cancelled) setWindowsFor({ premium: isPremium, windows: data ? pickBestWindows(data.beaches) : [], days: data?.days ?? FREE_DAYS })
+      if (!cancelled) setWindowsFor({ premium: isPremium, beaches: data?.beaches ?? [], days: data?.days ?? FREE_DAYS })
     })
     return () => { cancelled = true }
   }, [isPremium, premiumLoading])
   const loadingWindows = premiumLoading || windowsFor?.premium !== isPremium
+
+  // Melhores janelas da região que a pessoa mais frequenta, com a ilha toda a um toque
+  // (09/out/2026, ideia do usuário — ver src/lib/homeRegion.ts)
+  const homeRegion = useHomeRegion(user?.id, favorites)
+  const [scope, setScope] = useState<'region' | 'island'>(() => {
+    try { return localStorage.getItem('windows_scope') === 'island' ? 'island' : 'region' } catch { return 'region' }
+  })
+  const changeScope = (next: 'region' | 'island') => {
+    setScope(next)
+    try { localStorage.setItem('windows_scope', next) } catch { /* só não lembra */ }
+  }
+  const allBeaches = windowsFor?.beaches ?? []
+  const islandWindows = pickBestWindows(allBeaches)
+  const regionWindows = homeRegion ? pickBestWindows(allBeaches.filter(b => b.region === homeRegion.region)) : []
+  const showRegion = !!homeRegion && scope === 'region'
+  // Na região, avisa se a ilha tem uma janela pelo menos 1 ponto melhor fora dela
+  const regionBest = Math.max(0, ...regionWindows.map(w => w.day.score))
+  const islandAlert = showRegion
+    ? [...islandWindows].sort((a, b) => b.day.score - a.day.score)
+        .find(w => allBeaches.find(b => b.id === w.beachId)?.region !== homeRegion.region && w.day.score >= regionBest + 1) ?? null
+    : null
 
   const forecastKey = `${selectedSpot}|${isPremium}`
   useEffect(() => {
@@ -126,7 +150,14 @@ export default function ForecastPage() {
           <PremiumUpsellBanner title="Previsão gratuita: 3 dias" subtitle="Premium libera 14 dias para qualquer praia" />
         )}
 
-        <BestWindows windows={windowsFor?.windows ?? []} loading={loadingWindows} isPremium={isPremium} days={windowsFor?.days ?? FREE_DAYS} />
+        <BestWindows
+          windows={showRegion ? regionWindows : islandWindows}
+          loading={loadingWindows || homeRegion === undefined}
+          isPremium={isPremium}
+          days={windowsFor?.days ?? FREE_DAYS}
+          region={homeRegion ? { ...homeRegion, active: scope, onChange: changeScope } : null}
+          islandAlert={islandAlert}
+        />
 
         {loading ? (
           <Skeleton className="h-[76px] w-full rounded-2xl" />

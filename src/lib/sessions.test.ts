@@ -3,6 +3,7 @@ import type { SurfSession } from './sessions'
 import { learnIdealSea, findNextIdealSea, matchesIdealSea } from './idealSea'
 import { weekStreak, monthSummary, yearRecap, surfedBeaches } from './sessionStats'
 import { pickBestWindows } from './forecastWindows'
+import { inferHomeRegion } from './homeRegion'
 import type { BeachDay, BeachForecast } from '../../api/_beachDayTypes'
 
 let n = 0
@@ -108,5 +109,28 @@ describe('melhores janelas da quinzena', () => {
       day({ dayIndex: 1, score: 6 }), day({ dayIndex: 8, score: 9.5 }), day({ dayIndex: 9, score: 9.4 }), day({ dayIndex: 10, score: 9.3 }),
     ] }]
     expect(pickBestWindows(beaches).map(w => w.day.dayIndex)).toEqual([1, 8])
+  })
+})
+
+describe('região que a pessoa mais frequenta', () => {
+  it('a escolhida nas Configurações manda', () => {
+    expect(inferHomeRegion({ chosen: 'Norte', sessionBeachIds: ['campeche'], favoriteIds: ['campeche'], visits: {} }))
+      .toEqual({ region: 'Norte', reason: 'escolhida nas Configurações' })
+  })
+
+  it('sessões valem 3, favoritas 2, visitas 1', () => {
+    // Sul: 1 sessão (3) + 1 favorita (2) = 5 · Norte: 4 visitas = 4
+    expect(inferHomeRegion({ chosen: 'all', sessionBeachIds: ['campeche'], favoriteIds: ['matadeiro'], visits: { santinho: 4 } }))
+      .toEqual({ region: 'Sul', reason: 'pelas suas sessões e suas favoritas' })
+  })
+
+  it('pouco sinal ou empate: ilha toda', () => {
+    expect(inferHomeRegion({ sessionBeachIds: [], favoriteIds: ['campeche'], visits: {} })).toBeNull()
+    expect(inferHomeRegion({ sessionBeachIds: [], favoriteIds: ['campeche', 'santinho'], visits: { mole: 1 } })).toBeNull()
+  })
+
+  it('só visitas também servem', () => {
+    expect(inferHomeRegion({ sessionBeachIds: [], favoriteIds: [], visits: { joaquina: 2, mole: 2 } }))
+      .toEqual({ region: 'Centro', reason: 'pelas praias que você mais abre' })
   })
 })

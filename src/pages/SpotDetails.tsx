@@ -12,6 +12,7 @@ import { usePremium } from '@/lib/premium'
 import { PRICE_MONTHLY, TRIAL_DAYS, formatBRL } from '@/lib/pricing'
 import { useAuth } from '@/contexts/AuthContext'
 import { SessionSheet } from '@/components/sessions/SessionSheet'
+import { recordBeachVisit } from '@/lib/homeRegion'
 import { PUBLIC_SPOT_IDS, TEASER_SPOT_IDS } from '@/lib/surfData'
 import { SpotTeaser } from '@/components/spot/SpotTeaser'
 import {
@@ -104,6 +105,8 @@ export default function SpotDetails() {
   const [showScoreExplainer, setShowScoreExplainer] = useState(false)
   const [activeTab, setActiveTab] = useState<'agora'|'previsao'>('agora')
   const [showSessionSheet, setShowSessionSheet] = useState(false)
+  // Conta a visita pra saber a região que a pessoa mais frequenta (src/lib/homeRegion.ts)
+  useEffect(() => { if (id) recordBeachVisit(id) }, [id])
   const [scoreHistory, setScoreHistory] = useState<{ avg30: number | null; isMonthBest: boolean } | null>(null)
   const [commentsOpen, setCommentsOpen] = useState(false)
   const [bestWindowOpen, setBestWindowOpen] = useState(false)
