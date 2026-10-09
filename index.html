@@ -1,11 +1,71 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lasy App</title>
-   
+    <meta name="google-site-verification" content="Xvjza431k8frpdIwmk_SsXcwosANUDIW1NIFR19OzMo" />
+    <title>Previsão de surf em Florianópolis | Surf AI Floripa</title>
+    <script>
+      // Endereço oficial de cada página pro Google. O mesmo index.html serve todas as rotas, então
+      // um canonical fixo em /landing fazia Privacidade/Termos se declararem cópia da landing.
+      // A raiz manda quem não está logado pra /landing, por isso aponta pra lá.
+      (function () {
+        var link = document.createElement('link')
+        link.rel = 'canonical'
+        link.href = 'https://www.surfaifloripa.com.br' + (location.pathname.replace(/\/+$/, '') || '/landing')
+        document.head.appendChild(link)
+      })()
+    </script>
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#06b6d4" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Surf AI" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="description" content="Nota de IA em tempo real para 14 praias de Florianópolis: altura da onda, período e vento. Previsão de 14 dias e alertas personalizados. Grátis para começar." />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Previsão de surf em Florianópolis | Surf AI Floripa" />
+    <meta property="og:description" content="Nota de IA em tempo real para 14 praias de Florianópolis, previsão de 14 dias e alertas personalizados." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://www.surfaifloripa.com.br/landing" />
+    <meta property="og:image" content="https://www.surfaifloripa.com.br/og-image-v2.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:site_name" content="Surf AI Floripa" />
+
+    <!-- Twitter / WhatsApp -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Previsão de surf em Florianópolis | Surf AI Floripa" />
+    <meta name="twitter:description" content="Nota de IA em tempo real para 14 praias de Florianópolis, previsão de 14 dias e alertas personalizados." />
+    <meta name="twitter:image" content="https://www.surfaifloripa.com.br/og-image-v2.jpg" />
+
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Surf AI Floripa",
+        "applicationCategory": "WeatherApplication",
+        "operatingSystem": "Web, iOS, Android",
+        "url": "https://www.surfaifloripa.com.br/landing",
+        "description": "Nota de IA em tempo real para 14 praias de Florianópolis, previsão de 14 dias e alertas personalizados.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "BRL",
+          "description": "Plano grátis: nota em tempo real, previsão de 3 dias, favoritos e diário de surf."
+        },
+        "areaServed": {
+          "@type": "City",
+          "name": "Florianópolis"
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,0 +1,24 @@
+name: Email Alert — Condições de Surf
+
+# Horário automático no agendador do Supabase desde 30/set/2026 (pg_cron: jobs robo-*,
+# função public.call_robot) — o agendamento do GitHub atrasava até 6 h. Aqui fica só a
+# execução manual.
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  send-alert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chamar endpoint de email-alert
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L \
+            -H "x-agent-secret: ${{ secrets.AGENT_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/email-alert")
+          echo "Status HTTP: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "email-alert retornou status $STATUS"
+            exit 1
+          fi

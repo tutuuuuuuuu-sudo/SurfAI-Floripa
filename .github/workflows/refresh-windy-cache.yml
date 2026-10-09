@@ -1,0 +1,24 @@
+name: Refresh Windy Cache — Atualização proativa das 14 praias
+
+# Horário automático no agendador do Supabase desde 30/set/2026 (pg_cron: jobs robo-*,
+# função public.call_robot) — o agendamento do GitHub atrasava até 6 h. Aqui fica só a
+# execução manual.
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  run-refresh-windy-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chamar endpoint de refresh-windy-cache
+        run: |
+          SECRET=$(printf '%s' "${{ secrets.REFRESH_WINDY_CACHE_SECRET }}" | tr -d '[:space:]')
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L \
+            "${{ secrets.APP_URL }}/api/refresh-windy-cache?secret=$SECRET")
+          echo "Status HTTP: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "refresh-windy-cache retornou status $STATUS"
+            exit 1
+          fi
