@@ -2,7 +2,7 @@
 // Prefixo _ indica que não é um handler HTTP — não será exposto como endpoint pelo Vercel.
 
 import { calculateSurfScore } from './_scoreEngine.js'
-import { toBeachHeight } from './_beachHeight.js'
+import { toBeachHeight, calibrateOpenSea } from './_beachHeight.js'
 import { southExposureAt } from './_beachRegistry.js'
 
 export function degreesToDir(deg: number): string {
@@ -92,9 +92,11 @@ export async function fetchHourlyForecast(
     // modelo padrão (classe GFS, sistematicamente mais baixo). Chamada separada porque
     // ecmwf_wam sozinho só retorna wave_height/wave_period (a onda combinada) — período e
     // direção de swell continuam vindo da chamada padrão acima, que os calcula.
+    // wave_period/wave_direction (09/out/2026): só são usados nas horas sem o modelo padrão
+    // (francês, até ~8,5 dias) — ver calibrateOpenSea em _beachHeight.ts
     fetch(
       `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}` +
-      `&hourly=wave_height&length_unit=metric&timezone=America%2FSao_Paulo` +
+      `&hourly=wave_height,wave_period,wave_direction&length_unit=metric&timezone=America%2FSao_Paulo` +
       `&forecast_days=${forecastDays}&models=ecmwf_wam`,
       { signal: AbortSignal.timeout(8000) }
     ),
@@ -111,7 +113,9 @@ export async function fetchHourlyForecast(
   if (!marineRes.ok || !marineEcmwfRes.ok || !weatherRes.ok) return null
 
   const marine = await marineRes.json() as { hourly?: MarineHourly }
-  const marineEcmwf = await marineEcmwfRes.json() as { hourly?: { wave_height?: number[] } }
+  const marineEcmwf = await marineEcmwfRes.json() as {
+    hourly?: { wave_height?: (number | null)[]; wave_period?: (number | null)[]; wave_direction?: (number | null)[] }
+  }
   const weather = await weatherRes.json() as { hourly?: WeatherHourly; daily?: DailySunTimes }
   const times = marine.hourly?.time ?? []
   const sunriseHour = isoHour(weather.daily?.sunrise?.[0])
@@ -119,6 +123,14 @@ export async function fetchHourlyForecast(
 
   // Proteção da praia ao vento sul (Matadeiro, Armação, Barra), achada pela posição
   const southExposure = southExposureAt(Number(lat), Number(lng))
+
+  // Do 9º dia em diante o francês vem vazio: altura e período saem do ECMWF ajustado pela
+  // diferença entre os dois nas horas em que existem juntos (antes caía no período reserva de 10 s
+  // e dava nota 10 sem motivo — ver calibrateOpenSea)
+  const openSea = calibrateOpenSea(
+    marine.hourly?.wave_height ?? [], marine.hourly?.swell_wave_period ?? [],
+    marineEcmwf.hourly?.wave_height ?? [], marineEcmwf.hourly?.wave_period ?? []
+  )
 
   function readHour(idx: number, orientation: number): HourReading | null {
     if (idx < 0 || idx >= times.length) return null
@@ -130,16 +142,26 @@ export async function fetchHourlyForecast(
     // Sem applyDirectionalExposure aqui — removida de surf.ts e daqui juntas em
     // 24/set/2026 (mesma correção nos dois, pro mesmo motivo do achado de 22/ago/2026
     // de manter Home e Previsão consistentes: ver comentário em surf.ts).
-    const swellDirection = degreesToDir(marine.hourly?.swell_wave_direction?.[idx] ?? 180)
+    const openSeaHeight = marineEcmwf.hourly?.wave_height?.[idx]
+    const openSeaPeriod = marineEcmwf.hourly?.wave_period?.[idx]
+    const nearshoreHeight = marine.hourly?.wave_height?.[idx]
+    // Sem o francês: direção média das ondas do ECMWF (junta swell e mar de vento — melhor que
+    // cravar sul) e período médio do ECMWF corrigido pra período de swell
+    const swellDirection = degreesToDir(
+      marine.hourly?.swell_wave_direction?.[idx] ?? marineEcmwf.hourly?.wave_direction?.[idx] ?? 180
+    )
     const swellPeriod = Math.round(
-      marine.hourly?.swell_wave_period?.[idx] ?? marine.hourly?.wave_period?.[idx] ?? 10
+      marine.hourly?.swell_wave_period?.[idx] ?? marine.hourly?.wave_period?.[idx] ??
+      (openSeaPeriod != null ? Math.max(1, openSeaPeriod + openSea.periodOffset) : 10)
     )
     // Onda na praia, não mar aberto (30/set/2026) — mesma conversão do "agora" em
     // _liveConditions.ts, pra Home e Previsão continuarem batendo
     // Base: modelo francês (modelo padrão do Open-Meteo) na mesma hora, com teto no mar aberto
     // (ECMWF) × fator do período — desde 01/out/2026, ver api/_beachHeight.ts
-    const waveHeight = toBeachHeight(marineEcmwf.hourly?.wave_height?.[idx], swellPeriod, marine.hourly?.wave_height?.[idx])
-      || toBeachHeight(rawWaveHeight, swellPeriod)
+    // Sem o francês nessa hora: ECMWF × razão medida entre os dois (09/out/2026)
+    const waveHeight = nearshoreHeight == null && openSeaHeight != null && openSeaHeight > 0
+      ? Math.round(openSeaHeight * openSea.heightRatio * 100) / 100
+      : toBeachHeight(openSeaHeight, swellPeriod, nearshoreHeight) || toBeachHeight(rawWaveHeight, swellPeriod)
     const windSpeed = Math.round(weather.hourly?.wind_speed_10m?.[idx] ?? 12)
     const windDirection = degreesToDir(weather.hourly?.wind_direction_10m?.[idx] ?? 0)
     const temperature = Math.round(weather.hourly?.temperature_2m?.[idx] ?? 24)

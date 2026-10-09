@@ -139,7 +139,7 @@ api/
 │                          nunca duplicar essa lista de novo (já divergiu 1x, ver auditoria de 22/ago/2026)
 ├── _auth.ts            # Helper de validação de Bearer token Supabase, compartilhado entre endpoints
 ├── surf.ts             # Fetch Open-Meteo Marine → processa dados brutos de surf
-├── _beachHeight.ts     # Altura da onda NA PRAIA (01/out/2026): base = modelo francês (Météo-France, "modelo padrão" do Open-Meteo) × acréscimo de onda longa (8 s→10 s: até +30%), teto = ECMWF de mar aberto × fator do período. Aplicado em _liveConditions e _hourlyForecast
+├── _beachHeight.ts     # Altura da onda NA PRAIA (01/out/2026): base = modelo francês (Météo-France, "modelo padrão" do Open-Meteo) × acréscimo de onda longa (8 s→10 s: até +30%), teto = ECMWF de mar aberto × fator do período. Aplicado em _liveConditions e _hourlyForecast. O francês acaba em ~8,5 dias: do 9º ao 14º dia vale o ECMWF ajustado pela diferença medida entre os dois nos dias em comum (`calibrateOpenSea`, 09/out/2026 — antes caía no período reserva de 10 s e dava nota 10)
 ├── sea-log.ts          # Registro do mar real (só admin): GET lista com a comparação (RPC sea_log_recent), POST novo registro (sea_observations)
 ├── tide.ts             # Dados de maré por pico
 ├── surf-chat.ts        # Chat com o Surf AI (Gemini multi-turn, via api/_gemini.ts) — exige Bearer token Supabase + premium.
@@ -222,8 +222,9 @@ resultado era descartado e gastava cota do Gemini — o ContentStudio usa o endp
   `api/_gemini.ts`) com histórico salvo em `chat_messages` (Supabase, RLS por usuário).
 - Contexto do chat (25/set/2026): condições de agora + **previsão de 7 dias** das 14 praias
   (`api/_chatForecast.ts`: onda, melhor horário via `_goldenWindow`, vento sigla+nome, maré
-  enchendo/secando, período; horários de maré alta/baixa), cache 1h no Supabase
-  (`live_conditions_cache`, chave `chat:forecast-week-v2`). Memória: últimas 6 mensagens.
+  enchendo/secando, período; horários de maré alta/baixa) + **tendência do 8º ao 14º dia** (onda e
+  nota, 09/out/2026 — antes o chat dizia que o app "não tinha" os dias que a aba Previsão mostra),
+  cache 1h no Supabase (`live_conditions_cache`, chave `chat:forecast-week-v3`). Memória: últimas 6 mensagens.
   Prioridade ao falar de uma praia: onda → maré → vento (direção+velocidade) → melhor horário.
   Toda resposta passa por `cleanChatReply` (`api/_chatText.ts`) — tira asterisco/markdown/
   travessão no código, não depende do modelo obedecer. Não usar terral/maral/lateral.
