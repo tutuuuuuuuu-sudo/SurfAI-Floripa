@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { dayLabel, tideTrendAt, tideEventsByDay, formatBeachDay } from './_chatForecast'
+import { dayLabel, tideTrendAt, tideEventsByDay, formatBeachDay, formatTrendDay } from './_chatForecast'
 
 describe('dayLabel', () => {
   it('marca hoje e amanhã e usa dia da semana no resto', () => {
@@ -36,5 +36,15 @@ describe('formatBeachDay', () => {
   })
   it('ignora horas de noite', () => {
     expect(formatBeachDay('x', [h(3, 9), h(21, 9)], 6, 18, () => null)).toBeNull()
+  })})
+
+describe('formatTrendDay (8º ao 14º dia)', () => {
+  const h = (hour: number, score: number, waveHeight: number) => ({
+    hour, score, waveHeight, swellPeriod: 8, swellDirection: 'E',
+    windSpeed: 8, windDirection: 'NW', temperature: 20, weatherCode: null, rainChance: null, waterTemp: null,
+  })
+  it('traz só a faixa de onda e a nota do melhor horário de luz', () => {
+    expect(formatTrendDay('sáb 17/10', [h(4, 9.9, 3), h(7, 6.3, 1.5), h(12, 5, 2.2)], 6, 18)).toBe('sáb 17/10 1.5-2.2m nota 6.3')
+    expect(formatTrendDay('x', [h(3, 9, 1)], 6, 18)).toBeNull()
   })
 })

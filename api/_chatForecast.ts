@@ -1,4 +1,5 @@
-// Previsão de 1 semana (hoje + 6 dias) das 14 praias, em texto compacto pro contexto do chat
+// Previsão de 1 semana (hoje + 6 dias) das 14 praias, mais a tendência até o 14º dia (09/out/2026,
+// ver CHAT_TREND_DAYS), em texto compacto pro contexto do chat
 // com o Surf AI (api/surf-chat.ts). Pedido do usuário 25/set/2026: quando perguntado sobre
 // uma praia, o chat tem que priorizar tamanho da onda, maré (enchendo/secando), vento
 // (direção + velocidade) e melhor horário do dia — e conseguir responder sobre a semana,
@@ -13,6 +14,13 @@ import { todaySP, nowHourSP } from '../src/lib/timeSP.js'
 import { directionName } from '../src/lib/directions.js'
 
 export const CHAT_FORECAST_DAYS = 7
+// 09/out/2026: o chat via só 7 dias e mandava dizer "ainda não tem" pro resto, mas a aba
+// Previsão do Premium (o chat é só Premium) mostra 14. O usuário viu nota 10 no Campeche no 10º
+// dia e o chat respondeu que o app não tinha esses dias e que a nota era "exagerada". Do 8º ao
+// 14º dia vai uma linha curta por praia (onda e nota): a previsão longa muda muito, e o resumo
+// detalhado dos 14 dias dobraria o tamanho do contexto (o Groq, reserva da cascata, aceita só
+// 6.000 tokens por minuto).
+export const CHAT_TREND_DAYS = 14
 
 const WEEKDAYS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
 const fmtHour = (h: number) => `${String(h).padStart(2, '0')}h`
@@ -58,6 +66,16 @@ export function tideEventsByDay(tide: Tide | null): Map<string, string[]> {
 
 interface HourRow extends HourReading { hour: number }
 
+// Dia da tendência (8º ao 14º): "sáb 17/10 1.5-2.2m nota 6.3" — mesma escolha de horas e de nota
+// de formatBeachDay, só que sem horário, vento e maré
+export function formatTrendDay(label: string, hours: HourRow[], sunrise: number, sunset: number): string | null {
+  const daylight = hours.filter(h => h.hour >= sunrise && h.hour <= sunset)
+  if (daylight.length === 0) return null
+  const best = daylight.reduce((a, b) => (b.score > a.score ? b : a))
+  const waves = daylight.map(h => h.waveHeight)
+  return `${label} ${Math.min(...waves).toFixed(1)}-${Math.max(...waves).toFixed(1)}m nota ${best.score.toFixed(1)}`
+}
+
 // Uma linha por dia: "sáb 27/09: onda 0.9-1.3m, melhor horário 07h às 10h (nota 7.4),
 // vento 8km/h NW (noroeste), maré enchendo, período 10s"
 export function formatBeachDay(
@@ -87,13 +105,13 @@ export function formatBeachDay(
 export async function buildWeekForecastSummary(): Promise<string> {
   const today = todaySP()
   const nowHour = nowHourSP()
-  const tide = await fetchTideData(CHAT_FORECAST_DAYS + 1)
+  const tide = await fetchTideData(CHAT_TREND_DAYS + 1)
 
   const perBeach = await Promise.all(
     BEACH_REGISTRY.map(async beach => {
       // try/catch por praia: uma chamada malformada da Open-Meteo só perde essa praia
       try {
-        const hourly = await fetchHourlyForecast(String(beach.lat), String(beach.lng), CHAT_FORECAST_DAYS)
+        const hourly = await fetchHourlyForecast(String(beach.lat), String(beach.lng), CHAT_TREND_DAYS)
         if (!hourly) return null
         const sunrise = hourly.sunriseHour ?? 6
         const sunset = hourly.sunsetHour ?? 18
@@ -110,14 +128,19 @@ export async function buildWeekForecastSummary(): Promise<string> {
           byDate.set(date, list)
         })
 
-        const lines = Array.from(byDate.entries())
-          .sort(([a], [b]) => a.localeCompare(b))
+        const days = Array.from(byDate.entries()).sort(([a], [b]) => a.localeCompare(b))
+        const lines = days
           .slice(0, CHAT_FORECAST_DAYS)
           .map(([date, hours]) =>
             formatBeachDay(dayLabel(date, today), hours, sunrise, sunset, h => tideTrendAt(tide, date, h))
           )
           .filter((l): l is string => l !== null)
         if (lines.length === 0) return null
+        const trend = days
+          .slice(CHAT_FORECAST_DAYS, CHAT_TREND_DAYS)
+          .map(([date, hours]) => formatTrendDay(dayLabel(date, today), hours, sunrise, sunset))
+          .filter((l): l is string => l !== null)
+        if (trend.length) lines.push(`tendência dos dias seguintes: ${trend.join(', ')}`)
         return `${beach.name}:\n${lines.map(l => `  ${l}`).join('\n')}`
       } catch (err) {
         console.error(`[chatForecast] previsão falhou pra ${beach.name}:`, err)
@@ -128,7 +151,7 @@ export async function buildWeekForecastSummary(): Promise<string> {
 
   const tideDays = Array.from(tideEventsByDay(tide).entries())
     .filter(([date]) => date >= today)
-    .slice(0, CHAT_FORECAST_DAYS)
+    .slice(0, CHAT_TREND_DAYS)
     .map(([date, ev]) => `  ${dayLabel(date, today)}: ${ev.join(', ')}`)
   const nowTrend = tideTrendAt(tide, today, nowHour)
 

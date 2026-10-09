@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import { beachHeightFactor, longPeriodBoost, toBeachHeight } from './_beachHeight'
+import { beachHeightFactor, longPeriodBoost, toBeachHeight, calibrateOpenSea, DEFAULT_OPEN_SEA_CALIBRATION } from './_beachHeight'
 
 describe('toBeachHeight', () => {
   it('30/set/2026: mar de 6 s, modelo 1,44 m no Campeche vira ~1 m (série que o usuário viu)', () => {
@@ -66,6 +66,28 @@ describe('toBeachHeight — base no modelo francês (01/out/2026)', () => {
   it('só com o francês (sem mar aberto) usa francês × acréscimo; sem nenhum, 0', () => {
     expect(toBeachHeight(null, 10, 1.0)).toBeCloseTo(1.3, 5)
     expect(toBeachHeight(null, 6, null)).toBe(0)
+  })
+})
+
+describe('calibrateOpenSea — dias sem o francês (09/out/2026)', () => {
+  it('mede a razão de altura e a diferença de período nas horas em comum', () => {
+    const n = 48
+    const c = calibrateOpenSea(Array(n).fill(1.0), Array(n).fill(7), Array(n).fill(1.5), Array(n).fill(8.5))
+    expect(c.heightRatio).toBeCloseTo(1 / 1.5, 5)
+    expect(c.periodOffset).toBeCloseTo(-1.5, 5)
+  })
+
+  it('ignora horas em que falta um dos dois e usa a mediana (um pico estranho não puxa)', () => {
+    const n = 40
+    const near = [...Array(n).fill(0.7), null, 0.1]
+    const open = [...Array(n).fill(1.0), 2.0, 1.0]
+    const c = calibrateOpenSea(near, Array(n + 2).fill(6), open, Array(n + 2).fill(7.5))
+    expect(c.heightRatio).toBeCloseTo(0.7, 5)
+  })
+
+  it('sem horas em comum suficientes, fica no lado baixo do que foi medido', () => {
+    expect(calibrateOpenSea([null], [null], [2.0], [9])).toEqual(DEFAULT_OPEN_SEA_CALIBRATION)
+    expect(DEFAULT_OPEN_SEA_CALIBRATION.heightRatio).toBeLessThanOrEqual(0.62)
   })
 })
 
