@@ -25,11 +25,15 @@ const HOURS = Array.from({ length: 15 }, (_, i) => i + 5) // 5h às 19h
 const DURATIONS = [30, 60, 90, 120, 150, 180]
 const durationLabel = (m: number) => (m < 60 ? `${m}min` : m % 60 ? `${Math.floor(m / 60)}h30` : `${m / 60}h`)
 
-function yesterdaySP(): string {
+function daysAgoSP(days: number): string {
   const d = new Date(`${todaySP()}T12:00:00Z`)
-  d.setUTCDate(d.getUTCDate() - 1)
+  d.setUTCDate(d.getUTCDate() - days)
   return d.toISOString().slice(0, 10)
 }
+
+// Sessão de até 30 dias atrás (09/out/2026): o calendário deixava escolher 2022 ("não é verdade",
+// usuário), e é o mesmo período em que o app guarda o mar de cada hora (api/session-conditions.ts)
+const MAX_DAYS_BACK = 30
 
 const chip = (active: boolean) =>
   `rounded-xl border text-sm font-semibold transition-all active:scale-95 ${
@@ -49,7 +53,8 @@ export function SessionSheet({ initialBeachId, initialDate, initialHour, source,
   useBodyScrollLock(true)
   const { user } = useAuth()
   const today = todaySP()
-  const yesterday = yesterdaySP()
+  const yesterday = daysAgoSP(1)
+  const oldest = daysAgoSP(MAX_DAYS_BACK)
 
   const [beachId, setBeachId] = useState(initialBeachId ?? '')
   const [pickBeach, setPickBeach] = useState(!initialBeachId)
@@ -198,8 +203,8 @@ export function SessionSheet({ initialBeachId, initialDate, initialHour, source,
                   {date !== today && date !== yesterday
                     ? new Date(`${date}T12:00:00`).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
                     : 'Outro dia'}
-                  <input ref={dateInput} type="date" value={date} max={today} tabIndex={-1} aria-label="Escolher outro dia"
-                    onChange={e => e.target.value && setDate(e.target.value)}
+                  <input ref={dateInput} type="date" value={date} min={oldest} max={today} tabIndex={-1} aria-label="Escolher outro dia"
+                    onChange={e => { const v = e.target.value; if (v && v >= oldest && v <= today) setDate(v) }}
                     className="absolute inset-x-0 bottom-0 h-px w-full opacity-0 pointer-events-none" />
                 </button>
               </div>
@@ -249,7 +254,7 @@ export function SessionSheet({ initialBeachId, initialDate, initialHour, source,
                     )}
                   </div>
                 ) : (
-                  <div className="text-sm text-muted-foreground">Sem registro do mar nessa hora (o app guarda os últimos 30 dias).</div>
+                  <div className="text-sm text-muted-foreground">Sem registro do mar nessa hora.</div>
                 )}
               </div>
             )}
