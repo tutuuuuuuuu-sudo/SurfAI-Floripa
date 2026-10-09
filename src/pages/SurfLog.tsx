@@ -9,7 +9,7 @@ import { SessionSheet } from '@/components/sessions/SessionSheet'
 import { SessionCard } from '@/components/sessions/SessionCard'
 import { IdealSeaCard } from '@/components/sessions/IdealSeaCard'
 import { SessionStatsRow, IslandPassport, YearRecap } from '@/components/sessions/SessionAchievements'
-import { Waves, Plus, FileText, Sparkles, Share2, Stamp, MapPin } from 'lucide-react'
+import { Waves, Plus, FileText, Sparkles, Share2, Stamp, MapPin, Crown } from 'lucide-react'
 import { toast } from 'sonner'
 
 // Diário de sessões (redesenhado em 09/out/2026). Em toda a história só 1 sessão tinha sido
@@ -91,7 +91,7 @@ export default function SurfLog() {
               </div>
               <div className="space-y-2.5 text-sm">
                 <div className="flex items-start gap-2.5"><MapPin className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />Guarda como estava o mar na hora que você entrou</div>
-                <div className="flex items-start gap-2.5"><Sparkles className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />Aprende o seu mar ideal e avisa quando ele volta</div>
+                <div className="flex items-start gap-2.5"><Sparkles className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" /><span>Aprende o seu mar ideal e avisa quando ele volta{!isPremium && <span className="ml-1.5 inline-flex items-center gap-0.5 text-[11px] font-semibold text-rating-fair align-middle"><Crown className="h-3 w-3" />Premium</span>}</span></div>
                 <div className="flex items-start gap-2.5"><Stamp className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />Carimba o seu passaporte das 14 praias da ilha</div>
                 <div className="flex items-start gap-2.5"><Share2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />Monta o cartão da sessão pra postar no story</div>
               </div>

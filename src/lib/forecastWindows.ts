@@ -45,8 +45,9 @@ export interface BeachWindow {
 }
 
 // As melhores janelas: a maior nota de cada dia (uma praia por dia, pra não repetir o mesmo
-// dia três vezes), e dessas as `count` maiores, em ordem de data. Só entra janela boa (≥ 5,5).
-export function pickBestWindows(beaches: BeachForecast[], count = 3, minScore = 5.5): BeachWindow[] {
+// dia três vezes), e dessas as `count` maiores, em ordem de data. Só entra janela boa (≥ 5,5), e
+// no máximo uma do 8º dia em diante (tendência, a previsão que mais muda).
+export function pickBestWindows(beaches: BeachForecast[], count = 3, minScore = 5.5, maxTrend = 1): BeachWindow[] {
   const bestByDay = new Map<number, BeachWindow>()
   for (const b of beaches) {
     for (const day of b.days) {
@@ -54,9 +55,11 @@ export function pickBestWindows(beaches: BeachForecast[], count = 3, minScore = 
       if (!cur || day.score > cur.day.score) bestByDay.set(day.dayIndex, { beachId: b.id, beachName: b.name, day })
     }
   }
+  let trend = 0
   return [...bestByDay.values()]
     .filter(w => w.day.score >= minScore)
     .sort((a, b) => b.day.score - a.day.score || a.day.dayIndex - b.day.dayIndex)
+    .filter(w => w.day.dayIndex < TREND_FROM_DAY || trend++ < maxTrend)
     .slice(0, count)
     .sort((a, b) => a.day.dayIndex - b.day.dayIndex)
 }

@@ -101,5 +101,12 @@ describe('melhores janelas da quinzena', () => {
     const w = pickBestWindows(beaches)
     expect(w.map(x => [x.day.dayIndex, x.beachId])).toEqual([[0, 'b'], [1, 'a'], [3, 'b']])
     expect(pickBestWindows(beaches, 3, 8.5).map(x => x.beachId)).toEqual(['a'])
+   })
+
+  it('no máximo uma janela de tendência (8º dia em diante)', () => {
+    const beaches: BeachForecast[] = [{ id: 'a', name: 'A', region: 'Sul', days: [
+      day({ dayIndex: 1, score: 6 }), day({ dayIndex: 8, score: 9.5 }), day({ dayIndex: 9, score: 9.4 }), day({ dayIndex: 10, score: 9.3 }),
+    ] }]
+    expect(pickBestWindows(beaches).map(w => w.day.dayIndex)).toEqual([1, 8])
   })
 })

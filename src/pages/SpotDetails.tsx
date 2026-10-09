@@ -314,9 +314,9 @@ export default function SpotDetails() {
           )}
 
           <div className="grid grid-cols-4 gap-2">
-            <div className="flex flex-col items-center gap-1 bg-muted/20 rounded-xl p-2.5">
+            <div className="flex flex-col items-center gap-1 bg-muted/20 rounded-xl py-2.5 px-1">
               <Waves className="h-4 w-4 text-primary"/>
-              <div className="text-base font-bold">{usesFeet ? formatWaveRangeFeet(spot.waveHeight) : formatWaveRange(spot.waveHeight)}</div>
+              <div className="text-[13px] sm:text-base font-bold whitespace-nowrap tracking-tight">{usesFeet ? formatWaveRangeFeet(spot.waveHeight) : formatWaveRange(spot.waveHeight)}</div>
               <div className="text-xs text-muted-foreground text-center">Ondas</div>
             </div>
             <div className="flex flex-col items-center gap-1 bg-muted/20 rounded-xl p-2.5">
@@ -477,7 +477,7 @@ export default function SpotDetails() {
                     <span className="text-sm font-semibold">Ondulação</span>
                   </div>
                   <div className="flex items-end gap-2">
-                    <div className="text-3xl font-bold">
+                    <div className="text-2xl sm:text-3xl font-bold whitespace-nowrap tracking-tight">
                       {usesFeet ? formatWaveRangeFeet(spot.waveHeight) : formatWaveRange(spot.waveHeight)}
                     </div>
                     <button

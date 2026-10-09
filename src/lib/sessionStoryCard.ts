@@ -152,7 +152,7 @@ export async function renderSessionCard(s: SurfSession): Promise<Blob | null> {
   if (s.swell_period != null) items.push(['Período', `${s.swell_period}s`])
   if (s.tide_trend) items.push(['Maré', s.tide_trend.replace(' (virando)', '')])
   if (items.length || s.app_score != null) {
-    const boxY = 1290, boxH = 470
+    const boxY = 1250, boxH = 540
     roundRect(ctx, PAD, boxY, W - PAD * 2, boxH, 48)
     ctx.fillStyle = t.card
     ctx.fill()
@@ -176,7 +176,10 @@ export async function renderSessionCard(s: SurfSession): Promise<Blob | null> {
     if (s.app_score != null) {
       const info = getRatingInfo(s.app_score)
       const color = t.ratingVar(info.scoreColor) || t.primary
-      const sy = boxY + boxH - 60
+      const sy = boxY + boxH - 56
+      ctx.strokeStyle = t.border
+      ctx.lineWidth = 2
+      ctx.beginPath(); ctx.moveTo(PAD + 56, sy - 74); ctx.lineTo(W - PAD - 56, sy - 74); ctx.stroke()
       ctx.fillStyle = t.muted
       ctx.font = `500 32px ${font}`
       ctx.fillText('Nota do app', PAD + 56, sy)
