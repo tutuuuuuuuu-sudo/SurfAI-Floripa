@@ -402,7 +402,7 @@ export default function Settings() {
                   </div>
                   <button
                     onClick={() => { const v = !emailAlertsEnabled; setEmailAlertsEnabled(v); save('emailAlertsEnabled', v, 'Alerta por email') }}
-                    className={`relative w-11 h-6 rounded-full transition-colors ${emailAlertsEnabled ? 'bg-primary' : 'bg-muted'}`}
+                    className={`relative w-11 h-6 shrink-0 rounded-full transition-colors ${emailAlertsEnabled ? 'bg-primary' : 'bg-muted'}`}
                   >
                     <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${emailAlertsEnabled ? 'left-6' : 'left-1'}`} />
                   </button>
