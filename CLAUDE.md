@@ -175,7 +175,7 @@ api/
 ├── email-welcome.ts    # Email de boas-vindas (Resend)
 ├── push-subscribe.ts   # Registra subscription de push notification do usuário
 ├── push-notify.ts      # Envia push notifications (alertas de swell)
-├── _pushMatch.ts       # Regras dos avisos por push (nota mínima/por praia, só favoritas, Premium ou admin) — fonte única de push-notify e session-reminder
+├── _pushMatch.ts       # Regras dos avisos por push (nota mínima/por praia, só favoritas, Premium ou admin, 5h-18h, 1 aviso por praia por dia em `push_subscriptions.alerted_on/alerted_beaches`) — fonte única de push-notify e session-reminder. Favoritas são `favorites.beach_id`: até 14/out/2026 o robô pedia `spot_id`, o banco recusava e nenhum alerta com "só favoritas" saiu desde 17/jun
 ├── session-reminder.ts # "Caiu hoje?" por push às 19h (14/out/2026): quem tem alerta ligado, sem sessão no dia, e o mar bateu o alerta da pessoa (score_snapshots 5h → 1 h atrás). Toque abre /surf-log?registrar=<praia>&dia=&hora= com o registro preenchido. `?ensaio=1` calcula sem mandar. Regras em _sessionReminder.ts. "Não caí" no cartão da Home e o interruptor nas Configurações ficam em user_preferences
 ├── push-test.ts        # Alerta de teste pedido pelo usuário no painel (push de verdade só pros aparelhos dele)
 ├── _webPush.ts         # Assinatura VAPID + criptografia do push (compartilhado por push-notify e push-test). iPhone recebe só com o app instalado na tela de início (iOS 16.4+)

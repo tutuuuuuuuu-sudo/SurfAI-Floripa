@@ -36,15 +36,45 @@ export async function premiumOrAdminIds(supabaseUrl: string, serviceKey: string,
   return new Set([...premiumRows, ...adminRows].map(r => r.user_id))
 }
 
-// Favoritas de cada usuário, numa consulta só
+// Favoritas de cada usuário, numa consulta só. A coluna é beach_id: de 17/jun a 14/out/2026 o
+// robô pedia "spot_id", o banco recusava, a lista voltava vazia sem aviso e, com "só favoritas"
+// ligado (o padrão), nenhum alerta de mar bom chegou a sair.
 export async function favoritesByUser(supabaseUrl: string, serviceKey: string, userIds: string[]): Promise<Record<string, string[]>> {
   if (userIds.length === 0) return {}
   const res = await fetch(
-    `${supabaseUrl}/rest/v1/favorites?user_id=in.(${userIds.join(',')})&select=user_id,spot_id`,
+    `${supabaseUrl}/rest/v1/favorites?user_id=in.(${userIds.join(',')})&select=user_id,beach_id`,
     { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
   )
-  const rows = res.ok ? await res.json() as { user_id: string; spot_id: string }[] : []
+  if (!res.ok) {
+    console.error('[pushMatch] favoritas voltaram', res.status, (await res.text()).slice(0, 200))
+    return {}
+  }
+  const rows = await res.json() as { user_id: string; beach_id: string }[]
   const byUser: Record<string, string[]> = {}
-  for (const r of rows) (byUser[r.user_id] ??= []).push(r.spot_id)
+  for (const r of rows) (byUser[r.user_id] ??= []).push(r.beach_id)
   return byUser
+}
+
+// Alerta de mar bom (push-notify.ts, de hora em hora) só de dia: de madrugada a nota pode bater o
+// alerta, mas acordar alguém às 3h pra dizer que o mar está bom não ajuda ninguém.
+export const ALERT_FROM_HOUR = 5
+export const ALERT_TO_HOUR = 18
+export const isAlertHour = (hour: number) => hour >= ALERT_FROM_HOUR && hour <= ALERT_TO_HOUR
+
+// Um aviso por praia por dia em cada aparelho (push_subscriptions.alerted_on/alerted_beaches): o
+// robô roda de hora em hora e, sem isso, mandaria "Campeche está ótima" a cada hora de mar bom.
+// Devolve a melhor praia que ainda não foi avisada hoje (goodBeachIds já vem da melhor pra pior).
+export function nextAlertBeach(
+  goodBeachIds: string[],
+  sub: { alerted_on?: string | null; alerted_beaches?: string[] | null },
+  today: string,
+): string | null {
+  const already = sub.alerted_on === today ? (sub.alerted_beaches ?? []) : []
+  return goodBeachIds.find(id => !already.includes(id)) ?? null
+}
+
+// Lista de praias já avisadas hoje, depois de avisar `beachId`
+export function markAlerted(sub: { alerted_on?: string | null; alerted_beaches?: string[] | null }, beachId: string, today: string) {
+  const already = sub.alerted_on === today ? (sub.alerted_beaches ?? []) : []
+  return { alerted_on: today, alerted_beaches: [...already, beachId] }
 }

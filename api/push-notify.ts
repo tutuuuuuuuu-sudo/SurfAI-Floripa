@@ -7,7 +7,8 @@ import { calculateSurfScore } from './_scoreEngine.js'
 import { BEACH_REGISTRY } from './_beachRegistry.js'
 import { isSchedulerCall } from './_auth.js'
 import { sendPush, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY } from './_webPush.js'
-import { beachMatches, premiumOrAdminIds, favoritesByUser, type PushCriteria } from './_pushMatch.js'
+import { beachMatches, premiumOrAdminIds, favoritesByUser, isAlertHour, nextAlertBeach, markAlerted, type PushCriteria } from './_pushMatch.js'
+import { todaySP, nowHourSP } from '../src/lib/timeSP.js'
 // A criptografia mudou pra _webPush.ts (30/set/2026); reexportada aqui pro push-notify.test.ts
 export { base64urlDecode, base64urlEncode, makeVapidJwt, encryptWebPush } from './_webPush.js'
 
@@ -40,6 +41,10 @@ export default async function handler(req: Request) {
     return json({ error: 'Configuração incompleta' }, 500)
   }
 
+  // Só de dia (ver isAlertHour); fora do horário nem consulta as praias
+  if (!isAlertHour(nowHourSP())) return json({ ok: true, sent: 0, skipped: 'fora do horário' })
+  const today = todaySP()
+
   // 1. Busca todas as subscriptions ativas
   const subRes = await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?select=*`, {
     headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
@@ -49,6 +54,7 @@ export default async function handler(req: Request) {
   interface PushSub extends PushCriteria {
     id: string; user_id: string; endpoint: string
     p256dh: string; auth: string
+    alerted_on: string | null; alerted_beaches: string[] | null
   }
   const allSubs = await subRes.json() as PushSub[]
   if (allSubs.length === 0) return json({ ok: true, sent: 0 })
@@ -84,8 +90,9 @@ export default async function handler(req: Request) {
     }))
   }
 
-  // 4. Para cada subscription, verifica se tem praia boa e envia push
+  // 4. Para cada subscription, verifica se tem praia boa (que ainda não foi avisada hoje) e envia push
   let sent = 0
+  let alreadyAlerted = 0
   const toRemove: string[] = []
 
   await Promise.allSettled(subs.map(async sub => {
@@ -95,12 +102,14 @@ export default async function handler(req: Request) {
       .sort((a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0))
 
     if (goodBeaches.length === 0) return
+    const bestId = nextAlertBeach(goodBeaches.map(b => b.id), sub, today)
+    if (!bestId) { alreadyAlerted++; return }
 
-    const best = goodBeaches[0]
+    const best = goodBeaches.find(b => b.id === bestId)!
     const score = scores[best.id] ?? 0
     const payload = JSON.stringify({
-      title: `${best.id.replace(/-/g, ' ')} está ótima agora! 🏄`,
-      body: `Score ${score.toFixed(1)}/10 · Toca ver as condições`,
+      title: `${best.name} está boa agora`,
+      body: `Nota ${score.toFixed(1)}/10 · Toca pra ver as condições`,
       url: `${APP_URL}/spot/${best.id}`,
       icon: '/icon-192.png',
       badge: '/icon-192.png',
@@ -108,7 +117,14 @@ export default async function handler(req: Request) {
 
     const r = await sendPush(sub.endpoint, sub.p256dh, sub.auth, payload)
     if (r.gone) toRemove.push(sub.id) // só aparelho que não existe mais; recusa comum não apaga
-    else if (r.ok) sent++
+    else if (r.ok) {
+      sent++
+      await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?id=eq.${sub.id}`, {
+        method: 'PATCH',
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(markAlerted(sub, best.id, today)),
+      })
+    }
   }))
 
   // 5. Remove subscriptions expiradas (410)
@@ -119,5 +135,5 @@ export default async function handler(req: Request) {
     )
   }
 
-  return json({ ok: true, sent, removed: toRemove.length })
+  return json({ ok: true, sent, alreadyAlerted, removed: toRemove.length })
 }
