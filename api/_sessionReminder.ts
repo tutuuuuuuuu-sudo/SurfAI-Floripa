@@ -44,13 +44,14 @@ export function pickReminder(peaks: DayPeak[], sub: PushCriteria, favorites: str
 }
 
 // Toque no aviso abre o Diário já com a praia, o dia e a hora preenchidos (SurfLog.tsx lê esses
-// parâmetros e abre o registro)
-export function buildReminderPush(peak: DayPeak, date: string, appUrl: string) {
+// parâmetros e abre o registro). Caminho relativo: o service worker abre no endereço dele (com www,
+// onde o app está instalado); APP_URL na Vercel está sem www e no iPhone podia abrir no Safari.
+export function buildReminderPush(peak: DayPeak, date: string) {
   const params = new URLSearchParams({ registrar: peak.beachId, dia: date, hora: String(peak.hour) })
   return {
     title: 'Caiu hoje?',
     body: `${peak.beachName} tava ${peak.score.toFixed(1)} às ${peak.hour}h. Toca pra registrar a sessão, leva 10 segundos.`,
-    url: `${appUrl}/surf-log?${params}`,
+    url: `/surf-log?${params}`,
     icon: '/icon-192.png',
     badge: '/icon-192.png',
   }

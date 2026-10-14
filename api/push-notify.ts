@@ -110,7 +110,7 @@ export default async function handler(req: Request) {
     const payload = JSON.stringify({
       title: `${best.name} está boa agora`,
       body: `Nota ${score.toFixed(1)}/10 · Toca pra ver as condições`,
-      url: `${APP_URL}/spot/${best.id}`,
+      url: `/spot/${best.id}`, // relativo: abre no endereço do app instalado (ver _sessionReminder.ts)
       icon: '/icon-192.png',
       badge: '/icon-192.png',
     })

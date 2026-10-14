@@ -13,7 +13,6 @@ import { todaySP } from '../src/lib/timeSP.js'
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
 const AGENT_SECRET = process.env.AGENT_SECRET
-const APP_URL = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
@@ -81,7 +80,7 @@ export default async function handler(req: Request) {
       const peak = pickReminder(peaks, device, favorites[userId] ?? [])
       if (!peak) continue
       matched++
-      const push = buildReminderPush(peak, today, APP_URL)
+      const push = buildReminderPush(peak, today)
       if (dryRun) {
         wouldSend.push({ user: userId.slice(0, 8), device: new URL(device.endpoint).host, title: push.title, body: push.body, url: push.url })
         delivered++

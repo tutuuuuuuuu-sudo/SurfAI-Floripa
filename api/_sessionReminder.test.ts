@@ -43,10 +43,10 @@ describe('pickReminder', () => {
 
 describe('buildReminderPush', () => {
   it('abre o Diário com praia, dia e hora preenchidos', () => {
-    const push = buildReminderPush({ beachId: 'campeche', beachName: 'Campeche', score: 7.7, hour: 8 }, '2026-10-14', 'https://www.surfaifloripa.com.br')
+    const push = buildReminderPush({ beachId: 'campeche', beachName: 'Campeche', score: 7.7, hour: 8 }, '2026-10-14')
     expect(push.title).toBe('Caiu hoje?')
     expect(push.body).toContain('Campeche tava 7.7 às 8h')
-    expect(push.url).toBe('https://www.surfaifloripa.com.br/surf-log?registrar=campeche&dia=2026-10-14&hora=8')
+    expect(push.url).toBe('/surf-log?registrar=campeche&dia=2026-10-14&hora=8')
   })
 })
 
