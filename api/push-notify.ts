@@ -7,6 +7,7 @@ import { calculateSurfScore } from './_scoreEngine.js'
 import { BEACH_REGISTRY } from './_beachRegistry.js'
 import { isSchedulerCall } from './_auth.js'
 import { sendPush, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY } from './_webPush.js'
+import { beachMatches, premiumOrAdminIds, favoritesByUser, type PushCriteria } from './_pushMatch.js'
 // A criptografia mudou pra _webPush.ts (30/set/2026); reexportada aqui pro push-notify.test.ts
 export { base64urlDecode, base64urlEncode, makeVapidJwt, encryptWebPush } from './_webPush.js'
 
@@ -45,11 +46,9 @@ export default async function handler(req: Request) {
   })
   if (!subRes.ok) return json({ error: 'Erro ao buscar subscriptions' }, 500)
 
-  interface PushSub {
+  interface PushSub extends PushCriteria {
     id: string; user_id: string; endpoint: string
     p256dh: string; auth: string
-    min_score: number; favorite_only: boolean
-    beach_thresholds: Record<string, number> | null
   }
   const allSubs = await subRes.json() as PushSub[]
   if (allSubs.length === 0) return json({ ok: true, sent: 0 })
@@ -57,35 +56,12 @@ export default async function handler(req: Request) {
   // 1b. "Alertas de swell (push)" é benefício Premium (ver tabela de planos no CLAUDE.md) —
   // antes disso, qualquer usuário logado que ativasse push recebia alerta de graça,
   // porque nem o cadastro (NotificationPanel.tsx) nem o envio checavam assinatura.
-  const allUserIds = [...new Set(allSubs.map(s => s.user_id))]
-  const [subsRes, adminsRes] = await Promise.all([
-    fetch(
-      `${SUPABASE_URL}/rest/v1/subscriptions?user_id=in.(${allUserIds.join(',')})&status=eq.premium&expires_at=gte.${new Date().toISOString()}&select=user_id`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
-    ),
-    fetch(
-      `${SUPABASE_URL}/rest/v1/admins?user_id=in.(${allUserIds.join(',')})&select=user_id`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
-    ),
-  ])
-  const premiumRows = subsRes.ok ? await subsRes.json() as { user_id: string }[] : []
-  const adminRows = adminsRes.ok ? await adminsRes.json() as { user_id: string }[] : []
-  const eligibleUserIds = new Set([...premiumRows, ...adminRows].map(r => r.user_id))
+  const eligibleUserIds = await premiumOrAdminIds(SUPABASE_URL, SUPABASE_KEY, [...new Set(allSubs.map(s => s.user_id))])
   const subs = allSubs.filter(s => eligibleUserIds.has(s.user_id))
   if (subs.length === 0) return json({ ok: true, sent: 0, skippedNonPremium: allSubs.length })
 
   // 2. Busca favoritos de cada usuário (batch)
-  const userIds = [...new Set(subs.map(s => s.user_id))]
-  const favsRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/favorites?user_id=in.(${userIds.join(',')})&select=user_id,spot_id`,
-    { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
-  )
-  const favsRows = favsRes.ok ? await favsRes.json() as { user_id: string; spot_id: string }[] : []
-  const favsByUser: Record<string, string[]> = {}
-  for (const r of favsRows) {
-    if (!favsByUser[r.user_id]) favsByUser[r.user_id] = []
-    favsByUser[r.user_id].push(r.spot_id)
-  }
+  const favsByUser = await favoritesByUser(SUPABASE_URL, SUPABASE_KEY, [...new Set(subs.map(s => s.user_id))])
 
   // 3. Busca condições atuais (reutiliza /api/surf em lotes)
   const scores: Record<string, number> = {}
@@ -114,13 +90,9 @@ export default async function handler(req: Request) {
 
   await Promise.allSettled(subs.map(async sub => {
     const userFavs = favsByUser[sub.user_id] ?? []
-    const goodBeaches = BEACHES.filter(b => {
-      const score = scores[b.id] ?? 0
-      const threshold = sub.beach_thresholds?.[b.id] ?? sub.min_score
-      if (score < threshold) return false
-      if (sub.favorite_only && !userFavs.includes(b.id)) return false
-      return true
-    }).sort((a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0))
+    const goodBeaches = BEACHES
+      .filter(b => beachMatches(sub, b.id, scores[b.id] ?? 0, userFavs))
+      .sort((a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0))
 
     if (goodBeaches.length === 0) return
 

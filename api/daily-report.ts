@@ -1,6 +1,7 @@
 export const config = { runtime: 'edge' }
 import { calculateSurfScore } from './_scoreEngine.js'
-import { callGemini } from './_gemini.js'
+import { callGemini, type GeminiResult } from './_gemini.js'
+import { callGroqChat } from './_llmProviders.js'
 import { cleanChatReply } from './_chatText.js'
 import { getBeaches } from './_beachRegistry.js'
 import { isSchedulerCall } from './_auth.js'
@@ -9,6 +10,7 @@ import { PRICE_MONTHLY, PRICE_ANNUAL } from '../src/lib/pricing.js'
 
 const APP_URL = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 const GEMINI_KEY = process.env.GEMINI_API_KEY
+const GROQ_KEY = process.env.GROQ_API_KEY
 const AGENT_SECRET = process.env.AGENT_SECRET
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
@@ -160,7 +162,7 @@ async function getLandingStats(): Promise<{ viewsToday: number; clicksToday: num
 const ROBOT_LABEL: Record<string, string> = {
   '/api/snapshot': 'histórico', '/api/push-notify': 'alertas', '/api/refresh-windy-cache': 'praias',
   '/api/email-alert': 'e-mail', '/api/daily-report': 'relatório', '/api/health': 'checagem',
-  '/api/plan-reminders': 'lembretes',
+  '/api/plan-reminders': 'lembretes', '/api/session-reminder': 'caiu hoje',
 }
 
 async function getRobotStats(): Promise<{ ok: number; failed: number; failedBy: string } | null> {
@@ -261,8 +263,8 @@ async function generateSummary(data: {
   landing: Awaited<ReturnType<typeof getLandingStats>>
   robots: Awaited<ReturnType<typeof getRobotStats>>
   surf: Awaited<ReturnType<typeof getSurfConditions>>
-}): Promise<{ text: string; error: string }> {
-  if (!GEMINI_KEY) return { text: '', error: 'sem chave' }
+}): Promise<{ text: string; error: string; provider: string }> {
+  if (!GEMINI_KEY && !GROQ_KEY) return { text: '', error: 'sem chave', provider: '' }
 
   const prompt = `Você é um assistente de negócios do app Surf AI Floripa. Escreva um relatório executivo curto e direto em português para o dono do app.
 
@@ -290,15 +292,26 @@ CONDIÇÕES DO MAR:
 Escreva no máximo 3 frases curtas de análise (até 400 caracteres no total): o que foi bom, o que precisa de atenção, e uma ação sugerida se necessário. Tom direto e profissional, sem emojis, sem título, sem markdown, texto corrido.`
 
   // 15 s (padrão 20): a função edge precisa responder em ~25 s e agora manda duas mensagens
-  const result = await callGemini(GEMINI_KEY, prompt, 3000, 15000)
+  let result: GeminiResult = GEMINI_KEY
+    ? await callGemini(GEMINI_KEY, prompt, 3000, 15000)
+    : { ok: false, status: 0, error: 'sem chave do Gemini' }
+  let provider = 'gemini'
+  const geminiError = result.ok ? '' : (result.status ? `erro ${result.status}` : result.error.slice(0, 60))
   if (!result.ok) {
     console.error('[daily-report] Gemini falhou:', result.status, result.error.slice(0, 300))
-    return { text: '', error: result.status ? `erro ${result.status}` : result.error.slice(0, 60) }
+    // Mesma reserva do chat (surf-chat.ts): quando o Gemini não responde nem na 2ª tentativa
+    // (13/out/2026: 503, "high demand"), o Groq escreve a análise — se a chave estiver na Vercel
+    if (GROQ_KEY) {
+      const groq = await callGroqChat(GROQ_KEY, 'Você escreve relatórios curtos de negócio em português.', [{ role: 'user', text: prompt }], 2000, 8000)
+      if (groq.ok && groq.text.trim()) { result = groq; provider = 'groq' }
+      else console.error('[daily-report] Groq também falhou:', groq.ok ? 'texto vazio' : `${groq.status} ${groq.error.slice(0, 200)}`)
+    }
   }
+  if (!result.ok) return { text: '', error: geminiError, provider: '' }
   // Mesma limpeza do chat (sem asterisco, título ou travessão): em 07/out/2026 a resposta veio
   // com "**Relatório Executivo**" no topo, que o WhatsApp mostra com asteriscos sobrando
   const text = cleanChatReply(result.text)
-  return text ? { text, error: '' } : { text: '', error: 'resposta vazia' }
+  return text ? { text, error: '', provider } : { text: '', error: 'resposta vazia', provider: '' }
 }
 
 // ── WhatsApp (CallMeBot) ─────────────────────────────────────────────────────
@@ -389,7 +402,7 @@ export default async function handler(req: Request) {
     CALLMEBOT_PHONE && CALLMEBOT_APIKEY ? sendWhatsApp(CALLMEBOT_PHONE, CALLMEBOT_APIKEY, text) : Promise.resolve(false)
   const statsSent = await send(statsText)
 
-  const { text: aiSummary, error: aiError } = await generateSummary({ period, users, landing, robots, surf })
+  const { text: aiSummary, error: aiError, provider: aiProvider } = await generateSummary({ period, users, landing, robots, surf })
   const aiText = aiSummary ? `*Análise do dia*\n\n${aiSummary}` : `IA não respondeu (${aiError})`
   const aiSent = await send(aiText)
 
@@ -406,6 +419,7 @@ export default async function handler(req: Request) {
     robots,
     aiSummary,
     aiError,
+    aiProvider,
     whatsappSent,
     whatsappChars,
   }), {

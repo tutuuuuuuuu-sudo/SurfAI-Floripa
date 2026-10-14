@@ -175,6 +175,8 @@ api/
 ├── email-welcome.ts    # Email de boas-vindas (Resend)
 ├── push-subscribe.ts   # Registra subscription de push notification do usuário
 ├── push-notify.ts      # Envia push notifications (alertas de swell)
+├── _pushMatch.ts       # Regras dos avisos por push (nota mínima/por praia, só favoritas, Premium ou admin) — fonte única de push-notify e session-reminder
+├── session-reminder.ts # "Caiu hoje?" por push às 19h (14/out/2026): quem tem alerta ligado, sem sessão no dia, e o mar bateu o alerta da pessoa (score_snapshots 5h → 1 h atrás). Toque abre /surf-log?registrar=<praia>&dia=&hora= com o registro preenchido. `?ensaio=1` calcula sem mandar. Regras em _sessionReminder.ts. "Não caí" no cartão da Home e o interruptor nas Configurações ficam em user_preferences
 ├── push-test.ts        # Alerta de teste pedido pelo usuário no painel (push de verdade só pros aparelhos dele)
 ├── _webPush.ts         # Assinatura VAPID + criptografia do push (compartilhado por push-notify e push-test). iPhone recebe só com o app instalado na tela de início (iOS 16.4+)
 ├── snapshot.ts         # Grava score_snapshots (histórico de condições) periodicamente
@@ -194,6 +196,7 @@ e o relatório diário mostra "Robôs 24h: N ok, N falhas". Ver jobs: `select * 
 - `robo-daily-report`: 12h e 23h (9h e 20h em Brasília)
 - `robo-health`: 10h e 22h
 - `robo-lembretes`: 12h (9h em Brasília) — `api/plan-reminders.ts`
+- `robo-caiu-hoje`: 22h (19h em Brasília) — `api/session-reminder.ts`
 - `robo-resultados`: a cada 10 min (registra o resultado das chamadas)
 
 Os arquivos em `.github/workflows/` ficaram só com execução manual (`workflow_dispatch`, senhas
@@ -239,6 +242,10 @@ resultado era descartado e gastava cota do Gemini — o ContentStudio usa o endp
   Prioridade ao falar de uma praia: onda → maré → vento (direção+velocidade) → melhor horário.
   Toda resposta passa por `cleanChatReply` (`api/_chatText.ts`) — tira asterisco/markdown/
   travessão no código, não depende do modelo obedecer. Não usar terral/maral/lateral.
+- **Erro 503 do Gemini** ("This model is currently experiencing high demand", 13/out/2026, relatório
+  da noite sem análise): é sobrecarga do Google, não cota (cota é 429). `requestGemini` em
+  `api/_gemini.ts` tenta mais 1 vez depois de 2 s em 500/503, dentro do mesmo tempo total; o
+  relatório diário ainda cai pro Groq (`GROQ_API_KEY`, mesma reserva do chat) se o Gemini falhar 2x.
 - **Cota do Gemini**: conta ainda está no Free Tier do Google AI Studio — **20 chamadas por
   dia, TOTAL, pra todo o app** (relatório antigo + content-agent + daily-report + chat, tudo
   na mesma cota). Usuário está ciente e decidiu não ativar cobrança por enquanto (23/ago/2026).
@@ -347,7 +354,9 @@ Resend (emails transacionais)
 - `CALLMEBOT_PHONE`, `CALLMEBOT_APIKEY` (WhatsApp pessoal do founder via CallMeBot, serviço
   gratuito de terceiro — usado só por `api/daily-report.ts`, trocou o envio por e-mail em
   25/ago/2026 a pedido do usuário, "polui demais o email". `CALLMEBOT_PHONE` é o número sem o
-  9 extra, formato que o WhatsApp do usuário reportou pro serviço no cadastro)
+  9 extra, formato que o WhatsApp do usuário reportou pro serviço no cadastro). Desde ~13/out/2026
+  o próprio CallMeBot cola "I need your support + link" no fim de cada mensagem grátis (página
+  deles: assinatura US$ 1/mês ou US$ 10/ano tira o aviso) — não dá pra tirar pelo código
 
 ### Alias de importação
 ```typescript
@@ -401,7 +410,7 @@ o CLI do shadcn (`npx shadcn@latest add <nome>`) pra gerar de novo, em vez de re
 - `favorites` — picos favoritados por usuário
 - `surf_log` — diário de sessões
 - `surf_sessions` — sessões de surf registradas pelo usuário. Desde 09/out/2026 também `start_hour` e o mar daquela hora (`wave_height`, `wind_speed`, `wind_direction`, `swell_period`, `app_score`, `tide_trend`), preenchido pelo app
-- `user_preferences` — preferências salvas (notificações, filtros)
+- `user_preferences` — preferências salvas (notificações, filtros). Desde 14/out/2026 também `session_reminder_enabled` (lembrete "Caiu hoje?", padrão ligado), `surfed_prompt_dismissed_on` ("Não caí" no cartão da Home) e `session_reminder_sent_on` (impede aviso repetido no dia)
 - `push_subscriptions` — inscrições de push notification (VAPID)
 - `score_snapshots` — histórico periódico de score por pico (gravado por `api/snapshot.ts`)
 - `plan_reminders` — um registro por lembrete de fim de plano enviado (user_id, kind d5/d1/ended, period_end); RLS sem política, só o servidor

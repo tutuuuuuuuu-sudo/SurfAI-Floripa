@@ -53,6 +53,17 @@ export function SurfedTodayPrompt({ favorites }: { favorites: string[] }) {
     setBest(null)
   }
 
+  // "Não caí" também fica salvo na conta: o aviso das 19h por notificação (api/session-reminder.ts)
+  // não pergunta de novo no mesmo dia. O X ("Agora não") só esconde o cartão.
+  function notSurfed() {
+    dismiss()
+    if (user) {
+      supabase.from('user_preferences')
+        .upsert({ user_id: user.id, surfed_prompt_dismissed_on: today }, { onConflict: 'user_id' })
+        .then(() => {})
+    }
+  }
+
   if (!best) return null
   const rating = getRatingInfo(best.score)
   return (
@@ -76,7 +87,7 @@ export function SurfedTodayPrompt({ favorites }: { favorites: string[] }) {
           <button onClick={() => setOpen(true)} className="h-10 rounded-xl bg-primary text-primary-foreground text-sm font-semibold active:scale-95 transition-all">
             Registrar
           </button>
-          <button onClick={dismiss} className="h-10 rounded-xl border border-border text-sm font-semibold text-muted-foreground hover:bg-muted/50">
+          <button onClick={notSurfed} className="h-10 rounded-xl border border-border text-sm font-semibold text-muted-foreground hover:bg-muted/50">
             Não caí
           </button>
         </div>

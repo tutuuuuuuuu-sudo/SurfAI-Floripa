@@ -152,7 +152,9 @@ export interface PushResult {
   reason: string   // motivo da recusa, quando houver (texto do serviço de push)
 }
 
-export async function sendPush(endpoint: string, p256dh: string, auth: string, payload: string): Promise<PushResult> {
+// ttlSeconds: por quanto tempo o serviço de push guarda o aviso se o celular estiver desligado ou
+// sem rede. Padrão 1 dia; o "Caiu hoje?" usa menos pra não chegar na manhã seguinte.
+export async function sendPush(endpoint: string, p256dh: string, auth: string, payload: string, ttlSeconds = 86400): Promise<PushResult> {
   let host = 'endereço inválido'
   try {
     const url = new URL(endpoint)
@@ -165,7 +167,7 @@ export async function sendPush(endpoint: string, p256dh: string, auth: string, p
         'Content-Type': 'application/octet-stream',
         'Content-Encoding': 'aes128gcm',
         Authorization: `vapid t=${jwt},k=${VAPID_PUBLIC_KEY}`,
-        TTL: '86400',
+        TTL: String(ttlSeconds),
         Urgency: 'high',
       },
       body: asBufferSource(body),
