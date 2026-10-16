@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePremium } from '@/lib/premium'
@@ -11,6 +11,23 @@ import { IdealSeaCard } from '@/components/sessions/IdealSeaCard'
 import { SessionStatsRow, IslandPassport, YearRecap } from '@/components/sessions/SessionAchievements'
 import { Waves, Plus, FileText, Sparkles, Share2, Stamp, MapPin, Crown } from 'lucide-react'
 import { toast } from 'sonner'
+import { BEACH_REGISTRY } from '../../api/_beachRegistry'
+
+// Toque no aviso "Caiu hoje?" (api/_sessionReminder.ts) abre esta página com
+// ?registrar=<praia>&dia=<AAAA-MM-DD>&hora=<h> e o registro já vem preenchido. Valor estranho na
+// URL é ignorado (abre o registro em branco ou nem abre).
+interface Prefill { beachId?: string; date?: string; hour?: number }
+function readPrefill(params: URLSearchParams, today: string): Prefill | null {
+  const beachId = params.get('registrar')
+  if (beachId === null) return null
+  const date = params.get('dia') ?? ''
+  const hour = Number(params.get('hora'))
+  return {
+    beachId: BEACH_REGISTRY.some(b => b.id === beachId) ? beachId : undefined,
+    date: /^\d{4}-\d{2}-\d{2}$/.test(date) && date <= today ? date : undefined,
+    hour: Number.isInteger(hour) && hour >= 5 && hour <= 19 ? hour : undefined,
+  }
+}
 
 // Diário de sessões (redesenhado em 09/out/2026). Em toda a história só 1 sessão tinha sido
 // registrada: o formulário dava trabalho e não devolvia nada. Agora registrar leva poucos toques
@@ -23,8 +40,15 @@ export default function SurfLog() {
   const [sessions, setSessions] = useState<SurfSession[]>([])
   const [loading, setLoading] = useState(true)
   const [tableError, setTableError] = useState(false)
-  const [showSheet, setShowSheet] = useState(false)
   const today = todaySP()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [prefill, setPrefill] = useState(() => readPrefill(searchParams, today))
+  const [showSheet, setShowSheet] = useState(prefill !== null)
+
+  // Tira os parâmetros do aviso da URL: voltar ou recarregar não reabre o registro
+  useEffect(() => {
+    if (searchParams.has('registrar')) setSearchParams({}, { replace: true })
+  }, [searchParams, setSearchParams])
 
   useEffect(() => {
     if (!user) return
@@ -122,7 +146,13 @@ export default function SurfLog() {
         )}
       </main>
 
-      {showSheet && <SessionSheet source="sessions" onClose={() => setShowSheet(false)} onSaved={handleSaved} />}
+      {showSheet && (
+        <SessionSheet
+          source={prefill ? 'push_reminder' : 'sessions'}
+          initialBeachId={prefill?.beachId} initialDate={prefill?.date} initialHour={prefill?.hour}
+          onClose={() => { setShowSheet(false); setPrefill(null) }} onSaved={handleSaved}
+        />
+      )}
     </div>
   )
 }

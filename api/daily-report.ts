@@ -1,19 +1,27 @@
 export const config = { runtime: 'edge' }
 import { calculateSurfScore } from './_scoreEngine.js'
-import { callGemini } from './_gemini.js'
+import { callGemini, type GeminiResult } from './_gemini.js'
+import { callGroqChat } from './_llmProviders.js'
 import { cleanChatReply } from './_chatText.js'
 import { getBeaches } from './_beachRegistry.js'
 import { isSchedulerCall } from './_auth.js'
 import { sendWhatsApp } from './_callmebot.js'
+import { sendTelegram } from './_telegram.js'
 import { PRICE_MONTHLY, PRICE_ANNUAL } from '../src/lib/pricing.js'
 
 const APP_URL = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
 const GEMINI_KEY = process.env.GEMINI_API_KEY
+const GROQ_KEY = process.env.GROQ_API_KEY
 const AGENT_SECRET = process.env.AGENT_SECRET
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
 const CALLMEBOT_PHONE = process.env.CALLMEBOT_PHONE
 const CALLMEBOT_APIKEY = process.env.CALLMEBOT_APIKEY
+// Telegram (16/out/2026): o CallMeBot passou a colar "I need your support" nas mensagens grátis.
+// Com as duas variáveis na Vercel o relatório vai pelo Telegram; sem elas (ou se o Telegram falhar)
+// continua pelo WhatsApp
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID
 
 const SPOTS = getBeaches(['campeche', 'joaquina', 'mole', 'barra-lagoa', 'santinho', 'morro-pedras'])
 
@@ -261,8 +269,8 @@ async function generateSummary(data: {
   landing: Awaited<ReturnType<typeof getLandingStats>>
   robots: Awaited<ReturnType<typeof getRobotStats>>
   surf: Awaited<ReturnType<typeof getSurfConditions>>
-}): Promise<{ text: string; error: string }> {
-  if (!GEMINI_KEY) return { text: '', error: 'sem chave' }
+}): Promise<{ text: string; error: string; provider: string }> {
+  if (!GEMINI_KEY && !GROQ_KEY) return { text: '', error: 'sem chave', provider: '' }
 
   const prompt = `Você é um assistente de negócios do app Surf AI Floripa. Escreva um relatório executivo curto e direto em português para o dono do app.
 
@@ -290,24 +298,35 @@ CONDIÇÕES DO MAR:
 Escreva no máximo 3 frases curtas de análise (até 400 caracteres no total): o que foi bom, o que precisa de atenção, e uma ação sugerida se necessário. Tom direto e profissional, sem emojis, sem título, sem markdown, texto corrido.`
 
   // 15 s (padrão 20): a função edge precisa responder em ~25 s e agora manda duas mensagens
-  const result = await callGemini(GEMINI_KEY, prompt, 3000, 15000)
+  let result: GeminiResult = GEMINI_KEY
+    ? await callGemini(GEMINI_KEY, prompt, 3000, 15000)
+    : { ok: false, status: 0, error: 'sem chave do Gemini' }
+  let provider = 'gemini'
+  const geminiError = result.ok ? '' : (result.status ? `erro ${result.status}` : result.error.slice(0, 60))
   if (!result.ok) {
     console.error('[daily-report] Gemini falhou:', result.status, result.error.slice(0, 300))
-    return { text: '', error: result.status ? `erro ${result.status}` : result.error.slice(0, 60) }
+    // Mesma reserva do chat (surf-chat.ts): quando o Gemini não responde nem na 2ª tentativa
+    // (13/out/2026: 503, "high demand"), o Groq escreve a análise — se a chave estiver na Vercel
+    if (GROQ_KEY) {
+      const groq = await callGroqChat(GROQ_KEY, 'Você escreve relatórios curtos de negócio em português.', [{ role: 'user', text: prompt }], 2000, 8000)
+      if (groq.ok && groq.text.trim()) { result = groq; provider = 'groq' }
+      else console.error('[daily-report] Groq também falhou:', groq.ok ? 'texto vazio' : `${groq.status} ${groq.error.slice(0, 200)}`)
+    }
   }
+  if (!result.ok) return { text: '', error: geminiError, provider: '' }
   // Mesma limpeza do chat (sem asterisco, título ou travessão): em 07/out/2026 a resposta veio
   // com "**Relatório Executivo**" no topo, que o WhatsApp mostra com asteriscos sobrando
   const text = cleanChatReply(result.text)
-  return text ? { text, error: '' } : { text: '', error: 'resposta vazia' }
+  return text ? { text, error: '', provider } : { text: '', error: 'resposta vazia', provider: '' }
 }
 
-// ── WhatsApp (CallMeBot) ─────────────────────────────────────────────────────
+// ── Mensagem (Telegram ou WhatsApp) ──────────────────────────────────────────
 
 function medal(i: number): string {
   return i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'
 }
 
-function buildWhatsAppText(data: {
+function buildReportText(data: {
   period: string
   date: string
   users: Awaited<ReturnType<typeof getUserStats>>
@@ -383,19 +402,24 @@ export default async function handler(req: Request) {
   ])
 
   // Duas mensagens: os números saem antes de chamar a IA (a parte mais demorada) e a análise
-  // vem em seguida. Juntas passavam do tamanho que o CallMeBot entrega (ver _callmebot.ts).
-  const statsText = buildWhatsAppText({ period, date: dateStr, users, landing, robots, surf })
-  const send = (text: string) =>
-    CALLMEBOT_PHONE && CALLMEBOT_APIKEY ? sendWhatsApp(CALLMEBOT_PHONE, CALLMEBOT_APIKEY, text) : Promise.resolve(false)
+  // vem em seguida (no WhatsApp, juntas passavam do tamanho que o CallMeBot entrega).
+  const statsText = buildReportText({ period, date: dateStr, users, landing, robots, surf })
+  // Devolve por onde a mensagem saiu ('' se não saiu)
+  const send = async (text: string): Promise<string> => {
+    if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID && await sendTelegram(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, text)) return 'telegram'
+    if (CALLMEBOT_PHONE && CALLMEBOT_APIKEY && await sendWhatsApp(CALLMEBOT_PHONE, CALLMEBOT_APIKEY, text)) return 'whatsapp'
+    return ''
+  }
   const statsSent = await send(statsText)
 
-  const { text: aiSummary, error: aiError } = await generateSummary({ period, users, landing, robots, surf })
+  const { text: aiSummary, error: aiError, provider: aiProvider } = await generateSummary({ period, users, landing, robots, surf })
   const aiText = aiSummary ? `*Análise do dia*\n\n${aiSummary}` : `IA não respondeu (${aiError})`
   const aiSent = await send(aiText)
 
-  const whatsappSent = statsSent && aiSent
-  // Tamanho de cada mensagem na resposta do robô (guardada algumas horas em net._http_response)
-  const whatsappChars = [statsText.length, aiText.length]
+  const delivered = !!statsSent && !!aiSent
+  // Canal e tamanho de cada mensagem na resposta do robô (guardada algumas horas em net._http_response)
+  const channels = [statsSent || 'falhou', aiSent || 'falhou']
+  const messageChars = [statsText.length, aiText.length]
 
   return new Response(JSON.stringify({
     period,
@@ -406,12 +430,14 @@ export default async function handler(req: Request) {
     robots,
     aiSummary,
     aiError,
-    whatsappSent,
-    whatsappChars,
+    aiProvider,
+    delivered,
+    channels,
+    messageChars,
   }), {
     // 502 quando a mensagem não saiu: o GitHub Actions marca a execução como falha e o Cronitor
     // avisa (antes respondia 200 mesmo sem entregar, e "deu certo" no painel não queria dizer nada)
-    status: whatsappSent ? 200 : 502,
+    status: delivered ? 200 : 502,
     headers: { 'Content-Type': 'application/json' },
   })
 }

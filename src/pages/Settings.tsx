@@ -76,13 +76,14 @@ export default function Settings() {
   const [notifMinScore, setNotifMinScore] = useState<number>(loadPref('notif_minScore', 7))
   const [notifFavOnly, setNotifFavOnly] = useState<boolean>(loadPref('notif_favOnly', false))
   const [emailAlertsEnabled, setEmailAlertsEnabled] = useState<boolean>(loadPref('emailAlertsEnabled', true))
+  const [sessionReminder, setSessionReminder] = useState<boolean>(loadPref('sessionReminder', true))
 
   // Carrega preferências do Supabase ao montar (override do localStorage se existir)
   useEffect(() => {
     if (!user) return
     supabase
       .from('user_preferences')
-      .select('pref_skill, pref_region, notif_min_score, notif_fav_only, email_alerts_enabled')
+      .select('pref_skill, pref_region, notif_min_score, notif_fav_only, email_alerts_enabled, session_reminder_enabled')
       .eq('user_id', user.id)
       .maybeSingle()
       .then(({ data }) => {
@@ -95,6 +96,7 @@ export default function Settings() {
         if (data.notif_min_score != null) { setNotifMinScore(data.notif_min_score); savePref('notif_minScore', data.notif_min_score) }
         if (data.notif_fav_only != null) { setNotifFavOnly(data.notif_fav_only); savePref('notif_favOnly', data.notif_fav_only) }
         if (data.email_alerts_enabled != null) { setEmailAlertsEnabled(data.email_alerts_enabled); savePref('emailAlertsEnabled', data.email_alerts_enabled) }
+        if (data.session_reminder_enabled != null) { setSessionReminder(data.session_reminder_enabled); savePref('sessionReminder', data.session_reminder_enabled) }
       })
   }, [user])
 
@@ -137,6 +139,7 @@ export default function Settings() {
         notif_minScore: 'notif_min_score',
         notif_favOnly: 'notif_fav_only',
         emailAlertsEnabled: 'email_alerts_enabled',
+        sessionReminder: 'session_reminder_enabled',
       }
       const col = colMap[key]
       if (col) {
@@ -399,9 +402,22 @@ export default function Settings() {
                   </div>
                   <button
                     onClick={() => { const v = !emailAlertsEnabled; setEmailAlertsEnabled(v); save('emailAlertsEnabled', v, 'Alerta por email') }}
-                    className={`relative w-11 h-6 rounded-full transition-colors ${emailAlertsEnabled ? 'bg-primary' : 'bg-muted'}`}
+                    className={`relative w-11 h-6 shrink-0 rounded-full transition-colors ${emailAlertsEnabled ? 'bg-primary' : 'bg-muted'}`}
                   >
                     <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${emailAlertsEnabled ? 'left-6' : 'left-1'}`} />
+                  </button>
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-semibold">Lembrete "Caiu hoje?"</div>
+                    <div className="text-xs text-muted-foreground">Notificação às 19h nos dias em que o mar bateu o seu alerta, pra registrar a sessão</div>
+                  </div>
+                  <button
+                    onClick={() => { const v = !sessionReminder; setSessionReminder(v); save('sessionReminder', v, 'Lembrete de sessão') }}
+                    className={`relative w-11 h-6 shrink-0 rounded-full transition-colors ${sessionReminder ? 'bg-primary' : 'bg-muted'}`}
+                  >
+                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${sessionReminder ? 'left-6' : 'left-1'}`} />
                   </button>
                 </div>
               </>

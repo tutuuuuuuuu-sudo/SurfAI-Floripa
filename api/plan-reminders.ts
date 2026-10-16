@@ -104,7 +104,7 @@ export default async function handler(req: Request) {
     const payload = JSON.stringify({
       title: msg.pushTitle,
       body: msg.pushBody,
-      url: `${APP_URL}/premium`,
+      url: '/premium', // relativo: abre no endereço do app instalado (ver _sessionReminder.ts)
       icon: '/icon-192.png',
       badge: '/icon-192.png',
     })

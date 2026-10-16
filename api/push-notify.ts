@@ -7,6 +7,10 @@ import { calculateSurfScore } from './_scoreEngine.js'
 import { BEACH_REGISTRY } from './_beachRegistry.js'
 import { isSchedulerCall } from './_auth.js'
 import { sendPush, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY } from './_webPush.js'
+import { beachMatches, premiumOrAdminIds, favoritesByUser, isAlertHour, nextAlertBeach, markAlerted, type PushCriteria } from './_pushMatch.js'
+import { todaySP, nowHourSP } from '../src/lib/timeSP.js'
+import { REMINDER_HOUR } from './_sessionReminder.js'
+import { runSessionReminder } from './_sessionReminderJob.js'
 // A criptografia mudou pra _webPush.ts (30/set/2026); reexportada aqui pro push-notify.test.ts
 export { base64urlDecode, base64urlEncode, makeVapidJwt, encryptWebPush } from './_webPush.js'
 
@@ -39,17 +43,28 @@ export default async function handler(req: Request) {
     return json({ error: 'Configuração incompleta' }, 500)
   }
 
+  // 19h: em vez do alerta de mar bom, o "Caiu hoje?" (_sessionReminderJob.ts). Fica aqui pra não
+  // precisar de outro job no agendador
+  const hour = nowHourSP()
+  if (hour === REMINDER_HOUR) {
+    const { status, body } = await runSessionReminder(SUPABASE_URL, SUPABASE_KEY)
+    return json({ reminder: true, ...body }, status)
+  }
+
+  // Só de dia (ver isAlertHour); fora do horário nem consulta as praias
+  if (!isAlertHour(hour)) return json({ ok: true, sent: 0, skipped: 'fora do horário' })
+  const today = todaySP()
+
   // 1. Busca todas as subscriptions ativas
   const subRes = await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?select=*`, {
     headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
   })
   if (!subRes.ok) return json({ error: 'Erro ao buscar subscriptions' }, 500)
 
-  interface PushSub {
+  interface PushSub extends PushCriteria {
     id: string; user_id: string; endpoint: string
     p256dh: string; auth: string
-    min_score: number; favorite_only: boolean
-    beach_thresholds: Record<string, number> | null
+    alerted_on: string | null; alerted_beaches: string[] | null
   }
   const allSubs = await subRes.json() as PushSub[]
   if (allSubs.length === 0) return json({ ok: true, sent: 0 })
@@ -57,35 +72,12 @@ export default async function handler(req: Request) {
   // 1b. "Alertas de swell (push)" é benefício Premium (ver tabela de planos no CLAUDE.md) —
   // antes disso, qualquer usuário logado que ativasse push recebia alerta de graça,
   // porque nem o cadastro (NotificationPanel.tsx) nem o envio checavam assinatura.
-  const allUserIds = [...new Set(allSubs.map(s => s.user_id))]
-  const [subsRes, adminsRes] = await Promise.all([
-    fetch(
-      `${SUPABASE_URL}/rest/v1/subscriptions?user_id=in.(${allUserIds.join(',')})&status=eq.premium&expires_at=gte.${new Date().toISOString()}&select=user_id`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
-    ),
-    fetch(
-      `${SUPABASE_URL}/rest/v1/admins?user_id=in.(${allUserIds.join(',')})&select=user_id`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
-    ),
-  ])
-  const premiumRows = subsRes.ok ? await subsRes.json() as { user_id: string }[] : []
-  const adminRows = adminsRes.ok ? await adminsRes.json() as { user_id: string }[] : []
-  const eligibleUserIds = new Set([...premiumRows, ...adminRows].map(r => r.user_id))
+  const eligibleUserIds = await premiumOrAdminIds(SUPABASE_URL, SUPABASE_KEY, [...new Set(allSubs.map(s => s.user_id))])
   const subs = allSubs.filter(s => eligibleUserIds.has(s.user_id))
   if (subs.length === 0) return json({ ok: true, sent: 0, skippedNonPremium: allSubs.length })
 
   // 2. Busca favoritos de cada usuário (batch)
-  const userIds = [...new Set(subs.map(s => s.user_id))]
-  const favsRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/favorites?user_id=in.(${userIds.join(',')})&select=user_id,spot_id`,
-    { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
-  )
-  const favsRows = favsRes.ok ? await favsRes.json() as { user_id: string; spot_id: string }[] : []
-  const favsByUser: Record<string, string[]> = {}
-  for (const r of favsRows) {
-    if (!favsByUser[r.user_id]) favsByUser[r.user_id] = []
-    favsByUser[r.user_id].push(r.spot_id)
-  }
+  const favsByUser = await favoritesByUser(SUPABASE_URL, SUPABASE_KEY, [...new Set(subs.map(s => s.user_id))])
 
   // 3. Busca condições atuais (reutiliza /api/surf em lotes)
   const scores: Record<string, number> = {}
@@ -108,35 +100,41 @@ export default async function handler(req: Request) {
     }))
   }
 
-  // 4. Para cada subscription, verifica se tem praia boa e envia push
+  // 4. Para cada subscription, verifica se tem praia boa (que ainda não foi avisada hoje) e envia push
   let sent = 0
+  let alreadyAlerted = 0
   const toRemove: string[] = []
 
   await Promise.allSettled(subs.map(async sub => {
     const userFavs = favsByUser[sub.user_id] ?? []
-    const goodBeaches = BEACHES.filter(b => {
-      const score = scores[b.id] ?? 0
-      const threshold = sub.beach_thresholds?.[b.id] ?? sub.min_score
-      if (score < threshold) return false
-      if (sub.favorite_only && !userFavs.includes(b.id)) return false
-      return true
-    }).sort((a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0))
+    const goodBeaches = BEACHES
+      .filter(b => beachMatches(sub, b.id, scores[b.id] ?? 0, userFavs))
+      .sort((a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0))
 
     if (goodBeaches.length === 0) return
+    const bestId = nextAlertBeach(goodBeaches.map(b => b.id), sub, today)
+    if (!bestId) { alreadyAlerted++; return }
 
-    const best = goodBeaches[0]
+    const best = goodBeaches.find(b => b.id === bestId)!
     const score = scores[best.id] ?? 0
     const payload = JSON.stringify({
-      title: `${best.id.replace(/-/g, ' ')} está ótima agora! 🏄`,
-      body: `Score ${score.toFixed(1)}/10 · Toca ver as condições`,
-      url: `${APP_URL}/spot/${best.id}`,
+      title: `${best.name} está boa agora`,
+      body: `Nota ${score.toFixed(1)}/10 · Toca pra ver as condições`,
+      url: `/spot/${best.id}`, // relativo: abre no endereço do app instalado (ver _sessionReminder.ts)
       icon: '/icon-192.png',
       badge: '/icon-192.png',
     })
 
     const r = await sendPush(sub.endpoint, sub.p256dh, sub.auth, payload)
     if (r.gone) toRemove.push(sub.id) // só aparelho que não existe mais; recusa comum não apaga
-    else if (r.ok) sent++
+    else if (r.ok) {
+      sent++
+      await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?id=eq.${sub.id}`, {
+        method: 'PATCH',
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(markAlerted(sub, best.id, today)),
+      })
+    }
   }))
 
   // 5. Remove subscriptions expiradas (410)
@@ -147,5 +145,5 @@ export default async function handler(req: Request) {
     )
   }
 
-  return json({ ok: true, sent, removed: toRemove.length })
+  return json({ ok: true, sent, alreadyAlerted, removed: toRemove.length })
 }
