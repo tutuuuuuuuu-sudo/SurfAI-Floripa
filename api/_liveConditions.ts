@@ -4,6 +4,7 @@
 
 import { toBeachHeight, capByOpenSea } from './_beachHeight.js'
 import { openSeaExposureAt, wavePartsFrom, exposedHeight, WAVE_PART_FIELDS } from './_beachExposure.js'
+import { applyBeachWind } from './_beachWindHeight.js'
 
 const DIRS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
 
@@ -467,14 +468,15 @@ async function fetchStormglass(lat: string, lng: string): Promise<LiveConditions
 // praia (até 6 h) — ver comentário do fim do ×1,85 acima.
 const LAST_GOOD_TTL_MS = 6 * 60 * 60 * 1000
 
-function atBeach(c: LiveConditions): LiveConditions {
+// Vento de cada praia por último (Campeche com sul, _beachWindHeight.ts, 16/out/2026)
+function atBeach(c: LiveConditions, lat: string, lng: string): LiveConditions {
   const fromOpenMeteo = c.openSeaHeight !== undefined || c.nearshoreHeight !== undefined
   const waveHeight = c.exposedHeight != null
     ? capByOpenSea(c.exposedHeight, c.openSeaHeight, c.swellPeriod)
     : fromOpenMeteo
       ? toBeachHeight(c.openSeaHeight, c.swellPeriod, c.nearshoreHeight)
       : toBeachHeight(c.waveHeight, c.swellPeriod)
-  return { ...c, waveHeight }
+  return { ...c, waveHeight: applyBeachWind(waveHeight, Number(lat), Number(lng), c.windDir, c.windSpeed) }
 }
 
 export async function fetchLiveConditions(lat: string, lng: string): Promise<LiveConditions | null> {
@@ -483,17 +485,17 @@ export async function fetchLiveConditions(lat: string, lng: string): Promise<Liv
   if (openMeteo) {
     console.log('[liveConditions] Fonte: open-meteo (ecmwf_wam)')
     await setCached(lastGoodKey, openMeteo) // guarda a leitura de mar aberto, antes da conversão
-    return atBeach(openMeteo)
+    return atBeach(openMeteo, lat, lng)
   }
 
   const lastGood = await getCached<LiveConditions>(lastGoodKey, LAST_GOOD_TTL_MS)
-  if (lastGood) { console.log('[liveConditions] Fonte: última leitura boa (open-meteo falhou)'); return atBeach(lastGood) }
+  if (lastGood) { console.log('[liveConditions] Fonte: última leitura boa (open-meteo falhou)'); return atBeach(lastGood, lat, lng) }
 
   const windy = await fetchWindy(lat, lng)
-  if (windy) { console.log('[liveConditions] Fonte: windy (open-meteo falhou, sem leitura recente)'); return atBeach(windy) }
+  if (windy) { console.log('[liveConditions] Fonte: windy (open-meteo falhou, sem leitura recente)'); return atBeach(windy, lat, lng) }
 
   const stormglass = await fetchStormglass(lat, lng)
-  if (stormglass) { console.log('[liveConditions] Fonte: stormglass (open-meteo e windy falharam)'); return atBeach(stormglass) }
+  if (stormglass) { console.log('[liveConditions] Fonte: stormglass (open-meteo e windy falharam)'); return atBeach(stormglass, lat, lng) }
 
   console.error('[liveConditions] Todas as fontes falharam')
   return null
