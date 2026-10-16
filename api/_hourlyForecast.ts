@@ -4,6 +4,7 @@
 import { calculateSurfScore } from './_scoreEngine.js'
 import { toBeachHeight, calibrateOpenSea, calibrateFromBeachHeights, capByOpenSea } from './_beachHeight.js'
 import { openSeaExposureAt, wavePartsFrom, exposedHeight, WAVE_PART_FIELDS } from './_beachExposure.js'
+import { applyBeachWind } from './_beachWindHeight.js'
 import { southExposureAt } from './_beachRegistry.js'
 
 export function degreesToDir(deg: number): string {
@@ -183,13 +184,15 @@ export async function fetchHourlyForecast(
     // Sem o francês nessa hora: ECMWF × razão medida entre os dois (09/out/2026)
     // Praias com a conta pelo mar aberto (_beachExposure.ts): a altura calculada pelas partes do mar
     const exposedAtHour = exposedHeights?.[idx]
-    const waveHeight = exposedAtHour != null
+    const windSpeed = Math.round(weather.hourly?.wind_speed_10m?.[idx] ?? 12)
+    const windDirection = degreesToDir(weather.hourly?.wind_direction_10m?.[idx] ?? 0)
+    const seaHeight = exposedAtHour != null
       ? exposedAtHour
       : (exposedHeights || nearshoreHeight == null) && openSeaHeight != null && openSeaHeight > 0
         ? Math.round(openSeaHeight * openSea.heightRatio * 100) / 100
         : toBeachHeight(openSeaHeight, swellPeriod, nearshoreHeight) || toBeachHeight(rawWaveHeight, swellPeriod)
-    const windSpeed = Math.round(weather.hourly?.wind_speed_10m?.[idx] ?? 12)
-    const windDirection = degreesToDir(weather.hourly?.wind_direction_10m?.[idx] ?? 0)
+    // Vento de cada praia (Campeche com sul, _beachWindHeight.ts, 16/out/2026)
+    const waveHeight = applyBeachWind(seaHeight, Number(lat), Number(lng), windDirection, windSpeed)
     const temperature = Math.round(weather.hourly?.temperature_2m?.[idx] ?? 24)
     const score = calculateSurfScore(waveHeight, windSpeed, swellPeriod, windDirection, orientation, southExposure)
     const num = (v: number | null | undefined) => (v == null || !Number.isFinite(v) ? null : v)
