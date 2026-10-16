@@ -59,13 +59,18 @@ export const BEACH_REGISTRY: BeachRegistryEntry[] = [
 //   orientação (75°) confirma: o sul entra de lado vindo um pouco da terra
 // As outras ficam em 1 até haver observação real (Registro do mar real) dizendo o contrário.
 // Procura pela posição (até ~2 km) porque previsão e app passam lat/lng, não o id da praia.
-export function southExposureAt(lat: number, lng: number): number {
+// Praia cadastrada na coordenada (as rotas recebem lat/lng, não o id): a mais perto, até ~2 km
+export function beachAt(lat: number, lng: number): BeachRegistryEntry | undefined {
   let best: BeachRegistryEntry | undefined, bestD = Infinity
   for (const b of BEACH_REGISTRY) {
     const d = Math.hypot(b.lat - lat, (b.lng - lng) * Math.cos((lat * Math.PI) / 180))
     if (d < bestD) { bestD = d; best = b }
   }
-  return best && bestD < 0.02 ? (best.southExposure ?? 1) : 1
+  return best && bestD < 0.02 ? best : undefined
+}
+
+export function southExposureAt(lat: number, lng: number): number {
+  return beachAt(lat, lng)?.southExposure ?? 1
 }
 
 export function getBeach(id: string): BeachRegistryEntry | undefined {

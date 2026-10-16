@@ -2,7 +2,8 @@
 // principal exibida na Home/SpotDetails).
 // Prefixo _ indica que não é um handler HTTP — não será exposto como endpoint pelo Vercel.
 
-import { toBeachHeight } from './_beachHeight.js'
+import { toBeachHeight, capByOpenSea } from './_beachHeight.js'
+import { openSeaExposureAt, wavePartsFrom, exposedHeight, WAVE_PART_FIELDS } from './_beachExposure.js'
 
 const DIRS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
 
@@ -95,6 +96,9 @@ export interface LiveConditions {
   // Fontes reserva (Windy/Stormglass) não têm — pra elas waveHeight é tratado como mar aberto.
   openSeaHeight?: number | null
   nearshoreHeight?: number | null
+  // Praias com a conta pelo mar aberto na frente delas (_beachExposure.ts, 16/out/2026): altura na
+  // praia já calculada pelas partes do mar; quando existe, vale no lugar do francês do ponto da praia
+  exposedHeight?: number | null
   sunrise?: string
   sunset?: string
 }
@@ -339,10 +343,20 @@ async function fetchOpenMeteo(lat: string, lng: string): Promise<LiveConditions 
     // principal) travasse, ela sozinha consumia os 25s de orçamento da função edge inteira,
     // sem nem chegar a tentar Windy/Stormglass (fallback nunca acionado a tempo). Timeout
     // aqui deixa a cascata cair pra próxima fonte em vez de travar a resposta inteira.
-    const [marineRes, marineEcmwfRes, weatherRes] = await Promise.all([
+    // Morro das Pedras, Armação, Solidão, Açores e Naufragados: o ponto do francês mais perto fica do
+    // lado da baía; ondulação, período e direção vêm do mar aberto a sudeste da ilha (16/out/2026,
+    // _beachExposure.ts). Se essa chamada falhar, fica a conta de antes
+    const exposure = openSeaExposureAt(Number(lat), Number(lng))
+    const exposurePoint = exposure
+      ? fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${exposure.point[0]}&longitude=${exposure.point[1]}&current=${WAVE_PART_FIELDS}&length_unit=metric`, { signal: AbortSignal.timeout(8000) })
+          .then(r => (r.ok ? r.json() as Promise<{ current?: Record<string, number | null> }> : null))
+          .catch(() => null)
+      : Promise.resolve(null)
+    const [marineRes, marineEcmwfRes, weatherRes, exposurePointData] = await Promise.all([
       fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}&current=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,swell_wave_direction,sea_surface_temperature&length_unit=metric`, { signal: AbortSignal.timeout(8000) }),
       fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}&current=wave_height&length_unit=metric&models=ecmwf_wam`, { signal: AbortSignal.timeout(8000) }),
       fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=wind_speed_10m,wind_direction_10m&daily=sunrise,sunset&wind_speed_unit=kmh&timezone=America%2FSao_Paulo`, { signal: AbortSignal.timeout(8000) }),
+      exposurePoint,
     ])
     if (!marineRes.ok || !marineEcmwfRes.ok || !weatherRes.ok) return null
 
@@ -354,6 +368,11 @@ async function fetchOpenMeteo(lat: string, lng: string): Promise<LiveConditions 
     const weather = await weatherRes.json() as OpenMeteoWeather
     if (marine.error || marineEcmwf.error || weather.error) return null
 
+    const cur = exposurePointData?.current
+    const exposed = exposure && cur
+      ? { height: exposedHeight(wavePartsFrom(f => cur[f]), exposure), swellPeriod: cur.swell_wave_period, swellDirection: cur.swell_wave_direction }
+      : null
+
     // wave_height (ecmwf_wam) é a altura combinada (wind waves + swell) do modelo certo —
     // fallback pro modelo padrão só se o ecmwf_wam vier vazio (ex: fora da grade dele).
     const waveHeightBruto = marineEcmwf.current?.wave_height ?? marine.current?.wave_height ?? marine.current?.swell_wave_height ?? 0
@@ -363,8 +382,9 @@ async function fetchOpenMeteo(lat: string, lng: string): Promise<LiveConditions 
       waveHeight: Number(waveHeightBruto.toFixed(1)),
       openSeaHeight: marineEcmwf.current?.wave_height ?? null,
       nearshoreHeight: marine.current?.wave_height ?? null,
-      swellPeriod: Math.round(marine.current?.swell_wave_period ?? marine.current?.wave_period ?? 8),
-      swellDirection: degToDir(marine.current?.swell_wave_direction ?? marine.current?.wave_direction ?? 180),
+      exposedHeight: exposed?.height ?? null,
+      swellPeriod: Math.round(exposed?.swellPeriod ?? marine.current?.swell_wave_period ?? marine.current?.wave_period ?? 8),
+      swellDirection: degToDir(exposed?.swellDirection ?? marine.current?.swell_wave_direction ?? marine.current?.wave_direction ?? 180),
       windSpeed: Math.round(weather.current?.wind_speed_10m ?? 0),
       windDir: degToDir(weather.current?.wind_direction_10m ?? 0),
       waterTemperature: marine.current?.sea_surface_temperature != null
@@ -449,9 +469,11 @@ const LAST_GOOD_TTL_MS = 6 * 60 * 60 * 1000
 
 function atBeach(c: LiveConditions): LiveConditions {
   const fromOpenMeteo = c.openSeaHeight !== undefined || c.nearshoreHeight !== undefined
-  const waveHeight = fromOpenMeteo
-    ? toBeachHeight(c.openSeaHeight, c.swellPeriod, c.nearshoreHeight)
-    : toBeachHeight(c.waveHeight, c.swellPeriod)
+  const waveHeight = c.exposedHeight != null
+    ? capByOpenSea(c.exposedHeight, c.openSeaHeight, c.swellPeriod)
+    : fromOpenMeteo
+      ? toBeachHeight(c.openSeaHeight, c.swellPeriod, c.nearshoreHeight)
+      : toBeachHeight(c.waveHeight, c.swellPeriod)
   return { ...c, waveHeight }
 }
 
