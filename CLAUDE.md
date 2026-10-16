@@ -168,7 +168,7 @@ api/
 ├── cancel-renewal.ts   # Cancela a renovação automática (botão em Configurações); Premium vale até o fim do mês pago
 ├── mp-ipn.ts           # IPN (notificação instantânea) do MP
 ├── delete-account.ts   # Exclusão de conta do usuário (LGPD)
-├── daily-report.ts     # Envia relatório diário pelo Telegram (_telegram.ts, 16/out/2026) ou, sem as variáveis do Telegram / se ele falhar, por WhatsApp (CallMeBot) — só pro founder, uso interno
+├── daily-report.ts     # Relatório diário por e-mail (Resend → REPORT_EMAIL, mesmo endereço do health.ts; voltou pro e-mail em 16/out/2026), 1 e-mail com números + análise da IA. WhatsApp (CallMeBot) só de reserva se o e-mail falhar — só pro founder, uso interno
 ├── email-alert.ts      # Alerta de "mar bom" por email (Resend) — só assinantes premium, opt-out em Configurações; olha as 14 praias (antes 8), dispara se alguma tiver nota ≥ 6
 ├── content-agent.ts    # Gera sugestões de conteúdo para ContentStudio (só admin, ver api/_auth.ts)
 ├── is-admin.ts         # Checa se o usuário logado está na tabela `admins` (a tabela em si não é lida pelo client, RLS bloqueia)
@@ -349,18 +349,13 @@ Resend (emails transacionais)
   única da chamada ao modelo. Trocou a Anthropic em 21/ago/2026 — sem tier grátis contínuo,
   ficou sem crédito e derrubava o relatório da Home sem avisar ninguém)
 - `MP_ACCESS_TOKEN` (Mercado Pago)
-- `RESEND_API_KEY` (ainda usado por `api/email-alert.ts` e `api/health.ts` — NÃO pelo `daily-report.ts`, ver abaixo)
+- `RESEND_API_KEY` (e-mails: `api/email-alert.ts`, `api/health.ts`, `api/plan-reminders.ts`, `api/daily-report.ts`)
+- `REPORT_EMAIL` (caixa do founder que recebe o relatório diário e a checagem do `health.ts`)
 - `CALLMEBOT_PHONE`, `CALLMEBOT_APIKEY` (WhatsApp pessoal do founder via CallMeBot, serviço
-  gratuito de terceiro — usado só por `api/daily-report.ts`, trocou o envio por e-mail em
-  25/ago/2026 a pedido do usuário, "polui demais o email". `CALLMEBOT_PHONE` é o número sem o
-  9 extra, formato que o WhatsApp do usuário reportou pro serviço no cadastro). Desde ~13/out/2026
-  o próprio CallMeBot cola "I need your support + link" no fim de cada mensagem grátis (página
-  deles: assinatura US$ 1/mês ou US$ 10/ano tira o aviso) — não dá pra tirar pelo código. O
-  usuário não quis pagar: virou reserva do Telegram (abaixo)
-- `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` (16/out/2026): bot do founder criado no @BotFather e o
-  número da conta dele no Telegram (o @userinfobot mostra). Com as duas, o relatório diário vai pelo
-  Telegram (`api/_telegram.ts`, API oficial, grátis, até 4096 caracteres). O bot só consegue mandar
-  depois que a pessoa abre a conversa com ele e toca "Iniciar" (senão 403 no log)
+  gratuito de terceiro). O relatório diário foi por WhatsApp de 25/ago a 16/out/2026; em ~13/out o
+  CallMeBot passou a colar "I need your support + link" em toda mensagem grátis, o usuário não quis
+  pagar nem montar Telegram ("temos coisas mais importantes") e o relatório voltou pro e-mail. Hoje
+  o WhatsApp só entra se o e-mail falhar. `CALLMEBOT_PHONE` é o número sem o 9 extra
 
 ### Alias de importação
 ```typescript
