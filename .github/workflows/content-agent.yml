@@ -1,0 +1,24 @@
+name: Content Agent — Gerar Conteúdo Viral
+
+# Sem horário automático desde 30/set/2026: o resultado era descartado (curl -o /dev/null) e cada
+# execução gastava 1 das 20 chamadas diárias de IA do Gemini. O gerador continua funcionando sob
+# demanda no ContentStudio; aqui fica só a execução manual.
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  generate-content:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chamar agente de conteúdo
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L \
+            -H "x-agent-secret: ${{ secrets.AGENT_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/content-agent")
+          echo "Status HTTP: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "Agente retornou status $STATUS"
+            exit 1
+          fi

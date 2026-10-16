@@ -1,0 +1,16 @@
+{
+  "name": "surf-ai-ads-report",
+  "version": "1.0.0",
+  "description": "Relatorio de performance de anuncios e organico (Facebook/Instagram) do Surf AI",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "report": "node src/index.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
