@@ -103,13 +103,36 @@ export function calibrateOpenSea(
   openSeaPeriods: (number | null | undefined)[]
 ): OpenSeaCalibration {
   const ok = (v: number | null | undefined): v is number => v != null && Number.isFinite(v) && v > 0
+  const beachHeights = openSeaHeights.map((open, i) => {
+    const near = nearshoreHeights[i], period = swellPeriods[i]
+    return ok(near) && ok(period) && ok(open) ? toBeachHeight(open, Math.round(period), near) : null
+  })
+  return calibrateFromBeachHeights(beachHeights, swellPeriods, openSeaHeights, openSeaPeriods)
+}
+
+// Mesma calibração a partir da altura na praia já calculada (praias com a conta pelo mar aberto,
+// _beachExposure.ts): razão praia ÷ ECMWF e diferença de período nas horas em que os dois existem
+export function calibrateFromBeachHeights(
+  beachHeights: (number | null | undefined)[],
+  swellPeriods: (number | null | undefined)[],
+  openSeaHeights: (number | null | undefined)[],
+  openSeaPeriods: (number | null | undefined)[]
+): OpenSeaCalibration {
+  const ok = (v: number | null | undefined): v is number => v != null && Number.isFinite(v) && v > 0
   const ratios: number[] = [], offsets: number[] = []
   for (let i = 0; i < openSeaHeights.length; i++) {
-    const near = nearshoreHeights[i], period = swellPeriods[i], open = openSeaHeights[i], openPeriod = openSeaPeriods[i]
-    if (!ok(near) || !ok(period) || !ok(open) || !ok(openPeriod)) continue
-    ratios.push(toBeachHeight(open, Math.round(period), near) / open)
+    const beach = beachHeights[i], period = swellPeriods[i], open = openSeaHeights[i], openPeriod = openSeaPeriods[i]
+    if (!ok(beach) || !ok(period) || !ok(open) || !ok(openPeriod)) continue
+    ratios.push(beach / open)
     offsets.push(period - openPeriod)
   }
   if (ratios.length < MIN_CALIBRATION_HOURS) return DEFAULT_OPEN_SEA_CALIBRATION
   return { heightRatio: median(ratios), periodOffset: median(offsets) }
+}
+
+// Teto das praias com a conta pelo mar aberto (_beachExposure.ts): o mesmo das outras, nunca passa
+// do mar aberto do ECMWF × fator do período
+export function capByOpenSea(height: number, openSeaHeight: number | null | undefined, swellPeriod: number): number {
+  if (openSeaHeight == null || !Number.isFinite(openSeaHeight) || openSeaHeight <= 0) return height
+  return Math.round(Math.min(height, openSeaHeight * beachHeightFactor(swellPeriod)) * 100) / 100
 }

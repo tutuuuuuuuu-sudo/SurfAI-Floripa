@@ -2,7 +2,8 @@
 // Prefixo _ indica que não é um handler HTTP — não será exposto como endpoint pelo Vercel.
 
 import { calculateSurfScore } from './_scoreEngine.js'
-import { toBeachHeight, calibrateOpenSea } from './_beachHeight.js'
+import { toBeachHeight, calibrateOpenSea, calibrateFromBeachHeights, capByOpenSea } from './_beachHeight.js'
+import { openSeaExposureAt, wavePartsFrom, exposedHeight, WAVE_PART_FIELDS } from './_beachExposure.js'
 import { southExposureAt } from './_beachRegistry.js'
 
 export function degreesToDir(deg: number): string {
@@ -79,7 +80,17 @@ export async function fetchHourlyForecast(
   // isso, uma Open-Meteo lenta/travada podia segurar a resposta até o limite da função edge
   // inteira. Aqui é ainda mais sensível — buildForecastSummary (surf-chat.ts) chama isso pra
   // 14 praias em paralelo, então uma trava aqui atrasa o resumo inteiro, não só uma praia.
-  const [marineRes, marineEcmwfRes, weatherRes] = await Promise.all([
+  // Morro das Pedras, Armação, Solidão, Açores e Naufragados (16/out/2026): partes do mar aberto a
+  // sudeste da ilha, pela direção de cada uma (_beachExposure.ts). Se falhar, fica a conta de antes
+  const exposure = openSeaExposureAt(Number(lat), Number(lng))
+  const exposurePoint = exposure
+    ? fetch(
+        `https://marine-api.open-meteo.com/v1/marine?latitude=${exposure.point[0]}&longitude=${exposure.point[1]}` +
+        `&hourly=${WAVE_PART_FIELDS}&length_unit=metric&timezone=America%2FSao_Paulo&forecast_days=${forecastDays}`,
+        { signal: AbortSignal.timeout(8000) }
+      ).then(r => (r.ok ? r.json() as Promise<{ hourly?: Record<string, (number | null)[]> }> : null)).catch(() => null)
+    : Promise.resolve(null)
+  const [marineRes, marineEcmwfRes, weatherRes, exposurePointData] = await Promise.all([
     fetch(
       `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}` +
       `&hourly=wave_height,wave_period,swell_wave_height,swell_wave_period,swell_wave_direction,sea_surface_temperature` +
@@ -108,6 +119,7 @@ export async function fetchHourlyForecast(
       `&wind_speed_unit=kmh&timezone=America%2FSao_Paulo&forecast_days=${forecastDays}`,
       { signal: AbortSignal.timeout(8000) }
     ),
+    exposurePoint,
   ])
 
   if (!marineRes.ok || !marineEcmwfRes.ok || !weatherRes.ok) return null
@@ -127,10 +139,20 @@ export async function fetchHourlyForecast(
   // Do 9º dia em diante o francês vem vazio: altura e período saem do ECMWF ajustado pela
   // diferença entre os dois nas horas em que existem juntos (antes caía no período reserva de 10 s
   // e dava nota 10 sem motivo — ver calibrateOpenSea)
-  const openSea = calibrateOpenSea(
-    marine.hourly?.wave_height ?? [], marine.hourly?.swell_wave_period ?? [],
-    marineEcmwf.hourly?.wave_height ?? [], marineEcmwf.hourly?.wave_period ?? []
-  )
+  // Praias com a conta pelo mar aberto: altura na praia de cada hora (null nos dias além do francês)
+  const point = exposurePointData?.hourly
+  const exposedHeights = exposure && point
+    ? times.map((_, i) => {
+        const h = exposedHeight(wavePartsFrom(f => point[f]?.[i]), exposure)
+        return h == null ? null : capByOpenSea(h, marineEcmwf.hourly?.wave_height?.[i], Math.round(point.swell_wave_period?.[i] ?? 8))
+      })
+    : null
+  const openSea = exposedHeights
+    ? calibrateFromBeachHeights(exposedHeights, point?.swell_wave_period ?? [], marineEcmwf.hourly?.wave_height ?? [], marineEcmwf.hourly?.wave_period ?? [])
+    : calibrateOpenSea(
+        marine.hourly?.wave_height ?? [], marine.hourly?.swell_wave_period ?? [],
+        marineEcmwf.hourly?.wave_height ?? [], marineEcmwf.hourly?.wave_period ?? []
+      )
 
   function readHour(idx: number, orientation: number): HourReading | null {
     if (idx < 0 || idx >= times.length) return null
@@ -148,10 +170,10 @@ export async function fetchHourlyForecast(
     // Sem o francês: direção média das ondas do ECMWF (junta swell e mar de vento — melhor que
     // cravar sul) e período médio do ECMWF corrigido pra período de swell
     const swellDirection = degreesToDir(
-      marine.hourly?.swell_wave_direction?.[idx] ?? marineEcmwf.hourly?.wave_direction?.[idx] ?? 180
+      point?.swell_wave_direction?.[idx] ?? marine.hourly?.swell_wave_direction?.[idx] ?? marineEcmwf.hourly?.wave_direction?.[idx] ?? 180
     )
     const swellPeriod = Math.round(
-      marine.hourly?.swell_wave_period?.[idx] ?? marine.hourly?.wave_period?.[idx] ??
+      point?.swell_wave_period?.[idx] ?? marine.hourly?.swell_wave_period?.[idx] ?? marine.hourly?.wave_period?.[idx] ??
       (openSeaPeriod != null ? Math.max(1, openSeaPeriod + openSea.periodOffset) : 10)
     )
     // Onda na praia, não mar aberto (30/set/2026) — mesma conversão do "agora" em
@@ -159,9 +181,13 @@ export async function fetchHourlyForecast(
     // Base: modelo francês (modelo padrão do Open-Meteo) na mesma hora, com teto no mar aberto
     // (ECMWF) × fator do período — desde 01/out/2026, ver api/_beachHeight.ts
     // Sem o francês nessa hora: ECMWF × razão medida entre os dois (09/out/2026)
-    const waveHeight = nearshoreHeight == null && openSeaHeight != null && openSeaHeight > 0
-      ? Math.round(openSeaHeight * openSea.heightRatio * 100) / 100
-      : toBeachHeight(openSeaHeight, swellPeriod, nearshoreHeight) || toBeachHeight(rawWaveHeight, swellPeriod)
+    // Praias com a conta pelo mar aberto (_beachExposure.ts): a altura calculada pelas partes do mar
+    const exposedAtHour = exposedHeights?.[idx]
+    const waveHeight = exposedAtHour != null
+      ? exposedAtHour
+      : (exposedHeights || nearshoreHeight == null) && openSeaHeight != null && openSeaHeight > 0
+        ? Math.round(openSeaHeight * openSea.heightRatio * 100) / 100
+        : toBeachHeight(openSeaHeight, swellPeriod, nearshoreHeight) || toBeachHeight(rawWaveHeight, swellPeriod)
     const windSpeed = Math.round(weather.hourly?.wind_speed_10m?.[idx] ?? 12)
     const windDirection = degreesToDir(weather.hourly?.wind_direction_10m?.[idx] ?? 0)
     const temperature = Math.round(weather.hourly?.temperature_2m?.[idx] ?? 24)
