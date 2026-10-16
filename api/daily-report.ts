@@ -6,7 +6,6 @@ import { cleanChatReply } from './_chatText.js'
 import { getBeaches } from './_beachRegistry.js'
 import { isSchedulerCall } from './_auth.js'
 import { sendWhatsApp } from './_callmebot.js'
-import { sendTelegram } from './_telegram.js'
 import { PRICE_MONTHLY, PRICE_ANNUAL } from '../src/lib/pricing.js'
 
 const APP_URL = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
@@ -15,13 +14,13 @@ const GROQ_KEY = process.env.GROQ_API_KEY
 const AGENT_SECRET = process.env.AGENT_SECRET
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
+// Relatório volta pro e-mail em 16/out/2026 (de 25/ago até lá foi por WhatsApp, pelo CallMeBot, que
+// passou a colar "I need your support" nas mensagens grátis). Mesmo endereço do robô de checagem
+// (health.ts). O WhatsApp fica só de reserva, se o e-mail não sair.
+const RESEND_API_KEY = process.env.RESEND_API_KEY
+const REPORT_EMAIL = process.env.REPORT_EMAIL
 const CALLMEBOT_PHONE = process.env.CALLMEBOT_PHONE
 const CALLMEBOT_APIKEY = process.env.CALLMEBOT_APIKEY
-// Telegram (16/out/2026): o CallMeBot passou a colar "I need your support" nas mensagens grátis.
-// Com as duas variáveis na Vercel o relatório vai pelo Telegram; sem elas (ou se o Telegram falhar)
-// continua pelo WhatsApp
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID
 
 const SPOTS = getBeaches(['campeche', 'joaquina', 'mole', 'barra-lagoa', 'santinho', 'morro-pedras'])
 
@@ -320,7 +319,7 @@ Escreva no máximo 3 frases curtas de análise (até 400 caracteres no total): o
   return text ? { text, error: '', provider } : { text: '', error: 'resposta vazia', provider: '' }
 }
 
-// ── Mensagem (Telegram ou WhatsApp) ──────────────────────────────────────────
+// ── Mensagem (e-mail, WhatsApp de reserva) ───────────────────────────────────
 
 function medal(i: number): string {
   return i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'
@@ -374,6 +373,37 @@ function buildReportText(data: {
   return lines.join('\n')
 }
 
+// O texto do relatório marca negrito com *asterisco* (jeito do WhatsApp, que fica de reserva): no
+// e-mail vira <b>, com o resto escapado e as quebras de linha mantidas
+export function reportTextToHtml(text: string): string {
+  const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const body = escaped.replace(/\*([^*\n]+)\*/g, '<b>$1</b>').replace(/\n/g, '<br>')
+  return `<div style="font-family:sans-serif;font-size:15px;line-height:1.5;color:#222;max-width:560px">${body}</div>`
+}
+
+async function sendReportEmail(subject: string, text: string): Promise<boolean> {
+  if (!RESEND_API_KEY || !REPORT_EMAIL) return false
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: 'Surf AI Floripa <relatorios@alo.surfaifloripa.com.br>',
+        to: [REPORT_EMAIL],
+        subject,
+        html: reportTextToHtml(text),
+        text: text.replace(/\*([^*\n]+)\*/g, '$1'),
+      }),
+      signal: AbortSignal.timeout(10000),
+    })
+    if (!res.ok) console.error('[daily-report] Resend recusou', res.status, (await res.text()).slice(0, 200))
+    return res.ok
+  } catch (err) {
+    console.error('[daily-report] erro no e-mail', err)
+    return false
+  }
+}
+
 // ── Handler ───────────────────────────────────────────────────────────────────
 
 export default async function handler(req: Request) {
@@ -401,25 +431,17 @@ export default async function handler(req: Request) {
     getSurfConditions(),
   ])
 
-  // Duas mensagens: os números saem antes de chamar a IA (a parte mais demorada) e a análise
-  // vem em seguida (no WhatsApp, juntas passavam do tamanho que o CallMeBot entrega).
+  // Um e-mail só, com os números e a análise da IA
   const statsText = buildReportText({ period, date: dateStr, users, landing, robots, surf })
-  // Devolve por onde a mensagem saiu ('' se não saiu)
-  const send = async (text: string): Promise<string> => {
-    if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID && await sendTelegram(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, text)) return 'telegram'
-    if (CALLMEBOT_PHONE && CALLMEBOT_APIKEY && await sendWhatsApp(CALLMEBOT_PHONE, CALLMEBOT_APIKEY, text)) return 'whatsapp'
-    return ''
-  }
-  const statsSent = await send(statsText)
-
   const { text: aiSummary, error: aiError, provider: aiProvider } = await generateSummary({ period, users, landing, robots, surf })
   const aiText = aiSummary ? `*Análise do dia*\n\n${aiSummary}` : `IA não respondeu (${aiError})`
-  const aiSent = await send(aiText)
+  const fullText = `${statsText}\n\n${aiText}`
+  const subject = `Surf AI · Relatório ${period} · ${dateStr} · ${users.total} usuários, ${users.premiumActive} pagos`
 
-  const delivered = !!statsSent && !!aiSent
-  // Canal e tamanho de cada mensagem na resposta do robô (guardada algumas horas em net._http_response)
-  const channels = [statsSent || 'falhou', aiSent || 'falhou']
-  const messageChars = [statsText.length, aiText.length]
+  let channel = ''
+  if (await sendReportEmail(subject, fullText)) channel = 'email'
+  else if (CALLMEBOT_PHONE && CALLMEBOT_APIKEY && await sendWhatsApp(CALLMEBOT_PHONE, CALLMEBOT_APIKEY, fullText)) channel = 'whatsapp'
+  const delivered = channel !== ''
 
   return new Response(JSON.stringify({
     period,
@@ -432,8 +454,8 @@ export default async function handler(req: Request) {
     aiError,
     aiProvider,
     delivered,
-    channels,
-    messageChars,
+    channel,
+    chars: fullText.length,
   }), {
     // 502 quando a mensagem não saiu: o GitHub Actions marca a execução como falha e o Cronitor
     // avisa (antes respondia 200 mesmo sem entregar, e "deu certo" no painel não queria dizer nada)
