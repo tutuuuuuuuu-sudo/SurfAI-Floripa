@@ -6,6 +6,7 @@ import { cleanChatReply } from './_chatText.js'
 import { getBeaches } from './_beachRegistry.js'
 import { isSchedulerCall } from './_auth.js'
 import { sendWhatsApp } from './_callmebot.js'
+import { sendTelegram } from './_telegram.js'
 import { PRICE_MONTHLY, PRICE_ANNUAL } from '../src/lib/pricing.js'
 
 const APP_URL = process.env.APP_URL ?? 'https://www.surfaifloripa.com.br'
@@ -16,6 +17,11 @@ const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY
 const CALLMEBOT_PHONE = process.env.CALLMEBOT_PHONE
 const CALLMEBOT_APIKEY = process.env.CALLMEBOT_APIKEY
+// Telegram (16/out/2026): o CallMeBot passou a colar "I need your support" nas mensagens grátis.
+// Com as duas variáveis na Vercel o relatório vai pelo Telegram; sem elas (ou se o Telegram falhar)
+// continua pelo WhatsApp
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID
 
 const SPOTS = getBeaches(['campeche', 'joaquina', 'mole', 'barra-lagoa', 'santinho', 'morro-pedras'])
 
@@ -162,7 +168,7 @@ async function getLandingStats(): Promise<{ viewsToday: number; clicksToday: num
 const ROBOT_LABEL: Record<string, string> = {
   '/api/snapshot': 'histórico', '/api/push-notify': 'alertas', '/api/refresh-windy-cache': 'praias',
   '/api/email-alert': 'e-mail', '/api/daily-report': 'relatório', '/api/health': 'checagem',
-  '/api/plan-reminders': 'lembretes', '/api/session-reminder': 'caiu hoje',
+  '/api/plan-reminders': 'lembretes',
 }
 
 async function getRobotStats(): Promise<{ ok: number; failed: number; failedBy: string } | null> {
@@ -314,13 +320,13 @@ Escreva no máximo 3 frases curtas de análise (até 400 caracteres no total): o
   return text ? { text, error: '', provider } : { text: '', error: 'resposta vazia', provider: '' }
 }
 
-// ── WhatsApp (CallMeBot) ─────────────────────────────────────────────────────
+// ── Mensagem (Telegram ou WhatsApp) ──────────────────────────────────────────
 
 function medal(i: number): string {
   return i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'
 }
 
-function buildWhatsAppText(data: {
+function buildReportText(data: {
   period: string
   date: string
   users: Awaited<ReturnType<typeof getUserStats>>
@@ -396,19 +402,24 @@ export default async function handler(req: Request) {
   ])
 
   // Duas mensagens: os números saem antes de chamar a IA (a parte mais demorada) e a análise
-  // vem em seguida. Juntas passavam do tamanho que o CallMeBot entrega (ver _callmebot.ts).
-  const statsText = buildWhatsAppText({ period, date: dateStr, users, landing, robots, surf })
-  const send = (text: string) =>
-    CALLMEBOT_PHONE && CALLMEBOT_APIKEY ? sendWhatsApp(CALLMEBOT_PHONE, CALLMEBOT_APIKEY, text) : Promise.resolve(false)
+  // vem em seguida (no WhatsApp, juntas passavam do tamanho que o CallMeBot entrega).
+  const statsText = buildReportText({ period, date: dateStr, users, landing, robots, surf })
+  // Devolve por onde a mensagem saiu ('' se não saiu)
+  const send = async (text: string): Promise<string> => {
+    if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID && await sendTelegram(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, text)) return 'telegram'
+    if (CALLMEBOT_PHONE && CALLMEBOT_APIKEY && await sendWhatsApp(CALLMEBOT_PHONE, CALLMEBOT_APIKEY, text)) return 'whatsapp'
+    return ''
+  }
   const statsSent = await send(statsText)
 
   const { text: aiSummary, error: aiError, provider: aiProvider } = await generateSummary({ period, users, landing, robots, surf })
   const aiText = aiSummary ? `*Análise do dia*\n\n${aiSummary}` : `IA não respondeu (${aiError})`
   const aiSent = await send(aiText)
 
-  const whatsappSent = statsSent && aiSent
-  // Tamanho de cada mensagem na resposta do robô (guardada algumas horas em net._http_response)
-  const whatsappChars = [statsText.length, aiText.length]
+  const delivered = !!statsSent && !!aiSent
+  // Canal e tamanho de cada mensagem na resposta do robô (guardada algumas horas em net._http_response)
+  const channels = [statsSent || 'falhou', aiSent || 'falhou']
+  const messageChars = [statsText.length, aiText.length]
 
   return new Response(JSON.stringify({
     period,
@@ -420,12 +431,13 @@ export default async function handler(req: Request) {
     aiSummary,
     aiError,
     aiProvider,
-    whatsappSent,
-    whatsappChars,
+    delivered,
+    channels,
+    messageChars,
   }), {
     // 502 quando a mensagem não saiu: o GitHub Actions marca a execução como falha e o Cronitor
     // avisa (antes respondia 200 mesmo sem entregar, e "deu certo" no painel não queria dizer nada)
-    status: whatsappSent ? 200 : 502,
+    status: delivered ? 200 : 502,
     headers: { 'Content-Type': 'application/json' },
   })
 }

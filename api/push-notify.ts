@@ -9,6 +9,8 @@ import { isSchedulerCall } from './_auth.js'
 import { sendPush, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY } from './_webPush.js'
 import { beachMatches, premiumOrAdminIds, favoritesByUser, isAlertHour, nextAlertBeach, markAlerted, type PushCriteria } from './_pushMatch.js'
 import { todaySP, nowHourSP } from '../src/lib/timeSP.js'
+import { REMINDER_HOUR } from './_sessionReminder.js'
+import { runSessionReminder } from './_sessionReminderJob.js'
 // A criptografia mudou pra _webPush.ts (30/set/2026); reexportada aqui pro push-notify.test.ts
 export { base64urlDecode, base64urlEncode, makeVapidJwt, encryptWebPush } from './_webPush.js'
 
@@ -41,8 +43,16 @@ export default async function handler(req: Request) {
     return json({ error: 'Configuração incompleta' }, 500)
   }
 
+  // 19h: em vez do alerta de mar bom, o "Caiu hoje?" (_sessionReminderJob.ts). Fica aqui pra não
+  // precisar de outro job no agendador
+  const hour = nowHourSP()
+  if (hour === REMINDER_HOUR) {
+    const { status, body } = await runSessionReminder(SUPABASE_URL, SUPABASE_KEY)
+    return json({ reminder: true, ...body }, status)
+  }
+
   // Só de dia (ver isAlertHour); fora do horário nem consulta as praias
-  if (!isAlertHour(nowHourSP())) return json({ ok: true, sent: 0, skipped: 'fora do horário' })
+  if (!isAlertHour(hour)) return json({ ok: true, sent: 0, skipped: 'fora do horário' })
   const today = todaySP()
 
   // 1. Busca todas as subscriptions ativas

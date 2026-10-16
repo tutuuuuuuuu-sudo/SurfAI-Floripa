@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import { peaksByBeach, pickReminder, buildReminderPush, skipReason } from './_sessionReminder'
+import { peaksByBeach, pickReminder, buildReminderPush, skipReason, REMINDER_HOUR } from './_sessionReminder'
+import { isAlertHour } from './_pushMatch'
 
 // Horários em UTC: 11h UTC = 8h em Florianópolis
 const rows = [
@@ -63,5 +64,13 @@ describe('skipReason', () => {
   })
   it('"Não caí" e aviso de ontem não contam hoje', () => {
     expect(skipReason({ ...base, dismissedOn: '2026-10-13', sentOn: '2026-10-13' }, '2026-10-14')).toBeNull()
+  })
+})
+
+// O "Caiu hoje?" roda dentro do robô de alertas de hora em hora (push-notify.ts): na hora dele não
+// pode haver alerta de mar bom, senão o robô teria que fazer os dois
+describe('REMINDER_HOUR', () => {
+  it('fica fora do horário dos alertas de mar bom', () => {
+    expect(isAlertHour(REMINDER_HOUR)).toBe(false)
   })
 })

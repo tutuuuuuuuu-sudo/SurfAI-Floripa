@@ -1,9 +1,12 @@
 // "Caiu hoje?" por notificação (14/out/2026): a mesma pergunta do cartão da Home
 // (src/components/home/SurfedTodayPrompt.tsx), mandada às 19h pra quem tem os alertas ligados e
 // não abriu o app. Regras puras aqui (testadas em _sessionReminder.test.ts); o envio fica em
-// session-reminder.ts. Prefixo _ = não exposto como endpoint HTTP pelo Vercel.
+// _sessionReminderJob.ts. Prefixo _ = não exposto como endpoint HTTP pelo Vercel.
 
 import { beachMatches, type PushCriteria } from './_pushMatch.js'
+
+// Hora (Brasília) em que o robô de alertas de hora em hora (push-notify.ts, :05) manda o aviso
+export const REMINDER_HOUR = 19
 
 // Mesma janela do cartão da Home: de 5h até 1 h antes de agora (quem caiu agora ainda está na água)
 export const REMINDER_FROM_HOUR = 5
